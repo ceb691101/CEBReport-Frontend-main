@@ -169,6 +169,7 @@ export const data = [
 			{id: 101, name: "Cost Center wise Quantity on Hand"},
 			{id: 100, name: "Average Consumptions - All Material Codes"},
 			{id: 102, name: "Average Consumptions - Selected Maerial Codes"},
+			{id: 103, name: "Province wise Quantity on Hand"},
 		],
 		path: "/report/inventory",
 	},
