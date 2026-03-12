@@ -94,7 +94,7 @@ const AreaWiseSRPEstimationPIV: React.FC = () => {
 		setShowReport(true);
 
 		try {
-			const url = `/srpapi/api/areawisesrpestimationpiv/get?compId=${company.compId.trim()}&fromDate=${fromDate.replace(
+			const url = `/misapi/api/areawisesrpestimationpiv/get?compId=${company.compId.trim()}&fromDate=${fromDate.replace(
 				/-/g,
 				""
 			)}&toDate=${toDate.replace(/-/g, "")}`;
