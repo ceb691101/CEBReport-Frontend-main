@@ -91,14 +91,20 @@ const Home: React.FC = () => {
     kioskCollection: 456789
   });
 
-  // Monthly Sales Data
+  // Monthly Sales Data (12 months)
   const [monthlySalesData] = useState<MonthlySalesData[]>([
-    { month: 'Jan', ordinary: 2100000, bulk: 5200000, target: 7500000 },
-    { month: 'Feb', ordinary: 2250000, bulk: 5400000, target: 7800000 },
-    { month: 'Mar', ordinary: 2450000, bulk: 5680000, target: 8200000 },
-    { month: 'Apr', ordinary: 2350000, bulk: 5500000, target: 8000000 },
-    { month: 'May', ordinary: 2550000, bulk: 5800000, target: 8400000 },
-    { month: 'Jun', ordinary: 2480000, bulk: 5750000, target: 8300000 }
+    { month: "Jan", ordinary: 2100000, bulk: 5200000, target: 7500000 },
+    { month: "Feb", ordinary: 2250000, bulk: 5400000, target: 7800000 },
+    { month: "Mar", ordinary: 2450000, bulk: 5680000, target: 8200000 },
+    { month: "Apr", ordinary: 2350000, bulk: 5500000, target: 8000000 },
+    { month: "May", ordinary: 2550000, bulk: 5800000, target: 8400000 },
+    { month: "Jun", ordinary: 2480000, bulk: 5750000, target: 8300000 },
+    { month: "Jul", ordinary: 2520000, bulk: 5820000, target: 8500000 },
+    { month: "Aug", ordinary: 2600000, bulk: 5900000, target: 8600000 },
+    { month: "Sep", ordinary: 2550000, bulk: 5850000, target: 8550000 },
+    { month: "Oct", ordinary: 2620000, bulk: 5950000, target: 8700000 },
+    { month: "Nov", ordinary: 2580000, bulk: 5880000, target: 8650000 },
+    { month: "Dec", ordinary: 2700000, bulk: 6000000, target: 8800000 },
   ]);
 
   // Monthly New Customers Data
@@ -136,13 +142,19 @@ const Home: React.FC = () => {
     }).format(amount);
   };
 
-  // Calculate pie chart segments for Sales
-  const totalSales = monthlySalesData.reduce((sum, d) => sum + d.ordinary + d.bulk, 0);
-  const totalOrdinarySales = monthlySalesData.reduce((sum, d) => sum + d.ordinary, 0);
-  const totalBulkSales = monthlySalesData.reduce((sum, d) => sum + d.bulk, 0);
-  
-  const ordinaryPercentage = (totalOrdinarySales / totalSales) * 100;
-  const bulkPercentage = (totalBulkSales / totalSales) * 100;
+  // Calculate totals for Sales
+  const totalSales = monthlySalesData.reduce(
+    (sum, d) => sum + d.ordinary + d.bulk,
+    0
+  );
+  const totalOrdinarySales = monthlySalesData.reduce(
+    (sum, d) => sum + d.ordinary,
+    0
+  );
+  const totalBulkSales = monthlySalesData.reduce(
+    (sum, d) => sum + d.bulk,
+    0
+  );
 
   // Calculate pie chart segments for New Customers
   const totalNewCustomers = monthlyNewCustomers.reduce((sum, d) => sum + d.ordinary + d.bulk, 0);
@@ -151,6 +163,14 @@ const Home: React.FC = () => {
   
   const newOrdinaryPercentage = (totalNewOrdinary / totalNewCustomers) * 100;
   const newBulkPercentage = (totalNewBulk / totalNewCustomers) * 100;
+
+  // Sales & Collection Distribution bar chart data
+  const salesBarData = monthlySalesData.map(item => ({
+    month: item.month,
+    ordinary: item.ordinary,
+    bulk: item.bulk,
+    total: item.ordinary + item.bulk
+  }));
 
   const solarCapacityChartData = [
     {
@@ -300,99 +320,42 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* Two Column Layout for Pie Charts */}
+        {/* Two Column Layout - Bar Chart for Sales & Collection */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Sales & Collection Pie Chart */}
+          {/* Sales & Collection Bar Chart */}
           <div className={`transition-all duration-1000 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="font-semibold text-gray-900">Sales & Collection Distribution</h3>
-                  <p className="text-sm text-gray-500 mt-1">YTD Sales by Customer Type</p>
+                  <p className="text-sm text-gray-500 mt-1">Monthly Sales by Customer Type</p>
                 </div>
                 <PieChart className="w-5 h-5 text-gray-400" />
               </div>
 
-              <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-                {/* Pie Chart */}
-                <div className="relative w-48 h-48">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
-                    {/* Background circle */}
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="80"
-                      fill="none"
-                      stroke="#f3f4f6"
-                      strokeWidth="30"
+              {/* Bar Chart */}
+              <div className="h-64 mb-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={salesBarData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => formatCompact(value)}
                     />
-                    
-                    {/* Ordinary Sales Segment */}
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="80"
-                      fill="none"
-                      stroke="var(--ceb-maroon)"
-                      strokeWidth="30"
-                      strokeDasharray={`${(ordinaryPercentage / 100) * 502.4} 502.4`}
-                      strokeDashoffset="0"
-                      className="transition-all duration-1000 ease-out"
-                      onMouseEnter={() => setActivePieChart('ordinary')}
-                      onMouseLeave={() => setActivePieChart(null)}
+                    <Tooltip 
+                      formatter={(value: any) => formatCurrency(Number(value))}
+                      labelStyle={{ fontWeight: 600 }}
                     />
-                    
-                    {/* Bulk Sales Segment */}
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="80"
-                      fill="none"
-                      stroke="var(--ceb-gold)"
-                      strokeWidth="30"
-                      strokeDasharray={`${(bulkPercentage / 100) * 502.4} 502.4`}
-                      strokeDashoffset={-((ordinaryPercentage / 100) * 502.4)}
-                      className="transition-all duration-1000 ease-out"
-                      onMouseEnter={() => setActivePieChart('bulk')}
-                      onMouseLeave={() => setActivePieChart(null)}
-                    />
-                  </svg>
-                  
-                  {/* Center text */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalSales)}</p>
-                      <p className="text-xs text-gray-500">Total Sales</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Legend */}
-                <div className="space-y-3">
-                  <div 
-                    className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${activePieChart === 'ordinary' ? 'bg-[color:var(--ceb-maroon)]/5' : ''}`}
-                    onMouseEnter={() => setActivePieChart('ordinary')}
-                    onMouseLeave={() => setActivePieChart(null)}
-                  >
-                    <div className="w-4 h-4 bg-[color:var(--ceb-maroon)] rounded-full"></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Ordinary Sales</p>
-                      <p className="text-xs text-gray-500">{formatCurrency(totalOrdinarySales)} ({ordinaryPercentage.toFixed(1)}%)</p>
-                    </div>
-                  </div>
-                  
-                  <div 
-                    className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${activePieChart === 'bulk' ? 'bg-[color:var(--ceb-gold)]/15' : ''}`}
-                    onMouseEnter={() => setActivePieChart('bulk')}
-                    onMouseLeave={() => setActivePieChart(null)}
-                  >
-                    <div className="w-4 h-4 bg-[color:var(--ceb-gold)] rounded-full"></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Bulk Sales</p>
-                      <p className="text-xs text-gray-500">{formatCurrency(totalBulkSales)} ({bulkPercentage.toFixed(1)}%)</p>
-                    </div>
-                  </div>
-                </div>
+                    <Legend />
+                    <Bar dataKey="ordinary" name="Ordinary" fill="var(--ceb-maroon)" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="ordinary" position="top" formatter={(v: any) => formatCompact(Number(v))} />
+                    </Bar>
+                    <Bar dataKey="bulk" name="Bulk" fill="var(--ceb-gold)" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="bulk" position="top" formatter={(v: any) => formatCompact(Number(v))} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
 
               {/* Monthly Breakdown */}
@@ -402,13 +365,13 @@ const Home: React.FC = () => {
                   <div>
                     <p className="text-xs text-gray-500">Ordinary</p>
                     <p className="text-sm font-semibold text-gray-900">
-                      {formatCurrency(totalOrdinarySales / 6)} / month
+                      {formatCurrency(totalOrdinarySales / 12)} / month
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Bulk</p>
                     <p className="text-sm font-semibold text-gray-900">
-                      {formatCurrency(totalBulkSales / 6)} / month
+                      {formatCurrency(totalBulkSales / 12)} / month
                     </p>
                   </div>
                 </div>
