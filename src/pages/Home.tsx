@@ -195,6 +195,29 @@ const Home: React.FC = () => {
     },
   ];
 
+  const solarCustomerSplitChartData = [
+    {
+      netType: "Net Metering",
+      ordinary: Math.round(customerCounts.solar.netMetering * 0.72),
+      bulk: customerCounts.solar.netMetering - Math.round(customerCounts.solar.netMetering * 0.72),
+    },
+    {
+      netType: "Net Accounting",
+      ordinary: Math.round(customerCounts.solar.netAccounting * 0.68),
+      bulk: customerCounts.solar.netAccounting - Math.round(customerCounts.solar.netAccounting * 0.68),
+    },
+    {
+      netType: "Net Plus",
+      ordinary: Math.round(customerCounts.solar.netPlus * 0.64),
+      bulk: customerCounts.solar.netPlus - Math.round(customerCounts.solar.netPlus * 0.64),
+    },
+    {
+      netType: "Net Plus Plus",
+      ordinary: Math.round(customerCounts.solar.netPlusPlus * 0.6),
+      bulk: customerCounts.solar.netPlusPlus - Math.round(customerCounts.solar.netPlusPlus * 0.6),
+    },
+  ];
+
   const formatCompact = (n: number) =>
     new Intl.NumberFormat("en-US", {
       notation: "compact",
@@ -287,12 +310,7 @@ const Home: React.FC = () => {
               customerCounts.solar.netPlus + 
               customerCounts.solar.netPlusPlus
             )}</p>
-            <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-500">
-              <span>NM: {customerCounts.solar.netMetering}</span>
-              <span>NA: {customerCounts.solar.netAccounting}</span>
-              <span>NP: {customerCounts.solar.netPlus}</span>
-              <span>N++: {customerCounts.solar.netPlusPlus}</span>
-            </div>
+            <p className="text-xs text-gray-500 mt-2">Net-type breakdown shown in chart</p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -617,7 +635,7 @@ const Home: React.FC = () => {
                 <h3 className="font-semibold text-gray-900">Target vs Actual by Region</h3>
                 <Target className="w-4 h-4 text-gray-400" />
               </div>
-              
+
               <div className="space-y-4">
                 {['West', 'Central', 'East', 'South', 'North'].map((region, index) => (
                   <div key={region}>
@@ -645,15 +663,44 @@ const Home: React.FC = () => {
               </div>
             </div>
 
-            {/* Profit Margin */}
+            {/* Solar Customers Split */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="text-center">
-                <p className="text-sm text-gray-500 mb-2">Profit Margin</p>
-                <p className="text-4xl font-bold text-gray-900 mb-2">15.34%</p>
-                <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-                  <div className="bg-green-500 h-3 rounded-full" style={{ width: '15.34%' }}></div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900">Solar Customers by Net Type</h3>
+                  <p className="text-xs text-gray-500 mt-1">Ordinary vs Bulk accounts</p>
                 </div>
-                <p className="text-sm text-gray-600">Sales Target Achievement: <span className="font-semibold text-[color:var(--ceb-maroon)]">52.21%</span></p>
+                <span className="text-[color:var(--ceb-navy)] text-xs font-semibold tracking-wide">GRAPH</span>
+              </div>
+
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={solarCustomerSplitChartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+                    <XAxis
+                      dataKey="netType"
+                      tick={{ fontSize: 11 }}
+                      interval={0}
+                      tickMargin={8}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(v) => formatInteger(Number(v))}
+                      width={44}
+                    />
+                    <Tooltip
+                      formatter={(value: any, name: any) => [formatInteger(Number(value) || 0), String(name)]}
+                      labelStyle={{ fontWeight: 600 }}
+                    />
+                    <Legend />
+                    <Bar dataKey="ordinary" name="Ordinary" fill="var(--ceb-maroon)" radius={[6, 6, 0, 0]}>
+                      <LabelList dataKey="ordinary" position="top" formatter={(v: any) => formatInteger(Number(v) || 0)} />
+                    </Bar>
+                    <Bar dataKey="bulk" name="Bulk" fill="var(--ceb-gold)" radius={[6, 6, 0, 0]}>
+                      <LabelList dataKey="bulk" position="top" formatter={(v: any) => formatInteger(Number(v) || 0)} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
@@ -695,6 +742,18 @@ const Home: React.FC = () => {
                 <button className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
                   View Solar Capacity Graph
                 </button>
+              </div>
+            </div>
+
+            {/* Profit Margin */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="text-center">
+                <p className="text-sm text-gray-500 mb-2">Profit Margin</p>
+                <p className="text-4xl font-bold text-gray-900 mb-2">15.34%</p>
+                <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+                  <div className="bg-green-500 h-3 rounded-full" style={{ width: '15.34%' }}></div>
+                </div>
+                <p className="text-sm text-gray-600">Sales Target Achievement: <span className="font-semibold text-[color:var(--ceb-maroon)]">52.21%</span></p>
               </div>
             </div>
             
