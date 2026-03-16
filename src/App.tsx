@@ -11,12 +11,22 @@ import ReportRoutes from "./routes/ReportRoutes";
 import CostCenterTrial from "./mainTopics/TrialBalance/CostCenterTrial";
 // import SelectCostCenterTrial from "./mainTopics/TrialBalance/SelectCostCeneterTrial";
 import Home from "./pages/Home";
+import UserRoles from "./mainTopics/Admin/RepRoles/userroles";
 
 function App() {
   return (
     <>
       <Routes>
         <Route path="/" element={<LoginPage />} />
+
+        <Route
+          path="/adminhome"
+          element={
+            <Layout>
+              <UserRoles />
+            </Layout>
+          }
+        />
 
         <Route
           path="/home"

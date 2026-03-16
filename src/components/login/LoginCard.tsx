@@ -52,7 +52,7 @@ const LoginCard = () => {
 
       if (IsLogged?.Logged) {
         toast.success("Login successful!", { autoClose: 2000 });
-        navigate("/home");
+        navigate("/adminhome");
 
         const userData = await postJSON("/CBRSAPI/CBRSEPFNOLogin", {
           Username: username,
