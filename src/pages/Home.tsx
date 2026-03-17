@@ -8,6 +8,15 @@ import {
   PieChart,
   Sun,
   ArrowUp,
+  BarChart3,
+  ShoppingCart,
+  TrendingUp,
+  FileText,
+  Settings,
+  Briefcase,
+  HeadsetIcon,
+  ChevronUp,
+  Clock,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -20,6 +29,7 @@ import {
   Legend,
   LabelList,
 } from "recharts";
+import DashboardSelector from "../components/dashboard/DashboardSelector";
 
 interface CustomerCounts {
   ordinary: number;
@@ -60,6 +70,7 @@ interface MonthlyNewCustomers {
 
 const Home: React.FC = () => {
   useUser();
+  const [activeDashboard, setActiveDashboard] = useState<string>("default");
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedYear, setSelectedYear] = useState("2023");
   const [selectedMonth, setSelectedMonth] = useState("All");
@@ -371,54 +382,66 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with Filters */}
-      <div className={`bg-white border-b border-gray-200 sticky top-0 z-10 transition-all duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            </div>
-            
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                <button className="px-3 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm">All Regions</button>
-                <button className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-white/50 rounded-md">Central</button>
-                <button className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-white/50 rounded-md">West</button>
-                <button className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-white/50 rounded-md">East</button>
-              </div>
-              
-              <select 
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ceb-maroon)]"
-              >
-                <option>2024</option>
-                <option>2023</option>
-                <option>2022</option>
-              </select>
-              
-              <select 
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ceb-maroon)]"
-              >
-                <option>All Months</option>
-                <option>January</option>
-                <option>February</option>
-                <option>March</option>
-                <option>April</option>
-                <option>May</option>
-                <option>June</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Dashboard Selector Sidebar */}
+      <div className="flex">
+        <DashboardSelector 
+          activeDashboard={activeDashboard} 
+          onSelectDashboard={setActiveDashboard} 
+        />
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* KPI Cards - Top Row */}
-        <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 transition-all duration-1000 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        {/* Main Content Area */}
+        <div className="flex-1">
+          {/* Default Dashboard Content */}
+          {activeDashboard === "default" && (
+            <>
+              {/* Header with Filters */}
+              <div className={`bg-white border-b border-gray-200 sticky top-0 z-10 transition-all duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="max-w-7xl mx-auto px-4 py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                    </div>
+                    
+                    {/* Filter Tabs */}
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                        <button className="px-3 py-1.5 text-sm font-medium rounded-md bg-white shadow-sm">All Regions</button>
+                        <button className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-white/50 rounded-md">Central</button>
+                        <button className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-white/50 rounded-md">West</button>
+                        <button className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-white/50 rounded-md">East</button>
+                      </div>
+                      
+                      <select 
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ceb-maroon)]"
+                      >
+                        <option>2024</option>
+                        <option>2023</option>
+                        <option>2022</option>
+                      </select>
+                      
+                      <select 
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ceb-maroon)]"
+                      >
+                        <option>All Months</option>
+                        <option>January</option>
+                        <option>February</option>
+                        <option>March</option>
+                        <option>April</option>
+                        <option>May</option>
+                        <option>June</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="max-w-7xl mx-auto px-4 py-6">
+                {/* KPI Cards - Top Row */}
+                <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 transition-all duration-1000 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -903,6 +926,313 @@ useEffect(() => {
             </div>
             
           </div>
+        </div>
+              </div>
+            </>
+          )}
+
+          {/* Analytics Dashboard */}
+          {activeDashboard === "analytics" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Analytics Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+15.3%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Traffic</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">124,567</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+8.2%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Conversions</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">8,945</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <DollarSign className="w-5 h-5 text-green-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+22.1%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Revenue</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">LKR 2.5M</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CRM Dashboard */}
+          {activeDashboard === "crm" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">CRM Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <Users className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+12.5%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Total Leads</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">3,456</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Target className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+5.8%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Conversion Rate</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">28.5%</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Briefcase className="w-5 h-5 text-green-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+18.3%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Deals Closed</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">245</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* E-commerce Dashboard */}
+          {activeDashboard === "ecommerce" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">E-Commerce Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <ShoppingCart className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+9.2%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Orders</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">2,845</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <DollarSign className="w-5 h-5 text-green-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+14.7%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Revenue</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">LKR 8.2M</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <Target className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">-2.3%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Avg Order Value</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">LKR 2,885</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+11.5%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Cart Recovery</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">42.3%</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* LMS Dashboard */}
+          {activeDashboard === "lms" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">LMS Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Users className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">New</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Active Students</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">1,234</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">New</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Courses</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">47</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-green-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">New</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Completion Rate</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">73.4%</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Management Dashboard */}
+          {activeDashboard === "management" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Management Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Briefcase className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+7.2%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Active Projects</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">12</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <Target className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+5.1%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Tasks Completed</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">342</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Users className="w-5 h-5 text-green-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+3.5%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Team Members</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">28</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SaaS Dashboard */}
+          {activeDashboard === "saas" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">SaaS Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Users className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+8.3%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Active Users</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">5,234</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <DollarSign className="w-5 h-5 text-green-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+12.7%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">MRR</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">LKR 4.5M</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+4.2%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Churn Rate</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">2.3%</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <Target className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+6.8%</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">LTV</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">LKR 18.5K</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Support Desk Dashboard */}
+          {activeDashboard === "support" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Support Desk Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <HeadsetIcon className="w-5 h-5 text-red-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">New</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Open Tickets</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">127</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">New</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Avg Response Time</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">2.4h</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-green-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">New</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Resolution Rate</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">87.5%</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <Users className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">New</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-500">Customer Satisfaction</h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">4.7/5</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
