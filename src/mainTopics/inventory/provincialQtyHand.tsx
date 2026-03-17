@@ -268,7 +268,7 @@ const ProvincialQtyHand: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // ── Print PDF ──
+ // ── Print PDF ──
   const printPDF = () => {
     if (!crossRows.length) return;
     const win = window.open("", "_blank");
@@ -276,70 +276,145 @@ const ProvincialQtyHand: React.FC = () => {
 
     let areaHeaderHTML = "";
     areaGroups.forEach((ag) => {
-      areaHeaderHTML += `<th colspan="${ag.depts.length}" style="background:#d0d0d0;border:1px solid #999;text-align:center;font-size:9px;font-weight:bold;padding:3px;">${ag.area}</th>`;
+      areaHeaderHTML += `<th colspan="${ag.depts.length}" style="background:#c0c0c0;border:1px solid #888;text-align:center;font-weight:bold;padding:3px 4px;">${ag.area}</th>`;
     });
 
     let deptHeaderHTML = "";
     areaGroups.forEach((ag) => {
       ag.depts.forEach((d) => {
-        deptHeaderHTML += `<th style="background:#e8e8e8;border:1px solid #999;text-align:center;font-size:8px;padding:3px;min-width:60px;white-space:normal;word-wrap:break-word;">${d.fullLabel}</th>`;
+        deptHeaderHTML += `<th style="background:#e4e4e4;border:1px solid #888;text-align:center;padding:3px 4px;white-space:normal;word-wrap:break-word;">${d.fullLabel}</th>`;
       });
     });
 
     let bodyHTML = "";
-    crossRows.forEach((row) => {
-      bodyHTML += `<tr>
-        <td style="border:1px solid #ccc;font-size:9px;padding:2px 4px;font-family:monospace;">${row.matCd}</td>
-        <td style="border:1px solid #ccc;font-size:9px;padding:2px 4px;">${row.matNm}</td>
-        <td style="border:1px solid #ccc;font-size:9px;padding:2px 4px;text-align:center;">${row.uomCd}</td>`;
+    crossRows.forEach((row, idx) => {
+      const rowBg = idx % 2 === 0 ? "#ffffff" : "#f5f5f5";
+      bodyHTML += `<tr style="background:${rowBg};">
+        <td style="border:1px solid #ccc;padding:3px 4px;font-family:monospace;white-space:nowrap;">${row.matCd}</td>
+        <td style="border:1px solid #ccc;padding:3px 4px;white-space:nowrap;">${row.matNm}</td>
+        <td style="border:1px solid #ccc;padding:3px 4px;text-align:center;white-space:nowrap;">${row.uomCd}</td>`;
       allDepts.forEach((d) => {
         const v = row.byDept[d.fullLabel] ?? 0;
-        bodyHTML += `<td style="border:1px solid #ccc;font-size:9px;padding:2px 4px;text-align:right;font-family:monospace;">${
-          v === 0 ? "0.00" : fmt(v)
-        }</td>`;
+        bodyHTML += `<td style="border:1px solid #ccc;padding:3px 5px;text-align:right;font-family:monospace;white-space:nowrap;">${v === 0 ? "-" : fmt(v)}</td>`;
       });
-      bodyHTML += `<td style="border:1px solid #ccc;font-size:9px;padding:2px 4px;text-align:right;font-family:monospace;font-weight:bold;">${fmt(
-        row.total
-      )}</td></tr>`;
+      bodyHTML += `<td style="border:1px solid #ccc;padding:3px 5px;text-align:right;font-family:monospace;font-weight:bold;white-space:nowrap;background:#ececec;">${fmt(row.total)}</td></tr>`;
     });
 
-    let totalRowHTML = `<tr style="background:#f0f0f0;font-weight:bold;">
-      <td colspan="3" style="border:1px solid #999;font-size:9px;padding:3px 4px;text-align:right;">TOTAL</td>`;
+    let totalRowHTML = `<tr style="background:#d8d8d8;font-weight:bold;">
+      <td colspan="3" style="border:1px solid #888;padding:3px 4px;text-align:right;letter-spacing:1px;">TOTAL</td>`;
     allDepts.forEach((d) => {
-      totalRowHTML += `<td style="border:1px solid #999;font-size:9px;padding:3px 4px;text-align:right;font-family:monospace;">${fmt(
-        colTotals[d.fullLabel] ?? 0
-      )}</td>`;
+      totalRowHTML += `<td style="border:1px solid #888;padding:3px 5px;text-align:right;font-family:monospace;white-space:nowrap;">${fmt(colTotals[d.fullLabel] ?? 0)}</td>`;
     });
-    totalRowHTML += `<td style="border:1px solid #999;font-size:9px;padding:3px 4px;text-align:right;font-family:monospace;">${fmt(grandTotal)}</td></tr>`;
+    totalRowHTML += `<td style="border:1px solid #888;padding:3px 5px;text-align:right;font-family:monospace;font-weight:bold;white-space:nowrap;">${fmt(grandTotal)}</td></tr>`;
+
+    // A3 landscape printable width ≈ 410mm (420mm - 2×5mm margins)
+    // Each col gets natural content width via table-layout:auto + width:100%
+    // zoom scales the whole page down ONLY if needed so nothing is ever clipped
+    const A3_WIDTH_MM = 410;
+    // Rough estimate: fixed cols ~130mm + each dept col ~22mm + total col ~22mm
+    const estimatedMm = 130 + allDepts.length * 22 + 22;
+    const zoom = estimatedMm > A3_WIDTH_MM
+      ? (A3_WIDTH_MM / estimatedMm)
+      : 1;
+
+    // Derive font size from zoom so text stays as large as possible
+    const fontSize = Math.max(7, Math.round(11 * zoom));
+    const titleSize = Math.max(9, Math.round(15 * zoom));
+    const subSize   = Math.max(8, Math.round(12 * zoom));
 
     const html = `<!DOCTYPE html><html><head>
+      <meta charset="utf-8">
       <title>Stock Report - ${regionName}</title>
       <style>
-        body{font-family:Arial,sans-serif;margin:10mm;font-size:9px;color:#000;}
-        .title{text-align:center;font-size:12px;font-weight:bold;margin-bottom:2px;text-transform:uppercase;}
-        .sub{text-align:center;font-size:10px;margin-bottom:8px;}
-        table{width:100%;border-collapse:collapse;table-layout:auto;}
-        @media print{body{margin:5mm;}tr{page-break-inside:avoid;}}
-      </style></head><body>
-      <div class="title">CEYLON ELECTRICITY BOARD</div>
-      <div class="sub">Stock Report - ${regionName} As at ${today}${
-      materialSelectionType === "specific" && materialCode ? ` / Material Code - ${materialCode}` : ""
-    }</div>
+        @page {
+          size: A3 landscape;
+          margin: 5mm;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+          font-family: Arial, sans-serif;
+          font-size: ${fontSize}px;
+          color: #000;
+          width: 100%;
+        }
+        .title {
+          text-align: center;
+          font-size: ${titleSize}px;
+          font-weight: bold;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 2px;
+        }
+        .sub {
+          text-align: center;
+          font-size: ${subSize}px;
+          color: #333;
+          margin-bottom: 2px;
+        }
+        .meta {
+          text-align: center;
+          font-size: ${Math.max(7, fontSize - 1)}px;
+          color: #555;
+          margin-bottom: 5px;
+        }
+        /*
+         * KEY: width:100% + table-layout:auto lets browser size every column
+         * to its content naturally. zoom on <html> then shrinks the whole
+         * render viewport so the table never overflows the page edge.
+         * white-space:nowrap on every cell ensures no letter is ever wrapped
+         * or hidden — the table simply gets wider and zoom handles it.
+         */
+        html {
+          zoom: ${zoom.toFixed(6)};
+        }
+        table {
+          border-collapse: collapse;
+          width: 100%;
+          table-layout: auto;
+        }
+        th, td {
+          font-size: ${fontSize}px;
+        }
+        thead { display: table-header-group; }
+        tr { page-break-inside: avoid; }
+        .footer {
+          margin-top: 5px;
+          font-size: ${Math.max(6, fontSize - 2)}px;
+          text-align: center;
+          color: #777;
+        }
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      </style>
+    </head><body>
+      <div class="sub">Provincial Quantity On Hand &mdash; Stock Report &mdash; ${regionName}</div>
+      <div class="meta">
+        As at ${today}
+        ${materialSelectionType === "specific" && materialCode
+          ? `&nbsp;&bull;&nbsp; Material Code: <strong>${materialCode}</strong>`
+          : ""}
+        &nbsp;&bull;&nbsp; ${crossRows.length} materials &nbsp;&bull;&nbsp; ${allDepts.length} departments
+      </div>
+
       <table>
         <thead>
           <tr>
-            <th rowspan="2" style="background:#8B0000;color:#fff;border:1px solid #999;font-size:9px;padding:3px;text-align:left;">Mat_cd</th>
-            <th rowspan="2" style="background:#8B0000;color:#fff;border:1px solid #999;font-size:9px;padding:3px;text-align:left;">Material Name</th>
-            <th rowspan="2" style="background:#8B0000;color:#fff;border:1px solid #999;font-size:9px;padding:3px;text-align:center;">Unit of<br/>Measure</th>
+            <th rowspan="2" style="background:#8B0000;color:#fff;border:1px solid #6B0000;text-align:left;padding:4px 6px;white-space:nowrap;">Mat_cd</th>
+            <th rowspan="2" style="background:#8B0000;color:#fff;border:1px solid #6B0000;text-align:left;padding:4px 6px;white-space:nowrap;">Material Name</th>
+            <th rowspan="2" style="background:#8B0000;color:#fff;border:1px solid #6B0000;text-align:center;padding:4px 6px;white-space:nowrap;">UOM</th>
             ${areaHeaderHTML}
-            <th rowspan="2" style="background:#8B0000;color:#fff;border:1px solid #999;font-size:9px;padding:3px;text-align:center;">${regionName}<br/>Total</th>
+            <th rowspan="2" style="background:#8B0000;color:#fff;border:1px solid #6B0000;text-align:center;padding:4px 6px;white-space:nowrap;">${regionName} Total</th>
           </tr>
           <tr>${deptHeaderHTML}</tr>
         </thead>
         <tbody>${bodyHTML}${totalRowHTML}</tbody>
       </table>
-      <div style="margin-top:10px;font-size:8px;text-align:center;color:#666;">Generated: ${new Date().toLocaleString()} | CEB Inventory System</div>
-      </body></html>`;
+
+      <div class="footer">
+        Generated: ${new Date().toLocaleString()} &nbsp;|&nbsp;
+      </div>
+    </body></html>`;
 
     win.document.write(html);
     win.document.close();
@@ -348,7 +423,6 @@ const ProvincialQtyHand: React.FC = () => {
       win.close();
     };
   };
-
   // ─────────────────────────────────────────────────────────────────────────────
   // Material Selection Modal
   // ─────────────────────────────────────────────────────────────────────────────
@@ -511,15 +585,13 @@ const ProvincialQtyHand: React.FC = () => {
           <div className="p-5 border-b">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <h2 className="text-base font-bold text-gray-800">
-                  CEYLON ELECTRICITY BOARD — INVENTORY REPORT
-                </h2>
-                <h3 className="text-sm font-semibold text-gray-700">
+               
+                <h2 className="text-sm font-semibold text-gray-700">
                   COMPANY: {selectedProvince.ProvinceId} / {selectedProvince.ProvinceName}
                   {materialSelectionType === "specific" && materialCode && (
                     <span className="ml-2 text-blue-600">/ MATERIAL CODE - {materialCode}</span>
                   )}
-                </h3>
+                </h2>
                 <h4 className={`text-sm ${maroon} font-medium`}>
                   PROVINCIAL QUANTITY ON HAND — STOCK REPORT — {today}
                 </h4>
