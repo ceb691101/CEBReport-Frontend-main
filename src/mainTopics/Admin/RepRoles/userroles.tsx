@@ -1,13 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import {
-	ShieldCheck,
-	RefreshCw,
-	Users,
-	UserCog,
-	Building2,
-	FolderTree,
-} from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 type RoleType = "admin" | "user";
 
@@ -16,6 +9,10 @@ type RoleRecord = {
 	roleId: string;
 	roleName: string;
 	company: string;
+	motherCompany: string;
+	userGroup: string;
+	costCentre: string;
+	costCentres: string[];
 	userType: string;
 };
 
@@ -27,7 +24,7 @@ type CreateRoleForm = {
 	businessCompany: string;
 	userGroup: string;
 	motherCompany: string;
-	costCentre: string;
+	costCentres: string[];
 };
 
 type MotherCompanyOption = {
@@ -42,7 +39,11 @@ type CostCentreOption = {
 
 const businessCompanyOptions = ["EDL", "NTNSP", "EGL", "NSO"];
 const userGroupOptions = ["DGM", "AGM", "IT"];
-const roleTypeOptions: RoleType[] = ["user", "admin"];
+const roleTypeOptions: Array<{ label: string; value: string; tab: RoleType }> = [
+	{ label: "USER", value: "USER", tab: "user" },
+	{ label: "ADMINISTRATOR", value: "ADMINISTRATOR", tab: "admin" },
+];
+const rolesPerPage = 10;
 
 const initialForm: CreateRoleForm = {
 	name: "",
@@ -52,7 +53,7 @@ const initialForm: CreateRoleForm = {
 	businessCompany: "EDL",
 	userGroup: "DGM",
 	motherCompany: "",
-	costCentre: "",
+	costCentres: [],
 };
 
 const endpointMap: Record<RoleType, string> = {
@@ -66,11 +67,12 @@ const fieldBaseClass =
 const UserRoles = () => {
 	const [activeTab, setActiveTab] = useState<RoleType>("user");
 	const [roles, setRoles] = useState<RoleRecord[]>([]);
-	const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+	const [selectedEpfNo, setSelectedEpfNo] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isCompaniesLoading, setIsCompaniesLoading] = useState(false);
 	const [isCostCentresLoading, setIsCostCentresLoading] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
 	const [motherCompanies, setMotherCompanies] = useState<MotherCompanyOption[]>([]);
 	const [costCentres, setCostCentres] = useState<CostCentreOption[]>([]);
 	const [form, setForm] = useState<CreateRoleForm>(initialForm);
@@ -96,7 +98,7 @@ const UserRoles = () => {
 			setMotherCompanies(nextCompanies);
 		} catch (error) {
 			const message =
-				error instanceof Error ? error.message : "Failed to load mother companies.";
+				error instanceof Error ? error.message : "Failed to load companies.";
 			toast.error(message);
 			setMotherCompanies([]);
 		} finally {
@@ -157,13 +159,23 @@ const UserRoles = () => {
 						roleId: item?.RoleId ?? "",
 						roleName: item?.RoleName ?? "",
 						company: item?.Company ?? "",
+						motherCompany: item?.MotherCompany ?? "",
+						userGroup: item?.UserGroup ?? "",
+						costCentre: item?.CostCentre ?? "",
+						costCentres: Array.isArray(item?.CostCentres)
+							? item.CostCentres.filter((value: string) => value)
+							: String(item?.CostCentre ?? "")
+								.split(",")
+								.map((value: string) => value.trim())
+								.filter((value: string) => value.length > 0),
 						userType: item?.UserType ?? "",
 					}))
 				: [];
 
 			setRoles(nextRoles);
-			setSelectedRoleId((current) =>
-				current && nextRoles.some((role: RoleRecord) => role.roleId === current)
+			setCurrentPage(1);
+			setSelectedEpfNo((current) =>
+				current && nextRoles.some((role: RoleRecord) => role.epfNo === current)
 					? current
 					: null
 			);
@@ -172,7 +184,7 @@ const UserRoles = () => {
 				error instanceof Error ? error.message : "Failed to load roles.";
 			toast.error(message);
 			setRoles([]);
-			setSelectedRoleId(null);
+			setSelectedEpfNo(null);
 		} finally {
 			setIsLoading(false);
 		}
@@ -197,7 +209,78 @@ const UserRoles = () => {
 	const handleReset = () => {
 		setForm(initialForm);
 		setCostCentres([]);
-		setSelectedRoleId(null);
+		setSelectedEpfNo(null);
+	};
+
+	const handleCostCentreToggle = (costCentreId: string) => {
+		setForm((current) => ({
+			...current,
+			costCentres: current.costCentres.includes(costCentreId)
+				? current.costCentres.filter((value) => value !== costCentreId)
+				: [...current.costCentres, costCentreId],
+		}));
+	};
+
+	const selectAllCostCentres = () => {
+		setForm((current) => ({
+			...current,
+			costCentres: costCentres.map((item) => item.costCentreId),
+		}));
+	};
+
+	const invertCostCentreSelection = () => {
+		setForm((current) => ({
+			...current,
+			costCentres: costCentres
+				.map((item) => item.costCentreId)
+				.filter((costCentreId) => !current.costCentres.includes(costCentreId)),
+		}));
+	};
+
+	const clearCostCentreSelection = () => {
+		setForm((current) => ({
+			...current,
+			costCentres: [],
+		}));
+	};
+
+	const buildRolePayload = (originalEpfNo?: string) => ({
+		originalEpfNo: originalEpfNo?.trim() ?? "",
+		epfNo: form.epfNo.trim(),
+		roleId: form.roleId.trim(),
+		roleName: form.name.trim(),
+		userType: form.userType.trim(),
+		company: form.motherCompany.trim(),
+		motherCompany: form.businessCompany.trim(),
+		userGroup: form.userGroup.trim(),
+		costCentre: form.costCentres[0] ?? "",
+		costCentres: form.costCentres,
+		lvlNo: 1,
+	});
+
+	const handleRoleSelect = (role: RoleRecord) => {
+		setSelectedEpfNo(role.epfNo);
+		
+		// Denormalize userType: backend stores "ADMIN" but form needs "ADMINISTRATOR"
+		const userTypeForForm = role.userType === "ADMIN" ? "ADMINISTRATOR" : role.userType;
+		
+		setForm({
+			name: role.roleName,
+			epfNo: role.epfNo,
+			roleId: role.roleId,
+			userType: userTypeForForm,
+			businessCompany: role.motherCompany,
+			userGroup: role.userGroup || initialForm.userGroup,
+			motherCompany: role.company,
+			costCentres: role.costCentres,
+		});
+		
+		// Explicitly load cost centres for the selected company
+		if (role.company) {
+			loadCostCentres(role.company);
+		}
+		
+		setActiveTab(userTypeForForm.trim().toUpperCase().startsWith("USER") ? "user" : "admin");
 	};
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -208,16 +291,7 @@ const UserRoles = () => {
 			const response = await fetch("/roleadminapi/api/roleinfo", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					epfNo: form.epfNo.trim(),
-					roleId: form.roleId.trim(),
-					roleName: form.name.trim(),
-					userType: form.userType.trim(),
-					company: form.motherCompany.trim(),
-					userGroup: form.userGroup.trim(),
-					costCentre: form.costCentre.trim(),
-					lvlNo: 0,
-				}),
+				body: JSON.stringify(buildRolePayload()),
 			});
 
 			const payload = await response.json();
@@ -242,61 +316,87 @@ const UserRoles = () => {
 		}
 	};
 
-	const selectedRole = roles.find((role) => role.roleId === selectedRoleId) ?? null;
+	const handleEdit = async () => {
+		if (!selectedRole) {
+			return;
+		}
+
+		setIsSubmitting(true);
+
+		try {
+			const response = await fetch(
+				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}`,
+				{
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(buildRolePayload(selectedRole.epfNo)),
+				}
+			);
+			const payload = await response.json();
+
+			if (payload?.errorMessage) {
+				throw new Error(payload.errorMessage);
+			}
+
+			toast.success(payload?.data?.message ?? "Role updated successfully.");
+			await loadRoles(activeTab);
+			setSelectedEpfNo(form.epfNo.trim());
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Failed to update role.";
+			toast.error(message);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handleDelete = async () => {
+		if (!selectedRole) {
+			return;
+		}
+
+		setIsSubmitting(true);
+
+		try {
+			const response = await fetch(
+				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}`,
+				{ method: "DELETE" }
+			);
+			const payload = await response.json();
+
+			if (payload?.errorMessage) {
+				throw new Error(payload.errorMessage);
+			}
+
+			toast.success(payload?.data?.message ?? "Role deleted successfully.");
+			handleReset();
+			await loadRoles(activeTab);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Failed to delete role.";
+			toast.error(message);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const selectedRole = roles.find((role) => role.epfNo === selectedEpfNo) ?? null;
+	const totalPages = Math.max(1, Math.ceil(roles.length / rolesPerPage));
+	const paginatedRoles = roles.slice(
+		(currentPage - 1) * rolesPerPage,
+		currentPage * rolesPerPage
+	);
+
+	const changePage = (page: number) => {
+		if (page < 1 || page > totalPages) {
+			return;
+		}
+		setCurrentPage(page);
+	};
 
 	return (
 		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
 			<div className="mx-auto max-w-7xl space-y-6">
-				<section className="overflow-hidden rounded-[28px] border border-stone-200 bg-white/85 shadow-[0_20px_70px_rgba(70,40,20,0.08)] backdrop-blur">
-					<div className="grid gap-6 px-6 py-8 md:grid-cols-[1.4fr_0.8fr] md:px-8">
-						<div>
-							<div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#7A0000]/8 px-4 py-2 text-sm font-semibold text-[#7A0000]">
-								<ShieldCheck className="h-4 w-4" />
-								User Role Administration
-							</div>
-							<h1 className="max-w-2xl font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
-								Elegant role setup for your admin workspace.
-							</h1>
-							<p className="mt-4 max-w-2xl text-sm leading-6 text-stone-600 md:text-base">
-								Build roles with a structured flow: choose user type, group, company,
-								mother company, and the cost centre list loaded for that company.
-							</p>
-						</div>
-
-						<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-1">
-							<div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-								<div className="flex items-center gap-3">
-									<div className="rounded-xl bg-[#7A0000] p-3 text-white">
-										<UserCog className="h-5 w-5" />
-									</div>
-									<div>
-										<div className="text-xs uppercase tracking-[0.2em] text-stone-500">
-											Active Role View
-										</div>
-										<div className="text-lg font-semibold text-stone-900">
-											{activeTab === "admin" ? "Admin Roles" : "User Roles"}
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-								<div className="flex items-center gap-3">
-									<div className="rounded-xl bg-stone-900 p-3 text-white">
-										<Users className="h-5 w-5" />
-									</div>
-									<div>
-										<div className="text-xs uppercase tracking-[0.2em] text-stone-500">
-											Loaded Role Count
-										</div>
-										<div className="text-lg font-semibold text-stone-900">{roles.length}</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</section>
-
 				<section className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
 					<form
 						onSubmit={handleSubmit}
@@ -305,9 +405,6 @@ const UserRoles = () => {
 						<div className="flex items-start justify-between gap-4">
 							<div>
 								<h2 className="text-2xl font-semibold text-stone-900">User Role Form</h2>
-								<p className="mt-2 text-sm text-stone-600">
-									Enter the role details in sequence and submit a single backend request.
-								</p>
 							</div>
 							<button
 								type="button"
@@ -320,7 +417,7 @@ const UserRoles = () => {
 						</div>
 
 						<div className="mt-6 space-y-6">
-							<div className="grid gap-4 md:grid-cols-2">
+							<div className="grid gap-4">
 								<Input label="Name" value={form.name} onChange={(value) => handleFieldChange("name", value)} />
 								<Input label="Role ID" value={form.roleId} onChange={(value) => handleFieldChange("roleId", value)} />
 								<Input label="EPF Number" value={form.epfNo} onChange={(value) => handleFieldChange("epfNo", value)} />
@@ -328,77 +425,83 @@ const UserRoles = () => {
 
 							<SelectionGroup
 								label="User Type"
+								groupName="userType"
 								options={roleTypeOptions.map((option) => ({
-									label: option === "user" ? "USER" : "ADMIN",
-									value: option.toUpperCase(),
+									label: option.label,
+									value: option.value,
 								}))}
 								value={form.userType}
 								onChange={(value) => {
 									handleFieldChange("userType", value);
-									setActiveTab(value === "ADMIN" ? "admin" : "user");
+									setActiveTab(value === "USER" ? "user" : "admin");
 								}}
 							/>
 
 							<SelectionGroup
 								label="User Group"
+								groupName="userGroup"
 								options={userGroupOptions.map((option) => ({ label: option, value: option }))}
 								value={form.userGroup}
 								onChange={(value) => handleFieldChange("userGroup", value)}
 							/>
 
 							<SelectionGroup
-								label="Company"
+								label="Mother Company"
+								groupName="company"
 								options={businessCompanyOptions.map((option) => ({ label: option, value: option }))}
 								value={form.businessCompany}
 								onChange={(value) => handleFieldChange("businessCompany", value)}
 							/>
 
-							<div className="grid gap-4 md:grid-cols-[1fr_auto]">
+							<div className="grid gap-4 md:grid-cols-[1fr]">
 								<Select
-									label="Mother Company"
+									label="Company"
 									value={form.motherCompany}
 									onChange={(value) => {
 										handleFieldChange("motherCompany", value);
-										handleFieldChange("costCentre", "");
+										clearCostCentreSelection();
 									}}
 									options={motherCompanies.map((company) => `${company.companyId} - ${company.companyName}`)}
 									optionValues={motherCompanies.map((company) => company.companyId)}
-									placeholder={isCompaniesLoading ? "Loading companies..." : "Select mother company"}
+									placeholder={isCompaniesLoading ? "Loading companies..." : "Select company"}
 								/>
-								<div className="flex items-end rounded-2xl border border-[#7A0000]/10 bg-[#7A0000]/5 px-4 py-3 text-sm text-stone-700">
-									<div className="flex items-center gap-2">
-										<Building2 className="h-4 w-4 text-[#7A0000]" />
-										{form.motherCompany || "No company selected"}
-									</div>
-								</div>
 							</div>
 
 							<div>
-								<div className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
-									<FolderTree className="h-4 w-4 text-[#7A0000]" />
-									Cost Center
-								</div>
+								<div className="mb-2 text-sm font-medium text-stone-700">Cost Center</div>
 								<div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
 									{isCostCentresLoading ? (
 										<div className="text-sm text-stone-500">Loading cost centres...</div>
 									) : costCentres.length === 0 ? (
 										<div className="text-sm text-stone-500">
 											{form.motherCompany
-												? "No cost centres found for the selected mother company."
-												: "Select a mother company to load cost centres."}
+												? "No cost centres found for the selected company."
+												: "Select a company to load cost centres."}
 										</div>
 									) : (
-										<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-											{costCentres.map((item) => (
-												<TickCard
-													key={item.costCentreId}
-													label={item.costCentreId}
-													subLabel={item.costCentreName}
-													selected={form.costCentre === item.costCentreId}
-													onClick={() => handleFieldChange("costCentre", item.costCentreId)}
-												/>
-											))}
-										</div>
+										<>
+											<div className="mb-3 flex flex-wrap gap-2">
+												<button type="button" onClick={selectAllCostCentres} className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-700 hover:bg-stone-100">select all</button>
+												<button type="button" onClick={invertCostCentreSelection} className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-700 hover:bg-stone-100">invert selection</button>
+												<button type="button" onClick={clearCostCentreSelection} className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-700 hover:bg-stone-100">select none</button>
+												<button type="button" onClick={clearCostCentreSelection} className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-700 hover:bg-stone-100">reset</button>
+											</div>
+											<ul className="space-y-2">
+												{costCentres.map((item) => (
+													<li key={item.costCentreId} className="flex items-center gap-2 text-sm text-stone-800">
+														<input
+															type="checkbox"
+															checked={form.costCentres.includes(item.costCentreId)}
+															onChange={() => handleCostCentreToggle(item.costCentreId)}
+															className="h-4 w-4 rounded border-stone-400 text-[#7A0000] focus:ring-[#7A0000]"
+														/>
+														<span>
+															{item.costCentreId} : {item.costCentreName}
+														</span>
+													</li>
+												))}
+											</ul>
+										</>
 									)}
 								</div>
 							</div>
@@ -414,16 +517,16 @@ const UserRoles = () => {
 							</button>
 							<button
 								type="button"
-								disabled={!selectedRole}
-								onClick={() => toast.info("Edit backend endpoint is not implemented yet.")}
+								disabled={!selectedRole || isSubmitting}
+								onClick={handleEdit}
 								className="rounded-lg bg-[#7A0000]/85 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								EDIT
 							</button>
 							<button
 								type="button"
-								disabled={!selectedRole}
-								onClick={() => toast.info("Delete backend endpoint is not implemented yet.")}
+								disabled={!selectedRole || isSubmitting}
+								onClick={handleDelete}
 								className="rounded-lg bg-stone-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								DELETE
@@ -442,9 +545,6 @@ const UserRoles = () => {
 						<div className="flex flex-wrap items-center justify-between gap-4">
 							<div>
 								<h2 className="text-2xl font-semibold text-stone-900">Role Directory</h2>
-								<p className="mt-2 text-sm text-stone-600">
-									Switch between user and admin roles, then review the roles already configured.
-								</p>
 							</div>
 
 							<div className="inline-flex rounded-full border border-stone-200 bg-stone-100 p-1">
@@ -487,13 +587,13 @@ const UserRoles = () => {
 												</td>
 											</tr>
 										) : (
-											roles.map((role) => {
-												const isSelected = selectedRoleId === role.roleId;
+											paginatedRoles.map((role) => {
+											const isSelected = selectedEpfNo === role.epfNo;
 
-												return (
-													<tr
-														key={`${role.roleId}-${role.epfNo}`}
-														onClick={() => setSelectedRoleId(role.roleId)}
+											return (
+												<tr
+													key={`${role.epfNo}-${role.roleId}`}
+																onClick={() => handleRoleSelect(role)}
 														className={`cursor-pointer transition ${
 															isSelected ? "bg-[#7A0000]/8" : "hover:bg-stone-50"
 														}`}
@@ -511,6 +611,32 @@ const UserRoles = () => {
 								</table>
 							</div>
 						</div>
+
+						{roles.length > 0 && (
+							<div className="mt-4 flex items-center justify-between gap-3 text-sm">
+								<div className="text-stone-600">
+									Page {currentPage} of {totalPages}
+								</div>
+								<div className="flex items-center gap-2">
+									<button
+										type="button"
+										onClick={() => changePage(currentPage - 1)}
+										disabled={currentPage === 1}
+										className="rounded-md border border-stone-300 px-3 py-1.5 text-stone-700 disabled:cursor-not-allowed disabled:opacity-40"
+									>
+										Previous
+									</button>
+									<button
+										type="button"
+										onClick={() => changePage(currentPage + 1)}
+										disabled={currentPage === totalPages}
+										className="rounded-md border border-stone-300 px-3 py-1.5 text-stone-700 disabled:cursor-not-allowed disabled:opacity-40"
+									>
+										Next
+									</button>
+								</div>
+							</div>
+						)}
 
 						<div className="mt-5 rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-4 text-sm text-stone-600">
 							{selectedRole ? (
@@ -595,72 +721,41 @@ const Select = ({
 
 const SelectionGroup = ({
 	label,
+	groupName,
 	options,
 	value,
 	onChange,
 }: {
 	label: string;
+	groupName: string;
 	options: Array<{ label: string; value: string }>;
 	value: string;
 	onChange: (value: string) => void;
 }) => (
 	<div>
 		<div className="mb-2 text-sm font-medium text-stone-700">{label}</div>
-		<div className="flex flex-wrap gap-2">
+		<div className="flex flex-wrap items-center gap-5 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
 			{options.map((option) => {
 				const isActive = option.value === value;
 
 				return (
-					<button
+					<label
 						key={option.value}
-						type="button"
-						onClick={() => onChange(option.value)}
-						className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-							isActive
-								? "border-[#7A0000] bg-[#7A0000] text-white shadow"
-								: "border-stone-300 bg-white text-stone-700 hover:border-[#7A0000]/40 hover:text-[#7A0000]"
-						}`}
+						className="inline-flex cursor-pointer items-center gap-2 text-sm text-stone-800"
 					>
-						{option.label}
-					</button>
+						<input
+							type="radio"
+							name={groupName}
+							checked={isActive}
+							onChange={() => onChange(option.value)}
+							className="h-4 w-4 border-stone-400 text-[#7A0000] focus:ring-[#7A0000]"
+						/>
+						<span>{option.label}</span>
+					</label>
 				);
 			})}
 		</div>
 	</div>
-);
-
-const TickCard = ({
-	label,
-	subLabel,
-	selected,
-	onClick,
-}: {
-	label: string;
-	subLabel: string;
-	selected: boolean;
-	onClick: () => void;
-}) => (
-	<button
-		type="button"
-		onClick={onClick}
-		className={`rounded-2xl border px-4 py-3 text-left transition ${
-			selected
-				? "border-[#7A0000] bg-[#7A0000]/8 shadow-sm"
-				: "border-stone-200 bg-white hover:border-[#7A0000]/30 hover:bg-[#7A0000]/5"
-		}`}
-	>
-		<div className="flex items-start gap-3">
-			<div
-				className={`mt-1 h-4 w-4 rounded-full border ${
-					selected ? "border-[#7A0000] bg-[#7A0000]" : "border-stone-300 bg-white"
-				}`}
-			/>
-			<div className="min-w-0">
-				<div className="text-sm font-semibold text-stone-900">{label}</div>
-				<div className="truncate text-xs text-stone-500">{subLabel}</div>
-			</div>
-		</div>
-	</button>
 );
 
 const TabButton = ({
