@@ -65,18 +65,29 @@ const Home: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState("All");
   const [activePieChart, setActivePieChart] = useState<string | null>(null);
   
-  const [customerCounts] = useState<CustomerCounts>({
-    ordinary: 45231,
-    bulk: 1234,
-    solar: {
-      netMetering: 567,
-      netAccounting: 234,
-      netPlus: 189,
-      netPlusPlus: 76
-    },
-    zeroConsumption: 1234
-  });
-  
+const [customerCounts, setCustomerCounts] = useState<CustomerCounts>({
+  ordinary: 0,
+  bulk: 1234,
+  solar: {
+    netMetering: 0,
+    netAccounting: 0,
+    netPlus: 0,
+    netPlusPlus: 0
+  },
+  zeroConsumption: 1234
+});
+const [bulkSolarCustomers, setBulkSolarCustomers] = useState({
+  netMetering: 0,
+  netAccounting: 0,
+  netPlus: 0,
+  netPlusPlus: 0
+});
+const [activeBillCycle, setActiveBillCycle] = useState<string>("");
+const [customerCountsLoading, setCustomerCountsLoading] = useState(true);
+const [customerCountsError, setCustomerCountsError] = useState<string | null>(null);
+const [solarLoading, setSolarLoading] = useState(true);
+const [solarError, setSolarError] = useState<string | null>(null);
+
   const [topCustomers] = useState<TopCustomer[]>([
     { name: "John Doe", consumption: 45231, type: "Bulk" },
     { name: "Jane Smith", consumption: 38456, type: "Bulk" },
@@ -128,6 +139,133 @@ const Home: React.FC = () => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+useEffect(() => {
+  const fetchOrdinaryCount = async () => {
+    setCustomerCountsLoading(true);
+    setCustomerCountsError(null);
+    try {
+      const response = await fetch(
+        `/api/dashboard/ordinary-customers-summary?billCycle=0`,
+        { headers: { Accept: "application/json" } }
+      );
+      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+      const json = await response.json();
+      const total: number = json?.data?.TotalCount ?? 0;
+      const activeCycle: string = json?.data?.BillCycle ?? "";
+      setCustomerCounts(prev => ({ ...prev, ordinary: total }));
+      setActiveBillCycle(activeCycle);
+    } catch (err: any) {
+      setCustomerCountsError(err.message || "Failed to load ordinary customer count");
+    } finally {
+      setCustomerCountsLoading(false);
+    }
+  };
+  fetchOrdinaryCount();
+}, []);
+
+// Fetch Ordinary Solar Customer Data for all net types
+useEffect(() => {
+  const fetchSolarCustomerData = async () => {
+    setSolarLoading(true);
+    setSolarError(null);
+    try {
+      // Fetch max bill cycle
+      const maxCycleResponse = await fetch(
+        `http://localhost:44381/api/dashboard/solar-ordinary-customers/billcycle/max`,
+        { headers: { Accept: "application/json" } }
+      );
+      if (!maxCycleResponse.ok) throw new Error(`Failed to fetch max bill cycle`);
+      const maxCycleJson = await maxCycleResponse.json();
+      const billCycle: string = maxCycleJson?.data?.billCycle ?? "450";
+
+      // Fetch counts for each net-type (1, 2, 3, 4)
+      const [netType1Response, netType2Response, netType3Response, netType4Response] = await Promise.all([
+        fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-1`, 
+          { headers: { Accept: "application/json" } }),
+        fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-2`, 
+          { headers: { Accept: "application/json" } }),
+        fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-3`, 
+          { headers: { Accept: "application/json" } }),
+        fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-4`, 
+          { headers: { Accept: "application/json" } })
+      ]);
+
+      if (!netType1Response.ok || !netType2Response.ok || !netType3Response.ok || !netType4Response.ok) {
+        throw new Error("Failed to fetch one or more net-type counts");
+      }
+
+      const netType1Data = await netType1Response.json();
+      const netType2Data = await netType2Response.json();
+      const netType3Data = await netType3Response.json();
+      const netType4Data = await netType4Response.json();
+
+      const netMetering = netType1Data?.data?.CustomersCount ?? 0;
+      const netAccounting = netType2Data?.data?.CustomersCount ?? 0;
+      const netPlus = netType3Data?.data?.CustomersCount ?? 0;
+      const netPlusPlus = netType4Data?.data?.CustomersCount ?? 0;
+
+      setCustomerCounts(prev => ({
+        ...prev,
+        solar: {
+          netMetering,
+          netAccounting,
+          netPlus,
+          netPlusPlus
+        }
+      }));
+    } catch (err: any) {
+      setSolarError(err.message || "Failed to load solar customer data");
+      console.error("Solar data fetch error:", err);
+    } finally {
+      setSolarLoading(false);
+    }
+  };
+  fetchSolarCustomerData();
+}, []);
+
+// Fetch Bulk Solar Customer Data for all net types
+useEffect(() => {
+  const fetchBulkSolarCustomerData = async () => {
+    try {
+      // Fetch counts for each net-type (1, 2, 3, 4)
+      const [netType1Response, netType2Response, netType3Response, netType4Response] = await Promise.all([
+        fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-1`, 
+          { headers: { Accept: "application/json" } }),
+        fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-2`, 
+          { headers: { Accept: "application/json" } }),
+        fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-3`, 
+          { headers: { Accept: "application/json" } }),
+        fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-4`, 
+          { headers: { Accept: "application/json" } })
+      ]);
+
+      if (!netType1Response.ok || !netType2Response.ok || !netType3Response.ok || !netType4Response.ok) {
+        throw new Error("Failed to fetch bulk solar net-type counts");
+      }
+
+      const netType1Data = await netType1Response.json();
+      const netType2Data = await netType2Response.json();
+      const netType3Data = await netType3Response.json();
+      const netType4Data = await netType4Response.json();
+
+      const netMetering = netType1Data?.data?.CustomersCount ?? 0;
+      const netAccounting = netType2Data?.data?.CustomersCount ?? 0;
+      const netPlus = netType3Data?.data?.CustomersCount ?? 0;
+      const netPlusPlus = netType4Data?.data?.CustomersCount ?? 0;
+
+      setBulkSolarCustomers({
+        netMetering,
+        netAccounting,
+        netPlus,
+        netPlusPlus
+      });
+    } catch (err: any) {
+      console.error("Bulk solar data fetch error:", err);
+    }
+  };
+  fetchBulkSolarCustomerData();
+}, []);
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('en-US').format(num);
@@ -198,23 +336,23 @@ const Home: React.FC = () => {
   const solarCustomerSplitChartData = [
     {
       netType: "Net Metering",
-      ordinary: Math.round(customerCounts.solar.netMetering * 0.72),
-      bulk: customerCounts.solar.netMetering - Math.round(customerCounts.solar.netMetering * 0.72),
+      ordinary: customerCounts.solar.netMetering,
+      bulk: bulkSolarCustomers.netMetering,
     },
     {
       netType: "Net Accounting",
-      ordinary: Math.round(customerCounts.solar.netAccounting * 0.68),
-      bulk: customerCounts.solar.netAccounting - Math.round(customerCounts.solar.netAccounting * 0.68),
+      ordinary: customerCounts.solar.netAccounting,
+      bulk: bulkSolarCustomers.netAccounting,
     },
     {
       netType: "Net Plus",
-      ordinary: Math.round(customerCounts.solar.netPlus * 0.64),
-      bulk: customerCounts.solar.netPlus - Math.round(customerCounts.solar.netPlus * 0.64),
+      ordinary: customerCounts.solar.netPlus,
+      bulk: bulkSolarCustomers.netPlus,
     },
     {
       netType: "Net Plus Plus",
-      ordinary: Math.round(customerCounts.solar.netPlusPlus * 0.6),
-      bulk: customerCounts.solar.netPlusPlus - Math.round(customerCounts.solar.netPlusPlus * 0.6),
+      ordinary: customerCounts.solar.netPlusPlus,
+      bulk: bulkSolarCustomers.netPlusPlus,
     },
   ];
 
@@ -712,7 +850,14 @@ const Home: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Ordinary</span>
-                  <span className="font-medium">{formatNumber(customerCounts.ordinary)}</span>
+                  {/* <span className="font-medium">{formatNumber(customerCounts.ordinary)}</span> */}
+                  <span className="font-medium">
+  {customerCountsLoading
+    ? "Loading..."
+    : customerCountsError
+    ? "Error"
+    : formatNumber(customerCounts.ordinary)}
+</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Bulk</span>
