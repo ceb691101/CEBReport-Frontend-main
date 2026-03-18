@@ -17,11 +17,21 @@ import {
   HeadsetIcon,
   ChevronUp,
   Clock,
+  AlertCircle,
+  TrendingDown,
+  Battery,
+  Plug,
+  Eye,
+  EyeOff,
+  Plus,
+  X,
 } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -75,6 +85,9 @@ const Home: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState("2023");
   const [selectedMonth, setSelectedMonth] = useState("All");
   const [activePieChart, setActivePieChart] = useState<string | null>(null);
+  const [activeSolarPieChart, setActiveSolarPieChart] = useState<string | null>(null);
+  const [showMoreCards, setShowMoreCards] = useState(false);
+  const [visibleCards, setVisibleCards] = useState<string[]>(['totalCustomers', 'solarCustomers', 'zeroConsumption', 'kioskCollection']);
   
 const [customerCounts, setCustomerCounts] = useState<CustomerCounts>({
   ordinary: 0,
@@ -98,6 +111,29 @@ const [customerCountsLoading, setCustomerCountsLoading] = useState(true);
 const [customerCountsError, setCustomerCountsError] = useState<string | null>(null);
 const [solarLoading, setSolarLoading] = useState(true);
 const [solarError, setSolarError] = useState<string | null>(null);
+
+  // Dashboard card configuration - 11 cards total
+  const cardConfig = [
+    { id: 'totalCustomers', title: 'Total Customers', default: true, category: 'customer' },
+    { id: 'solarCustomers', title: 'Solar Customers', default: true, category: 'solar' },
+    { id: 'zeroConsumption', title: 'Zero Consumption', default: true, category: 'consumption' },
+    { id: 'kioskCollection', title: 'Kiosk Collection', default: true, category: 'collection' },
+    { id: 'revenueCollection', title: 'Revenue Collection', default: false, category: 'collection' },
+    { id: 'disconnections', title: 'Disconnections', default: false, category: 'customer' },
+    { id: 'arrearsPosition', title: 'Arrears Position', default: false, category: 'billing' },
+    { id: 'solarCapacity', title: 'Solar Capacity (kW)', default: false, category: 'solar' },
+    { id: 'consumptionAnalysis', title: 'Consumption (kWh)', default: false, category: 'consumption' },
+    { id: 'billCycleStatus', title: 'Bill Cycle Status', default: false, category: 'billing' },
+    { id: 'newConnections', title: 'New Connections', default: false, category: 'customer' },
+  ];
+
+  const toggleCardVisibility = (cardId: string) => {
+    setVisibleCards(prev => 
+      prev.includes(cardId) 
+        ? prev.filter(id => id !== cardId)
+        : [...prev, cardId]
+    );
+  };
 
   const [topCustomers] = useState<TopCustomer[]>([
     { name: "John Doe", consumption: 45231, type: "Bulk" },
@@ -321,6 +357,37 @@ useEffect(() => {
     total: item.ordinary + item.bulk
   }));
 
+  // Calculate totals for Solar Customers pie charts
+  const totalOrdinarySolar = customerCounts.solar.netMetering + 
+                              customerCounts.solar.netAccounting + 
+                              customerCounts.solar.netPlus + 
+                              customerCounts.solar.netPlusPlus;
+  
+  const totalBulkSolar = bulkSolarCustomers.netMetering + 
+                         bulkSolarCustomers.netAccounting + 
+                         bulkSolarCustomers.netPlus + 
+                         bulkSolarCustomers.netPlusPlus;
+
+  // Calculate percentages for Ordinary Solar
+  const ordSolarNetMeteringPct = totalOrdinarySolar > 0 ? (customerCounts.solar.netMetering / totalOrdinarySolar) * 100 : 0;
+  const ordSolarNetAccountingPct = totalOrdinarySolar > 0 ? (customerCounts.solar.netAccounting / totalOrdinarySolar) * 100 : 0;
+  const ordSolarNetPlusPct = totalOrdinarySolar > 0 ? (customerCounts.solar.netPlus / totalOrdinarySolar) * 100 : 0;
+  const ordSolarNetPlusPlusPct = totalOrdinarySolar > 0 ? (customerCounts.solar.netPlusPlus / totalOrdinarySolar) * 100 : 0;
+
+  // Calculate percentages for Bulk Solar
+  const bulkSolarNetMeteringPct = totalBulkSolar > 0 ? (bulkSolarCustomers.netMetering / totalBulkSolar) * 100 : 0;
+  const bulkSolarNetAccountingPct = totalBulkSolar > 0 ? (bulkSolarCustomers.netAccounting / totalBulkSolar) * 100 : 0;
+  const bulkSolarNetPlusPct = totalBulkSolar > 0 ? (bulkSolarCustomers.netPlus / totalBulkSolar) * 100 : 0;
+  const bulkSolarNetPlusPlusPct = totalBulkSolar > 0 ? (bulkSolarCustomers.netPlusPlus / totalBulkSolar) * 100 : 0;
+
+  // Helper function to convert percentages to circle arc
+  const createArcDasharray = (startPct: number, endPct: number) => {
+    const circumference = 502.4;
+    const startArc = (startPct / 100) * circumference;
+    const endArc = ((endPct - startPct) / 100) * circumference;
+    return `${endArc} ${circumference - endArc}`;
+  };
+
   const solarCapacityChartData = [
     {
       netType: "Net Metering",
@@ -440,8 +507,12 @@ useEffect(() => {
               </div>
 
               <div className="max-w-7xl mx-auto px-4 py-6">
-                {/* KPI Cards - Top Row */}
-                <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 transition-all duration-1000 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                {/* KPI Cards - Customizable */}
+                <div className={`transition-all duration-1000 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                  {/* Default Cards Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+                    {/* Total Customers Card */}
+                    {visibleCards.includes('totalCustomers') && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -456,7 +527,10 @@ useEffect(() => {
               <span>Bulk: {formatNumber(customerCounts.bulk)}</span>
             </div>
           </div>
+                    )}
 
+                    {/* Solar Customers Card */}
+                    {visibleCards.includes('solarCustomers') && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -473,7 +547,10 @@ useEffect(() => {
             )}</p>
             <p className="text-xs text-gray-500 mt-2">Net-type breakdown shown in chart</p>
           </div>
+                    )}
 
+                    {/* Zero Consumption Card */}
+                    {visibleCards.includes('zeroConsumption') && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -485,7 +562,10 @@ useEffect(() => {
             <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(customerCounts.zeroConsumption)}</p>
             <p className="text-xs text-gray-500 mt-2">Last 3 months</p>
           </div>
+                    )}
 
+                    {/* Kiosk Collection Card */}
+                    {visibleCards.includes('kioskCollection') && (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -497,13 +577,195 @@ useEffect(() => {
             <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(salesData.kioskCollection)}</p>
             <p className="text-xs text-gray-500 mt-2">This month</p>
           </div>
-        </div>
+                    )}
+                  </div>
+
+                  {/* Additional Cards */}
+                  {(visibleCards.includes('revenueCollection') || visibleCards.includes('disconnections') || visibleCards.includes('arrearsPosition') || visibleCards.includes('solarCapacity') || visibleCards.includes('consumptionAnalysis') || visibleCards.includes('billCycleStatus') || visibleCards.includes('newConnections')) && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+                      {/* Revenue Collection Card */}
+                      {visibleCards.includes('revenueCollection') && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 bg-emerald-100 rounded-lg">
+                              <ShoppingCart className="w-5 h-5 text-emerald-600" />
+                            </div>
+                            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+6.8%</span>
+                          </div>
+                          <h3 className="text-sm font-medium text-gray-500">Revenue Collection</h3>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(125600000)}</p>
+                          <p className="text-xs text-gray-500 mt-2">Year to date</p>
+                        </div>
+                      )}
+
+                      {/* Disconnections Card */}
+                      {visibleCards.includes('disconnections') && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 bg-orange-100 rounded-lg">
+                              <AlertCircle className="w-5 h-5 text-orange-600" />
+                            </div>
+                            <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">+15.2%</span>
+                          </div>
+                          <h3 className="text-sm font-medium text-gray-500">Disconnections</h3>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(2456)}</p>
+                          <p className="text-xs text-gray-500 mt-2">Pending action</p>
+                        </div>
+                      )}
+
+                      {/* Arrears Position Card */}
+                      {visibleCards.includes('arrearsPosition') && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 bg-rose-100 rounded-lg">
+                              <TrendingDown className="w-5 h-5 text-rose-600" />
+                            </div>
+                            <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">-3.4%</span>
+                          </div>
+                          <h3 className="text-sm font-medium text-gray-500">Arrears Position</h3>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(456780000)}</p>
+                          <p className="text-xs text-gray-500 mt-2">Total outstanding</p>
+                        </div>
+                      )}
+
+                      {/* Solar Capacity Card */}
+                      {visibleCards.includes('solarCapacity') && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 bg-amber-100 rounded-lg">
+                              <Battery className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+9.5%</span>
+                          </div>
+                          <h3 className="text-sm font-medium text-gray-500">Solar Capacity</h3>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{formatCompact(4814)} kW</p>
+                          <p className="text-xs text-gray-500 mt-2">Total installed</p>
+                        </div>
+                      )}
+
+                      {/* Consumption Analysis Card */}
+                      {visibleCards.includes('consumptionAnalysis') && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 bg-violet-100 rounded-lg">
+                              <Plug className="w-5 h-5 text-violet-600" />
+                            </div>
+                            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+2.3%</span>
+                          </div>
+                          <h3 className="text-sm font-medium text-gray-500">Consumption (kWh)</h3>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{formatCompact(3579000)}</p>
+                          <p className="text-xs text-gray-500 mt-2">Monthly average</p>
+                        </div>
+                      )}
+
+                      {/* Bill Cycle Status Card */}
+                      {visibleCards.includes('billCycleStatus') && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 bg-cyan-100 rounded-lg">
+                              <Clock className="w-5 h-5 text-cyan-600" />
+                            </div>
+                            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">Active</span>
+                          </div>
+                          <h3 className="text-sm font-medium text-gray-500">Bill Cycle Status</h3>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{activeBillCycle || 'Cycle 450'}</p>
+                          <p className="text-xs text-gray-500 mt-2">Current cycle</p>
+                        </div>
+                      )}
+
+                      {/* New Connections Card */}
+                      {visibleCards.includes('newConnections') && (
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="p-2 bg-lime-100 rounded-lg">
+                              <Plus className="w-5 h-5 text-lime-600" />
+                            </div>
+                            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+11.3%</span>
+                          </div>
+                          <h3 className="text-sm font-medium text-gray-500">New Connections</h3>
+                          <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(1428)}</p>
+                          <p className="text-xs text-gray-500 mt-2">Year to date</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Show More / Customize Dashboard Button */}
+                  <div className="flex justify-end mb-6">
+                    <button
+                      onClick={() => setShowMoreCards(!showMoreCards)}
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      {showMoreCards ? (
+                        <>
+                          <EyeOff className="w-4 h-4" />
+                          Hide Cards
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4" />
+                          Show More Cards
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Card Selection Panel */}
+                  {showMoreCards && (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 mb-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">Customize Your Dashboard</h3>
+                          <p className="text-sm text-gray-600 mt-1">Select cards to display on your dashboard</p>
+                        </div>
+                        <button
+                          onClick={() => setShowMoreCards(false)}
+                          className="p-1 hover:bg-white rounded-lg transition-colors"
+                        >
+                          <X className="w-5 h-5 text-gray-600" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {cardConfig.map((card) => (
+                          <div
+                            key={card.id}
+                            onClick={() => toggleCardVisibility(card.id)}
+                            className={`p-4 rounded-lg cursor-pointer transition-all border-2 ${
+                              visibleCards.includes(card.id)
+                                ? 'bg-white border-blue-500 shadow-md'
+                                : 'bg-white border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900 text-sm">{card.title}</p>
+                                <p className="text-xs text-gray-500 mt-1 capitalize">{card.category}</p>
+                              </div>
+                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                                visibleCards.includes(card.id)
+                                  ? 'bg-blue-500 border-blue-500'
+                                  : 'border-gray-300'
+                              }`}>
+                                {visibleCards.includes(card.id) && (
+                                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
         {/* Two Column Layout - Bar Chart for Sales & Collection */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 auto-rows-fr">
           {/* Sales & Collection Bar Chart */}
           <div className={`transition-all duration-1000 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="font-semibold text-gray-900">Sales & Collection Distribution</h3>
@@ -512,10 +774,10 @@ useEffect(() => {
                 <PieChart className="w-5 h-5 text-gray-400" />
               </div>
 
-              {/* Bar Chart */}
-              <div className="h-64 mb-6">
+              {/* Line Chart */}
+              <div className="h-64 mb-6 flex-1">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={salesBarData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <LineChart data={salesBarData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
                     <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                     <YAxis 
@@ -527,18 +789,30 @@ useEffect(() => {
                       labelStyle={{ fontWeight: 600 }}
                     />
                     <Legend />
-                    <Bar dataKey="ordinary" name="Ordinary" fill="var(--ceb-maroon)" radius={[4, 4, 0, 0]}>
-                      <LabelList dataKey="ordinary" position="top" formatter={(v: any) => formatCompact(Number(v))} />
-                    </Bar>
-                    <Bar dataKey="bulk" name="Bulk" fill="var(--ceb-gold)" radius={[4, 4, 0, 0]}>
-                      <LabelList dataKey="bulk" position="top" formatter={(v: any) => formatCompact(Number(v))} />
-                    </Bar>
-                  </BarChart>
+                    <Line 
+                      type="monotone" 
+                      dataKey="ordinary" 
+                      name="Ordinary" 
+                      stroke="var(--ceb-maroon)" 
+                      strokeWidth={3}
+                      dot={false}
+                      activeDot={{ r: 6, fill: "var(--ceb-maroon)" }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="bulk" 
+                      name="Bulk" 
+                      stroke="var(--ceb-gold)" 
+                      strokeWidth={3}
+                      dot={false}
+                      activeDot={{ r: 6, fill: "var(--ceb-gold)" }}
+                    />
+                  </LineChart>
                 </ResponsiveContainer>
               </div>
 
               {/* Monthly Breakdown */}
-              <div className="mt-6 pt-4 border-t border-gray-100">
+              <div className="mt-auto pt-4 border-t border-gray-100">
                 <p className="text-xs text-gray-500 mb-2">Monthly Average</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -560,7 +834,54 @@ useEffect(() => {
 
           {/* New Customers Pie Chart */}
           <div className={`transition-all duration-1000 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
+              <style>{`
+                @keyframes pieChartLoadOrdinary {
+                  0% {
+                    stroke-dasharray: 0 502.4;
+                    stroke-dashoffset: 0;
+                  }
+                  100% {
+                    stroke-dasharray: ${(newOrdinaryPercentage / 100) * 502.4} 502.4;
+                    stroke-dashoffset: 0;
+                  }
+                }
+                
+                @keyframes pieChartLoadBulk {
+                  0% {
+                    stroke-dasharray: 0 502.4;
+                    stroke-dashoffset: ${-((newOrdinaryPercentage / 100) * 502.4)};
+                  }
+                  100% {
+                    stroke-dasharray: ${(newBulkPercentage / 100) * 502.4} 502.4;
+                    stroke-dashoffset: ${-((newOrdinaryPercentage / 100) * 502.4)};
+                  }
+                }
+                
+                @keyframes spinLoader {
+                  0% {
+                    transform: rotate(0deg);
+                  }
+                  100% {
+                    transform: rotate(360deg);
+                  }
+                }
+                
+                .pie-segment-ordinary {
+                  animation: pieChartLoadOrdinary 0.9s ease-out forwards;
+                  animation-delay: 0.3s;
+                }
+                
+                .pie-segment-bulk {
+                  animation: pieChartLoadBulk 0.9s ease-out forwards;
+                  animation-delay: 1.2s;
+                }
+                
+                .loading-pie {
+                  animation: spinLoader 3s linear infinite;
+                  animation-play-state: running;
+                }
+              `}</style>
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="font-semibold text-gray-900">New Customers (YTD)</h3>
@@ -593,9 +914,9 @@ useEffect(() => {
                       fill="none"
                       stroke="var(--ceb-maroon)"
                       strokeWidth="30"
-                      strokeDasharray={`${(newOrdinaryPercentage / 100) * 502.4} 502.4`}
+                      strokeDasharray="0 502.4"
                       strokeDashoffset="0"
-                      className="transition-all duration-1000 ease-out"
+                      className="pie-segment-ordinary transition-all duration-1000 ease-out"
                       onMouseEnter={() => setActivePieChart('newOrdinary')}
                       onMouseLeave={() => setActivePieChart(null)}
                     />
@@ -608,9 +929,9 @@ useEffect(() => {
                       fill="none"
                       stroke="var(--ceb-gold)"
                       strokeWidth="30"
-                      strokeDasharray={`${(newBulkPercentage / 100) * 502.4} 502.4`}
+                      strokeDasharray="0 502.4"
                       strokeDashoffset={-((newOrdinaryPercentage / 100) * 502.4)}
-                      className="transition-all duration-1000 ease-out"
+                      className="pie-segment-bulk transition-all duration-1000 ease-out"
                       onMouseEnter={() => setActivePieChart('newBulk')}
                       onMouseLeave={() => setActivePieChart(null)}
                     />
@@ -654,7 +975,7 @@ useEffect(() => {
               </div>
 
               {/* Monthly Average */}
-              <div className="mt-6 pt-4 border-t border-gray-100">
+              <div className="mt-auto pt-4 border-t border-gray-100">
                 <p className="text-xs text-gray-500 mb-2">Monthly Average New Customers</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -673,7 +994,7 @@ useEffect(() => {
               </div>
 
               {/* Growth Indicator */}
-              <div className="mt-4 flex items-center justify-center gap-4 text-xs">
+              <div className="mt-auto flex items-center justify-center gap-4 text-xs">
                 <span className="flex items-center gap-1 text-green-600">
                   <ArrowUp className="w-3 h-3" />
                   +12% vs last year
@@ -824,44 +1145,364 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Solar Customers Split */}
+            {/* Solar Customers by Net Type - Two Pie Charts */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
+              <style>{`
+                @keyframes solarOrdinaryNetMeteringLoad {
+                  0% { stroke-dasharray: 0 502.4; stroke-dashoffset: 0; }
+                  100% { stroke-dasharray: ${createArcDasharray(0, ordSolarNetMeteringPct).split(' ')[0]} 502.4; stroke-dashoffset: 0; }
+                }
+                @keyframes solarOrdinaryNetAccountingLoad {
+                  0% { stroke-dasharray: 0 502.4; stroke-dashoffset: ${-((ordSolarNetMeteringPct / 100) * 502.4)}; }
+                  100% { stroke-dasharray: ${createArcDasharray(ordSolarNetMeteringPct, ordSolarNetMeteringPct + ordSolarNetAccountingPct).split(' ')[0]} 502.4; stroke-dashoffset: ${-((ordSolarNetMeteringPct / 100) * 502.4)}; }
+                }
+                @keyframes solarOrdinaryNetPlusLoad {
+                  0% { stroke-dasharray: 0 502.4; stroke-dashoffset: ${-(((ordSolarNetMeteringPct + ordSolarNetAccountingPct) / 100) * 502.4)}; }
+                  100% { stroke-dasharray: ${createArcDasharray(ordSolarNetMeteringPct + ordSolarNetAccountingPct, ordSolarNetMeteringPct + ordSolarNetAccountingPct + ordSolarNetPlusPct).split(' ')[0]} 502.4; stroke-dashoffset: ${-(((ordSolarNetMeteringPct + ordSolarNetAccountingPct) / 100) * 502.4)}; }
+                }
+                @keyframes solarOrdinaryNetPlusPlusLoad {
+                  0% { stroke-dasharray: 0 502.4; stroke-dashoffset: ${-(((ordSolarNetMeteringPct + ordSolarNetAccountingPct + ordSolarNetPlusPct) / 100) * 502.4)}; }
+                  100% { stroke-dasharray: ${createArcDasharray(ordSolarNetMeteringPct + ordSolarNetAccountingPct + ordSolarNetPlusPct, 100).split(' ')[0]} 502.4; stroke-dashoffset: ${-(((ordSolarNetMeteringPct + ordSolarNetAccountingPct + ordSolarNetPlusPct) / 100) * 502.4)}; }
+                }
+                @keyframes solarBulkNetMeteringLoad {
+                  0% { stroke-dasharray: 0 502.4; stroke-dashoffset: 0; }
+                  100% { stroke-dasharray: ${createArcDasharray(0, bulkSolarNetMeteringPct).split(' ')[0]} 502.4; stroke-dashoffset: 0; }
+                }
+                @keyframes solarBulkNetAccountingLoad {
+                  0% { stroke-dasharray: 0 502.4; stroke-dashoffset: ${-((bulkSolarNetMeteringPct / 100) * 502.4)}; }
+                  100% { stroke-dasharray: ${createArcDasharray(bulkSolarNetMeteringPct, bulkSolarNetMeteringPct + bulkSolarNetAccountingPct).split(' ')[0]} 502.4; stroke-dashoffset: ${-((bulkSolarNetMeteringPct / 100) * 502.4)}; }
+                }
+                @keyframes solarBulkNetPlusLoad {
+                  0% { stroke-dasharray: 0 502.4; stroke-dashoffset: ${-(((bulkSolarNetMeteringPct + bulkSolarNetAccountingPct) / 100) * 502.4)}; }
+                  100% { stroke-dasharray: ${createArcDasharray(bulkSolarNetMeteringPct + bulkSolarNetAccountingPct, bulkSolarNetMeteringPct + bulkSolarNetAccountingPct + bulkSolarNetPlusPct).split(' ')[0]} 502.4; stroke-dashoffset: ${-(((bulkSolarNetMeteringPct + bulkSolarNetAccountingPct) / 100) * 502.4)}; }
+                }
+                @keyframes solarBulkNetPlusPlusLoad {
+                  0% { stroke-dasharray: 0 502.4; stroke-dashoffset: ${-(((bulkSolarNetMeteringPct + bulkSolarNetAccountingPct + bulkSolarNetPlusPct) / 100) * 502.4)}; }
+                  100% { stroke-dasharray: ${createArcDasharray(bulkSolarNetMeteringPct + bulkSolarNetAccountingPct + bulkSolarNetPlusPct, 100).split(' ')[0]} 502.4; stroke-dashoffset: ${-(((bulkSolarNetMeteringPct + bulkSolarNetAccountingPct + bulkSolarNetPlusPct) / 100) * 502.4)}; }
+                }
+                .solar-ord-metering { animation: solarOrdinaryNetMeteringLoad 0.9s ease-out forwards; animation-delay: 0.3s; }
+                .solar-ord-accounting { animation: solarOrdinaryNetAccountingLoad 0.9s ease-out forwards; animation-delay: 1.2s; }
+                .solar-ord-plus { animation: solarOrdinaryNetPlusLoad 0.9s ease-out forwards; animation-delay: 2.1s; }
+                .solar-ord-plusplus { animation: solarOrdinaryNetPlusPlusLoad 0.9s ease-out forwards; animation-delay: 3.0s; }
+                .solar-bulk-metering { animation: solarBulkNetMeteringLoad 0.9s ease-out forwards; animation-delay: 0.3s; }
+                .solar-bulk-accounting { animation: solarBulkNetAccountingLoad 0.9s ease-out forwards; animation-delay: 1.2s; }
+                .solar-bulk-plus { animation: solarBulkNetPlusLoad 0.9s ease-out forwards; animation-delay: 2.1s; }
+                .solar-bulk-plusplus { animation: solarBulkNetPlusPlusLoad 0.9s ease-out forwards; animation-delay: 3.0s; }
+              `}</style>
+              <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="font-semibold text-gray-900">Solar Customers by Net Type</h3>
-                  <p className="text-xs text-gray-500 mt-1">Ordinary vs Bulk accounts</p>
+                  {/* <p className="text-xs text-gray-500 mt-1">Distribution by customer type (Ordinary vs Bulk)</p> */}
                 </div>
                 <span className="text-[color:var(--ceb-navy)] text-xs font-semibold tracking-wide">GRAPH</span>
               </div>
 
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={solarCustomerSplitChartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-                    <XAxis
-                      dataKey="netType"
-                      tick={{ fontSize: 11 }}
-                      interval={0}
-                      tickMargin={8}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(v) => formatInteger(Number(v))}
-                      width={44}
-                    />
-                    <Tooltip
-                      formatter={(value: any, name: any) => [formatInteger(Number(value) || 0), String(name)]}
-                      labelStyle={{ fontWeight: 600 }}
-                    />
-                    <Legend />
-                    <Bar dataKey="ordinary" name="Ordinary" fill="var(--ceb-maroon)" radius={[6, 6, 0, 0]}>
-                      <LabelList dataKey="ordinary" position="top" formatter={(v: any) => formatInteger(Number(v) || 0)} />
-                    </Bar>
-                    <Bar dataKey="bulk" name="Bulk" fill="var(--ceb-gold)" radius={[6, 6, 0, 0]}>
-                      <LabelList dataKey="bulk" position="top" formatter={(v: any) => formatInteger(Number(v) || 0)} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="grid grid-cols-2 gap-6">
+                {/* Ordinary Solar Pie Chart */}
+                <div className="flex flex-col items-center">
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Ordinary Solar</h4>
+                  <div className="flex flex-col items-center justify-center gap-4 w-full">
+                    {/* Pie Chart */}
+                    <div className="relative w-40 h-40">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
+                        {/* Background circle */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="#f3f4f6"
+                          strokeWidth="30"
+                        />
+                        
+                        {/* Net Metering Segment */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="var(--ceb-maroon)"
+                          strokeWidth="30"
+                          strokeDasharray="0 502.4"
+                          strokeDashoffset="0"
+                          className="solar-ord-metering transition-all duration-300 cursor-pointer hover:opacity-80"
+                          onMouseEnter={() => setActiveSolarPieChart('ordinaryNetMetering')}
+                          onMouseLeave={() => setActiveSolarPieChart(null)}
+                        />
+                        
+                        {/* Net Accounting Segment */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="#A0673A"
+                          strokeWidth="30"
+                          strokeDasharray="0 502.4"
+                          strokeDashoffset={-((ordSolarNetMeteringPct / 100) * 502.4)}
+                          className="solar-ord-accounting transition-all duration-300 cursor-pointer hover:opacity-80"
+                          onMouseEnter={() => setActiveSolarPieChart('ordinaryNetAccounting')}
+                          onMouseLeave={() => setActiveSolarPieChart(null)}
+                        />
+                        
+                        {/* Net Plus Segment */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="var(--ceb-gold)"
+                          strokeWidth="30"
+                          strokeDasharray="0 502.4"
+                          strokeDashoffset={-(((ordSolarNetMeteringPct + ordSolarNetAccountingPct) / 100) * 502.4)}
+                          className="solar-ord-plus transition-all duration-300 cursor-pointer hover:opacity-80"
+                          onMouseEnter={() => setActiveSolarPieChart('ordinaryNetPlus')}
+                          onMouseLeave={() => setActiveSolarPieChart(null)}
+                        />
+                        
+                        {/* Net Plus Plus Segment */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="#C9934E"
+                          strokeWidth="30"
+                          strokeDasharray="0 502.4"
+                          strokeDashoffset={-(((ordSolarNetMeteringPct + ordSolarNetAccountingPct + ordSolarNetPlusPct) / 100) * 502.4)}
+                          className="solar-ord-plusplus transition-all duration-300 cursor-pointer hover:opacity-80"
+                          onMouseEnter={() => setActiveSolarPieChart('ordinaryNetPlusPlus')}
+                          onMouseLeave={() => setActiveSolarPieChart(null)}
+                        />
+                      </svg>
+                      
+                      {/* Hover Tooltip */}
+                      {activeSolarPieChart && activeSolarPieChart.startsWith('ordinary') && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-center shadow-lg">
+                            <p className="text-xs font-semibold">
+                              {activeSolarPieChart === 'ordinaryNetMetering' && 'Net Metering'}
+                              {activeSolarPieChart === 'ordinaryNetAccounting' && 'Net Accounting'}
+                              {activeSolarPieChart === 'ordinaryNetPlus' && 'Net Plus'}
+                              {activeSolarPieChart === 'ordinaryNetPlusPlus' && 'Net Plus Plus'}
+                            </p>
+                            <p className="text-sm font-bold mt-1">
+                              {activeSolarPieChart === 'ordinaryNetMetering' && formatNumber(customerCounts.solar.netMetering)}
+                              {activeSolarPieChart === 'ordinaryNetAccounting' && formatNumber(customerCounts.solar.netAccounting)}
+                              {activeSolarPieChart === 'ordinaryNetPlus' && formatNumber(customerCounts.solar.netPlus)}
+                              {activeSolarPieChart === 'ordinaryNetPlusPlus' && formatNumber(customerCounts.solar.netPlusPlus)}
+                            </p>
+                            <p className="text-xs text-gray-300 mt-0.5">
+                              {activeSolarPieChart === 'ordinaryNetMetering' && `${ordSolarNetMeteringPct.toFixed(1)}%`}
+                              {activeSolarPieChart === 'ordinaryNetAccounting' && `${ordSolarNetAccountingPct.toFixed(1)}%`}
+                              {activeSolarPieChart === 'ordinaryNetPlus' && `${ordSolarNetPlusPct.toFixed(1)}%`}
+                              {activeSolarPieChart === 'ordinaryNetPlusPlus' && `${ordSolarNetPlusPlusPct.toFixed(1)}%`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Center text */}
+                      {!activeSolarPieChart && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <p className="text-xl font-bold text-gray-900">{formatNumber(totalOrdinarySolar)}</p>
+                            <p className="text-xs text-gray-500">Total</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Legend */}
+                    <div className="space-y-2 w-full text-sm">
+                      <div 
+                        className={`flex items-center gap-2 p-1 rounded transition-colors ${activeSolarPieChart === 'ordinaryNetMetering' ? 'bg-[var(--ceb-maroon)]/10' : ''}`}
+                        onMouseEnter={() => setActiveSolarPieChart('ordinaryNetMetering')}
+                        onMouseLeave={() => setActiveSolarPieChart(null)}
+                      >
+                        <div className="w-3 h-3 bg-[var(--ceb-maroon)] rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">{customerCounts.solar.netMetering} ({ordSolarNetMeteringPct.toFixed(1)}%)</span>
+                      </div>
+                      <div 
+                        className={`flex items-center gap-2 p-1 rounded transition-colors ${activeSolarPieChart === 'ordinaryNetAccounting' ? 'bg-[#A0673A]/10' : ''}`}
+                        onMouseEnter={() => setActiveSolarPieChart('ordinaryNetAccounting')}
+                        onMouseLeave={() => setActiveSolarPieChart(null)}
+                      >
+                        <div className="w-3 h-3 bg-[#A0673A] rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">{customerCounts.solar.netAccounting} ({ordSolarNetAccountingPct.toFixed(1)}%)</span>
+                      </div>
+                      <div 
+                        className={`flex items-center gap-2 p-1 rounded transition-colors ${activeSolarPieChart === 'ordinaryNetPlus' ? 'bg-[var(--ceb-gold)]/10' : ''}`}
+                        onMouseEnter={() => setActiveSolarPieChart('ordinaryNetPlus')}
+                        onMouseLeave={() => setActiveSolarPieChart(null)}
+                      >
+                        <div className="w-3 h-3 bg-[var(--ceb-gold)] rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">{customerCounts.solar.netPlus} ({ordSolarNetPlusPct.toFixed(1)}%)</span>
+                      </div>
+                      <div 
+                        className={`flex items-center gap-2 p-1 rounded transition-colors ${activeSolarPieChart === 'ordinaryNetPlusPlus' ? 'bg-[#C9934E]/10' : ''}`}
+                        onMouseEnter={() => setActiveSolarPieChart('ordinaryNetPlusPlus')}
+                        onMouseLeave={() => setActiveSolarPieChart(null)}
+                      >
+                        <div className="w-3 h-3 bg-[#C9934E] rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">{customerCounts.solar.netPlusPlus} ({ordSolarNetPlusPlusPct.toFixed(1)}%)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bulk Solar Pie Chart */}
+                <div className="flex flex-col items-center">
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">Bulk Solar</h4>
+                  <div className="flex flex-col items-center justify-center gap-4 w-full">
+                    {/* Pie Chart */}
+                    <div className="relative w-40 h-40">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
+                        {/* Background circle */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="#f3f4f6"
+                          strokeWidth="30"
+                        />
+                        
+                        {/* Net Metering Segment */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="var(--ceb-maroon)"
+                          strokeWidth="30"
+                          strokeDasharray="0 502.4"
+                          strokeDashoffset="0"
+                          className="solar-bulk-metering transition-all duration-300 cursor-pointer hover:opacity-80"
+                          onMouseEnter={() => setActiveSolarPieChart('bulkNetMetering')}
+                          onMouseLeave={() => setActiveSolarPieChart(null)}
+                        />
+                        
+                        {/* Net Accounting Segment */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="#A0673A"
+                          strokeWidth="30"
+                          strokeDasharray="0 502.4"
+                          strokeDashoffset={-((bulkSolarNetMeteringPct / 100) * 502.4)}
+                          className="solar-bulk-accounting transition-all duration-300 cursor-pointer hover:opacity-80"
+                          onMouseEnter={() => setActiveSolarPieChart('bulkNetAccounting')}
+                          onMouseLeave={() => setActiveSolarPieChart(null)}
+                        />
+                        
+                        {/* Net Plus Segment */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="var(--ceb-gold)"
+                          strokeWidth="30"
+                          strokeDasharray="0 502.4"
+                          strokeDashoffset={-(((bulkSolarNetMeteringPct + bulkSolarNetAccountingPct) / 100) * 502.4)}
+                          className="solar-bulk-plus transition-all duration-300 cursor-pointer hover:opacity-80"
+                          onMouseEnter={() => setActiveSolarPieChart('bulkNetPlus')}
+                          onMouseLeave={() => setActiveSolarPieChart(null)}
+                        />
+                        
+                        {/* Net Plus Plus Segment */}
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="80"
+                          fill="none"
+                          stroke="#C9934E"
+                          strokeWidth="30"
+                          strokeDasharray="0 502.4"
+                          strokeDashoffset={-(((bulkSolarNetMeteringPct + bulkSolarNetAccountingPct + bulkSolarNetPlusPct) / 100) * 502.4)}
+                          className="solar-bulk-plusplus transition-all duration-300 cursor-pointer hover:opacity-80"
+                          onMouseEnter={() => setActiveSolarPieChart('bulkNetPlusPlus')}
+                          onMouseLeave={() => setActiveSolarPieChart(null)}
+                        />
+                      </svg>
+                      
+                      {/* Hover Tooltip */}
+                      {activeSolarPieChart && activeSolarPieChart.startsWith('bulk') && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-center shadow-lg">
+                            <p className="text-xs font-semibold">
+                              {activeSolarPieChart === 'bulkNetMetering' && 'Net Metering'}
+                              {activeSolarPieChart === 'bulkNetAccounting' && 'Net Accounting'}
+                              {activeSolarPieChart === 'bulkNetPlus' && 'Net Plus'}
+                              {activeSolarPieChart === 'bulkNetPlusPlus' && 'Net Plus Plus'}
+                            </p>
+                            <p className="text-sm font-bold mt-1">
+                              {activeSolarPieChart === 'bulkNetMetering' && formatNumber(bulkSolarCustomers.netMetering)}
+                              {activeSolarPieChart === 'bulkNetAccounting' && formatNumber(bulkSolarCustomers.netAccounting)}
+                              {activeSolarPieChart === 'bulkNetPlus' && formatNumber(bulkSolarCustomers.netPlus)}
+                              {activeSolarPieChart === 'bulkNetPlusPlus' && formatNumber(bulkSolarCustomers.netPlusPlus)}
+                            </p>
+                            <p className="text-xs text-gray-300 mt-0.5">
+                              {activeSolarPieChart === 'bulkNetMetering' && `${bulkSolarNetMeteringPct.toFixed(1)}%`}
+                              {activeSolarPieChart === 'bulkNetAccounting' && `${bulkSolarNetAccountingPct.toFixed(1)}%`}
+                              {activeSolarPieChart === 'bulkNetPlus' && `${bulkSolarNetPlusPct.toFixed(1)}%`}
+                              {activeSolarPieChart === 'bulkNetPlusPlus' && `${bulkSolarNetPlusPlusPct.toFixed(1)}%`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Center text */}
+                      {!activeSolarPieChart && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <p className="text-xl font-bold text-gray-900">{formatNumber(totalBulkSolar)}</p>
+                            <p className="text-xs text-gray-500">Total</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Legend */}
+                    <div className="space-y-2 w-full text-sm">
+                      <div 
+                        className={`flex items-center gap-2 p-1 rounded transition-colors ${activeSolarPieChart === 'bulkNetMetering' ? 'bg-[var(--ceb-maroon)]/10' : ''}`}
+                        onMouseEnter={() => setActiveSolarPieChart('bulkNetMetering')}
+                        onMouseLeave={() => setActiveSolarPieChart(null)}
+                      >
+                        <div className="w-3 h-3 bg-[var(--ceb-maroon)] rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">{bulkSolarCustomers.netMetering} ({bulkSolarNetMeteringPct.toFixed(1)}%)</span>
+                      </div>
+                      <div 
+                        className={`flex items-center gap-2 p-1 rounded transition-colors ${activeSolarPieChart === 'bulkNetAccounting' ? 'bg-[#A0673A]/10' : ''}`}
+                        onMouseEnter={() => setActiveSolarPieChart('bulkNetAccounting')}
+                        onMouseLeave={() => setActiveSolarPieChart(null)}
+                      >
+                        <div className="w-3 h-3 bg-[#A0673A] rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">{bulkSolarCustomers.netAccounting} ({bulkSolarNetAccountingPct.toFixed(1)}%)</span>
+                      </div>
+                      <div 
+                        className={`flex items-center gap-2 p-1 rounded transition-colors ${activeSolarPieChart === 'bulkNetPlus' ? 'bg-[var(--ceb-gold)]/10' : ''}`}
+                        onMouseEnter={() => setActiveSolarPieChart('bulkNetPlus')}
+                        onMouseLeave={() => setActiveSolarPieChart(null)}
+                      >
+                        <div className="w-3 h-3 bg-[var(--ceb-gold)] rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">{bulkSolarCustomers.netPlus} ({bulkSolarNetPlusPct.toFixed(1)}%)</span>
+                      </div>
+                      <div 
+                        className={`flex items-center gap-2 p-1 rounded transition-colors ${activeSolarPieChart === 'bulkNetPlusPlus' ? 'bg-[#C9934E]/10' : ''}`}
+                        onMouseEnter={() => setActiveSolarPieChart('bulkNetPlusPlus')}
+                        onMouseLeave={() => setActiveSolarPieChart(null)}
+                      >
+                        <div className="w-3 h-3 bg-[#C9934E] rounded-full flex-shrink-0"></div>
+                        <span className="text-gray-700">{bulkSolarCustomers.netPlusPlus} ({bulkSolarNetPlusPlusPct.toFixed(1)}%)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
