@@ -3,7 +3,7 @@ import JobSearchTable from "./JobSearchTable";
 import JobSearchDetails from "./JobSearchDetails";
 import {JobSearchResult} from "./JobSearchDetails";
 
-const JobSearchPage = () => {
+const JobSearchOrdinary = () => {
 	const [selectedRow, setSelectedRow] = useState<JobSearchResult | null>(null);
 
 	return (
@@ -17,4 +17,4 @@ const JobSearchPage = () => {
 	);
 };
 
-export default JobSearchPage;
+export default JobSearchOrdinary;
