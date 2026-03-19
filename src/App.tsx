@@ -11,7 +11,7 @@ import ReportRoutes from "./routes/ReportRoutes";
 import CostCenterTrial from "./mainTopics/TrialBalance/CostCenterTrial";
 // import SelectCostCenterTrial from "./mainTopics/TrialBalance/SelectCostCeneterTrial";
 import Home from "./pages/Home";
-import UserRoles from "./mainTopics/Admin/RepRoles/userroles";
+import AdminHome from "./pages/AdminHome";
 
 function App() {
   return (
@@ -23,7 +23,7 @@ function App() {
           path="/adminhome"
           element={
             <Layout>
-              <UserRoles />
+              <AdminHome />
             </Layout>
           }
         />
@@ -64,7 +64,7 @@ function App() {
           }
         />
 
-       {/* <Route
+        {/* <Route
   path="/report/TrialBalance/select-cost-center/:compId"
   element={
     <Layout>

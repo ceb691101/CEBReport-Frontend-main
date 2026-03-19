@@ -57,6 +57,13 @@ const AdminSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isActiveRoute = (path: string) => {
+    if (path === "/adminhome" && location.pathname === "/adminhome" && !location.search) {
+      return true;
+    }
+    return `${location.pathname}${location.search}` === path;
+  };
+
   return (
     <div className="w-full bg-gradient-to-b from-stone-50 to-white border-r border-stone-200 p-2 sm:p-3 text-stone-700 overflow-y-auto h-full">
       <div className="pt-12">
@@ -68,7 +75,7 @@ const AdminSidebar = () => {
 
         <div className="space-y-1">
           {adminNavItems.map((item) => {
-            const isActive = `${location.pathname}${location.search}` === item.path;
+            const isActive = isActiveRoute(item.path);
 
             return (
               <button
@@ -89,10 +96,16 @@ const AdminSidebar = () => {
                   />
                 </div>
                 <div className="min-w-0">
-                  <div className={`text-sm ${isActive ? "font-semibold" : "font-medium"}`}>
+                  <div
+                    className={`text-sm ${
+                      isActive ? "font-semibold" : "font-medium"
+                    }`}
+                  >
                     {item.name}
                   </div>
-                  <div className="text-[11px] text-stone-500 truncate">{item.description}</div>
+                  <div className="text-[11px] text-stone-500 truncate">
+                    {item.description}
+                  </div>
                 </div>
                 {isActive && (
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#7A0000]/30 rounded-l-full" />
