@@ -222,8 +222,15 @@ const ReportCategory = () => {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-semibold text-stone-900">Report Category Form</h2>
-                <div className="mt-1 text-sm text-stone-500">Add / Edit / Delete Report Category</div>
               </div>
+              <button
+                type="button"
+                onClick={loadCategories}
+                className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 px-4 py-2 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
             </div>
 
             <div className="mt-6 space-y-6">
@@ -292,14 +299,6 @@ const ReportCategory = () => {
               <div>
                 <h2 className="text-2xl font-semibold text-stone-900">Category Directory</h2>
               </div>
-              <button
-                type="button"
-                onClick={loadCategories}
-                className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 px-4 py-2 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
             </div>
 
             <div className="mt-6 overflow-hidden rounded-2xl border border-stone-200 flex-1 flex flex-col">

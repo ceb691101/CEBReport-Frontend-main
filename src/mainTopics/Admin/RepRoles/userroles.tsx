@@ -37,8 +37,12 @@ type CostCentreOption = {
 	costCentreName: string;
 };
 
+type UserGroupOption = {
+	userGroupId: string;
+	userGroupName: string;
+};
+
 const businessCompanyOptions = ["EDL", "NTNSP", "EGL", "NSO"];
-const userGroupOptions = ["DGM", "AGM", "IT"];
 const roleTypeOptions: Array<{ label: string; value: string; tab: RoleType }> = [
 	{ label: "USER", value: "USER", tab: "user" },
 	{ label: "ADMINISTRATOR", value: "ADMINISTRATOR", tab: "admin" },
@@ -51,7 +55,7 @@ const initialForm: CreateRoleForm = {
 	roleId: "",
 	userType: "USER",
 	businessCompany: "EDL",
-	userGroup: "DGM",
+	userGroup: "",
 	motherCompany: "",
 	costCentres: [],
 };
@@ -75,6 +79,8 @@ const UserRoles = () => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [motherCompanies, setMotherCompanies] = useState<MotherCompanyOption[]>([]);
 	const [costCentres, setCostCentres] = useState<CostCentreOption[]>([]);
+	const [userGroups, setUserGroups] = useState<UserGroupOption[]>([]);
+	const [isUserGroupsLoading, setIsUserGroupsLoading] = useState(false);
 	const [form, setForm] = useState<CreateRoleForm>(initialForm);
 
 	const loadMotherCompanies = async () => {
@@ -90,9 +96,9 @@ const UserRoles = () => {
 
 			const nextCompanies: MotherCompanyOption[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-						companyId: item?.CompanyId ?? "",
-						companyName: item?.CompanyName ?? "",
-					}))
+					companyId: item?.CompanyId ?? "",
+					companyName: item?.CompanyName ?? "",
+				}))
 				: [];
 
 			setMotherCompanies(nextCompanies);
@@ -126,9 +132,9 @@ const UserRoles = () => {
 
 			const nextCostCentres: CostCentreOption[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-						costCentreId: item?.CostCentreId ?? "",
-						costCentreName: item?.CostCentreName ?? "",
-					}))
+					costCentreId: item?.CostCentreId ?? "",
+					costCentreName: item?.CostCentreName ?? "",
+				}))
 				: [];
 
 			setCostCentres(nextCostCentres);
@@ -155,21 +161,21 @@ const UserRoles = () => {
 
 			const nextRoles: RoleRecord[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-						epfNo: item?.EpfNo ?? "",
-						roleId: item?.RoleId ?? "",
-						roleName: item?.RoleName ?? "",
-						company: item?.Company ?? "",
-						motherCompany: item?.MotherCompany ?? "",
-						userGroup: item?.UserGroup ?? "",
-						costCentre: item?.CostCentre ?? "",
-						costCentres: Array.isArray(item?.CostCentres)
-							? item.CostCentres.filter((value: string) => value)
-							: String(item?.CostCentre ?? "")
-								.split(",")
-								.map((value: string) => value.trim())
-								.filter((value: string) => value.length > 0),
-						userType: item?.UserType ?? "",
-					}))
+					epfNo: item?.EpfNo ?? "",
+					roleId: item?.RoleId ?? "",
+					roleName: item?.RoleName ?? "",
+					company: item?.Company ?? "",
+					motherCompany: item?.MotherCompany ?? "",
+					userGroup: item?.UserGroup ?? "",
+					costCentre: item?.CostCentre ?? "",
+					costCentres: Array.isArray(item?.CostCentres)
+						? item.CostCentres.filter((value: string) => value)
+						: String(item?.CostCentre ?? "")
+							.split(",")
+							.map((value: string) => value.trim())
+							.filter((value: string) => value.length > 0),
+					userType: item?.UserType ?? "",
+				}))
 				: [];
 
 			setRoles(nextRoles);
@@ -190,12 +196,41 @@ const UserRoles = () => {
 		}
 	};
 
+	const loadUserGroups = async () => {
+		setIsUserGroupsLoading(true);
+
+		try {
+			const response = await fetch("/roleadminapi/api/roleinfo/usergroups");
+			const payload = await response.json();
+
+			if (payload?.errorMessage) {
+				throw new Error(payload.errorMessage);
+			}
+
+			const groups: UserGroupOption[] = Array.isArray(payload?.data)
+				? payload.data.map((item: any) => ({
+					userGroupId: item?.UserGroupId ?? "",
+					userGroupName: item?.UserGroupName ?? "",
+				}))
+				: [];
+			setUserGroups(groups);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Failed to load user groups.";
+			toast.error(message);
+			setUserGroups([]);
+		} finally {
+			setIsUserGroupsLoading(false);
+		}
+	};
+
 	useEffect(() => {
 		loadRoles(activeTab);
 	}, [activeTab]);
 
 	useEffect(() => {
 		loadMotherCompanies();
+		loadUserGroups();
 	}, []);
 
 	useEffect(() => {
@@ -260,10 +295,10 @@ const UserRoles = () => {
 
 	const handleRoleSelect = (role: RoleRecord) => {
 		setSelectedEpfNo(role.epfNo);
-		
+
 		// Denormalize userType: backend stores "ADMIN" but form needs "ADMINISTRATOR"
 		const userTypeForForm = role.userType === "ADMIN" ? "ADMINISTRATOR" : role.userType;
-		
+
 		setForm({
 			name: role.roleName,
 			epfNo: role.epfNo,
@@ -274,12 +309,12 @@ const UserRoles = () => {
 			motherCompany: role.company,
 			costCentres: role.costCentres,
 		});
-		
+
 		// Explicitly load cost centres for the selected company
 		if (role.company) {
 			loadCostCentres(role.company);
 		}
-		
+
 		setActiveTab(userTypeForForm.trim().toUpperCase().startsWith("USER") ? "user" : "admin");
 	};
 
@@ -297,7 +332,7 @@ const UserRoles = () => {
 			const payload = await response.json();
 
 			if (payload?.errorMessage) {
-				throw new Error(payload.errorMessage);
+				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
 			}
 
 			toast.success(payload?.data?.message ?? "Role created successfully.");
@@ -335,7 +370,7 @@ const UserRoles = () => {
 			const payload = await response.json();
 
 			if (payload?.errorMessage) {
-				throw new Error(payload.errorMessage);
+				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
 			}
 
 			toast.success(payload?.data?.message ?? "Role updated successfully.");
@@ -365,7 +400,7 @@ const UserRoles = () => {
 			const payload = await response.json();
 
 			if (payload?.errorMessage) {
-				throw new Error(payload.errorMessage);
+				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
 			}
 
 			toast.success(payload?.data?.message ?? "Role deleted successfully.");
@@ -437,12 +472,13 @@ const UserRoles = () => {
 								}}
 							/>
 
-							<SelectionGroup
+							<Select
 								label="User Group"
-								groupName="userGroup"
-								options={userGroupOptions.map((option) => ({ label: option, value: option }))}
 								value={form.userGroup}
 								onChange={(value) => handleFieldChange("userGroup", value)}
+								options={userGroups.map((g) => `${g.userGroupId} - ${g.userGroupName}`)}
+								optionValues={userGroups.map((g) => g.userGroupId)}
+								placeholder={isUserGroupsLoading ? "Loading user groups..." : "Select user group"}
 							/>
 
 							<SelectionGroup
@@ -588,15 +624,14 @@ const UserRoles = () => {
 											</tr>
 										) : (
 											paginatedRoles.map((role) => {
-											const isSelected = selectedEpfNo === role.epfNo;
+												const isSelected = selectedEpfNo === role.epfNo;
 
-											return (
-												<tr
-													key={`${role.epfNo}-${role.roleId}`}
-																onClick={() => handleRoleSelect(role)}
-														className={`cursor-pointer transition ${
-															isSelected ? "bg-[#7A0000]/8" : "hover:bg-stone-50"
-														}`}
+												return (
+													<tr
+														key={`${role.epfNo}-${role.roleId}`}
+														onClick={() => handleRoleSelect(role)}
+														className={`cursor-pointer transition ${isSelected ? "bg-[#7A0000]/8" : "hover:bg-stone-50"
+															}`}
 													>
 														<td className="px-4 py-3">{role.epfNo || "-"}</td>
 														<td className="px-4 py-3 font-semibold text-stone-900">{role.roleId}</td>
@@ -770,9 +805,8 @@ const TabButton = ({
 	<button
 		type="button"
 		onClick={onClick}
-		className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-			active ? "bg-[#7A0000] text-white shadow" : "text-stone-600 hover:text-stone-900"
-		}`}
+		className={`rounded-full px-4 py-2 text-sm font-semibold transition ${active ? "bg-[#7A0000] text-white shadow" : "text-stone-600 hover:text-stone-900"
+			}`}
 	>
 		{label}
 	</button>
