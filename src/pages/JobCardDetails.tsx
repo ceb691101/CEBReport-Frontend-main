@@ -3,6 +3,7 @@ import {data as sidebarData} from "../data/SideBarData";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
 import JobCardMaterials from "../mainTopics/JobCards/JobCardMaterials";
+import JobSearchOrdinary from "../mainTopics/JobCards/JobSearchOrdinary";
 
 type Subtopic = {
 	id: number;
@@ -34,6 +35,9 @@ const JobCardDetails = () => {
 				return <JobCardInfo />;
 			case "Job Card -  Material Details":
 				return <JobCardMaterials />;
+
+			case "Job Search - Orinary":
+				return <JobSearchOrdinary />;
 
 			default:
 				return (

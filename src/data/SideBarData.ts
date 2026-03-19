@@ -226,17 +226,12 @@ export const data = [
 		subtopics: [
 			{id: 111, name: "Job Card Details"},
 			{id: 119, name: "Job Card -  Material Details"},
+			{id: 400, name: "Job Search - Orinary"},
 		],
 
 		path: "/report/jobs",
 	},
-	{
-		id: 21,
-		name: "Job Search",
-		icon: FiBriefcase,
-		subtopics: [{id: 400, name: "Job Search"}],
-		path: "/report/jobsearch",
-	},
+	
 
 	{
 		id: 13,
