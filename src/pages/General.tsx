@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
 import { data as sidebarData } from "../data/SideBarData";
 import SubtopicCard from "../components/shared/SubtopicCard";
+import BillCalculation from "../mainTopics/general/BillCalculation";
 
 
 type Subtopic = {
@@ -34,6 +35,7 @@ const General = () => {
       case "Active customers and sales by tariff":
         return <ActiveCustomersSalesByTariff />;
       case "Bill calculation":
+        return <BillCalculation />;
       case "Listing of customers":
       case "List of government accounts":
       case "Largest 100 customer details":
