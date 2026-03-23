@@ -15,11 +15,11 @@ const Sidebar = () => {
   useEffect(() => {
     const currentPath = location.pathname;
     
-    // Special handling for home page - don't redirect and clear activeId
-    if (currentPath === "/home") {
-      setActiveId(null); // Clear any active selection
-      return; // Exit early, don't interfere with home page
-    }
+    // // Special handling for home page - don't redirect and clear activeId
+    // if (currentPath === "/home") {
+    //   setActiveId(null); // Clear any active selection
+    //   return; // Exit early, don't interfere with home page
+    // }
     
     const matchedTopic = data.find((topic) => topic.path === currentPath);
 
