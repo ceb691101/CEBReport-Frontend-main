@@ -7,6 +7,7 @@ import AreaWiseSRPApplicationPIV from "../mainTopics/SRP/AreaWiseSRPApplicationP
 import AreaWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPApplicationPIVPaidReport";
 import DivisionWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPApplicationPIVPaidReport";
 import AreaWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPEstimationPIVPaidReport";
+import DivisionWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPEstimationPIVPaidReport";
 
 type Subtopic = {
   id: number;
@@ -47,6 +48,9 @@ const SolarReligiousPurpose = () => {
 
       case "Area Wise SRP Estimation PIV (PIVII) Paid Report":
         return <AreaWiseSRPEstimationPIVPaidReport/>;
+
+      case "Division Wise SRP Estimation PIV (PIVII) Paid Report":
+        return <DivisionWiseSRPEstimationPIVPaidReport/>;
 
       default:
         return (
