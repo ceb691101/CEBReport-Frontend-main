@@ -198,7 +198,6 @@ const PHVValidation: React.FC = () => {
 <style>${tableStyle}
 body { font-family: Arial, sans-serif; margin: 15mm; }
 h2 { text-align: center; color: #7A0000; margin-bottom: 5px; }
-h3 { text-align: center; margin: 0 0 15px 0; }
 .subtitles { margin-bottom: 10px; font-size: 11px; display: flex; justify-content: space-between; }
 @page { margin: 15mm; size: A4 landscape;
   @bottom-left { content: "Printed on: ${new Date().toLocaleString()}"; font-size: 9px; }
@@ -207,8 +206,7 @@ h3 { text-align: center; margin: 0 0 15px 0; }
 </style>
 </head>
 <body>
-<h2>CEYLON ELECTRICITY BOARD</h2>
-<h3>PHV VALIDATION FORM - ${selectedYear}</h3>
+<h2>PHV VALIDATION FORM - ${selectedYear}</h2>
 <div class="subtitles">
   <div>Cost Centre: ${escapeHtml(selectedDept.DeptId)} - ${escapeHtml(
       selectedDept.DeptName

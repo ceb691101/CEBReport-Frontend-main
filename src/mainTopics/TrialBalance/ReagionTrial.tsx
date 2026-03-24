@@ -385,7 +385,7 @@ const RegionTrial: React.FC = () => {
 		csvRows.push(
 			[""],
 			[
-				`Generated on: ${new Date().toLocaleDateString()} | CEB © ${new Date().getFullYear()}`,
+				`Generated on: ${new Date().toLocaleDateString()}}`,
 			]
 		);
 

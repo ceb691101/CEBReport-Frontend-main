@@ -223,7 +223,6 @@ const CashBookDetailsReport: React.FC = () => {
 
 		const titleRows = [
 			`Cheque Details from ${fromDate} To ${toDate}`,
-			`CEYLON ELECTRICITY BOARD`,
 			`Currency : LKR`,
 			"",
 		];
@@ -362,7 +361,6 @@ const CashBookDetailsReport: React.FC = () => {
 <body>
   <div class="title">Cheque Details from ${fromDate} To ${toDate}</div>
   <div class="info">
-    <div>CEYLON ELECTRICITY BOARD</div>
     <div style="font-weight:600; color:#4B5563;">Currency : LKR</div>
   </div>
 
@@ -525,7 +523,7 @@ const CashBookDetailsReport: React.FC = () => {
 								Cheque Details from {fromDate} To {toDate}
 							</h2>
 							<div className="flex justify-between text-xs mb-3">
-								<div>CEYLON ELECTRICITY BOARD</div>
+								<div></div>
 								<div className="font-semibold text-gray-600">
 									Currency : LKR
 								</div>

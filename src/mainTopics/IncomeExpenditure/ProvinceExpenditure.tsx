@@ -59,8 +59,6 @@ const ProvinceExpenditure: React.FC = () => {
 
 	// Debug log to see what EPF number is being used
 	useEffect(() => {
-		console.log("Current user:", user);
-		console.log("EPF Number being used:", epfNo);
 	}, [user, epfNo]);
 
 	// Colors
@@ -202,7 +200,6 @@ const ProvinceExpenditure: React.FC = () => {
 	};
 
 	const handleCompanySelect = (company: Company) => {
-		console.log("Company selected:", company);
 		if (selectedYear === null || selectedMonth === null) return;
 		setSelectedCompany(company);
 		fetchProvinceIncomeExpenditureData(company);
@@ -676,7 +673,7 @@ const ProvinceExpenditure: React.FC = () => {
 			"",
 		]);
 		csvRows.push([]);
-		csvRows.push([`CEB@${new Date().getFullYear()}`]);
+		csvRows.push([`${new Date().getFullYear()}`]);
 
 		const csvContent = csvRows.map((row) => row.join(",")).join("\n");
 		const blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});

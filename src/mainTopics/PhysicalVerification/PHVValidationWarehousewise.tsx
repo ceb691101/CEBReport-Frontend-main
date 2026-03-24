@@ -400,7 +400,6 @@ const PHVValidationWarehousewise: React.FC = () => {
 <style>${tableStyle}
 body { font-family: Arial, sans-serif; margin: 15mm; }
 h2 { text-align: center; color: #7A0000; margin: 5px 0; }
-h3 { text-align: center; margin: 5px 0 15px 0; }
 .subtitles { margin-bottom: 10px; font-size: 11px; display: flex; justify-content: space-between; }
 @page { margin: 15mm; size: A4 landscape;
   @bottom-left { content: "Date & time of the Report Generated : ${new Date().toLocaleString()}"; font-size: 9px; }
@@ -409,8 +408,7 @@ h3 { text-align: center; margin: 5px 0 15px 0; }
 </style>
 </head>
 <body>
-<h2>CEYLON ELECTRICITY BOARD</h2>
-<h3>ANNUAL VERIFICATION OF STORES - (Validation) ${selectedWarehouse.toUpperCase()} YEAR :- ${selectedYear ?? currentYear}</h3>
+<h2>ANNUAL VERIFICATION OF STORES - (Validation) ${selectedWarehouse.toUpperCase()} YEAR :- ${selectedYear ?? currentYear}</h2>
 <div class="subtitles">
   <div>Cost center : ${escapeHtml(selectedDept.DeptId)} - ${escapeHtml(selectedDept.DeptName)}</div>
   

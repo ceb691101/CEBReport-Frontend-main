@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { data as sidebarData } from "../data/SideBarData";
 import SubtopicCard from "../components/shared/SubtopicCard";
+import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
 
 type Subtopic = {
   id: number;
@@ -32,6 +33,7 @@ const PucslLiss = () => {
       case "LISS submission – retail journal adjustments":
       case "PUCSL Reports (LISS Data)":
       case "PUCSL Reports – solar connections (New)":
+        return <PUCSLSolarConnection />;
       case "Solar data for UNT calculation":
         return <div>{subtopicName} Content</div>;
       default:

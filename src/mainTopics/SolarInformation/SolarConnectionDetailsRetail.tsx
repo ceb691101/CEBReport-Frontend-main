@@ -120,9 +120,7 @@ const SolarConnectionDetailsRetail: React.FC = () => {
         const selectionInfo =
             selectedCategory === "Entire CEB"
                 ? "Entire CEB"
-                : selectedCategory === "Area"
-                    ? `${selectedCategory}: ${selectedCategoryName}`
-                    : `${selectedCategory}: ${categoryValue}`;
+                : `${selectedCategory}: ${selectedCategoryName}`;
 
         const headers = [
             "Division",
@@ -347,10 +345,8 @@ const SolarConnectionDetailsRetail: React.FC = () => {
             const categoryInfo = (() => {
                 if (selectedCategory === "Entire CEB") {
                     return "Entire CEB";
-                } else if (selectedCategory === "Area") {
-                    return `${selectedCategory}: <span class="bold">${selectedCategoryName}</span>`;
                 } else {
-                    return `${selectedCategory}: <span class="bold">${categoryValue}</span>`;
+                    return `${selectedCategory}: <span class="bold">${selectedCategoryName}</span>`;
                 }
             })();
             selectionInfo = `${categoryInfo}<br>${selectedCycleType}: <span class="bold">${selectedCycleDisplay}</span><br>Report Type: <span class="bold">${reportType}</span><br>Net Type: <span class="bold">${netType}</span>`;
@@ -387,6 +383,21 @@ const SolarConnectionDetailsRetail: React.FC = () => {
               margin-top: 10px; 
               font-size: 9px; 
               color: #666;
+            }
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
             }
             th { 
               background-color: #d3d3d3; 
@@ -435,9 +446,6 @@ const SolarConnectionDetailsRetail: React.FC = () => {
             ${selectionInfo}
           </div>
           ${printRef.current.innerHTML}
-          <div class="footer">
-            Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | CEB@2025
-          </div>
         </body>
       </html>
     `);
@@ -666,11 +674,13 @@ const SolarConnectionDetailsRetail: React.FC = () => {
             const reportTypeParam =
                 selectedCategory === "Entire CEB"
                     ? "entireceb"
-                    : selectedCategory.toLowerCase();
+                    : selectedCategory === "Division"
+                        ? "region"
+                        : selectedCategory.toLowerCase();
             const typeCode =
                 selectedCategory === "Entire CEB" ? "" : categoryValue;
 
-            const baseUrl = `/solarapi/solarConnectionDetails/retail/${reportType === "Detailed Report" ? "detailed" : "summary"
+            const baseUrl = `/misapi/solarapi/solarConnectionDetails/retail/${reportType === "Detailed Report" ? "detailed" : "summary"
                 }`;
 
             const params = new URLSearchParams({
@@ -704,6 +714,13 @@ const SolarConnectionDetailsRetail: React.FC = () => {
             if (selectedCategory === "Area") {
                 const area = areas.find((a) => a.AreaCode === categoryValue);
                 setSelectedCategoryName(area?.AreaName || categoryValue);
+            } else if (selectedCategory === "Province") {
+                const province = provinces.find((p) => p.ProvinceCode === categoryValue);
+                setSelectedCategoryName(province?.ProvinceName || categoryValue);
+            } else if (selectedCategory === "Division") {
+                setSelectedCategoryName(categoryValue);
+            } else {
+                setSelectedCategoryName("Entire CEB");
             }
 
             const selectedCycle = cycleOptions.find(
@@ -965,10 +982,7 @@ const SolarConnectionDetailsRetail: React.FC = () => {
                                     {item.PreviousReadingImport.toLocaleString("en-US")}
                                 </td>
                                 <td className="border border-gray-300 px-2 py-1 text-right">
-                                    {item.UnitsIn.toLocaleString("en-US", {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {item.UnitsIn.toLocaleString("en-US")}
                                 </td>
                                 <td className="border border-gray-300 px-2 py-1 text-right">
                                     {item.PresentReadingExport.toLocaleString("en-US")}
@@ -977,16 +991,10 @@ const SolarConnectionDetailsRetail: React.FC = () => {
                                     {item.PreviousReadingExport.toLocaleString("en-US")}
                                 </td>
                                 <td className="border border-gray-300 px-2 py-1 text-right">
-                                    {item.UnitsOut.toLocaleString("en-US", {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {item.UnitsOut.toLocaleString("en-US")}
                                 </td>
                                 <td className="border border-gray-300 px-2 py-1 text-right">
-                                    {item.NetUnits.toLocaleString("en-US", {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
+                                    {item.NetUnits.toLocaleString("en-US")}
                                 </td>
                                 <td className="border border-gray-300 px-2 py-1 text-right">
                                     {item.UnitCost.toLocaleString("en-US", {
@@ -1051,116 +1059,116 @@ const SolarConnectionDetailsRetail: React.FC = () => {
             <table className="w-full border-collapse text-xs">
                 <thead className="bg-gray-200">
                     <tr>
-                            <th className="border border-gray-300 px-2 py-1 text-center">
-                                Category
-                            </th>
-                            <th className="border border-gray-300 px-2 py-1 text-center">
-                                Tariff
-                            </th>
-                            <th className="border border-gray-300 px-2 py-1 text-center">
-                                No of Customers
-                            </th>
-                            <th className="border border-gray-300 px-2 py-1 text-center">
-                                Export Units
-                            </th>
-                            <th className="border border-gray-300 px-2 py-1 text-center">
-                                Import Units
-                            </th>
-                            <th className="border border-gray-300 px-2 py-1 text-center">
-                                Units Bill
-                            </th>
-                            <th className="border border-gray-300 px-2 py-1 text-center">
-                                Payments
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {summaryData.map((row, index) => (
-                            <tr key={`${row.Category}-${row.Tariff}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                                <td className="border border-gray-300 px-2 py-1">
-                                    {row.Category}
-                                </td>
-                                <td className="border border-gray-300 px-2 py-1">
-                                    {row.Tariff}
-                                </td>
-                                <td className="border border-gray-300 px-2 py-1 text-right">
-                                    {row.NoOfCustomers.toLocaleString("en-US")}
-                                </td>
-                                <td className="border border-gray-300 px-2 py-1 text-right">
-                                    {row.ExportUnits.toLocaleString("en-US", {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
-                                </td>
-                                <td className="border border-gray-300 px-2 py-1 text-right">
-                                    {row.ImportUnits.toLocaleString("en-US", {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
-                                </td>
-                                <td className="border border-gray-300 px-2 py-1 text-right">
-                                    {row.UnitsBill.toLocaleString("en-US", {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
-                                </td>
-                                <td className="border border-gray-300 px-2 py-1 text-right">
-                                    {row.Payments.toLocaleString("en-US", {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    })}
-                                </td>
-                            </tr>
-                        ))}
-                        {/* Total Row */}
-                        <tr className="bg-gray-200 font-bold">
-                            <td className="border border-gray-300 px-2 py-1" colSpan={2}>
-                                Total
+                        <th className="border border-gray-300 px-2 py-1 text-center">
+                            Category
+                        </th>
+                        <th className="border border-gray-300 px-2 py-1 text-center">
+                            Tariff
+                        </th>
+                        <th className="border border-gray-300 px-2 py-1 text-center">
+                            No of Customers
+                        </th>
+                        <th className="border border-gray-300 px-2 py-1 text-center">
+                            Export Units
+                        </th>
+                        <th className="border border-gray-300 px-2 py-1 text-center">
+                            Import Units
+                        </th>
+                        <th className="border border-gray-300 px-2 py-1 text-center">
+                            Units Bill
+                        </th>
+                        <th className="border border-gray-300 px-2 py-1 text-center">
+                            Payments
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {summaryData.map((row, index) => (
+                        <tr key={`${row.Category}-${row.Tariff}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                            <td className="border border-gray-300 px-2 py-1">
+                                {row.Category}
+                            </td>
+                            <td className="border border-gray-300 px-2 py-1">
+                                {row.Tariff}
                             </td>
                             <td className="border border-gray-300 px-2 py-1 text-right">
-                                {totals.noOfCustomers.toLocaleString("en-US")}
+                                {row.NoOfCustomers.toLocaleString("en-US")}
                             </td>
                             <td className="border border-gray-300 px-2 py-1 text-right">
-                                {totals.exportUnits.toLocaleString("en-US", {
+                                {row.ExportUnits.toLocaleString("en-US", {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                 })}
                             </td>
                             <td className="border border-gray-300 px-2 py-1 text-right">
-                                {totals.importUnits.toLocaleString("en-US", {
+                                {row.ImportUnits.toLocaleString("en-US", {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                 })}
                             </td>
                             <td className="border border-gray-300 px-2 py-1 text-right">
-                                {totals.unitsBill.toLocaleString("en-US", {
+                                {row.UnitsBill.toLocaleString("en-US", {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                 })}
                             </td>
                             <td className="border border-gray-300 px-2 py-1 text-right">
-                                {totals.payments.toLocaleString("en-US", {
+                                {row.Payments.toLocaleString("en-US", {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                 })}
                             </td>
                         </tr>
-                    </tbody>
-                </table>
+                    ))}
+                    {/* Total Row */}
+                    <tr className="bg-gray-200 font-bold">
+                        <td className="border border-gray-300 px-2 py-1" colSpan={2}>
+                            Total
+                        </td>
+                        <td className="border border-gray-300 px-2 py-1 text-right">
+                            {totals.noOfCustomers.toLocaleString("en-US")}
+                        </td>
+                        <td className="border border-gray-300 px-2 py-1 text-right">
+                            {totals.exportUnits.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                            })}
+                        </td>
+                        <td className="border border-gray-300 px-2 py-1 text-right">
+                            {totals.importUnits.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                            })}
+                        </td>
+                        <td className="border border-gray-300 px-2 py-1 text-right">
+                            {totals.unitsBill.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                            })}
+                        </td>
+                        <td className="border border-gray-300 px-2 py-1 text-right">
+                            {totals.payments.toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                            })}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         );
     };
 
     return (
         <div className="p-6 bg-white rounded-lg shadow-md">
-            
+
 
             {!reportVisible && (
                 <>
-                <div className="mb-6">
-            <h2 className={`text-xl font-bold mb-6 ${maroon}`}>
-                Solar Connection Details (incl. reading and usage) - Retail
-            </h2>
-            </div>
+                    <div className="mb-6">
+                        <h2 className={`text-xl font-bold mb-6 ${maroon}`}>
+                            Solar Connection Details (incl. reading and usage) - Retail
+                        </h2>
+                    </div>
                     <form
                         onSubmit={handleSubmit}
                         className="space-y-4"
@@ -1478,9 +1486,7 @@ const SolarConnectionDetailsRetail: React.FC = () => {
                             <p className="text-sm text-gray-600 mt-1">
                                 {selectedCategory === "Entire CEB"
                                     ? "Entire CEB"
-                                    : selectedCategory === "Area"
-                                        ? `${selectedCategory}: ${selectedCategoryName}`
-                                        : `${selectedCategory}: ${categoryValue}`}{" "}
+                                    : `${selectedCategory}: ${selectedCategoryName}`}{" "}
                                 | {selectedCycleType}: {selectedCycleDisplay} | Type:{" "}
                                 {reportType} | Net Type: {netType}
                             </p>
@@ -1510,8 +1516,8 @@ const SolarConnectionDetailsRetail: React.FC = () => {
                     {/* Report Table */}
                     <div
                         className={`${reportType === "Summary Report"
-                                ? ""
-                                : "overflow-x-auto max-h-[calc(100vh-250px)]"
+                            ? ""
+                            : "overflow-x-auto max-h-[calc(100vh-250px)]"
                             } border border-gray-300 rounded-lg`}
                     >
                         <div ref={printRef} className="min-w-full py-4">

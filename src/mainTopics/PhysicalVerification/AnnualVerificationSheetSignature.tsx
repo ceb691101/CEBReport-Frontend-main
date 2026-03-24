@@ -320,8 +320,7 @@ const AnnualVerificationSheetSignature: React.FC = () => {
       pagesHTML += `
       <div class="page">
         <div class="header">
-          <h2>CEYLON ELECTRICITY BOARD</h2>
-          <h3>ANNUAL VERIFICATION OF STORES - ${selectedYear} / Cost Center : ${selectedDept.DeptId}</h3>
+          <h2>ANNUAL VERIFICATION OF STORES - ${selectedYear} / Cost Center : ${selectedDept.DeptId}</h2>
         </div>
 
         <div class="subtitles"><div>ORIGINAL : Accountant</div><div>From Ref : AV/1/A</div></div>

@@ -685,6 +685,21 @@ const DebtorsAnalysis: React.FC = () => {
               font-size: 9px; 
               color: #666;
             }
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+            }
             .total-row { 
               font-weight: bold; 
               background-color: #f5f5f5; 
@@ -712,9 +727,6 @@ const DebtorsAnalysis: React.FC = () => {
             ${getHeaderContent()}
           </div>
           ${generateTableContent()}
-          <div class="footer">
-            Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | CEB@2025
-          </div>
         </body>
       </html>
     `);

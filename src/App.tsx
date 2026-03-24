@@ -1,5 +1,5 @@
-import { Routes, Route } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
+import {Routes, Route} from "react-router-dom";
+import {ToastContainer} from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./index.css";
 
@@ -14,10 +14,10 @@ import Home from "./pages/Home";
 import AdminHome from "./pages/AdminHome";
 
 function App() {
-  return (
-    <>
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
+	return (
+		<>
+			<Routes>
+				<Route path="/" element={<LoginPage />} />
 
         <Route
           path="/adminhome"
@@ -36,35 +36,43 @@ function App() {
             </Layout>
           }
         />
+				<Route
+					path="/home"
+					element={
+						<Layout>
+							<Home />
+						</Layout>
+					}
+				/>
 
-        <Route
-          path="/user"
-          element={
-            <Layout>
-              <UserDetails />
-            </Layout>
-          }
-        />
+				<Route
+					path="/user"
+					element={
+						<Layout>
+							<UserDetails />
+						</Layout>
+					}
+				/>
 
-        <Route
-          path="/report/inventory/material-details/:matCd"
-          element={
-            <Layout>
-              <MaterialDetails />
-            </Layout>
-          }
-        />
+				<Route
+					path="/report/inventory/material-details/:matCd"
+					element={
+						<Layout>
+							<MaterialDetails />
+						</Layout>
+					}
+				/>
 
-        <Route
-          path="/report/TrialBalance/costcenters"
-          element={
-            <Layout>
-              <CostCenterTrial />
-            </Layout>
-          }
-        />
+				<Route
+					path="/report/TrialBalance/costcenters"
+					element={
+						<Layout>
+							<CostCenterTrial />
+						</Layout>
+					}
+				/>
 
-       {/* <Route
+				{/* <Route
   path="/report/TrialBalance/select-cost-center/:compId"
   element={
     <Layout>
@@ -73,13 +81,12 @@ function App() {
   }
 /> */}
 
+				{ReportRoutes()}
+			</Routes>
 
-        {ReportRoutes()}
-      </Routes>
-
-      <ToastContainer />
-    </>
-  );
+			<ToastContainer />
+		</>
+	);
 }
 
 export default App;

@@ -52,8 +52,6 @@ const CostCenterQuantityHnad: React.FC = () => {
   
   // Debug log to see what EPF number is being used
   useEffect(() => {
-    console.log('Current user:', user);
-    console.log('EPF Number being used:', epfNo);
   }, [user, epfNo]);
 
   // Colors
@@ -98,7 +96,6 @@ const CostCenterQuantityHnad: React.FC = () => {
         } else if (parsed.departments && Array.isArray(parsed.departments)) {
           rawData = parsed.departments;
         } else {
-          console.log('Unexpected response structure:', parsed);
           rawData = [];
         }
         
@@ -164,7 +161,6 @@ const CostCenterQuantityHnad: React.FC = () => {
       } else if (parsed.materials && Array.isArray(parsed.materials)) {
         rawData = parsed.materials;
       } else {
-        console.log('Unexpected response structure:', parsed);
         rawData = [];
       }
       
@@ -264,7 +260,7 @@ const CostCenterQuantityHnad: React.FC = () => {
       ["Total Records", quantityData.length.toString()],
       [],
       [`Generated: ${new Date().toLocaleString()}`],
-      [`CEB@${new Date().getFullYear()}`]
+      [`${new Date().getFullYear()}`]
     ];
 
     const csvContent = csvRows.map(r => r.join(",")).join("\n");
@@ -404,7 +400,7 @@ const CostCenterQuantityHnad: React.FC = () => {
         </table>
         
         <div class="footer">
-          <p>Generated on: ${new Date().toLocaleDateString()} | CEB Inventory System</p>
+          <p>Generated on: ${new Date().toLocaleDateString()} | Inventory System</p>
         </div>
       </body>
       </html>

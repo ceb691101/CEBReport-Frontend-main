@@ -53,8 +53,6 @@ const CostCenterIncomeExpenditure: React.FC = () => {
 
 	// Debug log to see what EPF number is being used
 	useEffect(() => {
-		console.log("Current user:", user);
-		console.log("EPF Number being used:", epfNo);
 	}, [user, epfNo]);
 
 	// Colors
@@ -140,7 +138,6 @@ const CostCenterIncomeExpenditure: React.FC = () => {
 				) {
 					rawData = parsed.departments;
 				} else {
-					console.log("Unexpected response structure:", parsed);
 					rawData = [];
 				}
 
@@ -237,7 +234,6 @@ const CostCenterIncomeExpenditure: React.FC = () => {
 	};
 
 	const handleDepartmentSelect = (department: Department) => {
-		console.log("Department selected:", department);
 		setSelectedDepartment(department);
 		// Only fetch data if both year and month are selected
 		if (selectedYear && selectedMonth) {

@@ -79,8 +79,6 @@ const CostCenterWorkInprogress = ({
 	const epfNo = user?.Userno || "";
 
 	useEffect(() => {
-		console.log("Current user:", user);
-		console.log("EPF Number being used:", epfNo);
 	}, [user, epfNo]);
 
 	useEffect(() => {
@@ -142,7 +140,6 @@ const CostCenterWorkInprogress = ({
 				) {
 					rawData = parsed.departments;
 				} else {
-					console.log("Unexpected response structure:", parsed);
 					rawData = [];
 				}
 
@@ -222,7 +219,6 @@ const CostCenterWorkInprogress = ({
 			) {
 				rawData = jsonData.workInProgress;
 			} else {
-				console.log("Unexpected response structure:", jsonData);
 				rawData = [];
 			}
 
@@ -494,7 +490,7 @@ const CostCenterWorkInprogress = ({
 			["Total Records", sortedData.length.toString()],
 			[],
 			[`Generated: ${new Date().toLocaleString()}`],
-			[`CEB@${new Date().getFullYear()}`],
+			[`${new Date().getFullYear()}`],
 		];
 
 		const csvContent = csvRows.map((r) => r.join(",")).join("\n");
@@ -756,7 +752,7 @@ const CostCenterWorkInprogress = ({
           <div class="header">WORK IN PROGRESS AS AT - ${new Date().toLocaleDateString(
 					"en-GB"
 				)}</div>
-          <div class="subheader">CEB - Ceylon Electricity Board</div>
+          <div class="subheader"></div>
           <div class="department-info">Cost Center: ${
 					selectedDepartment.DeptName
 				} (${selectedDepartment.DeptId})</div>

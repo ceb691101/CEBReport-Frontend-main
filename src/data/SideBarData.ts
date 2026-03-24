@@ -32,12 +32,10 @@ export const data = [
 			{id: 14, name: "Active customers and sales by tariff"},
 			{id: 15, name: "Standing order report"},
 			{id: 17, name: "Registered consumers for SMS alerts"},
-			{id: 1018, name: "Transformer wise Consumption Analysis"},
 			{id: 1019, name: "Finalized Accounts"},
 			{id: 1020, name: "Outstanding Dues"},
 			{id: 1021, name: "Largest Consumption"},
 			{id: 1022, name: "Security deposit & Contract Demand - Bulk"},
-			{id: 1023, name: "Arrears Position"},
 		],
 		path: "/report/general",
 	},
@@ -47,12 +45,12 @@ export const data = [
 		icon: RiBankLine,
 		subtopics: [
 			{id: 19, name: "Customer Information"},
-			{id: 1020, name: "Transaction History" },
-			{id: 1021, name: "Bill Information" },
-			{id: 1022, name: "Payment inquiries" },
-			{id: 1023, name: "Bill SMS Inquiry" },
-			{id: 1024, name: "Arrears Position – Single customer" },
-			{id: 1025, name: "Suspense Payment" },
+			{id: 1020, name: "Transaction History"},
+			{id: 1021, name: "Bill Information"},
+			{id: 1022, name: "Payment inquiries"},
+			{id: 1023, name: "Bill SMS Inquiry"},
+			{id: 1024, name: "Arrears Position – Single customer"},
+			{id: 1025, name: "Suspense Payment"},
 		],
 		path: "/report/billing-payment",
 	},
@@ -133,7 +131,10 @@ export const data = [
 				name: "Solar connection details (incl. Reading and usage) - bulk",
 			},
 			{id: 58, name: "Solar customer information"},
-			{id: 1027, name: "Rooftop Solar Input Data portal for T and D Loss Calculation"},
+			{
+				id: 1027,
+				name: "Rooftop Solar Input Data portal for T and D Loss Calculation",
+			},
 		],
 		path: "/report/solar-information",
 	},
@@ -143,8 +144,8 @@ export const data = [
 		name: "Solar Information - Jobs",
 		icon: GiSolarPower,
 		subtopics: [
-			{id: 140, name: "Area-wise Solar Sent to Billing Details"},
-			{id: 141, name: "Solar Retail Rooftop Pending Jobs after PIV2 Paid"},
+			{id: 1400, name: "Area-wise Solar Sent to Billing Details"},
+			{id: 1410, name: "Solar Retail Rooftop Pending Jobs after PIV2 Paid"},
 		],
 		path: "/report/SolarInformationJobs",
 	},
@@ -170,6 +171,11 @@ export const data = [
 			{id: 100, name: "Average Consumptions - All Material Codes"},
 			{id: 102, name: "Average Consumptions - Selected Maerial Codes"},
 			{id: 103, name: "Province wise Quantity on Hand"},
+			{id: 103, name: "Provincial Quantity on Hand - Cross Tab"},
+			{
+				id: 104,
+				name: "Quantity on Hand All Region Material (Active ,Online )",
+			},
 		],
 		path: "/report/inventory",
 	},
@@ -221,10 +227,12 @@ export const data = [
 		subtopics: [
 			{id: 111, name: "Job Card Details"},
 			{id: 119, name: "Job Card -  Material Details"},
+			{id: 400, name: "Job Search - Orinary"},
 		],
 
 		path: "/report/jobs",
 	},
+	
 
 	{
 		id: 13,
@@ -356,6 +364,30 @@ export const data = [
 				id: 161,
 				name: "20. PIV Details (Issued and Paid Cost Centers AFMHQ Only)",
 			},
+			{
+				id: 162,
+				name: "21. PIV Details (Paid Cost center: 913.00 and Issued Other Company)",
+			},
+			{
+				id: 163,
+				name: "22. Refunded PIV Details",
+			},
+			{
+				id: 164,
+				name: "23. Region wise PIV Collections by Provincial POS relevant to Other Cost Centers",
+			},
+			{
+				id: 165,
+				name: "24. Bank PIV Tabulation",
+			},
+			{
+				id: 166,
+				name: "25. Bank Paid Piv Details",
+			},
+			{
+				id: 167,
+				name: "26. Cost Center wise PIV Details (Status Report)",
+			},
 		],
 		path: "/report/PIV",
 	},
@@ -365,45 +397,55 @@ export const data = [
 		name: "Physical Verification",
 		icon: TbReportAnalytics,
 		subtopics: [
-			{id: 130,
-			 name: "1.PHV Entry Form",
+			{id: 130, name: "1. PHV Entry Form"},
 
-			},	
+			{id: 131, name: "2.1 PHV Validation"},
 
-			{id: 131,
-			 name: "2.1 PHV Validation",
+			{id: 132, name: "2.2 PHV Validation (Warehousewise)"},
 
+
+			{id: 133, name: "3.1 Annual Verification Sheet (Signature) - AV/1/A"},
+
+			{
+				id: 134,
+				name: "3.2 Annual Verification sheet (WHwise Signature) - AV/1/A",
 			},
 
-			{id: 132,
-			 name: "2.2 PHV Validation (Warehousewise)",
-
+			{
+				id: 135,
+				name: "4. Physical Verification Non-Moving / Slow-Moving WH wise AV/6",
 			},
 
-			{id: 133,
-			 name: "3.1 Annual Verification Sheet (Signature) - AV/1/A",
-
-			},	
-
-			{id: 134,
-			 name: "3.2 Annual Verification sheet (WHwise Signature) - AV/1/A",
-
+			{
+				id: 136,
+				name: "5. Physical Verification Shortage / Surplus WH wise AV/1/B",
 			},
 
-			{id: 135,
-			 name: "3.4 Physical Verification Non-Moving / Slow-Moving WH wise AV/6",
-
+			{
+				id: 137,
+				name: "6.1 Physical Verification Obsolete / Idle(GRADE Code) AV/7A",
 			},
 
+			{id: 138, name: "6.2 Physical Verification Damage AV/7B"},
 
-			
-			
+			{
+				id: 139,
+				name: "7. Physical Verification Non-Moving WH wise.BOS - AV/6/BOS",
+			},
+
+			{
+				id: 140,
+				name: "8. Physical Verification Obsolete Idle BOS - AV/7A/BOS",
+			},
+
+			{id: 141, name: "9. Physical Verification Damage BOS - AV/7B/BOS"},
+
+			{id: 142, name: "10. Last Document No - Selected Year"},
 		],
 
 		path: "/report/PhysicalVerification",
 	},
 
-	// id = 17 is used above for Solar Information - Jobs
 	{
 		id: 18,
 		name: "Billing Finance Reports",
@@ -419,8 +461,14 @@ export const data = [
 		name: "Transmission Billing",
 		icon: MdPower,
 		subtopics: [
-			{id: 1034, name: "Monthly Energy Sales (Assessed units taken from consolidated data)"},
-			{id: 1035, name: "Monthly Energy Sales (Assessed units taken from provincial data)"},
+			{
+				id: 1034,
+				name: "Monthly Energy Sales (Assessed units taken from consolidated data)",
+			},
+			{
+				id: 1035,
+				name: "Monthly Energy Sales (Assessed units taken from provincial data)",
+			},
 		],
 		path: "/report/transmission-billing",
 	},
@@ -432,8 +480,22 @@ export const data = [
 			{id: 1036, name: "Area Wise SRP Application PIV (PIVI) To be Paid Report"},
 			{id: 1037, name: "Area Wise SRP Application PIV Status Report"},
 			{id: 1038, name: "Area Wise SRP Estimation PIV (PIVII) To be Paid Report"},
+			{
+				id: 1036,
+				name: "Area Wise SRP Application PIV (PIVI) To be Paid Report",
+			},
+
+			{id: 1037, name: "Area Wise SRP Application PIV (PIVI) Paid Report"},
+
+			{
+				id: 1039,
+				name: "Division Wise SRP Application PIV (PIVI) To be Paid Report",
+			},
+
+			{id: 1041, name: "Area Wise SRP Estimation PIV (PIVII) Paid Report"},
 		],
 		path: "/report/SRP",
 	},
 
+	// id: 21 is used above for the job search report
 ];
