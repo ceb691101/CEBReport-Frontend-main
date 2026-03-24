@@ -43,6 +43,12 @@ import DashboardSelector from "../components/dashboard/DashboardSelector";
 // ─── Bar chart color palette (auto-assigned per net-type) ─────────────────────
 const BAR_CAPACITY_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b"];
 const BAR_COUNT_COLORS    = ["#818cf8", "#38bdf8", "#34d399", "#fbbf24"];
+const SOLAR_NET_TYPE_COLORS = [
+  "#813405",
+  "#d45113   ",
+  "#f9a03f   ",
+  "#f8dda4   ",
+];
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -1275,24 +1281,23 @@ const Home: React.FC = () => {
                       <style key={solarPieAnimKey}>{solarPieStyles}</style>
                       <div className="flex items-center justify-between mb-6">
                         <h3 className="font-semibold text-gray-900">Solar Customers by Net Type</h3>
-                        <span className="text-[color:var(--ceb-navy)] text-xs font-semibold tracking-wide">GRAPH</span>
+                        {/* <span className="text-[color:var(--ceb-navy)] text-xs font-semibold tracking-wide">GRAPH</span> */}
                       </div>
                       <div className="grid grid-cols-2 gap-6">
                         {[
-                          { label: "Ordinary Solar", total: animatedOrdSolarTotal, counts: customerCounts.solar,
+                          { label: "Ordinary Solar", total: animatedOrdSolarTotal,
                             animatedCounts: [animatedOrdNetMetering, animatedOrdNetAccounting, animatedOrdNetPlus, animatedOrdNetPlusPlus],
                             pcts: [ordSolarNetMeteringPct, ordSolarNetAccountingPct, ordSolarNetPlusPct, ordSolarNetPlusPlusPct],
                             classes: [`solar-ord-metering-${solarPieAnimKey}`, `solar-ord-accounting-${solarPieAnimKey}`, `solar-ord-plus-${solarPieAnimKey}`, `solar-ord-plusplus-${solarPieAnimKey}`],
                             keys: ["ordinaryNetMetering","ordinaryNetAccounting","ordinaryNetPlus","ordinaryNetPlusPlus"] },
-                          { label: "Bulk Solar", total: animatedBulkSolarTotal, counts: bulkSolarCustomers,
+                          { label: "Bulk Solar", total: animatedBulkSolarTotal,
                             animatedCounts: [animatedBulkNetMetering, animatedBulkNetAccounting, animatedBulkNetPlus, animatedBulkNetPlusPlus],
                             pcts: [bulkSolarNetMeteringPct, bulkSolarNetAccountingPct, bulkSolarNetPlusPct, bulkSolarNetPlusPlusPct],
                             classes: [`solar-bulk-metering-${solarPieAnimKey}`, `solar-bulk-accounting-${solarPieAnimKey}`, `solar-bulk-plus-${solarPieAnimKey}`, `solar-bulk-plusplus-${solarPieAnimKey}`],
                             keys: ["bulkNetMetering","bulkNetAccounting","bulkNetPlus","bulkNetPlusPlus"] },
-                        ].map(({ label, total, counts, animatedCounts, pcts, classes, keys }) => {
-                          const colors    = ["var(--ceb-maroon)", "#A0673A", "var(--ceb-gold)", "#C9934E"];
+                        ].map(({ label, total, animatedCounts, pcts, classes, keys }) => {
+                          const colors    = SOLAR_NET_TYPE_COLORS;
                           const netLabels = ["Net Metering", "Net Accounting", "Net Plus", "Net Plus Plus"];
-                          const countValues = [counts.netMetering, counts.netAccounting, counts.netPlus, counts.netPlusPlus];
                           let offset = 0;
                           return (
                             <div key={label} className="flex flex-col items-center">
@@ -1313,7 +1318,7 @@ const Home: React.FC = () => {
                                   })}
                                 </svg>
                                 {activeSolarPieChart && keys.includes(activeSolarPieChart) ? (
-                                  <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                     <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-center shadow-lg">
                                       <p className="text-xs font-semibold">{netLabels[keys.indexOf(activeSolarPieChart)]}</p>
                                       <p className="text-sm font-bold mt-1">{formatNumber(animatedCounts[keys.indexOf(activeSolarPieChart)])}</p>
@@ -1321,7 +1326,7 @@ const Home: React.FC = () => {
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                     <div className="text-center">
                                       <p className="text-xl font-bold text-gray-900">{formatNumber(total)}</p>
                                       <p className="text-xs text-gray-500">Total</p>
@@ -1331,12 +1336,12 @@ const Home: React.FC = () => {
                               </div>
                               <div className="space-y-2 w-full text-sm mt-4">
                                 {netLabels.map((nl, i) => (
-                                  <div key={nl}
-                                    className={`flex items-center gap-2 p-1 rounded transition-colors ${activeSolarPieChart === keys[i] ? `bg-[${colors[i]}]/10` : ""}`}
-                                    onMouseEnter={() => setActiveSolarPieChart(keys[i])}
-                                    onMouseLeave={() => setActiveSolarPieChart(null)}>
+                                  <div key={nl} className="flex items-center gap-2 p-1 rounded">
                                     <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: colors[i] }} />
-                                    <span className="text-gray-700">{formatNumber(animatedCounts[i])} ({pcts[i].toFixed(1)}%)</span>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">{nl}</p>
+                                      <p className="text-xs text-gray-500">{formatNumber(animatedCounts[i])} ({pcts[i].toFixed(1)}%)</p>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
