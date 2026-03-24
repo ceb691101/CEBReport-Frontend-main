@@ -1,10 +1,14 @@
 import UserNavBar from "./components/layout/UserNavBar";
 import Sidebar from "./components/layout/Sidebar";
+import AdminSidebar from "./components/layout/AdminSidebar";
 import { useState } from "react";
 import { FaBars } from "react-icons/fa";
+import { useLocation } from "react-router-dom";
 
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -33,7 +37,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
         } lg:translate-x-0 w-64 overflow-y-auto`}
       >
         <div className="h-full flex flex-col">
-          <Sidebar />
+          {isAdminRoute ? <AdminSidebar /> : <Sidebar />}
         </div>
       </div>
 

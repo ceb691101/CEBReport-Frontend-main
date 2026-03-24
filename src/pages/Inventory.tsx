@@ -5,6 +5,7 @@ import SubtopicCard from "../components/shared/SubtopicCard";
 import AverageConsumptions from "../mainTopics/inventory/AverageConsumptions";
 import CostCenterQuantityHnad from "../mainTopics/inventory/CostCenterQuantityHnad";
 import AverageConsumptionSelected from "../mainTopics/inventory/AverageConsumptionSelected";
+import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuantityOnHand";
 import QtyOnHandAllRegion from "../mainTopics/inventory/QtyOnHandAllRegions";
 import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
 
@@ -42,6 +43,8 @@ const Inventory = () => {
 			case "Cost Center wise Quantity on Hand":
 				return <CostCenterQuantityHnad />;
 
+			case "Province wise Quantity on Hand":
+				return <ProvinceWiseQuantityOnHand />;
       case "Provincial Quantity on Hand - Cross Tab":
 				return <ProvincialQtyHand/>;
 

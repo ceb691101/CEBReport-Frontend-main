@@ -16,7 +16,7 @@ const Sidebar = () => {
     const currentPath = location.pathname;
     
     // Special handling for home page - don't redirect and clear activeId
-    if (currentPath === "/home") {
+    if (currentPath === "/home" || currentPath === "/adminhome") {
       setActiveId(null); // Clear any active selection
       return; // Exit early, don't interfere with home page
     }
@@ -36,7 +36,7 @@ const Sidebar = () => {
         setActiveId(matchingTopic.id);
       } else {
         // Don't redirect for certain special paths like report display pages
-        const specialPaths = ["/report-display", "/user"];
+        const specialPaths = ["/report-display", "/user", "/adminhome"];
         if (!specialPaths.includes(currentPath)) {
           // Only redirect to first item if we're on a completely unknown path
           const first = data[0];

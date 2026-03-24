@@ -4,6 +4,8 @@ import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
 
 import AreaWiseSRPApplicationPIV from "../mainTopics/SRP/AreaWiseSRPApplicationPIV";
+import AreaWiseSRPApplicationPIVStatus from "../mainTopics/SRP/AreaWiseSRPApplicationPIVStatus";
+import AreaWiseSRPEstimationPIV from "../mainTopics/SRP/AreaWiseSRPEstimationPIV";
 import AreaWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPApplicationPIVPaidReport";
 import DivisionWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPApplicationPIVPaidReport";
 import AreaWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPEstimationPIVPaidReport";
@@ -38,6 +40,10 @@ const SolarReligiousPurpose = () => {
     switch (subtopicName) {
       case "Area Wise SRP Application PIV (PIVI) To be Paid Report":
         return <AreaWiseSRPApplicationPIV />;
+      case "Area Wise SRP Application PIV Status Report":
+        return <AreaWiseSRPApplicationPIVStatus />;
+      case "Area Wise SRP Estimation PIV (PIVII) To be Paid Report":
+        return <AreaWiseSRPEstimationPIV />;
 
       case "Area Wise SRP Application PIV (PIVI) Paid Report":
         return <AreaWiseSRPApplicationPIVPaidReport/>;
