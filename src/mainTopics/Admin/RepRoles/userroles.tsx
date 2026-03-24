@@ -68,6 +68,18 @@ const endpointMap: Record<RoleType, string> = {
 const fieldBaseClass =
 	"w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10";
 
+const actionButtonPrimaryClass =
+	"rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60";
+
+const actionButtonSoftClass =
+	"rounded-lg bg-[#7A0000]/85 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-50";
+
+const actionButtonDarkClass =
+	"rounded-lg bg-stone-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50";
+
+const actionButtonLightClass =
+	"rounded-lg border border-[#7A0000]/20 bg-white px-5 py-2.5 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5";
+
 const UserRoles = () => {
 	const [activeTab, setActiveTab] = useState<RoleType>("user");
 	const [roles, setRoles] = useState<RoleRecord[]>([]);
@@ -82,6 +94,7 @@ const UserRoles = () => {
 	const [userGroups, setUserGroups] = useState<UserGroupOption[]>([]);
 	const [isUserGroupsLoading, setIsUserGroupsLoading] = useState(false);
 	const [form, setForm] = useState<CreateRoleForm>(initialForm);
+	const [isAddingCostCentresToRole, setIsAddingCostCentresToRole] = useState(false);
 
 	const loadMotherCompanies = async () => {
 		setIsCompaniesLoading(true);
@@ -279,6 +292,51 @@ const UserRoles = () => {
 		}));
 	};
 
+	const handleAddCostCentresToSelectedRole = async () => {
+		if (!selectedRole) {
+			toast.warning("Please select a role first.");
+			return;
+		}
+
+		if (form.costCentres.length === 0) {
+			toast.warning("Please select at least one cost centre.");
+			return;
+		}
+
+		setIsAddingCostCentresToRole(true);
+
+		try {
+			const response = await fetch(
+				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/costcentres`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						costCentres: form.costCentres,
+					}),
+				}
+			);
+
+			const payload = await response.json();
+
+			if (payload?.errorMessage) {
+				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
+			}
+
+			toast.success(payload?.data?.message ?? "Cost centres added successfully.");
+			await loadRoles(activeTab);
+			setSelectedEpfNo(selectedRole.epfNo);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Failed to add cost centres.";
+			toast.error(message);
+		} finally {
+			setIsAddingCostCentresToRole(false);
+		}
+	};
+
 	const buildRolePayload = (originalEpfNo?: string) => ({
 		originalEpfNo: originalEpfNo?.trim() ?? "",
 		epfNo: form.epfNo.trim(),
@@ -432,10 +490,10 @@ const UserRoles = () => {
 	return (
 		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
 			<div className="mx-auto max-w-7xl space-y-6">
-				<section className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+				<section className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
 					<form
 						onSubmit={handleSubmit}
-						className="rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)]"
+						className="rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)] xl:order-1"
 					>
 						<div className="flex items-start justify-between gap-4">
 							<div>
@@ -504,7 +562,19 @@ const UserRoles = () => {
 							</div>
 
 							<div>
-								<div className="mb-2 text-sm font-medium text-stone-700">Cost Center</div>
+								<div className="mb-2 flex items-center justify-between gap-3">
+									<span className="text-sm font-medium text-stone-700">Cost Center</span>
+									<button
+										type="button"
+										onClick={handleAddCostCentresToSelectedRole}
+										aria-label="Add cost centers"
+										disabled={!selectedRole || isAddingCostCentresToRole || isSubmitting}
+										className="inline-flex items-center gap-2 rounded-md bg-[#7A0000] px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-[#620000] border border-transparent focus:outline-none focus:ring-2 focus:ring-[#7A0000]/30"
+									>
+										<span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#7A0000] font-semibold">+</span>
+										<span className="text-sm">{isAddingCostCentresToRole ? "Adding..." : "Add cost centers"}</span>
+									</button>
+								</div>
 								<div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
 									{isCostCentresLoading ? (
 										<div className="text-sm text-stone-500">Loading cost centres...</div>
@@ -547,7 +617,7 @@ const UserRoles = () => {
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								className="rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60"
+								className={actionButtonPrimaryClass}
 							>
 								{isSubmitting ? "Saving..." : "ADD"}
 							</button>
@@ -555,7 +625,7 @@ const UserRoles = () => {
 								type="button"
 								disabled={!selectedRole || isSubmitting}
 								onClick={handleEdit}
-								className="rounded-lg bg-[#7A0000]/85 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-50"
+								className={actionButtonSoftClass}
 							>
 								EDIT
 							</button>
@@ -563,24 +633,24 @@ const UserRoles = () => {
 								type="button"
 								disabled={!selectedRole || isSubmitting}
 								onClick={handleDelete}
-								className="rounded-lg bg-stone-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+								className={actionButtonDarkClass}
 							>
 								DELETE
 							</button>
 							<button
 								type="button"
 								onClick={handleReset}
-								className="rounded-lg border border-[#7A0000]/20 bg-white px-5 py-2.5 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5"
+								className={actionButtonLightClass}
 							>
 								RESET
 							</button>
 						</div>
 					</form>
 
-					<section className="rounded-[28px] border border-stone-200 bg-white p-6 shadow-[0_16px_50px_rgba(70,40,20,0.06)]">
+					<section className="rounded-[28px] border border-stone-200 bg-white p-6 shadow-[0_16px_50px_rgba(70,40,20,0.06)] xl:order-2">
 						<div className="flex flex-wrap items-center justify-between gap-4">
 							<div>
-								<h2 className="text-2xl font-semibold text-stone-900">Role Directory</h2>
+								<h2 className="text-2xl font-semibold text-stone-900">User Role Table</h2>
 							</div>
 
 							<div className="inline-flex rounded-full border border-stone-200 bg-stone-100 p-1">
@@ -597,10 +667,10 @@ const UserRoles = () => {
 							</div>
 						</div>
 
-						<div className="mt-6 overflow-hidden rounded-2xl border border-stone-200">
+						<div className="mt-6 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50/40">
 							<div className="overflow-x-auto">
 								<table className="min-w-full divide-y divide-stone-200 text-sm">
-									<thead className="bg-stone-100 text-left text-xs uppercase tracking-[0.2em] text-stone-500">
+									<thead className="bg-stone-100 text-left text-xs uppercase tracking-[0.15em] text-stone-500">
 										<tr>
 											<th className="px-4 py-3">EPF No</th>
 											<th className="px-4 py-3">Role ID</th>

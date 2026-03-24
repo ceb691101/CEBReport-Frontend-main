@@ -4,10 +4,6 @@ import {
   RefreshCw,
   Folder,
   CircleChevronRight,
-  Plus,
-  Pencil,
-  Trash2,
-  RotateCcw,
 } from "lucide-react";
 
 type ViewMode = "category" | "name";
@@ -399,16 +395,16 @@ const RoleReport = () => {
           </div>
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-[1.1fr_1.3fr]">
-          <div className="rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)]">
+        <section className="grid gap-5 xl:grid-cols-[1fr_1.5fr]">
+          <div className="rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)] xl:order-2">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-stone-900">Report Users</h3>
+              <h2 className="text-2xl font-semibold text-stone-900">Role Report Table</h2>
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-stone-200">
               <div className="max-h-[420px] overflow-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="sticky top-0 z-10 bg-[#efe6d8] text-xs uppercase tracking-wide text-stone-700">
+                  <thead className="sticky top-0 z-10 bg-stone-100 text-xs uppercase tracking-[0.15em] text-stone-500">
                     <tr>
                       <th className="px-3 py-2">Name</th>
                       <th className="px-3 py-2">User Name</th>
@@ -456,8 +452,11 @@ const RoleReport = () => {
             </div>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-5 xl:order-1">
             <div className="rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)]">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-stone-900">Role Report Form</h2>
+              </div>
               <fieldset className="rounded-2xl border border-stone-300 px-3 pb-4 pt-2">
                 <legend className="px-2 text-sm font-semibold text-stone-800"></legend>
 
@@ -580,28 +579,24 @@ const RoleReport = () => {
                   label="ADD"
                   onClick={() => runAction("add")}
                   disabled={isBusy}
-                  icon={<Plus className="h-4 w-4" />}
                   tone="primary"
                 />
                 <ActionButton
                   label="EDIT"
                   onClick={() => runAction("replace")}
                   disabled={isBusy}
-                  icon={<Pencil className="h-4 w-4" />}
                   tone="primarySoft"
                 />
                 <ActionButton
-                  label="REMOVE"
+                  label="DELETE"
                   onClick={() => runAction("remove")}
                   disabled={isBusy}
-                  icon={<Trash2 className="h-4 w-4" />}
                   tone="dark"
                 />
                 <ActionButton
                   label="RESET"
                   onClick={resetSelections}
                   disabled={isBusy}
-                  icon={<RotateCcw className="h-4 w-4" />}
                   tone="light"
                 />
               </div>
@@ -622,20 +617,18 @@ const ActionButton = ({
   label,
   onClick,
   disabled,
-  icon,
   tone,
 }: {
   label: string;
   onClick: () => void;
   disabled: boolean;
-  icon: React.ReactNode;
   tone: "primary" | "primarySoft" | "dark" | "light";
 }) => {
   const toneClasses: Record<typeof tone, string> = {
-    primary: "bg-[#7A0000] text-white hover:bg-[#620000]",
-    primarySoft: "bg-[#7A0000]/80 text-white hover:bg-[#620000]",
-    dark: "bg-stone-900 text-white hover:bg-black",
-    light: "border border-stone-300 bg-white text-stone-800 hover:bg-stone-100",
+    primary: "bg-[#7A0000] text-white hover:bg-[#620000] disabled:opacity-60",
+    primarySoft: "bg-[#7A0000]/85 text-white hover:bg-[#620000] disabled:opacity-50",
+    dark: "bg-stone-800 text-white hover:bg-black disabled:opacity-50",
+    light: "border border-[#7A0000]/20 bg-white text-[#7A0000] hover:bg-[#7A0000]/5 disabled:opacity-50",
   };
 
   return (
@@ -643,9 +636,8 @@ const ActionButton = ({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${toneClasses[tone]}`}
+      className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed ${toneClasses[tone]}`}
     >
-      {icon}
       {label}
     </button>
   );

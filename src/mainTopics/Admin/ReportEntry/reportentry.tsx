@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { RefreshCw } from "lucide-react";
+import { CheckSquare, RefreshCw, Square } from "lucide-react";
 
 type CategoryRecord = {
     catCode: string;
@@ -30,12 +30,24 @@ const initialForm: CreateEntryForm = {
     repId: "",
     catCode: "",
     repName: "",
-    favorite: false,
+    favorite: true,
     active: true,
 };
 
 const fieldBaseClass =
     "w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10 disabled:bg-stone-100 disabled:text-stone-500";
+
+const actionButtonPrimaryClass =
+    "rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60";
+
+const actionButtonSoftClass =
+    "rounded-lg bg-[#7A0000]/85 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-50";
+
+const actionButtonDarkClass =
+    "rounded-lg bg-stone-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50";
+
+const actionButtonLightClass =
+    "rounded-lg border border-[#7A0000]/20 bg-white px-5 py-2.5 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5";
 
 const ReportEntry = () => {
     const [categories, setCategories] = useState<CategoryRecord[]>([]);
@@ -237,7 +249,7 @@ const ReportEntry = () => {
             repId: entry.repId,
             catCode: entry.catCode,
             repName: entry.repName,
-            favorite: entry.favorite === 1,
+            favorite: entry.active === 1 && entry.favorite === 1,
             active: entry.active === 1,
         });
         setMode("edit");
@@ -262,7 +274,7 @@ const ReportEntry = () => {
     return (
         <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
             <div className="mx-auto max-w-7xl space-y-6">
-                <section className="grid gap-6 xl:grid-cols-[1fr_1.4fr]">
+                <section className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
                     <form
                         onSubmit={mode === "add" ? handleAdd : handleEdit}
                         className="rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)] h-fit"
@@ -324,14 +336,23 @@ const ReportEntry = () => {
 
                                 <div className="flex gap-6 mt-2">
                                     <Checkbox
-                                        label="Add to Favourity :"
+                                        label="Add to Favourite :"
                                         checked={form.favorite}
+                                        asImage
                                         onChange={(checked) => setForm({ ...form, favorite: checked })}
+                                        disabled={!form.active}
                                     />
                                     <Checkbox
                                         label="Active Report :"
                                         checked={form.active}
-                                        onChange={(checked) => setForm({ ...form, active: checked })}
+                                        asImage
+                                        onChange={(checked) =>
+                                            setForm((current) => ({
+                                                ...current,
+                                                active: checked,
+                                                favorite: checked,
+                                            }))
+                                        }
                                     />
                                 </div>
                             </div>
@@ -342,7 +363,7 @@ const ReportEntry = () => {
                                 type={mode === "add" ? "submit" : "button"}
                                 onClick={mode === "add" ? undefined : () => handleAdd()}
                                 disabled={isSubmitting}
-                                className="rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60"
+                                className={actionButtonPrimaryClass}
                             >
                                 {isSubmitting && mode === "add" ? "Saving..." : "ADD"}
                             </button>
@@ -357,7 +378,7 @@ const ReportEntry = () => {
                                             else toast.error("Select an entry to edit");
                                         }
                                 }
-                                className="rounded-lg bg-[#7A0000]/85 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-50"
+                                className={actionButtonSoftClass}
                             >
                                 EDIT
                             </button>
@@ -365,14 +386,14 @@ const ReportEntry = () => {
                                 type="button"
                                 disabled={!selectedRepId || isSubmitting}
                                 onClick={handleDelete}
-                                className="rounded-lg bg-stone-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+                                className={actionButtonDarkClass}
                             >
                                 DELETE
                             </button>
                             <button
                                 type="button"
                                 onClick={handleReset}
-                                className="rounded-lg border border-[#7A0000]/20 bg-white px-5 py-2.5 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5"
+                                className={actionButtonLightClass}
                             >
                                 RESET
                             </button>
@@ -381,7 +402,7 @@ const ReportEntry = () => {
 
                     <div className="rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)]">
                         <div className="mb-4 flex items-center justify-between gap-3">
-                            <h3 className="text-xl font-semibold text-stone-900">Report Entry List</h3>
+                            <h2 className="text-2xl font-semibold text-stone-900">Report Entry Table</h2>
                             <button
                                 type="button"
                                 onClick={loadReportEntries}
@@ -392,10 +413,10 @@ const ReportEntry = () => {
                             </button>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-stone-200">
+                        <div className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50/40">
                             <div className="max-h-[520px] overflow-auto">
                                 <table className="w-full border-collapse text-left text-sm">
-                                    <thead className="sticky top-0 bg-[#e6e6fa] text-xs uppercase tracking-wide text-stone-800">
+                                    <thead className="sticky top-0 bg-stone-100 text-xs uppercase tracking-[0.15em] text-stone-500">
                                         <tr>
                                             <th className="border border-stone-200 px-3 py-2 text-center">Report ID NO</th>
                                             <th className="border border-stone-200 px-3 py-2">Category</th>
@@ -513,21 +534,39 @@ const Checkbox = ({
     label,
     checked,
     onChange,
-    disabled
+    disabled,
+    asImage = false
 }: {
     label: string;
     checked: boolean;
     onChange: (checked: boolean) => void;
     disabled?: boolean;
+    asImage?: boolean;
 }) => (
-    <label className="flex items-center gap-2 cursor-pointer mt-1">
-        <input
-            type="checkbox"
-            checked={checked}
-            onChange={(event) => onChange(event.target.checked)}
-            className="h-5 w-5 rounded-md border-stone-300 text-[#7A0000] focus:ring-[#7A0000] shadow-sm disabled:opacity-50"
-            disabled={disabled}
-        />
+    <label className={`mt-1 flex items-center gap-2 ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
+        {asImage ? (
+            <button
+                type="button"
+                onClick={() => !disabled && onChange(!checked)}
+                disabled={disabled}
+                className="inline-flex h-6 w-6 items-center justify-center disabled:opacity-50"
+                aria-label={label}
+            >
+                {checked ? (
+                    <CheckSquare className="h-6 w-6 text-green-600" />
+                ) : (
+                    <Square className="h-6 w-6 text-stone-400" />
+                )}
+            </button>
+        ) : (
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={(event) => onChange(event.target.checked)}
+                className="h-5 w-5 rounded-md border-stone-300 text-[#7A0000] focus:ring-[#7A0000] shadow-sm disabled:opacity-50"
+                disabled={disabled}
+            />
+        )}
         <span className="text-sm font-semibold text-stone-800">{label}</span>
     </label>
 );

@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { RefreshCw, Trash2, Edit2, Plus } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 // Single record coming from backend
 // Backend: GET /roleadminapi/api/reportcategory -> data: [{ CatCode, CatName }]
@@ -24,7 +24,7 @@ const fieldBaseClass =
   "w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10";
 
 const buttonBaseClass =
-  "px-4 py-2 font-semibold text-white rounded-md transition-all duration-200 cursor-pointer hover:opacity-90 active:scale-95";
+  "rounded-lg px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
 
 const ReportCategory = () => {
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
@@ -216,11 +216,13 @@ const ReportCategory = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 py-6">
-      {/* Left side: Form */}
-      <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <section className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
+      {/* Right side: Form */}
+      <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-1">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold text-stone-800">Report Category</h2>
+          <h2 className="text-2xl font-semibold text-stone-900">Report Category Form</h2>
         </div>
 
         <div className="mt-4">
@@ -265,10 +267,9 @@ const ReportCategory = () => {
               <button
                 type={mode === "add" ? "submit" : "button"}
                 onClick={mode === "add" ? undefined : handleAdd}
-                className={`${buttonBaseClass} bg-[#7A0000] hover:bg-[#620000] flex items-center gap-2`}
+                className={`${buttonBaseClass} bg-[#7A0000] text-white hover:bg-[#620000]`}
                 disabled={isSubmitting}
               >
-                <Plus className="w-4 h-4" />
                 ADD
               </button>
 
@@ -282,27 +283,25 @@ const ReportCategory = () => {
                       else toast.error("Select a category to edit");
                     }
                 }
-                className={`${buttonBaseClass} bg-[#7A0000] hover:bg-[#620000] flex items-center gap-2`}
+                className={`${buttonBaseClass} bg-[#7A0000]/85 text-white hover:bg-[#620000]`}
                 disabled={isSubmitting}
               >
-                <Edit2 className="w-4 h-4" />
                 EDIT
               </button>
 
               <button
                 type="button"
                 onClick={handleDelete}
-                className={`${buttonBaseClass} bg-[#7A0000] hover:bg-[#620000] flex items-center gap-2`}
+                className={`${buttonBaseClass} bg-stone-800 text-white hover:bg-black`}
                 disabled={isSubmitting || !selectedCatCode}
               >
-                <Trash2 className="w-4 h-4" />
                 DELETE
               </button>
 
               <button
                 type="button"
                 onClick={handleReset}
-                className={`${buttonBaseClass} bg-[#7A0000] hover:bg-[#620000]`}
+                className={`${buttonBaseClass} border border-[#7A0000]/20 bg-white text-[#7A0000] hover:bg-[#7A0000]/5`}
               >
                 RESET
               </button>
@@ -311,10 +310,10 @@ const ReportCategory = () => {
         </div>
       </div>
 
-      {/* Right side: Table */}
-      <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full">
+      {/* Left side: Table */}
+      <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-2">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-stone-800">Report Category List</h2>
+          <h2 className="text-2xl font-semibold text-stone-900">Report Category Table</h2>
           <button
             type="button"
             onClick={loadCategories}
@@ -327,10 +326,10 @@ const ReportCategory = () => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50/60">
+        <div className="flex-1 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50/40">
           <div className="max-h-[520px] overflow-auto">
             <table className="w-full text-left text-sm border-collapse">
-              <thead className="bg-[#E6E6FA] text-stone-800 text-xs uppercase tracking-wide">
+              <thead className="bg-stone-100 text-stone-500 text-xs uppercase tracking-[0.15em]">
                 <tr>
                   <th className="px-4 py-2 border border-stone-200 w-1/3">
                     Category Code
@@ -383,6 +382,8 @@ const ReportCategory = () => {
             </table>
           </div>
         </div>
+      </div>
+        </section>
       </div>
     </div>
   );
