@@ -1,0 +1,654 @@
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
+import {
+  RefreshCw,
+  Folder,
+  CircleChevronRight,
+  Plus,
+  Pencil,
+  Trash2,
+  RotateCcw,
+} from "lucide-react";
+
+type ViewMode = "category" | "name";
+
+type RoleRecord = {
+  roleId: string;
+  roleName: string;
+  userType: string;
+  company: string;
+};
+
+type CategoryRecord = {
+  catCode: string;
+  catName: string;
+};
+
+type ReportRecord = {
+  repId: string;
+  catCode: string;
+  catName?: string;
+  repName: string;
+  active: number;
+};
+
+type RoleReportMap = Record<string, string[]>;
+
+const fieldBaseClass =
+  "w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10";
+
+const RoleReport = () => {
+  const [viewMode, setViewMode] = useState<ViewMode>("category");
+
+  const [roles, setRoles] = useState<RoleRecord[]>([]);
+  const [categories, setCategories] = useState<CategoryRecord[]>([]);
+  const [reports, setReports] = useState<ReportRecord[]>([]);
+
+  const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedReports, setSelectedReports] = useState<string[]>([]);
+
+  const [enteredName, setEnteredName] = useState<string>("");
+  const [enteredUserName, setEnteredUserName] = useState<string>("");
+
+  const [, setRoleReportMap] = useState<RoleReportMap>({});
+
+  const [isRolesLoading, setIsRolesLoading] = useState(false);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
+  const [isReportsLoading, setIsReportsLoading] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+
+  const fetchRoleData = async (type: "user" | "admin") => {
+    const response = await fetch(`/roleadminapi/api/roleinfo/${type}`);
+    const payload = await response.json();
+
+    if (payload?.errorMessage) {
+      throw new Error(payload.errorMessage);
+    }
+
+    const items = Array.isArray(payload?.data) ? payload.data : [];
+
+    return items.map((item: any) => ({
+      roleId: item?.RoleId ?? item?.roleId ?? "",
+      roleName: item?.RoleName ?? item?.roleName ?? "",
+      userType: item?.UserType ?? item?.userType ?? "",
+      company: item?.Company ?? item?.company ?? "",
+    })) as RoleRecord[];
+  };
+
+  const loadRoles = async () => {
+    setIsRolesLoading(true);
+
+    try {
+      const [users, admins] = await Promise.all([
+        fetchRoleData("user"),
+        fetchRoleData("admin"),
+      ]);
+
+      const merged = [...users, ...admins].filter((role, index, arr) => {
+        return arr.findIndex((r) => r.roleId === role.roleId) === index;
+      });
+
+      setRoles(merged);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load roles.";
+      toast.error(message);
+      setRoles([]);
+    } finally {
+      setIsRolesLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    setIsCategoriesLoading(true);
+
+    try {
+      const response = await fetch("/roleadminapi/api/reportcategory");
+      const payload = await response.json();
+
+      if (payload?.errorMessage) {
+        throw new Error(payload.errorMessage);
+      }
+
+      const items = Array.isArray(payload?.data) ? payload.data : [];
+      setCategories(
+        items.map((item: any) => ({
+          catCode: item?.CatCode ?? item?.catCode ?? "",
+          catName: item?.CatName ?? item?.catName ?? "",
+        }))
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load categories.";
+      toast.error(message);
+      setCategories([]);
+    } finally {
+      setIsCategoriesLoading(false);
+    }
+  };
+
+  const loadReports = async () => {
+    setIsReportsLoading(true);
+
+    try {
+      const response = await fetch("/roleadminapi/api/reportentry");
+      const payload = await response.json();
+
+      if (payload?.errorMessage) {
+        throw new Error(payload.errorMessage);
+      }
+
+      const items = Array.isArray(payload?.data) ? payload.data : [];
+      setReports(
+        items.map((item: any) => ({
+          repId: item?.RepId ?? item?.repId ?? "",
+          catCode: item?.CatCode ?? item?.catCode ?? "",
+          catName: item?.CatName ?? item?.catName ?? "",
+          repName: item?.RepName ?? item?.repName ?? "",
+          active: Number(item?.Active ?? item?.active ?? 0),
+        }))
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load reports.";
+      toast.error(message);
+      setReports([]);
+    } finally {
+      setIsReportsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRoles();
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+    loadReports();
+  }, []);
+
+  const selectedRole = useMemo(
+    () => roles.find((role) => role.roleId === selectedRoleId) ?? null,
+    [roles, selectedRoleId]
+  );
+
+  useEffect(() => {
+    setEnteredName(selectedRole?.roleName ?? "");
+    setEnteredUserName(selectedRole?.roleId ?? "");
+  }, [selectedRole]);
+
+  const activeReports = useMemo(
+    () => reports.filter((report) => report.active === 1),
+    [reports]
+  );
+
+  const categoryNameByCode = useMemo(() => {
+    return categories.reduce<Record<string, string>>((acc, category) => {
+      acc[category.catCode] = category.catName;
+      return acc;
+    }, {});
+  }, [categories]);
+
+  const reportsByCategory = useMemo(() => {
+    return selectedCategories.flatMap((catCode) =>
+      activeReports
+        .filter((report) => (report.catCode ?? "").toString().trim().toUpperCase() === (catCode ?? "").toString().trim().toUpperCase())
+        .map((report) => report.repId)
+    );
+  }, [activeReports, selectedCategories]);
+
+  const reportsByName = useMemo(() => {
+    return activeReports.map((report) => ({
+      ...report,
+      catName: report.catName || categoryNameByCode[report.catCode] || "",
+    }));
+  }, [activeReports, categoryNameByCode]);
+
+  const reportsByNameGrouped = useMemo(() => {
+    const groups = reportsByName.reduce<Record<string, ReportRecord[]>>((acc, report) => {
+      const key = report.catCode || "UNCATEGORIZED";
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(report);
+      return acc;
+    }, {});
+
+    return Object.entries(groups)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([catCode, groupReports]) => ({
+        catCode,
+        catName: groupReports[0]?.catName || categoryNameByCode[catCode] || "",
+        reports: groupReports.sort((a, b) => a.repId.localeCompare(b.repId)),
+      }));
+  }, [reportsByName, categoryNameByCode]);
+
+  const selectedRepIdsForAction = useMemo(() => {
+    if (viewMode === "category") {
+      return Array.from(new Set(reportsByCategory));
+    }
+
+    return Array.from(new Set(selectedReports));
+  }, [viewMode, reportsByCategory, selectedReports]);
+
+  const toggleCategory = (catCode: string) => {
+    setSelectedCategories((current) =>
+      current.includes(catCode)
+        ? current.filter((code) => code !== catCode)
+        : [...current, catCode]
+    );
+  };
+
+  const toggleReport = (repId: string) => {
+    setSelectedReports((current) =>
+      current.includes(repId)
+        ? current.filter((id) => id !== repId)
+        : [...current, repId]
+    );
+  };
+
+  const runAction = async (mode: "add" | "replace" | "remove") => {
+    if (!selectedRoleId) {
+      toast.error("Select a user role first.");
+      return;
+    }
+
+    if (selectedRepIdsForAction.length === 0) {
+      // try fallback: derive report ids from selected categories directly
+      const fallbackFromCategories = selectedCategories.length
+        ? activeReports
+            .filter((report) =>
+              selectedCategories.some(
+                (sc) => (report.catCode ?? "").toString().trim().toUpperCase() === (sc ?? "").toString().trim().toUpperCase()
+              )
+            )
+            .map((r) => r.repId)
+        : [];
+
+      if (fallbackFromCategories.length > 0) {
+        // use fallback IDs
+        // eslint-disable-next-line no-console
+        console.log("runAction - using fallbackFromCategories", { fallbackFromCategories });
+      } else {
+        toast.error(`Select at least one report or category. (selectedCategories=${selectedCategories.length}, selectedReports=${selectedReports.length})`);
+        return;
+      }
+    }
+
+    setIsBusy(true);
+
+    try {
+      // debug log: selection state
+      // eslint-disable-next-line no-console
+      console.log("runAction", { selectedRoleId, viewMode, selectedCategories, selectedReports, selectedRepIdsForAction });
+      // build payload for selected report ids
+      const reportsPayload = selectedRepIdsForAction.map((repId) => {
+        const rep = reports.find((r) => r.repId === repId);
+        return {
+          CatCode: rep?.catCode ?? "",
+          RepId: repId,
+          Favorite: 0,
+        };
+      });
+
+      // Replace: delete existing then insert
+      if (mode === "replace") {
+        await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports`, {
+          method: "DELETE",
+        });
+
+        const resp = await fetch(`/roleadminapi/api/role-report/save-userrolereps`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ RoleId: selectedRoleId, Reports: reportsPayload }),
+        });
+
+        const payload = await resp.json();
+        if (payload?.errorMessage) throw new Error(payload.errorMessage);
+
+        setRoleReportMap((current) => ({ ...current, [selectedRoleId]: reportsPayload.map((r) => r.RepId) }));
+        toast.success("Role report list updated.");
+        return;
+      }
+
+      // Add: save new reports (backend avoids duplicates)
+      if (mode === "add") {
+        const resp = await fetch(`/roleadminapi/api/role-report/save-userrolereps`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ RoleId: selectedRoleId, Reports: reportsPayload }),
+        });
+
+        const payload = await resp.json();
+        if (payload?.errorMessage) throw new Error(payload.errorMessage);
+
+        setRoleReportMap((current) => {
+          const existing = current[selectedRoleId] ?? [];
+          const next = Array.from(new Set([...existing, ...reportsPayload.map((r) => r.RepId)]));
+          return { ...current, [selectedRoleId]: next };
+        });
+
+        toast.success("Reports added to selected role.");
+        return;
+      }
+
+      // Remove: call delete endpoint per report
+      if (mode === "remove") {
+        for (const repId of selectedRepIdsForAction) {
+          const resp = await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports/${repId}`, {
+            method: "DELETE",
+          });
+
+          const payload = await resp.json();
+          if (payload?.errorMessage) throw new Error(payload.errorMessage);
+        }
+
+        setRoleReportMap((current) => {
+          const existing = current[selectedRoleId] ?? [];
+          const next = existing.filter((repId) => !selectedRepIdsForAction.includes(repId));
+          return { ...current, [selectedRoleId]: next };
+        });
+
+        toast.success("Selected reports removed from role.");
+        return;
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Action failed.";
+      toast.error(message);
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const resetSelections = () => {
+    setSelectedCategories([]);
+    setSelectedReports([]);
+    toast.info("Selections reset.");
+  };
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.14),_transparent_32%),linear-gradient(180deg,_#f8f5ee_0%,_#ece4d8_100%)] px-2 py-4 text-stone-900">
+      <div className="mx-auto max-w-7xl space-y-5">
+        <section className="rounded-[26px] border border-[#7A0000]/15 bg-white/90 p-5 shadow-[0_16px_45px_rgba(90,26,13,0.10)] backdrop-blur-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight text-stone-900">User Role and Report</h2>
+              <p className="text-sm text-stone-600">Map report access by category or report name with a cleaner workflow.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={loadRoles}
+                className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/30 px-4 py-2 text-sm font-semibold text-[#7A0000] hover:bg-[#7A0000]/5"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRolesLoading ? "animate-spin" : ""}`} />
+                Refresh Users
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  loadCategories();
+                  loadReports();
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-100"
+              >
+                <RefreshCw className={`h-4 w-4 ${isCategoriesLoading || isReportsLoading ? "animate-spin" : ""}`} />
+                Refresh Reports
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-5 xl:grid-cols-[1.1fr_1.3fr]">
+          <div className="rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)]">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-stone-900">Report Users</h3>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-stone-200">
+              <div className="max-h-[420px] overflow-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="sticky top-0 z-10 bg-[#efe6d8] text-xs uppercase tracking-wide text-stone-700">
+                    <tr>
+                      <th className="px-3 py-2">Name</th>
+                      <th className="px-3 py-2">User Name</th>
+                      <th className="px-3 py-2">Company Name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isRolesLoading ? (
+                      <tr>
+                        <td colSpan={3} className="px-3 py-8 text-center text-stone-500">
+                          Loading report users...
+                        </td>
+                      </tr>
+                    ) : roles.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="px-3 py-8 text-center text-stone-500">
+                          No users found.
+                        </td>
+                      </tr>
+                    ) : (
+                      roles.map((role) => (
+                        <tr
+                          key={role.roleId}
+                          onClick={() => setSelectedRoleId(role.roleId)}
+                          className={`cursor-pointer border-t border-stone-100 transition ${
+                            selectedRoleId === role.roleId
+                              ? "bg-[#7A0000]/8"
+                              : "bg-white hover:bg-stone-50"
+                          }`}
+                        >
+                          <td className="px-3 py-2 font-semibold text-stone-800">{role.roleName || "-"}</td>
+                          <td className="px-3 py-2 text-stone-700">{role.roleId || "-"}</td>
+                          <td className="px-3 py-2 text-stone-600">{role.company || "-"}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600">
+              Selected: <span className="font-semibold text-stone-800">{selectedRole?.roleName || "None"}</span>
+              {selectedRole ? ` (${selectedRole.roleId})` : ""}
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            <div className="rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)]">
+              <fieldset className="rounded-2xl border border-stone-300 px-3 pb-4 pt-2">
+                <legend className="px-2 text-sm font-semibold text-stone-800"></legend>
+
+                <div className="grid gap-3 pt-1">
+                  <div className="grid items-center gap-2 sm:grid-cols-[80px_16px_1fr]">
+                    <label className="text-sm font-medium text-stone-800">Name</label>
+                    <span className="text-sm text-stone-500">:</span>
+                    <input
+                      value={enteredName}
+                      onChange={(e) => setEnteredName(e.target.value)}
+                      placeholder="Select from table or type a name"
+                      className={fieldBaseClass}
+                    />
+                  </div>
+
+                  <div className="grid items-center gap-2 sm:grid-cols-[80px_16px_1fr]">
+                    <label className="text-sm font-medium text-stone-800">User Name</label>
+                    <span className="text-sm text-stone-500">:</span>
+                    <input
+                      value={enteredUserName}
+                      onChange={(e) => setEnteredUserName(e.target.value)}
+                      placeholder="Select from table or type a username"
+                      className={fieldBaseClass}
+                    />
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-[80px_16px_1fr] sm:items-start">
+                    <label className="pt-2 text-sm font-medium text-stone-800">Add Reports</label>
+                    <span className="pt-2 text-sm text-stone-500">:</span>
+
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-stone-800">
+                          <input
+                            type="radio"
+                            name="report-mode"
+                            checked={viewMode === "category"}
+                            onChange={() => setViewMode("category")}
+                            className="h-4 w-4 border-stone-300 text-[#7A0000] focus:ring-[#7A0000]"
+                          />
+                          By Category
+                        </label>
+
+                        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-stone-800">
+                          <input
+                            type="radio"
+                            name="report-mode"
+                            checked={viewMode === "name"}
+                            onChange={() => setViewMode("name")}
+                            className="h-4 w-4 border-stone-300 text-[#7A0000] focus:ring-[#7A0000]"
+                          />
+                          By Name
+                        </label>
+                      </div>
+
+                      {viewMode === "category" ? (
+                        <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                          {isCategoriesLoading ? (
+                            <div className="text-sm text-stone-500">Loading categories...</div>
+                          ) : categories.length === 0 ? (
+                            <div className="text-sm text-stone-500">No categories found.</div>
+                          ) : (
+                            <div className="grid max-h-[220px] grid-cols-1 gap-2 overflow-auto pr-1 sm:grid-cols-2">
+                              {categories.map((category) => (
+                                <label key={category.catCode} className="flex items-start gap-2 rounded-lg bg-white px-2.5 py-2 text-sm text-stone-700">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedCategories.includes(category.catCode)}
+                                    onChange={() => toggleCategory(category.catCode)}
+                                    className="mt-0.5 h-4 w-4 rounded border-stone-300 text-[#7A0000] focus:ring-[#7A0000]"
+                                  />
+                                  <span>
+                                    <strong>{category.catCode}</strong> - {category.catName}
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-3 rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                          <div className="max-h-[300px] space-y-3 overflow-auto pr-1">
+                            {reportsByNameGrouped.map((group) => (
+                              <div key={group.catCode}>
+                                <div className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-stone-800">
+                                  <Folder className="h-4 w-4 text-amber-500" />
+                                  <span>{group.catName ? `${group.catCode} - ${group.catName}` : group.catCode}</span>
+                                </div>
+                                <div className="space-y-1.5 pl-6">
+                                  {group.reports.map((report) => (
+                                    <label key={`${group.catCode}-${report.repId}`} className="flex items-start gap-2 rounded-md px-1 py-0.5 text-sm text-stone-700">
+                                      <CircleChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedReports.includes(report.repId)}
+                                        onChange={() => toggleReport(report.repId)}
+                                        className="mt-0.5 h-4 w-4 rounded border-stone-300 text-[#7A0000] focus:ring-[#7A0000]"
+                                      />
+                                      <span>
+                                        <strong>{report.repId}</strong>. {report.repName}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                            {reportsByNameGrouped.length === 0 && (
+                              <div className="text-sm text-stone-500">No reports match your search.</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <ActionButton
+                  label="ADD"
+                  onClick={() => runAction("add")}
+                  disabled={isBusy}
+                  icon={<Plus className="h-4 w-4" />}
+                  tone="primary"
+                />
+                <ActionButton
+                  label="EDIT"
+                  onClick={() => runAction("replace")}
+                  disabled={isBusy}
+                  icon={<Pencil className="h-4 w-4" />}
+                  tone="primarySoft"
+                />
+                <ActionButton
+                  label="REMOVE"
+                  onClick={() => runAction("remove")}
+                  disabled={isBusy}
+                  icon={<Trash2 className="h-4 w-4" />}
+                  tone="dark"
+                />
+                <ActionButton
+                  label="RESET"
+                  onClick={resetSelections}
+                  disabled={isBusy}
+                  icon={<RotateCcw className="h-4 w-4" />}
+                  tone="light"
+                />
+              </div>
+
+              <p className="mt-3 text-xs text-stone-500">
+                Selected for action: <span className="font-semibold text-stone-800">{selectedRepIdsForAction.length}</span> reports
+              </p>
+            </div>
+
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+};
+
+const ActionButton = ({
+  label,
+  onClick,
+  disabled,
+  icon,
+  tone,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled: boolean;
+  icon: React.ReactNode;
+  tone: "primary" | "primarySoft" | "dark" | "light";
+}) => {
+  const toneClasses: Record<typeof tone, string> = {
+    primary: "bg-[#7A0000] text-white hover:bg-[#620000]",
+    primarySoft: "bg-[#7A0000]/80 text-white hover:bg-[#620000]",
+    dark: "bg-stone-900 text-white hover:bg-black",
+    light: "border border-stone-300 bg-white text-stone-800 hover:bg-stone-100",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${toneClasses[tone]}`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+};
+
+export default RoleReport;

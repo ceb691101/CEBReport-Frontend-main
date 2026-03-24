@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import {
+  FaHome,
   FaUsers,
   FaLayerGroup,
   FaSlidersH,
@@ -16,6 +17,13 @@ type AdminNavItem = {
 };
 
 const adminNavItems: AdminNavItem[] = [
+  {
+    id: 0,
+    name: "Home",
+    path: "/adminhome?section=home",
+    description: "Admin landing dashboard",
+    icon: FaHome,
+  },
   {
     id: 1,
     name: "User Roles",
