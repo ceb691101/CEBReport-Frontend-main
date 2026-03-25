@@ -305,20 +305,65 @@ const RegisteredConsumersForSMSAlerts = () => {
         <head>
           <title>Registered Consumers for SMS Alerts</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; color: #1f2937; }
-            h2 { color: #7A0000; margin-bottom: 4px; }
-            p { margin: 0 0 12px; font-size: 12px; color: #4b5563; }
-            table { width: auto; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-            th:first-child, td:first-child { width: 208px; }
-            th:last-child, td:last-child { width: 208px; }
-            th, td { border: 1px solid #d1d5db; padding: 8px; }
-            th { background: #f3f4f6; text-align: left; }
-            td:last-child, th:last-child { text-align: right; }
+            body { font-family: Arial; font-size: 10px; margin: 10mm; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 2px 4px; border: 1px solid #ddd; font-size: 10px; vertical-align: top;}
+            .text-left { text-align: left; }
+            .text-right { text-align: right; }
+            .header {
+              font-weight: bold;
+              margin-bottom: 5px;
+              color: #7A0000;
+              font-size: 12px;
+            }
+            .subheader {
+              margin-bottom: 12px;
+              font-size: 11px;
+            }
+            .footer {
+              margin-top: 10px;
+              font-size: 9px;
+              color: #666;
+            }
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+            }
+            .total-row {
+              font-weight: bold;
+              background-color: #f5f5f5;
+            }
+            th {
+              background-color: #f0f0f0;
+              font-weight: bold;
+              text-align: center;
+            }
+            tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            .bold {
+              font-weight: bold;
+            }
           </style>
         </head>
         <body>
-          <h2>Registered Consumers for SMS Alerts</h2>
-          <p>${selectedLocationLabel || getFormattedLocation()} | From: ${selectedFromCycleLabel} | To: ${selectedToCycleLabel}</p>
+          <div class="header">REGISTERED CONSUMERS FOR SMS ALERTS</div>
+          <div class="subheader">
+            ${selectedLocationLabel || getFormattedLocation()}<br>
+            From Cycle: <span class="bold">${selectedFromCycleLabel}</span><br>
+            To Cycle: <span class="bold">${selectedToCycleLabel}</span>
+          </div>
           ${content.innerHTML}
         </body>
       </html>
@@ -330,7 +375,7 @@ const RegisteredConsumersForSMSAlerts = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 text-sm font-sans">
+    <div className="max-w-7xl mx-auto p-4 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
       {!reportVisible && (
         <>
           <h2 className={`text-xl font-bold mb-6 ${maroon}`}>
@@ -453,7 +498,7 @@ const RegisteredConsumersForSMSAlerts = () => {
       )}
 
       {reportVisible && (
-        <div className="mt-2">
+        <div className="mt-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
             <div>
               <h2 className={`text-xl font-bold ${maroon}`}>
@@ -486,18 +531,14 @@ const RegisteredConsumersForSMSAlerts = () => {
             </div>
           </div>
 
-          <div className="inline-block max-w-full overflow-hidden rounded-xl border border-gray-300 bg-white">
-            <div className="w-fit max-w-full overflow-x-auto max-h-[calc(100vh-250px)]">
+          <div className="inline-block max-w-full overflow-hidden rounded-lg border border-gray-300 bg-white">
+            <div className="overflow-x-auto max-h-[calc(100vh-250px)]">
               <div ref={printRef} className="w-fit">
-              <table className="w-auto border-collapse text-xs table-fixed">
-                <colgroup>
-                  <col className="w-52" />
-                  <col className="w-52" />
-                </colgroup>
+                <table className="w-auto min-w-[640px] border-collapse text-xs table-fixed">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-3 py-2 text-left border-b border-gray-300">Month</th>
-                    <th className="px-3 py-2 text-right border-l border-b border-gray-300">Registered Count</th>
+                    <th className="w-80 px-3 py-2 text-left border-b border-gray-300">Month</th>
+                    <th className="w-80 px-3 py-2 text-right border-l border-b border-gray-300">Registered Count</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-300">
