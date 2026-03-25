@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
+import SecurityDepositContractDemandBulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
+import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
 import { data as sidebarData } from "../data/SideBarData";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import BillCalculation from "../mainTopics/general/BillCalculation";
-
 
 type Subtopic = {
   id: number;
@@ -15,7 +16,6 @@ const General = () => {
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get General topic's subtopics directly from sidebarData
     const generalTopic = sidebarData.find((topic) => topic.name === "General");
     if (generalTopic) {
       setSubtopics(generalTopic.subtopics);
@@ -23,17 +23,17 @@ const General = () => {
   }, []);
 
   const toggleCard = (id: number) => {
-    if (expandedCard === id) {
-      setExpandedCard(null);
-    } else {
-      setExpandedCard(id);
-    }
+    setExpandedCard((prev) => (prev === id ? null : id));
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
     switch (subtopicName) {
       case "Active customers and sales by tariff":
         return <ActiveCustomersSalesByTariff />;
+      case "Security deposit & Contract Demand - Bulk":
+        return <SecurityDepositContractDemandBulk />;
+      case "Registered consumers for SMS alerts":
+        return <RegisteredConsumersForSMSAlerts />;
       case "Bill calculation":
         return <BillCalculation />;
       case "Listing of customers":
@@ -46,11 +46,9 @@ const General = () => {
       case "Disconnection list":
       case "Shakthi LED distribution summary":
       case "Standing order report":
-      case "Registered consumers for SMS alerts":
       case "Finalized Accounts":
       case "Outstanding Dues":
-      case "Largest Consumption": 
-      case "Security deposit & Contract Demand - Bulk":  
+      case "Largest Consumption":
         return <div>{subtopicName} Content</div>;
       default:
         return (

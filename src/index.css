@@ -3,6 +3,16 @@
 /* Import Roboto font */
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap");
 
+/* CEB theme tokens */
+:root {
+  --ceb-maroon: #7a0000;
+  --ceb-maroon-2: #a52a2a;
+  --ceb-gold: #fdb913;
+  --ceb-navy: #0b1f3a;
+  --ceb-surface: #ffffff;
+  --ceb-bg: #f8fafc;
+}
+
 /* Global styles */
 * {
   font-family: "Roboto", sans-serif;
