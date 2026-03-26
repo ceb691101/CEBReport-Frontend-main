@@ -735,13 +735,13 @@ const Home: React.FC = () => {
         const ordJson:  SalesCollectionApiResponse = await ordRes.json();
         const bulkJson: SalesCollectionApiResponse = await bulkRes.json();
         const merged: MonthlySalesData[] = ordJson.data.records.map((rec, i) => ({
-          month:    `BC ${rec.BillCycle}`,
+          month:    String(rec.BillCycle),
           ordinary: rec.Sales,
           bulk:     bulkJson.data.records[i]?.Sales ?? 0,
           target:   0,
         }));
         setMonthlySalesData([...merged].sort((a, b) =>
-          parseInt(a.month.replace("BC ", "")) - parseInt(b.month.replace("BC ", ""))
+          parseInt(a.month) - parseInt(b.month)
         ));
         setSalesChartKey((k) => k + 1);
       } catch (err: any) { console.error("Error fetching sales/collection data:", err); setSalesCollectionError(err.message || "Failed to load sales data."); }
@@ -771,7 +771,7 @@ const Home: React.FC = () => {
 
   const salesLineData = monthlySalesData
     .map((item) => ({ month: item.month, ordinary: item.ordinary, bulk: item.bulk, total: item.ordinary + item.bulk }))
-    .sort((a, b) => parseInt(a.month.replace("BC ", "")) - parseInt(b.month.replace("BC ", "")));
+    .sort((a, b) => parseInt(a.month) - parseInt(b.month));
 
   const totalOrdinarySolar = customerCounts.solar.netMetering + customerCounts.solar.netAccounting + customerCounts.solar.netPlus + customerCounts.solar.netPlusPlus;
   const totalBulkSolar     = bulkSolarCustomers.netMetering   + bulkSolarCustomers.netAccounting   + bulkSolarCustomers.netPlus   + bulkSolarCustomers.netPlusPlus;
