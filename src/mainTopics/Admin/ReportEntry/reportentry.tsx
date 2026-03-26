@@ -52,7 +52,8 @@ const actionButtonLightClass =
 const ReportEntry = () => {
     const [categories, setCategories] = useState<CategoryRecord[]>([]);
     const [entries, setEntries] = useState<ReportEntryRecord[]>([]);
-    const [selectedRepId, setSelectedRepId] = useState<string | null>(null);
+    const [selectedRepIdNo, setSelectedRepIdNo] = useState<number | null>(null);
+    const [selectedCatCode, setSelectedCatCode] = useState<string | null>(null);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isEntriesLoading, setIsEntriesLoading] = useState(false);
@@ -129,13 +130,29 @@ const ReportEntry = () => {
         setIsSubmitting(true);
 
         try {
+            // Fetch next ID if repIdNo is not set
+            let nextRepIdNo = form.repIdNo;
+            if (nextRepIdNo === 0) {
+                const nextIdResponse = await fetch("/roleadminapi/api/reportentry/nextid");
+                const nextIdPayload = await nextIdResponse.json();
+
+                if (nextIdPayload?.errorMessage) {
+                    throw new Error(nextIdPayload.errorDetails ? `${nextIdPayload.errorMessage} Details: ${nextIdPayload.errorDetails}` : nextIdPayload.errorMessage);
+                }
+
+                nextRepIdNo = nextIdPayload?.data ?? 0;
+                if (nextRepIdNo === 0) {
+                    throw new Error("Failed to generate Report Entry ID.");
+                }
+            }
+
             const response = await fetch("/roleadminapi/api/reportentry", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    repIdNo: form.repIdNo,
+                    repIdNo: nextRepIdNo,
                     repId: form.repId.trim(),
                     catCode: form.catCode.trim(),
                     repName: form.repName.trim(),
@@ -164,7 +181,10 @@ const ReportEntry = () => {
     const handleEdit = async (e?: FormEvent) => {
         if (e) e.preventDefault();
 
-        if (!selectedRepId) return;
+        if (selectedRepIdNo === null || !selectedCatCode) {
+            toast.error("Please select a report entry to edit.");
+            return;
+        }
 
         if (!form.catCode.trim() || !form.repName.trim()) {
             toast.error("Category and Name are required.");
@@ -175,7 +195,7 @@ const ReportEntry = () => {
 
         try {
             const response = await fetch(
-                `/roleadminapi/api/reportentry/${encodeURIComponent(selectedRepId)}`,
+                `/roleadminapi/api/reportentry/${selectedRepIdNo}/${encodeURIComponent(selectedCatCode)}`,
                 {
                     method: "PUT",
                     headers: {
@@ -196,6 +216,10 @@ const ReportEntry = () => {
                 throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
             }
 
+            if (payload?.data && !payload.data.success) {
+                throw new Error(payload.data.message || "Failed to update report entry.");
+            }
+
             toast.success(payload?.data?.message || "Report entry updated successfully.");
             handleReset();
             await loadReportEntries();
@@ -208,7 +232,7 @@ const ReportEntry = () => {
     };
 
     const handleDelete = async () => {
-        if (!selectedRepId) {
+        if (selectedRepIdNo === null || !selectedCatCode) {
             toast.error("No entry selected for deletion.");
             return;
         }
@@ -217,7 +241,7 @@ const ReportEntry = () => {
 
         try {
             const response = await fetch(
-                `/roleadminapi/api/reportentry/${encodeURIComponent(selectedRepId)}`,
+                `/roleadminapi/api/reportentry/${selectedRepIdNo}/${encodeURIComponent(selectedCatCode)}`,
                 {
                     method: "DELETE",
                 }
@@ -227,6 +251,10 @@ const ReportEntry = () => {
 
             if (payload?.errorMessage) {
                 throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
+            }
+
+            if (payload?.data && !payload.data.success) {
+                throw new Error(payload.data.message || "Failed to delete report entry.");
             }
 
             toast.success(payload?.data?.message || "Report entry deleted successfully.");
@@ -243,7 +271,8 @@ const ReportEntry = () => {
 
 
     const handleRowClick = (entry: ReportEntryRecord) => {
-        setSelectedRepId(entry.repId);
+        setSelectedRepIdNo(entry.repIdNo);
+        setSelectedCatCode(entry.catCode);
         setForm({
             repIdNo: entry.repIdNo,
             repId: entry.repId,
@@ -258,7 +287,8 @@ const ReportEntry = () => {
     const handleReset = () => {
         setForm(initialForm);
         setMode("add");
-        setSelectedRepId(null);
+        setSelectedRepIdNo(null);
+        setSelectedCatCode(null);
     };
 
     useEffect(() => {
@@ -276,7 +306,7 @@ const ReportEntry = () => {
             <div className="mx-auto max-w-7xl space-y-6">
                 <section className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
                     <form
-                        onSubmit={mode === "add" ? handleAdd : handleEdit}
+                        onSubmit={(event) => event.preventDefault()}
                         className="rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)] h-fit"
                     >
                         <div className="flex items-start justify-between gap-4">
@@ -322,7 +352,7 @@ const ReportEntry = () => {
                                     label="Category"
                                     value={form.catCode}
                                     onChange={(value) => setForm({ ...form, catCode: value })}
-                                    options={categories.map(c => `${c.catCode} - ${c.catName}`)}
+                                    options={categories.map(c => c.catCode)}
                                     optionValues={categories.map(c => c.catCode)}
                                     placeholder="Select a category"
                                 />
@@ -360,31 +390,24 @@ const ReportEntry = () => {
 
                         <div className="mt-8 flex flex-wrap gap-3">
                             <button
-                                type={mode === "add" ? "submit" : "button"}
-                                onClick={mode === "add" ? undefined : () => handleAdd()}
+                                type="button"
+                                onClick={() => handleAdd()}
                                 disabled={isSubmitting}
                                 className={actionButtonPrimaryClass}
                             >
-                                {isSubmitting && mode === "add" ? "Saving..." : "ADD"}
-                            </button>
-                            <button
-                                type={mode === "edit" ? "submit" : "button"}
-                                disabled={isSubmitting}
-                                onClick={
-                                    mode === "edit"
-                                        ? undefined
-                                        : () => {
-                                            if (selectedRepId) setMode("edit");
-                                            else toast.error("Select an entry to edit");
-                                        }
-                                }
-                                className={actionButtonSoftClass}
-                            >
-                                EDIT
+                                {isSubmitting ? "Saving..." : "ADD"}
                             </button>
                             <button
                                 type="button"
-                                disabled={!selectedRepId || isSubmitting}
+                                onClick={() => handleEdit()}
+                                disabled={selectedRepIdNo === null || !selectedCatCode || isSubmitting}
+                                className={actionButtonSoftClass}
+                            >
+                                {isSubmitting ? "Updating..." : "EDIT"}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={selectedRepIdNo === null || !selectedCatCode || isSubmitting}
                                 onClick={handleDelete}
                                 className={actionButtonDarkClass}
                             >
@@ -443,9 +466,9 @@ const ReportEntry = () => {
                                         ) : (
                                             entries.map((entry) => (
                                                 <tr
-                                                    key={entry.repId}
+                                                    key={`${entry.repIdNo}-${entry.catCode}-${entry.repId}`}
                                                     onClick={() => handleRowClick(entry)}
-                                                    className={`cursor-pointer transition ${selectedRepId === entry.repId ? "bg-blue-50" : "bg-white hover:bg-stone-50"}`}
+                                                    className={`cursor-pointer transition ${selectedRepIdNo === entry.repIdNo && selectedCatCode === entry.catCode ? "bg-blue-50" : "bg-white hover:bg-stone-50"}`}
                                                 >
                                                     <td className="border border-stone-200 px-3 py-2 text-center">{entry.repIdNo || "-"}</td>
                                                     <td className="border border-stone-200 px-3 py-2">{getCategoryLabel(entry.catCode)}</td>

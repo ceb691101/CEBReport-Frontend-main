@@ -35,7 +35,7 @@ const LoginCard = () => {
         if (adResult?.isSuccess) {
           toast.success("Login successful!", { autoClose: 2000 });
           setLogged({ Logged: true, Errormsg: "" });
-          navigate("/home");
+          navigate("/");
         } else {
           toast.error(adResult?.message || "Invalid AD credentials");
         }

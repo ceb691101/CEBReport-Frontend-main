@@ -249,7 +249,9 @@ const RoleReport = () => {
       return;
     }
 
-    if (selectedRepIdsForAction.length === 0) {
+    let targetRepIdsForAction = selectedRepIdsForAction;
+
+    if (targetRepIdsForAction.length === 0) {
       // try fallback: derive report ids from selected categories directly
       const fallbackFromCategories = selectedCategories.length
         ? activeReports
@@ -262,9 +264,7 @@ const RoleReport = () => {
         : [];
 
       if (fallbackFromCategories.length > 0) {
-        // use fallback IDs
-        // eslint-disable-next-line no-console
-        console.log("runAction - using fallbackFromCategories", { fallbackFromCategories });
+        targetRepIdsForAction = Array.from(new Set(fallbackFromCategories));
       } else {
         toast.error(`Select at least one report or category. (selectedCategories=${selectedCategories.length}, selectedReports=${selectedReports.length})`);
         return;
@@ -276,9 +276,9 @@ const RoleReport = () => {
     try {
       // debug log: selection state
       // eslint-disable-next-line no-console
-      console.log("runAction", { selectedRoleId, viewMode, selectedCategories, selectedReports, selectedRepIdsForAction });
+      console.log("runAction", { selectedRoleId, viewMode, selectedCategories, selectedReports, targetRepIdsForAction });
       // build payload for selected report ids
-      const reportsPayload = selectedRepIdsForAction.map((repId) => {
+      const reportsPayload = targetRepIdsForAction.map((repId) => {
         const rep = reports.find((r) => r.repId === repId);
         return {
           CatCode: rep?.catCode ?? "",
@@ -289,9 +289,13 @@ const RoleReport = () => {
 
       // Replace: delete existing then insert
       if (mode === "replace") {
-        await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports`, {
+        const deleteAllResp = await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports`, {
           method: "DELETE",
         });
+        const deleteAllPayload = await deleteAllResp.json();
+        if (deleteAllPayload?.errorMessage) {
+          throw new Error(deleteAllPayload.errorDetails ? `${deleteAllPayload.errorMessage} Details: ${deleteAllPayload.errorDetails}` : deleteAllPayload.errorMessage);
+        }
 
         const resp = await fetch(`/roleadminapi/api/role-report/save-userrolereps`, {
           method: "POST",
@@ -300,7 +304,9 @@ const RoleReport = () => {
         });
 
         const payload = await resp.json();
-        if (payload?.errorMessage) throw new Error(payload.errorMessage);
+        if (payload?.errorMessage) {
+          throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
+        }
 
         setRoleReportMap((current) => ({ ...current, [selectedRoleId]: reportsPayload.map((r) => r.RepId) }));
         toast.success("Role report list updated.");
@@ -316,7 +322,9 @@ const RoleReport = () => {
         });
 
         const payload = await resp.json();
-        if (payload?.errorMessage) throw new Error(payload.errorMessage);
+        if (payload?.errorMessage) {
+          throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
+        }
 
         setRoleReportMap((current) => {
           const existing = current[selectedRoleId] ?? [];
@@ -328,20 +336,35 @@ const RoleReport = () => {
         return;
       }
 
-      // Remove: call delete endpoint per report
+      // Remove: delete by selected category or selected report names.
       if (mode === "remove") {
-        for (const repId of selectedRepIdsForAction) {
-          const resp = await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports/${repId}`, {
-            method: "DELETE",
-          });
+        if (viewMode === "category" && selectedCategories.length > 0) {
+          for (const catCode of selectedCategories) {
+            const resp = await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports/category/${encodeURIComponent(catCode)}`, {
+              method: "DELETE",
+            });
 
-          const payload = await resp.json();
-          if (payload?.errorMessage) throw new Error(payload.errorMessage);
+            const payload = await resp.json();
+            if (payload?.errorMessage) {
+              throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
+            }
+          }
+        } else {
+          for (const repId of targetRepIdsForAction) {
+            const resp = await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports/${repId}`, {
+              method: "DELETE",
+            });
+
+            const payload = await resp.json();
+            if (payload?.errorMessage) {
+              throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
+            }
+          }
         }
 
         setRoleReportMap((current) => {
           const existing = current[selectedRoleId] ?? [];
-          const next = existing.filter((repId) => !selectedRepIdsForAction.includes(repId));
+          const next = existing.filter((repId) => !targetRepIdsForAction.includes(repId));
           return { ...current, [selectedRoleId]: next };
         });
 
@@ -357,8 +380,12 @@ const RoleReport = () => {
   };
 
   const resetSelections = () => {
+    setSelectedRoleId("");
+    setEnteredName("");
+    setEnteredUserName("");
     setSelectedCategories([]);
     setSelectedReports([]);
+    setViewMode("category");
     toast.info("Selections reset.");
   };
 
