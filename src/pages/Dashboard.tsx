@@ -529,6 +529,7 @@ const Home: React.FC = () => {
   const [customerCountsLoading, setCustomerCountsLoading] = useState(true);
   const [customerCountsError, setCustomerCountsError]     = useState<string | null>(null);
   const [solarLoading, setSolarLoading]                   = useState(true);
+  const [bulkSolarLoading, setBulkSolarLoading]           = useState(true);
   const [solarError, setSolarError]                       = useState<string | null>(null);
   const [bulkCountLoading, setBulkCountLoading]           = useState(true);
   const [bulkCountError, setBulkCountError]               = useState<string | null>(null);
@@ -699,6 +700,7 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const fetchBulkSolarCustomerData = async () => {
+      setBulkSolarLoading(true);
       try {
         const [r1, r2, r3, r4] = await Promise.all([
           fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
@@ -715,6 +717,7 @@ const Home: React.FC = () => {
           netPlusPlus:   d4?.data?.CustomersCount ?? 0,
         });
       } catch (err: any) { console.error("Bulk solar data fetch error:", err); }
+      finally { setBulkSolarLoading(false); }
     };
     fetchBulkSolarCustomerData();
   }, []);
@@ -772,6 +775,7 @@ const Home: React.FC = () => {
 
   const totalOrdinarySolar = customerCounts.solar.netMetering + customerCounts.solar.netAccounting + customerCounts.solar.netPlus + customerCounts.solar.netPlusPlus;
   const totalBulkSolar     = bulkSolarCustomers.netMetering   + bulkSolarCustomers.netAccounting   + bulkSolarCustomers.netPlus   + bulkSolarCustomers.netPlusPlus;
+  const totalSolarCustomers = totalOrdinarySolar + totalBulkSolar;
 
   const pct = (n: number, total: number) => (total > 0 ? (n / total) * 100 : 0);
 
@@ -803,7 +807,7 @@ const Home: React.FC = () => {
   const animatedTotal       = useCountUp(customerCounts.ordinary + customerCounts.bulk, 1400, !customerCountsLoading && !bulkCountLoading, kpiTrigger);
   const animatedOrdinary    = useCountUp(customerCounts.ordinary,      1400, !customerCountsLoading, kpiTrigger);
   const animatedBulk        = useCountUp(customerCounts.bulk,          1400, !bulkCountLoading,      kpiTrigger);
-  const animatedSolar       = useCountUp(totalOrdinarySolar,           1400, !solarLoading,          kpiTrigger);
+  const animatedSolar       = useCountUp(totalSolarCustomers,          1400, !solarLoading && !bulkSolarLoading, kpiTrigger);
   const animatedZero        = useCountUp(customerCounts.zeroConsumption, 1400, true, kpiTrigger);
   const animatedKiosk       = useCountUp(salesData.kioskCollection,    1400, true, kpiTrigger);
   const animatedRevenue     = useCountUp(125600000, 1400, true, kpiTrigger);
@@ -819,7 +823,7 @@ const Home: React.FC = () => {
 
   const animatedSegOrdinary = useCountUp(customerCounts.ordinary, 1400, !customerCountsLoading, bottomGridTrigger);
   const animatedSegBulk     = useCountUp(customerCounts.bulk,     1400, !bulkCountLoading,      bottomGridTrigger);
-  const animatedSegSolar    = useCountUp(totalOrdinarySolar,       1400, !solarLoading,          bottomGridTrigger);
+  const animatedSegSolar    = useCountUp(totalSolarCustomers,      1400, !solarLoading && !bulkSolarLoading, bottomGridTrigger);
 
   // Solar pie — animated counts for each net type (ordinary + bulk), replay on solarPieTrigger
   const animatedOrdNetMetering   = useCountUp(customerCounts.solar.netMetering,   1200, !solarLoading, solarPieTrigger);
@@ -960,7 +964,7 @@ const Home: React.FC = () => {
                           <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+12.3%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Solar Customers</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{solarLoading ? "Loading..." : formatNumber(animatedSolar)}</p>
+                        <p className="text-2xl font-bold text-gray-900 mt-1">{solarLoading || bulkSolarLoading ? "Loading..." : formatNumber(animatedSolar)}</p>
                         <p className="text-xs text-gray-500 mt-2">Net-type breakdown shown in chart</p>
                       </>);
                       if (cardId === "zeroConsumption") return wrapCard(<>
