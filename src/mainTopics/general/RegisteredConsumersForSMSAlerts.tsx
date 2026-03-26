@@ -306,8 +306,37 @@ const RegisteredConsumersForSMSAlerts = () => {
           <title>Registered Consumers for SMS Alerts</title>
           <style>
             body { font-family: Arial; font-size: 10px; margin: 10mm; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { padding: 2px 4px; border: 1px solid #ddd; font-size: 10px; vertical-align: top;}
+            .print-table-wrapper {
+              display: inline-block;
+              width: 480px;
+            }
+            .sms-alerts-table {
+              width: 480px;
+              min-width: 480px;
+              table-layout: fixed;
+              border-collapse: collapse;
+              font-size: 11px;
+            }
+            .sms-alerts-table th,
+            .sms-alerts-table td {
+              padding: 5px 8px;
+              border: 1px solid #d1d5db;
+              line-height: 1.25;
+              height: 24px;
+            }
+            .sms-alerts-table th:nth-child(1),
+            .sms-alerts-table td:nth-child(1) {
+              width: 240px;
+              text-align: left;
+            }
+            .sms-alerts-table th:nth-child(2),
+            .sms-alerts-table td:nth-child(2) {
+              width: 240px;
+              text-align: right;
+            }
+            .sms-alerts-table td[colspan] {
+              text-align: center;
+            }
             .text-left { text-align: left; }
             .text-right { text-align: right; }
             .header {
@@ -344,12 +373,12 @@ const RegisteredConsumersForSMSAlerts = () => {
               font-weight: bold;
               background-color: #f5f5f5;
             }
-            th {
+            .sms-alerts-table th {
               background-color: #f0f0f0;
               font-weight: bold;
               text-align: center;
             }
-            tr:nth-child(even) {
+            .sms-alerts-table tbody tr:nth-child(even) {
               background-color: #f9f9f9;
             }
             .bold {
@@ -533,28 +562,28 @@ const RegisteredConsumersForSMSAlerts = () => {
 
           <div className="inline-block max-w-full overflow-hidden rounded-lg border border-gray-300 bg-white">
             <div className="overflow-x-auto max-h-[calc(100vh-250px)]">
-              <div ref={printRef} className="w-fit">
-                <table className="w-auto min-w-[640px] border-collapse text-xs table-fixed">
+              <div ref={printRef} className="w-fit print-table-wrapper">
+                <table className="sms-alerts-table w-auto min-w-[480px] border-collapse text-xs table-fixed">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="w-80 px-3 py-2 text-left border-b border-gray-300">Month</th>
-                    <th className="w-80 px-3 py-2 text-right border-l border-b border-gray-300">Registered Count</th>
+                    <th className="w-60 px-2 py-1.5 text-left border-b border-gray-300">Month</th>
+                    <th className="w-60 px-2 py-1.5 text-right border-l border-b border-gray-300">Registered Count</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-300">
                   {monthlyCounts.length === 0 ? (
                     <tr>
-                      <td colSpan={2} className="px-3 py-3 text-center text-gray-500">
+                      <td colSpan={2} className="px-2 py-2 text-center text-gray-500">
                         No data available for selected filters.
                       </td>
                     </tr>
                   ) : (
                     monthlyCounts.map((row) => (
                       <tr key={row.BillCycle}>
-                        <td className="px-3 py-2 text-gray-700">
+                        <td className="px-2 py-1.5 text-gray-700">
                           {getBillCycleDisplay(row.BillCycle)}
                         </td>
-                        <td className="px-3 py-2 text-right font-medium text-gray-800 border-l border-gray-300">
+                        <td className="px-2 py-1.5 text-right font-medium text-gray-800 border-l border-gray-300">
                           {row.Count.toLocaleString()}
                         </td>
                       </tr>
