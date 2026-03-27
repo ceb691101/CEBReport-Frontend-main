@@ -529,6 +529,7 @@ const Home: React.FC = () => {
   const [customerCountsLoading, setCustomerCountsLoading] = useState(true);
   const [customerCountsError, setCustomerCountsError]     = useState<string | null>(null);
   const [solarLoading, setSolarLoading]                   = useState(true);
+  const [bulkSolarLoading, setBulkSolarLoading]           = useState(true);
   const [solarError, setSolarError]                       = useState<string | null>(null);
   const [bulkCountLoading, setBulkCountLoading]           = useState(true);
   const [bulkCountError, setBulkCountError]               = useState<string | null>(null);
@@ -643,7 +644,7 @@ const Home: React.FC = () => {
     const fetchOrdinaryCount = async () => {
       setCustomerCountsLoading(true); setCustomerCountsError(null);
       try {
-        const res  = await fetch(`/api/dashboard/ordinary-customers-summary?billCycle=0`, { headers: { Accept: "application/json" } });
+        const res  = await fetch(`/misapi/api/dashboard/ordinary-customers-summary?billCycle=0`, { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, ordinary: json?.data?.TotalCount ?? 0 }));
@@ -658,7 +659,7 @@ const Home: React.FC = () => {
     const fetchBulkCount = async () => {
       setBulkCountLoading(true); setBulkCountError(null);
       try {
-        const res  = await fetch("/api/dashboard/customers/active-count", { headers: { Accept: "application/json" } });
+        const res  = await fetch("/misapi/api/dashboard/customers/active-count", { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, bulk: json?.data?.activeCustomerCount ?? 0 }));
@@ -672,13 +673,13 @@ const Home: React.FC = () => {
     const fetchSolarCustomerData = async () => {
       setSolarLoading(true); setSolarError(null);
       try {
-        const maxRes = await fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
+        const maxRes = await fetch(`/misapi/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
         if (!maxRes.ok) throw new Error(`Failed to fetch max bill cycle`);
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch one or more net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -699,12 +700,13 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const fetchBulkSolarCustomerData = async () => {
+      setBulkSolarLoading(true);
       try {
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch bulk solar net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -715,6 +717,7 @@ const Home: React.FC = () => {
           netPlusPlus:   d4?.data?.CustomersCount ?? 0,
         });
       } catch (err: any) { console.error("Bulk solar data fetch error:", err); }
+      finally { setBulkSolarLoading(false); }
     };
     fetchBulkSolarCustomerData();
   }, []);
@@ -724,21 +727,21 @@ const Home: React.FC = () => {
       setSalesCollectionLoading(true); setSalesCollectionError(null);
       try {
         const [ordRes, bulkRes] = await Promise.all([
-          fetch("/api/dashboard/salesCollection/range/ordinary", { headers: { Accept: "application/json" } }),
-          fetch("/api/dashboard/salesCollection/range/bulk",     { headers: { Accept: "application/json" } }),
+          fetch("/misapi/api/dashboard/salesCollection/range/ordinary", { headers: { Accept: "application/json" } }),
+          fetch("/misapi/api/dashboard/salesCollection/range/bulk",     { headers: { Accept: "application/json" } }),
         ]);
         if (!ordRes.ok)  throw new Error(`Ordinary fetch failed: ${ordRes.status}`);
         if (!bulkRes.ok) throw new Error(`Bulk fetch failed: ${bulkRes.status}`);
         const ordJson:  SalesCollectionApiResponse = await ordRes.json();
         const bulkJson: SalesCollectionApiResponse = await bulkRes.json();
         const merged: MonthlySalesData[] = ordJson.data.records.map((rec, i) => ({
-          month:    `BC ${rec.BillCycle}`,
+          month:    String(rec.BillCycle),
           ordinary: rec.Sales,
           bulk:     bulkJson.data.records[i]?.Sales ?? 0,
           target:   0,
         }));
         setMonthlySalesData([...merged].sort((a, b) =>
-          parseInt(a.month.replace("BC ", "")) - parseInt(b.month.replace("BC ", ""))
+          parseInt(a.month) - parseInt(b.month)
         ));
         setSalesChartKey((k) => k + 1);
       } catch (err: any) { console.error("Error fetching sales/collection data:", err); setSalesCollectionError(err.message || "Failed to load sales data."); }
@@ -768,10 +771,11 @@ const Home: React.FC = () => {
 
   const salesLineData = monthlySalesData
     .map((item) => ({ month: item.month, ordinary: item.ordinary, bulk: item.bulk, total: item.ordinary + item.bulk }))
-    .sort((a, b) => parseInt(a.month.replace("BC ", "")) - parseInt(b.month.replace("BC ", "")));
+    .sort((a, b) => parseInt(a.month) - parseInt(b.month));
 
   const totalOrdinarySolar = customerCounts.solar.netMetering + customerCounts.solar.netAccounting + customerCounts.solar.netPlus + customerCounts.solar.netPlusPlus;
   const totalBulkSolar     = bulkSolarCustomers.netMetering   + bulkSolarCustomers.netAccounting   + bulkSolarCustomers.netPlus   + bulkSolarCustomers.netPlusPlus;
+  const totalSolarCustomers = totalOrdinarySolar + totalBulkSolar;
 
   const pct = (n: number, total: number) => (total > 0 ? (n / total) * 100 : 0);
 
@@ -803,7 +807,7 @@ const Home: React.FC = () => {
   const animatedTotal       = useCountUp(customerCounts.ordinary + customerCounts.bulk, 1400, !customerCountsLoading && !bulkCountLoading, kpiTrigger);
   const animatedOrdinary    = useCountUp(customerCounts.ordinary,      1400, !customerCountsLoading, kpiTrigger);
   const animatedBulk        = useCountUp(customerCounts.bulk,          1400, !bulkCountLoading,      kpiTrigger);
-  const animatedSolar       = useCountUp(totalOrdinarySolar,           1400, !solarLoading,          kpiTrigger);
+  const animatedSolar       = useCountUp(totalSolarCustomers,          1400, !solarLoading && !bulkSolarLoading, kpiTrigger);
   const animatedZero        = useCountUp(customerCounts.zeroConsumption, 1400, true, kpiTrigger);
   const animatedKiosk       = useCountUp(salesData.kioskCollection,    1400, true, kpiTrigger);
   const animatedRevenue     = useCountUp(125600000, 1400, true, kpiTrigger);
@@ -819,7 +823,7 @@ const Home: React.FC = () => {
 
   const animatedSegOrdinary = useCountUp(customerCounts.ordinary, 1400, !customerCountsLoading, bottomGridTrigger);
   const animatedSegBulk     = useCountUp(customerCounts.bulk,     1400, !bulkCountLoading,      bottomGridTrigger);
-  const animatedSegSolar    = useCountUp(totalOrdinarySolar,       1400, !solarLoading,          bottomGridTrigger);
+  const animatedSegSolar    = useCountUp(totalSolarCustomers,      1400, !solarLoading && !bulkSolarLoading, bottomGridTrigger);
 
   // Solar pie — animated counts for each net type (ordinary + bulk), replay on solarPieTrigger
   const animatedOrdNetMetering   = useCountUp(customerCounts.solar.netMetering,   1200, !solarLoading, solarPieTrigger);
@@ -960,7 +964,7 @@ const Home: React.FC = () => {
                           <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+12.3%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Solar Customers</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{solarLoading ? "Loading..." : formatNumber(animatedSolar)}</p>
+                        <p className="text-2xl font-bold text-gray-900 mt-1">{solarLoading || bulkSolarLoading ? "Loading..." : formatNumber(animatedSolar)}</p>
                         <p className="text-xs text-gray-500 mt-2">Net-type breakdown shown in chart</p>
                       </>);
                       if (cardId === "zeroConsumption") return wrapCard(<>
