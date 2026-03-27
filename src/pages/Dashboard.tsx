@@ -644,7 +644,7 @@ const Home: React.FC = () => {
     const fetchOrdinaryCount = async () => {
       setCustomerCountsLoading(true); setCustomerCountsError(null);
       try {
-        const res  = await fetch(`/api/dashboard/ordinary-customers-summary?billCycle=0`, { headers: { Accept: "application/json" } });
+        const res  = await fetch(`/misapi/api/dashboard/ordinary-customers-summary?billCycle=0`, { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, ordinary: json?.data?.TotalCount ?? 0 }));
@@ -659,7 +659,7 @@ const Home: React.FC = () => {
     const fetchBulkCount = async () => {
       setBulkCountLoading(true); setBulkCountError(null);
       try {
-        const res  = await fetch("/api/dashboard/customers/active-count", { headers: { Accept: "application/json" } });
+        const res  = await fetch("/misapi/api/dashboard/customers/active-count", { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, bulk: json?.data?.activeCustomerCount ?? 0 }));
@@ -673,13 +673,13 @@ const Home: React.FC = () => {
     const fetchSolarCustomerData = async () => {
       setSolarLoading(true); setSolarError(null);
       try {
-        const maxRes = await fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
+        const maxRes = await fetch(`/misapi/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
         if (!maxRes.ok) throw new Error(`Failed to fetch max bill cycle`);
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-ordinary-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch one or more net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -703,10 +703,10 @@ const Home: React.FC = () => {
       setBulkSolarLoading(true);
       try {
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
-          fetch(`http://localhost:44381/api/dashboard/solar-bulk-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch bulk solar net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -727,8 +727,8 @@ const Home: React.FC = () => {
       setSalesCollectionLoading(true); setSalesCollectionError(null);
       try {
         const [ordRes, bulkRes] = await Promise.all([
-          fetch("/api/dashboard/salesCollection/range/ordinary", { headers: { Accept: "application/json" } }),
-          fetch("/api/dashboard/salesCollection/range/bulk",     { headers: { Accept: "application/json" } }),
+          fetch("/misapi/api/dashboard/salesCollection/range/ordinary", { headers: { Accept: "application/json" } }),
+          fetch("/misapi/api/dashboard/salesCollection/range/bulk",     { headers: { Accept: "application/json" } }),
         ]);
         if (!ordRes.ok)  throw new Error(`Ordinary fetch failed: ${ordRes.status}`);
         if (!bulkRes.ok) throw new Error(`Bulk fetch failed: ${bulkRes.status}`);
