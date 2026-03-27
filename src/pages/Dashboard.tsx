@@ -1428,6 +1428,160 @@ const Home: React.FC = () => {
             </div>
           )}
 
+          {activeDashboard === "financial" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Financial/Accounting Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { icon: <DollarSign className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-100", label: "Monthly Revenue", value: "LKR 12.4M", badge: "+9.1%" },
+                  { icon: <TrendingDown className="w-5 h-5 text-rose-600" />, bg: "bg-rose-100", label: "Arrears Outstanding", value: "LKR 3.8M", badge: "-2.7%" },
+                  { icon: <Target className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", label: "Collection Target", value: "91.6%", badge: "+4.4%" },
+                  { icon: <PieChart className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100", label: "Billing Accuracy", value: "98.3%", badge: "+1.2%" },
+                ]
+                  .sort((a, b) => (parseFloat(a.value.replace(/[^0-9.-]/g, "")) || 0) - (parseFloat(b.value.replace(/[^0-9.-]/g, "")) || 0))
+                  .map(({ icon, bg, label, value, badge }) => (
+                    <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center justify-between mb-2"><div className={`p-2 ${bg} rounded-lg`}>{icon}</div><span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{badge}</span></div>
+                      <h3 className="text-sm font-medium text-gray-500">{label}</h3>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {activeDashboard === "customer" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Customer Management Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { icon: <Users className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", label: "Active Customers", value: "168,420", badge: "+3.9%" },
+                  { icon: <Plus className="w-5 h-5 text-lime-600" />, bg: "bg-lime-100", label: "New Connections", value: "1,842", badge: "+11.3%" },
+                  { icon: <AlertCircle className="w-5 h-5 text-red-600" />, bg: "bg-red-100", label: "Disconnection Cases", value: "412", badge: "-1.8%" },
+                  { icon: <Clock className="w-5 h-5 text-cyan-600" />, bg: "bg-cyan-100", label: "Avg Service Time", value: "2.1 days", badge: "-6.5%" },
+                ]
+                  .sort((a, b) => (parseFloat(a.value.replace(/[^0-9.-]/g, "")) || 0) - (parseFloat(b.value.replace(/[^0-9.-]/g, "")) || 0))
+                  .map(({ icon, bg, label, value, badge }) => (
+                    <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center justify-between mb-2"><div className={`p-2 ${bg} rounded-lg`}>{icon}</div><span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{badge}</span></div>
+                      <h3 className="text-sm font-medium text-gray-500">{label}</h3>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {activeDashboard === "operations" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Operations/Field Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { icon: <Briefcase className="w-5 h-5 text-indigo-600" />, bg: "bg-indigo-100", label: "Field Jobs Open", value: "286", badge: "+5.1%" },
+                  { icon: <Clock className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", label: "Avg Response Time", value: "1.8h", badge: "-4.0%" },
+                  { icon: <Zap className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100", label: "Outage Events", value: "34", badge: "-12.2%" },
+                  { icon: <Target className="w-5 h-5 text-green-600" />, bg: "bg-green-100", label: "SLA Compliance", value: "94.7%", badge: "+2.3%" },
+                ]
+                  .sort((a, b) => (parseFloat(a.value.replace(/[^0-9.-]/g, "")) || 0) - (parseFloat(b.value.replace(/[^0-9.-]/g, "")) || 0))
+                  .map(({ icon, bg, label, value, badge }) => (
+                    <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center justify-between mb-2"><div className={`p-2 ${bg} rounded-lg`}>{icon}</div><span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{badge}</span></div>
+                      <h3 className="text-sm font-medium text-gray-500">{label}</h3>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {activeDashboard === "solar" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Solar Operations Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { icon: <Sun className="w-5 h-5 text-yellow-600" />, bg: "bg-yellow-100", label: "Solar Customers", value: "2,146", badge: "+12.3%" },
+                  { icon: <Battery className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100", label: "Installed Capacity", value: "4.8 MW", badge: "+9.5%" },
+                  { icon: <Plug className="w-5 h-5 text-violet-600" />, bg: "bg-violet-100", label: "Grid Export", value: "1.2 GWh", badge: "+7.8%" },
+                  { icon: <Target className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", label: "Net Metering Share", value: "58.4%", badge: "+1.4%" },
+                ]
+                  .sort((a, b) => (parseFloat(a.value.replace(/[^0-9.-]/g, "")) || 0) - (parseFloat(b.value.replace(/[^0-9.-]/g, "")) || 0))
+                  .map(({ icon, bg, label, value, badge }) => (
+                    <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center justify-between mb-2"><div className={`p-2 ${bg} rounded-lg`}>{icon}</div><span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{badge}</span></div>
+                      <h3 className="text-sm font-medium text-gray-500">{label}</h3>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {activeDashboard === "collections" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Collections & Payments Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { icon: <DollarSign className="w-5 h-5 text-green-600" />, bg: "bg-green-100", label: "Today Collection", value: "LKR 8.7M", badge: "+6.8%" },
+                  { icon: <ShoppingCart className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-100", label: "Digital Payments", value: "62.4%", badge: "+10.2%" },
+                  { icon: <TrendingDown className="w-5 h-5 text-rose-600" />, bg: "bg-rose-100", label: "Overdue Accounts", value: "9,842", badge: "-3.6%" },
+                  { icon: <BarChart3 className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", label: "Collection Efficiency", value: "89.1%", badge: "+2.1%" },
+                ]
+                  .sort((a, b) => (parseFloat(a.value.replace(/[^0-9.-]/g, "")) || 0) - (parseFloat(b.value.replace(/[^0-9.-]/g, "")) || 0))
+                  .map(({ icon, bg, label, value, badge }) => (
+                    <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center justify-between mb-2"><div className={`p-2 ${bg} rounded-lg`}>{icon}</div><span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{badge}</span></div>
+                      <h3 className="text-sm font-medium text-gray-500">{label}</h3>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {activeDashboard === "executive" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Executive/KPI Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { icon: <Target className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", label: "Strategic KPI Score", value: "84.2%", badge: "+3.2%" },
+                  { icon: <TrendingUp className="w-5 h-5 text-green-600" />, bg: "bg-green-100", label: "Revenue Growth", value: "11.7%", badge: "+1.6%" },
+                  { icon: <Users className="w-5 h-5 text-purple-600" />, bg: "bg-purple-100", label: "Customer Satisfaction", value: "4.6/5", badge: "+0.2" },
+                  { icon: <AlertCircle className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100", label: "Critical Risks", value: "7", badge: "-2" },
+                ]
+                  .sort((a, b) => (parseFloat(a.value.replace(/[^0-9.-]/g, "")) || 0) - (parseFloat(b.value.replace(/[^0-9.-]/g, "")) || 0))
+                  .map(({ icon, bg, label, value, badge }) => (
+                    <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center justify-between mb-2"><div className={`p-2 ${bg} rounded-lg`}>{icon}</div><span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{badge}</span></div>
+                      <h3 className="text-sm font-medium text-gray-500">{label}</h3>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {activeDashboard === "inventory" && (
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Inventory & Procurement Dashboard</h1>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { icon: <Briefcase className="w-5 h-5 text-slate-600" />, bg: "bg-slate-100", label: "Stock On Hand", value: "12,460", badge: "+2.8%" },
+                  { icon: <AlertCircle className="w-5 h-5 text-red-600" />, bg: "bg-red-100", label: "Low Stock Items", value: "38", badge: "-9.5%" },
+                  { icon: <Clock className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", label: "Avg Lead Time", value: "5.6 days", badge: "-1.1%" },
+                  { icon: <DollarSign className="w-5 h-5 text-green-600" />, bg: "bg-green-100", label: "Procurement Spend", value: "LKR 6.9M", badge: "+4.7%" },
+                ]
+                  .sort((a, b) => (parseFloat(a.value.replace(/[^0-9.-]/g, "")) || 0) - (parseFloat(b.value.replace(/[^0-9.-]/g, "")) || 0))
+                  .map(({ icon, bg, label, value, badge }) => (
+                    <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center justify-between mb-2"><div className={`p-2 ${bg} rounded-lg`}>{icon}</div><span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{badge}</span></div>
+                      <h3 className="text-sm font-medium text-gray-500">{label}</h3>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {activeDashboard === "crm" && (
             <div className="p-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-6">CRM Dashboard</h1>
