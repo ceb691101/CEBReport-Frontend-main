@@ -965,7 +965,10 @@ const Home: React.FC = () => {
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Solar Customers</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{solarLoading || bulkSolarLoading ? "Loading..." : formatNumber(animatedSolar)}</p>
-                        <p className="text-xs text-gray-500 mt-2">Net-type breakdown shown in chart</p>
+                         <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                          <span>Ordinary: {solarLoading ? "..." : formatNumber(animatedOrdSolarTotal)}</span>
+                          <span>Bulk: {bulkSolarLoading ? "..." : formatNumber(animatedBulkSolarTotal)}</span>
+                        </div>
                       </>);
                       if (cardId === "zeroConsumption") return wrapCard(<>
                         <div className="flex items-center justify-between mb-2">
