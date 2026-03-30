@@ -30,6 +30,8 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   Cell,
   XAxis,
   YAxis,
@@ -70,12 +72,6 @@ interface TopCustomer {
   type: string;
 }
 
-interface SalesData {
-  ordinary: { charge: number; units: number };
-  bulk: { charge: number; units: number };
-  kioskCollection: number;
-}
-
 interface MonthlySalesData {
   month: string;
   ordinary: number;
@@ -102,6 +98,23 @@ interface SalesCollectionApiResponse {
     records: SalesCollectionRecord[];
   };
   errorMessage: string | null;
+}
+
+interface KioskCollectionRecord {
+  TransDate: string;
+  CollectionAmount: number;
+  ErrorMessage: string;
+}
+
+interface KioskCollectionApiResponse {
+  data: {
+    userId: string;
+    fromDate: string;
+    toDate: string;
+    records: KioskCollectionRecord[];
+  } | null;
+  errorMessage: string | null;
+  errorDetails?: string;
 }
 
 // ─── useInView Hook ───────────────────────────────────────────────────────────
@@ -482,7 +495,7 @@ const SolarCapacityChart: React.FC<SolarCapacityChartProps> = ({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const Home: React.FC = () => {
-  useUser();
+  const { user } = useUser();
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [activeDashboard, setActiveDashboard] = useState<string>("default");
@@ -539,6 +552,11 @@ const Home: React.FC = () => {
   const [salesCollectionLoading, setSalesCollectionLoading] = useState(true);
   const [salesCollectionError, setSalesCollectionError]     = useState<string | null>(null);
   const [salesChartKey, setSalesChartKey]                   = useState(0);
+  const [kioskWeeklyTotal, setKioskWeeklyTotal]             = useState(0);
+  const [kioskDateRange, setKioskDateRange]                 = useState({ fromDate: "", toDate: "" });
+  const [kioskDailyRecords, setKioskDailyRecords]           = useState<KioskCollectionRecord[]>([]);
+  const [kioskLoading, setKioskLoading]                     = useState(true);
+  const [kioskError, setKioskError]                         = useState<string | null>(null);
 
   // ── Static / mock data ────────────────────────────────────────────────────
   const [topCustomers] = useState<TopCustomer[]>(
@@ -550,12 +568,6 @@ const Home: React.FC = () => {
       { name: "John Doe",       consumption: 45231, type: "Bulk"     },
     ].sort((a, b) => a.consumption - b.consumption)
   );
-
-  const [salesData] = useState<SalesData>({
-    ordinary: { charge: 2456789, units: 1234567 },
-    bulk:     { charge: 5678901, units: 2345678 },
-    kioskCollection: 456789,
-  });
 
   const [monthlyNewCustomers] = useState<MonthlyNewCustomers[]>(
     [
@@ -750,6 +762,55 @@ const Home: React.FC = () => {
     fetchSalesCollection();
   }, []);
 
+  const loggedUserId = (user?.Userno || "").trim().toUpperCase();
+  const kioskUserId = loggedUserId.startsWith("KIOS") ? loggedUserId : "KIOS00";
+
+  useEffect(() => {
+    const fetchKioskWeeklyCollection = async () => {
+      setKioskLoading(true);
+      setKioskError(null);
+
+      try {
+        const res = await fetch(
+          `/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`,
+          { headers: { Accept: "application/json" } }
+        );
+
+        if (!res.ok) {
+          throw new Error(`Kiosk collection fetch failed: ${res.status}`);
+        }
+
+        const json: KioskCollectionApiResponse = await res.json();
+
+        if (json?.errorMessage) {
+          const details = json?.errorDetails ? ` (${json.errorDetails})` : "";
+          throw new Error(`${json.errorMessage}${details}`);
+        }
+
+        const records = json?.data?.records ?? [];
+        const weeklyTotal = records.reduce(
+          (sum, row) => sum + (Number(row.CollectionAmount) || 0),
+          0
+        );
+
+        setKioskWeeklyTotal(weeklyTotal);
+        setKioskDailyRecords(records);
+        setKioskDateRange({
+          fromDate: json?.data?.fromDate ?? "",
+          toDate: json?.data?.toDate ?? "",
+        });
+      } catch (err: any) {
+        console.error("Error fetching kiosk collection data:", err);
+        setKioskError(err?.message || "Failed to load kiosk collection data.");
+        setKioskWeeklyTotal(0);
+      } finally {
+        setKioskLoading(false);
+      }
+    };
+
+    fetchKioskWeeklyCollection();
+  }, [kioskUserId]);
+
   // ── Formatters ────────────────────────────────────────────────────────────
 
   const formatNumber   = (n: number) => new Intl.NumberFormat("en-US").format(n);
@@ -809,7 +870,7 @@ const Home: React.FC = () => {
   const animatedBulk        = useCountUp(customerCounts.bulk,          1400, !bulkCountLoading,      kpiTrigger);
   const animatedSolar       = useCountUp(totalSolarCustomers,          1400, !solarLoading && !bulkSolarLoading, kpiTrigger);
   const animatedZero        = useCountUp(customerCounts.zeroConsumption, 1400, true, kpiTrigger);
-  const animatedKiosk       = useCountUp(salesData.kioskCollection,    1400, true, kpiTrigger);
+  const animatedKiosk       = useCountUp(kioskWeeklyTotal,             1400, !kioskLoading, kpiTrigger);
   const animatedRevenue     = useCountUp(125600000, 1400, true, kpiTrigger);
   const animatedDisconnect  = useCountUp(2456,      1400, true, kpiTrigger);
   const animatedArrears     = useCountUp(456780000, 1400, true, kpiTrigger);
@@ -945,9 +1006,8 @@ const Home: React.FC = () => {
                       );
 
                       if (cardId === "totalCustomers") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-blue-100 rounded-lg"><Users className="w-5 h-5 text-blue-600" /></div>
-                          <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+5.2%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Total Customers</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">
@@ -959,9 +1019,8 @@ const Home: React.FC = () => {
                         </div>
                       </>);
                       if (cardId === "solarCustomers") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-yellow-100 rounded-lg"><Sun className="w-5 h-5 text-yellow-600" /></div>
-                          <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+12.3%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Solar Customers</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{solarLoading || bulkSolarLoading ? "Loading..." : formatNumber(animatedSolar)}</p>
@@ -971,81 +1030,78 @@ const Home: React.FC = () => {
                         </div>
                       </>);
                       if (cardId === "zeroConsumption") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-red-100 rounded-lg"><Zap className="w-5 h-5 text-red-600" /></div>
-                          <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">-2.1%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Zero Consumption</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(animatedZero)}</p>
                         <p className="text-xs text-gray-500 mt-2">Last 3 months</p>
                       </>);
                       if (cardId === "kioskCollection") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-green-100 rounded-lg"><DollarSign className="w-5 h-5 text-green-600" /></div>
-                          <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+8.7%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Kiosk Collection</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(animatedKiosk)}</p>
-                        <p className="text-xs text-gray-500 mt-2">This month</p>
+                        <p className="text-2xl font-bold text-gray-900 mt-1">
+                          {kioskLoading ? "Loading..." : formatCurrency(animatedKiosk)}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {kioskError
+                            ? kioskError
+                            : `${kioskDateRange.fromDate || "-"} to ${kioskDateRange.toDate || "-"}`}
+                        </p>
                       </>);
                       if (cardId === "revenueCollection") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-emerald-100 rounded-lg"><ShoppingCart className="w-5 h-5 text-emerald-600" /></div>
-                          <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+6.8%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Revenue Collection</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(animatedRevenue)}</p>
                         <p className="text-xs text-gray-500 mt-2">Year to date</p>
                       </>);
                       if (cardId === "disconnections") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-orange-100 rounded-lg"><AlertCircle className="w-5 h-5 text-orange-600" /></div>
-                          <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">+15.2%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Disconnections</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(animatedDisconnect)}</p>
                         <p className="text-xs text-gray-500 mt-2">Pending action</p>
                       </>);
                       if (cardId === "arrearsPosition") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-rose-100 rounded-lg"><TrendingDown className="w-5 h-5 text-rose-600" /></div>
-                          <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-full">-3.4%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Arrears Position</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(animatedArrears)}</p>
                         <p className="text-xs text-gray-500 mt-2">Total outstanding</p>
                       </>);
                       if (cardId === "solarCapacity") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-amber-100 rounded-lg"><Battery className="w-5 h-5 text-amber-600" /></div>
-                          <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+9.5%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Solar Capacity</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{formatCompact(animatedSolarCap)} kW</p>
                         <p className="text-xs text-gray-500 mt-2">Total installed</p>
                       </>);
                       if (cardId === "consumptionAnalysis") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-violet-100 rounded-lg"><Plug className="w-5 h-5 text-violet-600" /></div>
-                          <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+2.3%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Consumption (kWh)</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{formatCompact(animatedConsumption)}</p>
                         <p className="text-xs text-gray-500 mt-2">Monthly average</p>
                       </>);
                       if (cardId === "billCycleStatus") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-cyan-100 rounded-lg"><Clock className="w-5 h-5 text-cyan-600" /></div>
-                          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">Active</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">Bill Cycle Status</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{activeBillCycle || "Cycle 450"}</p>
                         <p className="text-xs text-gray-500 mt-2">Current cycle</p>
                       </>);
                       if (cardId === "newConnections") return wrapCard(<>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-end mb-2">
                           <div className="p-2 bg-lime-100 rounded-lg"><Plus className="w-5 h-5 text-lime-600" /></div>
-                          <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+11.3%</span>
                         </div>
                         <h3 className="text-sm font-medium text-gray-500">New Connections</h3>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(animatedNewConn)}</p>
@@ -1106,12 +1162,161 @@ const Home: React.FC = () => {
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
                       <div className="flex items-center justify-between mb-6">
                         <div>
+                          <h3 className="font-semibold text-gray-900">Kiosk Daily Collection Trend</h3>
+                          <p className="text-sm text-gray-500 mt-1">Daily collection amounts for the week</p>
+                        </div>
+                        <DollarSign className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div className="mb-6 flex-1">
+                        {kioskLoading ? (
+                          <div className="h-64 flex items-center justify-center text-gray-400 text-sm">Loading...</div>
+                        ) : kioskError ? (
+                          <div className="h-64 flex items-center justify-center text-red-400 text-sm">{kioskError}</div>
+                        ) : kioskDailyRecords.length === 0 ? (
+                          <div className="h-64 flex items-center justify-center text-gray-400 text-sm">No kiosk collection data for this week.</div>
+                        ) : (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={kioskDailyRecords} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+                              <XAxis
+                                dataKey="TransDate"
+                                tick={{ fontSize: 11 }}
+                                tickFormatter={(date) => date.slice(5)}
+                              />
+                              <YAxis
+                                tick={{ fontSize: 11 }}
+                                tickFormatter={(v) => formatCompact(Number(v) || 0)}
+                                width={44}
+                              />
+                              <Tooltip
+                                formatter={(value: any) => formatCurrency(Number(value) || 0)}
+                                labelStyle={{ fontWeight: 600 }}
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="CollectionAmount"
+                                name="Collection Amount"
+                                stroke="var(--ceb-maroon)"
+                                strokeWidth={2.5}
+                                dot={{ fill: "var(--ceb-maroon)", r: 5 }}
+                                activeDot={{ r: 7 }}
+                                isAnimationActive={true}
+                                animationDuration={900}
+                                animationEasing="ease-out"
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        )}
+                      </div>
+                      <div className="mt-auto pt-4 border-t border-gray-100">
+                        <p className="text-xs text-gray-500 mb-2">Weekly Summary</p>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500">Period</p>
+                            <p className="text-sm font-semibold text-gray-900">{kioskDateRange.fromDate} to {kioskDateRange.toDate}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Weekly Total</p>
+                            <p className="text-sm font-semibold text-gray-900">{formatCurrency(kioskWeeklyTotal)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">User ID</p>
+                            <p className="text-sm font-semibold text-gray-900">{kioskUserId}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Reveal>
+
+                  {/* Solar customers — dual pie charts */}
+                  <Reveal delay={120} className="h-full">
+                    <div ref={solarPieRef} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
+                      <style key={solarPieAnimKey}>{solarPieStyles}</style>
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-semibold text-gray-900">Solar Customers by Net Type</h3>
+                      </div>
+                      <div className="grid grid-cols-2 gap-6">
+                        {[
+                          { label: "Ordinary Solar", total: animatedOrdSolarTotal,
+                            animatedCounts: [animatedOrdNetMetering, animatedOrdNetAccounting, animatedOrdNetPlus, animatedOrdNetPlusPlus],
+                            pcts: [ordSolarNetMeteringPct, ordSolarNetAccountingPct, ordSolarNetPlusPct, ordSolarNetPlusPlusPct],
+                            classes: [`solar-ord-metering-${solarPieAnimKey}`, `solar-ord-accounting-${solarPieAnimKey}`, `solar-ord-plus-${solarPieAnimKey}`, `solar-ord-plusplus-${solarPieAnimKey}`],
+                            keys: ["ordinaryNetMetering","ordinaryNetAccounting","ordinaryNetPlus","ordinaryNetPlusPlus"] },
+                          { label: "Bulk Solar", total: animatedBulkSolarTotal,
+                            animatedCounts: [animatedBulkNetMetering, animatedBulkNetAccounting, animatedBulkNetPlus, animatedBulkNetPlusPlus],
+                            pcts: [bulkSolarNetMeteringPct, bulkSolarNetAccountingPct, bulkSolarNetPlusPct, bulkSolarNetPlusPlusPct],
+                            classes: [`solar-bulk-metering-${solarPieAnimKey}`, `solar-bulk-accounting-${solarPieAnimKey}`, `solar-bulk-plus-${solarPieAnimKey}`, `solar-bulk-plusplus-${solarPieAnimKey}`],
+                            keys: ["bulkNetMetering","bulkNetAccounting","bulkNetPlus","bulkNetPlusPlus"] },
+                        ].map(({ label, total, animatedCounts, pcts, classes, keys }) => {
+                          const colors    = SOLAR_NET_TYPE_COLORS;
+                          const netLabels = ["Net Metering", "Net Accounting", "Net Plus", "Net Plus Plus"];
+                          let offset = 0;
+                          return (
+                            <div key={label} className="flex flex-col items-center">
+                              <h4 className="text-sm font-medium text-gray-900 mb-4">{label}</h4>
+                              <div className="relative w-40 h-40">
+                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
+                                  <circle cx="100" cy="100" r="80" fill="none" stroke="#f3f4f6" strokeWidth="30" />
+                                  {classes.map((cls, i) => {
+                                    const el = (
+                                      <circle key={i} cx="100" cy="100" r="80" fill="none" stroke={colors[i]} strokeWidth="30"
+                                        strokeDasharray={`0 ${C}`} strokeDashoffset={i === 0 ? 0 : -((offset / 100) * C)}
+                                        className={`${cls} transition-all duration-300 cursor-pointer hover:opacity-80`}
+                                        onMouseEnter={() => setActiveSolarPieChart(keys[i])}
+                                        onMouseLeave={() => setActiveSolarPieChart(null)} />
+                                    );
+                                    offset += pcts[i];
+                                    return el;
+                                  })}
+                                </svg>
+                                {activeSolarPieChart && keys.includes(activeSolarPieChart) ? (
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-center shadow-lg">
+                                      <p className="text-xs font-semibold">{netLabels[keys.indexOf(activeSolarPieChart)]}</p>
+                                      <p className="text-sm font-bold mt-1">{formatNumber(animatedCounts[keys.indexOf(activeSolarPieChart)])}</p>
+                                      <p className="text-xs text-gray-300 mt-0.5">{pcts[keys.indexOf(activeSolarPieChart)].toFixed(1)}%</p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div className="text-center">
+                                      <p className="text-xl font-bold text-gray-900">{formatNumber(total)}</p>
+                                      <p className="text-xs text-gray-500">Total</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="space-y-2 w-full text-sm mt-4">
+                                {netLabels.map((nl, i) => (
+                                  <div key={nl} className="flex items-center gap-2 p-1 rounded">
+                                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: colors[i] }} />
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-900">{nl}</p>
+                                      <p className="text-xs text-gray-500">{formatNumber(animatedCounts[i])} ({pcts[i].toFixed(1)}%)</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </Reveal>
+                </div>
+
+                {/* ── Sales & Collection Distribution ──────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 auto-rows-fr">
+                  <Reveal delay={240} className="h-full">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
+                      <div className="flex items-center justify-between mb-6">
+                        <div>
                           <h3 className="font-semibold text-gray-900">Sales & Collection Distribution</h3>
                           <p className="text-sm text-gray-500 mt-1">Monthly Sales Trend by Customer Type (Sorted by Bill Cycle)</p>
                         </div>
                         <PieChart className="w-5 h-5 text-gray-400" />
                       </div>
-                      <div className="mb-6 flex-1">
+                      <div className="mb-6 flex-1 min-h-[16rem]">
                         {salesCollectionLoading ? (
                           <div className="h-64 flex items-center justify-center text-gray-400 text-sm">Loading...</div>
                         ) : salesCollectionError ? (
@@ -1136,8 +1341,7 @@ const Home: React.FC = () => {
                     </div>
                   </Reveal>
 
-                  {/* New Customers Pie Chart */}
-                  <Reveal delay={120} className="h-full">
+                  <Reveal delay={300} className="h-full">
                     <div ref={newCustomersPieRef} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
                       <style key={newCustPieAnimKey}>{newCustPieStyles}</style>
                       <div className="flex items-center justify-between mb-6">
@@ -1283,80 +1487,7 @@ const Home: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Solar customers — dual pie charts */}
-                    <div ref={solarPieRef} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                      <style key={solarPieAnimKey}>{solarPieStyles}</style>
-                      <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-semibold text-gray-900">Solar Customers by Net Type</h3>
-                        {/* <span className="text-[color:var(--ceb-navy)] text-xs font-semibold tracking-wide">GRAPH</span> */}
-                      </div>
-                      <div className="grid grid-cols-2 gap-6">
-                        {[
-                          { label: "Ordinary Solar", total: animatedOrdSolarTotal,
-                            animatedCounts: [animatedOrdNetMetering, animatedOrdNetAccounting, animatedOrdNetPlus, animatedOrdNetPlusPlus],
-                            pcts: [ordSolarNetMeteringPct, ordSolarNetAccountingPct, ordSolarNetPlusPct, ordSolarNetPlusPlusPct],
-                            classes: [`solar-ord-metering-${solarPieAnimKey}`, `solar-ord-accounting-${solarPieAnimKey}`, `solar-ord-plus-${solarPieAnimKey}`, `solar-ord-plusplus-${solarPieAnimKey}`],
-                            keys: ["ordinaryNetMetering","ordinaryNetAccounting","ordinaryNetPlus","ordinaryNetPlusPlus"] },
-                          { label: "Bulk Solar", total: animatedBulkSolarTotal,
-                            animatedCounts: [animatedBulkNetMetering, animatedBulkNetAccounting, animatedBulkNetPlus, animatedBulkNetPlusPlus],
-                            pcts: [bulkSolarNetMeteringPct, bulkSolarNetAccountingPct, bulkSolarNetPlusPct, bulkSolarNetPlusPlusPct],
-                            classes: [`solar-bulk-metering-${solarPieAnimKey}`, `solar-bulk-accounting-${solarPieAnimKey}`, `solar-bulk-plus-${solarPieAnimKey}`, `solar-bulk-plusplus-${solarPieAnimKey}`],
-                            keys: ["bulkNetMetering","bulkNetAccounting","bulkNetPlus","bulkNetPlusPlus"] },
-                        ].map(({ label, total, animatedCounts, pcts, classes, keys }) => {
-                          const colors    = SOLAR_NET_TYPE_COLORS;
-                          const netLabels = ["Net Metering", "Net Accounting", "Net Plus", "Net Plus Plus"];
-                          let offset = 0;
-                          return (
-                            <div key={label} className="flex flex-col items-center">
-                              <h4 className="text-sm font-medium text-gray-900 mb-4">{label}</h4>
-                              <div className="relative w-40 h-40">
-                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
-                                  <circle cx="100" cy="100" r="80" fill="none" stroke="#f3f4f6" strokeWidth="30" />
-                                  {classes.map((cls, i) => {
-                                    const el = (
-                                      <circle key={i} cx="100" cy="100" r="80" fill="none" stroke={colors[i]} strokeWidth="30"
-                                        strokeDasharray={`0 ${C}`} strokeDashoffset={i === 0 ? 0 : -((offset / 100) * C)}
-                                        className={`${cls} transition-all duration-300 cursor-pointer hover:opacity-80`}
-                                        onMouseEnter={() => setActiveSolarPieChart(keys[i])}
-                                        onMouseLeave={() => setActiveSolarPieChart(null)} />
-                                    );
-                                    offset += pcts[i];
-                                    return el;
-                                  })}
-                                </svg>
-                                {activeSolarPieChart && keys.includes(activeSolarPieChart) ? (
-                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-center shadow-lg">
-                                      <p className="text-xs font-semibold">{netLabels[keys.indexOf(activeSolarPieChart)]}</p>
-                                      <p className="text-sm font-bold mt-1">{formatNumber(animatedCounts[keys.indexOf(activeSolarPieChart)])}</p>
-                                      <p className="text-xs text-gray-300 mt-0.5">{pcts[keys.indexOf(activeSolarPieChart)].toFixed(1)}%</p>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="text-center">
-                                      <p className="text-xl font-bold text-gray-900">{formatNumber(total)}</p>
-                                      <p className="text-xs text-gray-500">Total</p>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="space-y-2 w-full text-sm mt-4">
-                                {netLabels.map((nl, i) => (
-                                  <div key={nl} className="flex items-center gap-2 p-1 rounded">
-                                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: colors[i] }} />
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-900">{nl}</p>
-                                      <p className="text-xs text-gray-500">{formatNumber(animatedCounts[i])} ({pcts[i].toFixed(1)}%)</p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    
                   </Reveal>
 
                   <Reveal delay={240} className="lg:col-span-1 space-y-6">
