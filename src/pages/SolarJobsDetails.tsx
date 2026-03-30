@@ -1,27 +1,20 @@
 import {useState, useEffect} from "react";
-import {data as sidebarData} from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
 import SolarPendingJobsReport from "../mainTopics/SolarJobs/SolarPendingJobsReport";
+import { matchesReportName } from "../utils/reportNameMatch";
 
-
-type Subtopic = {
-	id: number;
-	name: string;
-};
 
 const SolarJobsDetails = () => {
-	const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Solar Information - Jobs"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
 	useEffect(() => {
-		const analysisTopic = sidebarData.find(
-			(topic) => topic.name === "Solar Information - Jobs"
-		);
-		if (analysisTopic) {
-			setSubtopics(analysisTopic.subtopics);
+		if (typeof selectedSubtopicId === "number") {
+			setExpandedCard(selectedSubtopicId);
 		}
-	}, []);
+	}, [selectedSubtopicId]);
 
 	const toggleCard = (id: number) => {
 		if (expandedCard === id) {
@@ -32,10 +25,10 @@ const SolarJobsDetails = () => {
 	};
 
 	const renderSubtopicContent = (subtopicName: string) => {
-		switch (subtopicName) {
-			case "Area-wise Solar Sent to Billing Details":
+		switch (true) {
+			case matchesReportName(subtopicName, "Area-wise Solar Sent to Billing Details"):
 				return <SolarBillingReport />;
-			case "Solar Retail Rooftop Pending Jobs after PIV2 Paid":
+			case matchesReportName(subtopicName, "Solar Retail Rooftop Pending Jobs after PIV2 Paid"):
 				return <SolarPendingJobsReport />;
 
 			default:
@@ -65,3 +58,4 @@ const SolarJobsDetails = () => {
 };
 
 export default SolarJobsDetails;
+

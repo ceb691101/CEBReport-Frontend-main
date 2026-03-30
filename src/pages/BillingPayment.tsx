@@ -1,27 +1,19 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
 import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { matchesReportName } from "../utils/reportNameMatch";
 
 const BillingPayment = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Customer Details"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get Billing & Payment topic's subtopics directly from sidebarData
-    const billingTopic = sidebarData.find(
-      (topic) => topic.name === "Customer Details"
-    );
-    if (billingTopic) {
-      setSubtopics(billingTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -32,15 +24,15 @@ const BillingPayment = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Customer Information":
+    switch (true) {
+      case matchesReportName(subtopicName, "Customer Information"):
         return <CustomerDetails />;
-      case "Transaction History":
-      case "Bill Information":
-      case "Payment Inquires": 
-      case "Bill SMS Inquiry": 
-      case "Arrears Position – Single customer": 
-      case "Suspense Payment":     
+      case matchesReportName(subtopicName, "Transaction History"):
+      case matchesReportName(subtopicName, "Bill Information"):
+      case matchesReportName(subtopicName, "Payment Inquires"): 
+      case matchesReportName(subtopicName, "Bill SMS Inquiry"): 
+      case matchesReportName(subtopicName, "Arrears Position – Single customer"): 
+      case matchesReportName(subtopicName, "Suspense Payment"):     
         return <div>{subtopicName} Content</div>;
       default:
         return (
@@ -69,3 +61,4 @@ const BillingPayment = () => {
 };
 
 export default BillingPayment;
+

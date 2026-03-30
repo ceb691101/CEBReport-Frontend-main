@@ -1,26 +1,18 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { matchesReportName } from "../utils/reportNameMatch";
 
 const TransmissionBilling = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Transmission Billing"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get Billing & Payment topic's subtopics directly from sidebarData
-    const transmissionTopic = sidebarData.find(
-      (topic) => topic.name === "Transmission Billing"
-    );
-    if (transmissionTopic) {
-      setSubtopics(transmissionTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -31,9 +23,9 @@ const TransmissionBilling = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Monthly Energy Sales (Assessed units taken from consolidated data)": 
-      case "Monthly Energy Sales (Assessed units taken from provincial data)":     
+    switch (true) {
+      case matchesReportName(subtopicName, "Monthly Energy Sales (Assessed units taken from consolidated data)"): 
+      case matchesReportName(subtopicName, "Monthly Energy Sales (Assessed units taken from provincial data)"):     
         return <div>{subtopicName} Content</div>;
       default:
         return (
@@ -62,3 +54,4 @@ const TransmissionBilling = () => {
 };
 
 export default TransmissionBilling;
+

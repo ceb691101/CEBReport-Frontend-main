@@ -1,28 +1,20 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import CostCenterTrial from "../mainTopics/TrialBalance/CostCenterTrial";
 import ProvintionalWiseTrial from "../mainTopics/TrialBalance/ProvintionalWiseTrial";
 import ReagionTrial from "../mainTopics/TrialBalance/ReagionTrial";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { matchesReportName } from "../utils/reportNameMatch";
 
 const TrialBalance = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Trial Balance"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get PUCSL/LISS topic's subtopics directly from sidebarData
-    const pucslTopic = sidebarData.find(
-      (topic) => topic.name === "Trial Balance"
-    );
-    if (pucslTopic) {
-      setSubtopics(pucslTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -33,13 +25,13 @@ const TrialBalance = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Cost Center Trial Balance - End of Month/Year":
+    switch (true) {
+      case matchesReportName(subtopicName, "Cost Center Trial Balance - End of Month/Year"):
         return <CostCenterTrial/>;
 
-         case "Provintial Trial Balance - End of Month/Year":
+         case matchesReportName(subtopicName, "Provintial Trial Balance - End of Month/Year"):
         return <ProvintionalWiseTrial/>;
-         case "Region Trial Balance - End of Month/Year":
+         case matchesReportName(subtopicName, "Region Trial Balance - End of Month/Year"):
         return <ReagionTrial/>;
 
       default:
@@ -69,3 +61,4 @@ const TrialBalance = () => {
 };
 
 export default TrialBalance;
+

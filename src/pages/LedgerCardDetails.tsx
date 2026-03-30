@@ -1,28 +1,21 @@
 import {useState, useEffect} from "react";
-import {data as sidebarData} from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import LedgerCardReport from "../mainTopics/LedgerCard/LedgerCardReport";
 import LCWithoutSubAcc from "../mainTopics/LedgerCard/LCWithoutSubAcc";
 import LedgerCardSubAccountTotal from "../mainTopics/LedgerCard/LedgerCardSubAccountTotal";
 import DivisionalLedgerCard from "../mainTopics/LedgerCard/DivisionalLedgerCard";
-
-type Subtopic = {
-	id: number;
-	name: string;
-};
+import { matchesReportName } from "../utils/reportNameMatch";
 
 const LedgerCardDetails = () => {
-	const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Ledger Cards"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
 	useEffect(() => {
-		const analysisTopic = sidebarData.find(
-			(topic) => topic.name === "Ledger Cards"
-		);
-		if (analysisTopic) {
-			setSubtopics(analysisTopic.subtopics);
+		if (typeof selectedSubtopicId === "number") {
+			setExpandedCard(selectedSubtopicId);
 		}
-	}, []);
+	}, [selectedSubtopicId]);
 
 	const toggleCard = (id: number) => {
 		if (expandedCard === id) {
@@ -33,14 +26,14 @@ const LedgerCardDetails = () => {
 	};
 
 	const renderSubtopicContent = (subtopicName: string) => {
-		switch (subtopicName) {
-			case "Ledger Card with Subaccounts":
+		switch (true) {
+			case matchesReportName(subtopicName, "Ledger Card with Subaccounts"):
 				return <LedgerCardReport />;
-			case "Ledger Card without Subaccounts":
+			case matchesReportName(subtopicName, "Ledger Card without Subaccounts"):
 				return <LCWithoutSubAcc />;
-			case "Ledger Card  Subaccounts Total":
+			case matchesReportName(subtopicName, "Ledger Card  Subaccounts Total"):
 				return <LedgerCardSubAccountTotal />;
-			case "Sub Accounts Transactions for Account Code within Selected Company":
+			case matchesReportName(subtopicName, "Sub Accounts Transactions for Account Code within Selected Company"):
 				return <DivisionalLedgerCard />;
 
 			default:
@@ -70,3 +63,4 @@ const LedgerCardDetails = () => {
 };
 
 export default LedgerCardDetails;
+

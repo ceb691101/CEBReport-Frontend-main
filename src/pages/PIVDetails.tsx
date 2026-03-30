@@ -1,5 +1,5 @@
 import {useState, useEffect} from "react";
-import {data as sidebarData} from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import ProvincePIV from "../mainTopics/PIV/ProvincePIV";
 import ProvincePIVProvincial from "../mainTopics/PIV/ProvincePIVProvincial";
@@ -31,21 +31,15 @@ import BankPaidPIVDetails from "../mainTopics/PIV/BankPaidPIVDetails";
 import BankPivTabulation from "../mainTopics/PIV/BankPivTabulation";
 import CostCenterwisePivDetails from "../mainTopics/PIV/CostCenterwisePivDetails";
 
-type Subtopic = {
-	id: number;
-	name: string;
-};
-
 const PIVDetails = () => {
-	const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["PIV", "PIV Details"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
 	useEffect(() => {
-		const analysisTopic = sidebarData.find((topic) => topic.name === "PIV");
-		if (analysisTopic) {
-			setSubtopics(analysisTopic.subtopics);
+		if (typeof selectedSubtopicId === "number") {
+			setExpandedCard(selectedSubtopicId);
 		}
-	}, []);
+	}, [selectedSubtopicId]);
 
 	const toggleCard = (id: number) => {
 		if (expandedCard === id) {
@@ -55,67 +49,105 @@ const PIVDetails = () => {
 		}
 	};
 
+	const normalizeReportName = (value: string) =>
+		value
+			.toLowerCase()
+			.replace(/[\u2013\u2014]/g, "-")
+			.replace(/[^a-z0-9]+/g, " ")
+			.trim();
+
 	const renderSubtopicContent = (subtopicName: string) => {
-		switch (subtopicName) {
-			case "1. Branch/Province wise PIV Collections Paid to Bank":
+		const key = normalizeReportName(subtopicName);
+
+		switch (key) {
+			case "1 branch province wise piv collections paid to bank":
+			case "branch province wise piv collections paid to bank":
 				return <ProvincePIV />;
-			case "2. Branch/Province wise PIV Collections by Provincial POS relevant to the Province":
+			case "2 branch province wise piv collections by provincial pos relevant to the province":
+			case "branch province wise piv collections by provincial pos relevant to the province":
 				return <ProvincePIVProvincial />;
-			case "3. Branch/Province wise PIV Collections Paid to Provincial POS":
+			case "3 branch province wise piv collections paid to provincial pos":
+			case "branch province wise piv collections paid to provincial pos":
 				return <ProvincePIVAll />;
-			case "4. PIV Collections by Provincial POS relevant to Other Cost Centers":
+			case "4 piv collections by provincial pos relevant to other cost centers":
+			case "piv collections by provincial pos relevant to other cost centers":
 				return <ProvincePivOtherCC />;
-			case "5. PIV Collections by Other Cost Centers relevant to the Province":
+			case "5 piv collections by other cost centers relevant to the province":
+			case "piv collections by other cost centers relevant to the province":
 				return <OtherCCtoProvince />;
-			case "6. Branch wise PIV Tabulation ( Both Bank and POS)":
+			case "6 branch wise piv tabulation both bank and pos":
+			case "branch wise piv tabulation both bank and pos":
 				return <BranchWisePivBoth />;
-			case "7. PIV Collections by Banks":
+			case "7 piv collections by banks":
+			case "piv collections by banks":
 				return <PivByBanks />;
-			case "7.1 PIV Collections by Peoples Banks":
+			case "7 1 piv collections by peoples banks":
+			case "piv collections by peoples banks":
 				return <PIVCollectionsByPeoplesBank />;
-			case "7.2 PIV Collections by IPG  (SLT) ":
+			case "7 2 piv collections by ipg slt":
+			case "piv collections by ipg slt":
 				return <PivBySLT />;
-			case "8. PIV Details Report (PIV Amount not tallied with Paid Amount)":
+			case "8 piv details report piv amount not tallied with paid amount":
+			case "piv details report piv amount not tallied with paid amount":
 				return <PIVDetailsReport />;
-			case "9. Province wise PIV Stamp Duty":
+			case "9 province wise piv stamp duty":
+			case "province wise piv stamp duty":
 				return <ProvinceWisePIVStampDuty />;
-			case "10. Regional PIV Stamp Duty":
+			case "10 regional piv stamp duty":
+			case "regional piv stamp duty":
 				return <RegionalPIVStampDutyReport />;
-			case "11. PIV Details for Cheque Deposits":
+			case "11 piv details for cheque deposits":
+			case "piv details for cheque deposits":
 				return <PivChequeDepositReport />;
-			case "12. PIV Search":
+			case "12 piv search":
+			case "piv search":
 				return <PivSearchReport />;
-			case "13. PIV Type wise PIV Details":
+			case "13 piv type wise piv details":
+			case "piv type wise piv details":
 				return <TypewisePIV />;
-			case "14. Consolidated Output VAT Schedule":
+			case "14 consolidated output vat schedule":
+			case "consolidated output vat schedule":
 				return <ConsolidatedOutputVAT />;
-			case "15. PIV Stamp Duty Detail Report":
+			case "15 piv stamp duty detail report":
+			case "piv stamp duty detail report":
 				return <StampDutyDetailedReport />;
-			case "16. Province wise VAT Report":
+			case "16 province wise vat report":
+			case "province wise vat report":
 				return <ProvincialConsolidatedOutputVAT />;
-			case "17. Region wise VAT Report":
+			case "17 region wise vat report":
+			case "region wise vat report":
 				return <RegionWiseVatReport />;
-			case "18. Province wise System Set-Off PIV Details":
+			case "18 province wise system set off piv details":
+			case "province wise system set off piv details":
 				return <ProvinceSetOffReport />;
-			case "18.1 Province wise Manual Set-Off PIV Details":
+			case "18 1 province wise manual set off piv details":
+			case "province wise manual set off piv details":
 				return <ProvinceManualSetOffReport />;
-			case "19. POS Paid PIV Tabulation Summary Report (AFMHQ)":
+			case "19 pos paid piv tabulation summary report afmhq":
+			case "pos paid piv tabulation summary report afmhq":
 				return <PosPaidPivTabulationSummaryAfmhq />;
-			case "20. PIV Details (Issued and Paid Cost Centers AFMHQ Only)":
+			case "20 piv details issued and paid cost centers afmhq only":
+			case "piv details issued and paid cost centers afmhq only":
 				return <AccountCodesWisePivReport />;
-			case "21. PIV Details (Paid Cost center: 913.00 and Issued Other Company)":
+			case "21 piv details paid cost center 913 00 and issued other company":
+			case "piv details paid cost center 913 00 and issued other company":
 				return <AccCodeWisePivNotAfmhqReport />;
-			case "22. Refunded PIV Details":
+			case "22 refunded piv details":
+			case "refunded piv details":
 				return <RefundedPivReport />;
-			case "23. Region wise PIV Collections by Provincial POS relevant to Other Cost Centers":
+			case "23 region wise piv collections by provincial pos relevant to other cost centers":
+			case "region wise piv collections by provincial pos relevant to other cost centers":
 				return <RegionPivFromOtherCC />;
-			case "24. Bank PIV Tabulation":
+			case "24 bank piv tabulation":
+			case "bank piv tabulation":
 				return <BankPivTabulation />;
 
-			case "25. Bank Paid Piv Details":
+			case "25 bank paid piv details":
+			case "bank paid piv details":
 				return <BankPaidPIVDetails />;
 
-			case "26. Cost Center wise PIV Details (Status Report)":
+			case "26 cost center wise piv details status report":
+			case "cost center wise piv details status report":
 				return <CostCenterwisePivDetails />;
 
 			default:

@@ -1,25 +1,19 @@
 import { useState, useEffect } from "react";
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
+import { matchesReportName } from "../utils/reportNameMatch";
 
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
 
 const General = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["General"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get General topic's subtopics directly from sidebarData
-    const generalTopic = sidebarData.find((topic) => topic.name === "General");
-    if (generalTopic) {
-      setSubtopics(generalTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -30,25 +24,25 @@ const General = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Active customers and sales by tariff":
+    switch (true) {
+      case matchesReportName(subtopicName, "Active customers and sales by tariff"):
         return <ActiveCustomersSalesByTariff />;
-      case "Bill calculation":
-      case "Listing of customers":
-      case "List of government accounts":
-      case "Largest 100 customer details":
-      case "Sequence change accounts":
-      case "Retails Journal":
-      case "Arrears position – meter reader wise":
-      case "List of customers (enlisted in Master Invoices)":
-      case "Disconnection list":
-      case "Shakthi LED distribution summary":
-      case "Standing order report":
-      case "Registered consumers for SMS alerts":
-      case "Finalized Accounts":
-      case "Outstanding Dues":
-      case "Largest Consumption": 
-      case "Security deposit & Contract Demand - Bulk":  
+      case matchesReportName(subtopicName, "Bill calculation"):
+      case matchesReportName(subtopicName, "Listing of customers"):
+      case matchesReportName(subtopicName, "List of government accounts"):
+      case matchesReportName(subtopicName, "Largest 100 customer details"):
+      case matchesReportName(subtopicName, "Sequence change accounts"):
+      case matchesReportName(subtopicName, "Retails Journal"):
+      case matchesReportName(subtopicName, "Arrears position – meter reader wise"):
+      case matchesReportName(subtopicName, "List of customers (enlisted in Master Invoices)"):
+      case matchesReportName(subtopicName, "Disconnection list"):
+      case matchesReportName(subtopicName, "Shakthi LED distribution summary"):
+      case matchesReportName(subtopicName, "Standing order report"):
+      case matchesReportName(subtopicName, "Registered consumers for SMS alerts"):
+      case matchesReportName(subtopicName, "Finalized Accounts"):
+      case matchesReportName(subtopicName, "Outstanding Dues"):
+      case matchesReportName(subtopicName, "Largest Consumption"): 
+      case matchesReportName(subtopicName, "Security deposit & Contract Demand - Bulk"):  
         return <div>{subtopicName} Content</div>;
       default:
         return (
@@ -77,3 +71,4 @@ const General = () => {
 };
 
 export default General;
+

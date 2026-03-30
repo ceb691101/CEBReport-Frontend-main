@@ -1,29 +1,20 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import AgeAnalysisCostCenter from "../mainTopics/WorkInProgress/AgeAnalysisCostCenter";
 import CompletedCostCenterWise from "../mainTopics/WorkInProgress/CompletedCostCenterWise";
+import { matchesReportName } from "../utils/reportNameMatch";
 
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
 
 const WorkInProgress = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Work In Progress"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    
-    
-    const analysisTopic = sidebarData.find(
-      (topic) => topic.name === "Work In Progress"
-    );
-    if (analysisTopic) {
-      setSubtopics(analysisTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -34,10 +25,10 @@ const WorkInProgress = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-			case "Cost Center Wise Work In Progress With Age Analysis":
+    switch (true) {
+			case matchesReportName(subtopicName, "Cost Center Wise Work In Progress With Age Analysis"):
 				return <AgeAnalysisCostCenter />;
-			case "Cost Center Wise Work In Progress ( Completed Projects )":
+			case matchesReportName(subtopicName, "Cost Center Wise Work In Progress ( Completed Projects )"):
 				return <CompletedCostCenterWise />;
 
 			default:
@@ -67,3 +58,4 @@ const WorkInProgress = () => {
 };
 
 export default WorkInProgress;
+

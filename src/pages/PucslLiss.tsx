@@ -1,24 +1,18 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { matchesReportName } from "../utils/reportNameMatch";
 
 const PucslLiss = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["PUCSL/LISS"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get PUCSL/LISS topic's subtopics directly from sidebarData
-    const pucslTopic = sidebarData.find((topic) => topic.name === "PUCSL/LISS");
-    if (pucslTopic) {
-      setSubtopics(pucslTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -29,12 +23,12 @@ const PucslLiss = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "LISS submission – retail journal adjustments":
-      case "PUCSL Reports (LISS Data)":
-      case "PUCSL Reports – solar connections (New)":
+    switch (true) {
+      case matchesReportName(subtopicName, "LISS submission – retail journal adjustments"):
+      case matchesReportName(subtopicName, "PUCSL Reports (LISS Data)"):
+      case matchesReportName(subtopicName, "PUCSL Reports – solar connections (New)"):
         return <PUCSLSolarConnection />;
-      case "Solar data for UNT calculation":
+      case matchesReportName(subtopicName, "Solar data for UNT calculation"):
         return <div>{subtopicName} Content</div>;
       default:
         return (
@@ -63,3 +57,4 @@ const PucslLiss = () => {
 };
 
 export default PucslLiss;
+

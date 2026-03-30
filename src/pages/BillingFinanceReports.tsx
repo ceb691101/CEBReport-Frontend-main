@@ -1,26 +1,18 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { matchesReportName } from "../utils/reportNameMatch";
 
 const BillingFinanceReports = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Billing Finance Reports"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get Billing & Payment topic's subtopics directly from sidebarData
-    const billingFTopic = sidebarData.find(
-      (topic) => topic.name === "Billing Finance Reports"
-    );
-    if (billingFTopic) {
-      setSubtopics(billingFTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -31,9 +23,9 @@ const BillingFinanceReports = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Financial statement Reports": 
-      case "Financial Reports":     
+    switch (true) {
+      case matchesReportName(subtopicName, "Financial statement Reports"): 
+      case matchesReportName(subtopicName, "Financial Reports"):     
         return <div>{subtopicName} Content</div>;
       default:
         return (
@@ -62,3 +54,4 @@ const BillingFinanceReports = () => {
 };
 
 export default BillingFinanceReports;
+

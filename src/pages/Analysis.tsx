@@ -1,29 +1,21 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import DebtorsAnalysis from "../mainTopics/Analysis/DebtorsAnalysis";
 import AgeAnalysis from "../mainTopics/Analysis/AgeAnalysis";
+import { matchesReportName } from "../utils/reportNameMatch";
 
 
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
 
 const Analysis = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Analysis"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get Analysis topic's subtopics directly from sidebarData
-    const analysisTopic = sidebarData.find(
-      (topic) => topic.name === "Analysis"
-    );
-    if (analysisTopic) {
-      setSubtopics(analysisTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -34,14 +26,14 @@ const Analysis = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
+    switch (true) {
      
-      case "Total Debtors Analysis":
+      case matchesReportName(subtopicName, "Total Debtors Analysis"):
         return <DebtorsAnalysis/>;
-      case "Debtors Age Analysis (Individual Customers)":
+      case matchesReportName(subtopicName, "Debtors Age Analysis (Individual Customers)"):
         return <AgeAnalysis/>;
-      case "Age Analysis – Bulk":  
-      case "Consumption Pattern Analysis":   
+      case matchesReportName(subtopicName, "Age Analysis – Bulk"):  
+      case matchesReportName(subtopicName, "Consumption Pattern Analysis"):   
         return <div>{subtopicName} Content</div>;  
       default:
         return (
@@ -70,3 +62,4 @@ const Analysis = () => {
 };
 
 export default Analysis;
+

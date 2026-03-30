@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
 
@@ -8,24 +8,19 @@ import AreaWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPAp
 import DivisionWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPApplicationPIVPaidReport";
 import AreaWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPEstimationPIVPaidReport";
 import DivisionWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPEstimationPIVPaidReport";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { matchesReportName } from "../utils/reportNameMatch";
 
 const SolarReligiousPurpose = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics([
+    "Solar Religious Purpose (SRP)",
+  ]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    const srpTopic = sidebarData.find(
-      (topic) => topic.name === "Solar Religious Purpose (SRP)"
-    );
-    if (srpTopic) {
-      setSubtopics(srpTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -36,20 +31,20 @@ const SolarReligiousPurpose = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Area Wise SRP Application PIV (PIVI) To be Paid Report":
+    switch (true) {
+      case matchesReportName(subtopicName, "Area Wise SRP Application PIV (PIVI) To be Paid Report"):
         return <AreaWiseSRPApplicationPIV />;
 
-      case "Area Wise SRP Application PIV (PIVI) Paid Report":
+      case matchesReportName(subtopicName, "Area Wise SRP Application PIV (PIVI) Paid Report"):
         return <AreaWiseSRPApplicationPIVPaidReport/>;
 
-       case "Division Wise SRP Application PIV (PIVI) To be Paid Report":
+       case matchesReportName(subtopicName, "Division Wise SRP Application PIV (PIVI) To be Paid Report"):
         return <DivisionWiseSRPApplicationPIVPaidReport/>;
 
-      case "Area Wise SRP Estimation PIV (PIVII) Paid Report":
+      case matchesReportName(subtopicName, "Area Wise SRP Estimation PIV (PIVII) Paid Report"):
         return <AreaWiseSRPEstimationPIVPaidReport/>;
 
-      case "Division Wise SRP Estimation PIV (PIVII) Paid Report":
+      case matchesReportName(subtopicName, "Division Wise SRP Estimation PIV (PIVII) Paid Report"):
         return <DivisionWiseSRPEstimationPIVPaidReport/>;
 
       default:

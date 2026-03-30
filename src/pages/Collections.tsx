@@ -1,26 +1,18 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { matchesReportName } from "../utils/reportNameMatch";
 
 const Collections = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Collections"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get Collections topic's subtopics directly from sidebarData
-    const collectionsTopic = sidebarData.find(
-      (topic) => topic.name === "Collections"
-    );
-    if (collectionsTopic) {
-      setSubtopics(collectionsTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -31,23 +23,23 @@ const Collections = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Online counter collections":
-      case "Sales and collection":
-      case "Stamp duty for payment collections":
-      case "Monthly revenue collection of different channels":
-      case "Kiosk payment collection":
-      case "Payment collection":
-      case "Suspense payment details":
-      case "Finalized account details":
-      case "Written off account details":
-      case "Receivable position":
-      case "Unload loan information":
+    switch (true) {
+      case matchesReportName(subtopicName, "Online counter collections"):
+      case matchesReportName(subtopicName, "Sales and collection"):
+      case matchesReportName(subtopicName, "Stamp duty for payment collections"):
+      case matchesReportName(subtopicName, "Monthly revenue collection of different channels"):
+      case matchesReportName(subtopicName, "Kiosk payment collection"):
+      case matchesReportName(subtopicName, "Payment collection"):
+      case matchesReportName(subtopicName, "Suspense payment details"):
+      case matchesReportName(subtopicName, "Finalized account details"):
+      case matchesReportName(subtopicName, "Written off account details"):
+      case matchesReportName(subtopicName, "Receivable position"):
+      case matchesReportName(subtopicName, "Unload loan information"):
 
       
         
         return <div>{subtopicName} Content</div>;
-case "Dishonoured cheques":
+case matchesReportName(subtopicName, "Dishonoured cheques"):
   return <DishonouredCheques />;
 
 
@@ -80,3 +72,4 @@ case "Dishonoured cheques":
 };
 
 export default Collections;
+
