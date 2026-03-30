@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const ConsumptionAnalysis = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Consumption Analysis"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -22,23 +22,6 @@ const ConsumptionAnalysis = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (true) {
-      case matchesReportName(subtopicName, "Tariff Block Wise Consumption Report"):
-        return <TariffBlockWiseConsumption />;
-      case matchesReportName(subtopicName, "Tariff and Block wise Consumption Analysis"):
-      case matchesReportName(subtopicName, "Transformer wise Consumption Analysis"):
-      case matchesReportName(subtopicName, "Business Category wise Consumption Analysis"):
-        return <div>{subtopicName} Content</div>;
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4 pt-5">
       {subtopics.map((subtopic) => (
@@ -49,7 +32,7 @@ const ConsumptionAnalysis = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -57,4 +40,8 @@ const ConsumptionAnalysis = () => {
 };
 
 export default ConsumptionAnalysis;
+
+
+
+
 

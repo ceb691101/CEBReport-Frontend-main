@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import DebtorsAnalysis from "../mainTopics/Analysis/DebtorsAnalysis";
-import AgeAnalysis from "../mainTopics/Analysis/AgeAnalysis";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 
 
 const Analysis = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Analysis"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+    const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -25,24 +24,6 @@ const Analysis = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (true) {
-     
-      case matchesReportName(subtopicName, "Total Debtors Analysis"):
-        return <DebtorsAnalysis/>;
-      case matchesReportName(subtopicName, "Debtors Age Analysis (Individual Customers)"):
-        return <AgeAnalysis/>;
-      case matchesReportName(subtopicName, "Age Analysis – Bulk"):  
-      case matchesReportName(subtopicName, "Consumption Pattern Analysis"):   
-        return <div>{subtopicName} Content</div>;  
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
 
   return (
     <div className="flex flex-col gap-4 pt-5">
@@ -54,7 +35,7 @@ const Analysis = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+            {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -62,4 +43,5 @@ const Analysis = () => {
 };
 
 export default Analysis;
+
 

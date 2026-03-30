@@ -3,18 +3,14 @@ import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
 
-import AreaWiseSRPApplicationPIV from "../mainTopics/SRP/AreaWiseSRPApplicationPIV";
-import AreaWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPApplicationPIVPaidReport";
-import DivisionWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPApplicationPIVPaidReport";
-import AreaWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPEstimationPIVPaidReport";
-import DivisionWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPEstimationPIVPaidReport";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const SolarReligiousPurpose = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics([
     "Solar Religious Purpose (SRP)",
   ]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -30,32 +26,6 @@ const SolarReligiousPurpose = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (true) {
-      case matchesReportName(subtopicName, "Area Wise SRP Application PIV (PIVI) To be Paid Report"):
-        return <AreaWiseSRPApplicationPIV />;
-
-      case matchesReportName(subtopicName, "Area Wise SRP Application PIV (PIVI) Paid Report"):
-        return <AreaWiseSRPApplicationPIVPaidReport/>;
-
-       case matchesReportName(subtopicName, "Division Wise SRP Application PIV (PIVI) To be Paid Report"):
-        return <DivisionWiseSRPApplicationPIVPaidReport/>;
-
-      case matchesReportName(subtopicName, "Area Wise SRP Estimation PIV (PIVII) Paid Report"):
-        return <AreaWiseSRPEstimationPIVPaidReport/>;
-
-      case matchesReportName(subtopicName, "Division Wise SRP Estimation PIV (PIVII) Paid Report"):
-        return <DivisionWiseSRPEstimationPIVPaidReport/>;
-
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4 pt-5">
       {subtopics.map((subtopic) => (
@@ -66,7 +36,7 @@ const SolarReligiousPurpose = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
       <Outlet />
@@ -75,3 +45,7 @@ const SolarReligiousPurpose = () => {
 };
 
 export default SolarReligiousPurpose;
+
+
+
+

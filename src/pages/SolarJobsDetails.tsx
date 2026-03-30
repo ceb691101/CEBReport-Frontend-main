@@ -1,14 +1,13 @@
 import {useState, useEffect} from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
-import SolarPendingJobsReport from "../mainTopics/SolarJobs/SolarPendingJobsReport";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 
 const SolarJobsDetails = () => {
 	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Solar Information - Jobs"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
 	useEffect(() => {
 		if (typeof selectedSubtopicId === "number") {
@@ -24,22 +23,6 @@ const SolarJobsDetails = () => {
 		}
 	};
 
-	const renderSubtopicContent = (subtopicName: string) => {
-		switch (true) {
-			case matchesReportName(subtopicName, "Area-wise Solar Sent to Billing Details"):
-				return <SolarBillingReport />;
-			case matchesReportName(subtopicName, "Solar Retail Rooftop Pending Jobs after PIV2 Paid"):
-				return <SolarPendingJobsReport />;
-
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
-		}
-	};
-
 	return (
 		<div className="flex flex-col gap-4 pt-4 px-10">
 			{subtopics.map((subtopic) => (
@@ -50,7 +33,7 @@ const SolarJobsDetails = () => {
 					expanded={expandedCard === subtopic.id}
 					onToggle={toggleCard}
 				>
-					{renderSubtopicContent(subtopic.name)}
+					{renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
 				</SubtopicCard>
 			))}
 		</div>
@@ -58,4 +41,8 @@ const SolarJobsDetails = () => {
 };
 
 export default SolarJobsDetails;
+
+
+
+
 

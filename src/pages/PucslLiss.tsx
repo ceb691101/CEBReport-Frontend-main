@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const PucslLiss = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["PUCSL/LISS"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -22,23 +22,6 @@ const PucslLiss = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (true) {
-      case matchesReportName(subtopicName, "LISS submission – retail journal adjustments"):
-      case matchesReportName(subtopicName, "PUCSL Reports (LISS Data)"):
-      case matchesReportName(subtopicName, "PUCSL Reports – solar connections (New)"):
-        return <PUCSLSolarConnection />;
-      case matchesReportName(subtopicName, "Solar data for UNT calculation"):
-        return <div>{subtopicName} Content</div>;
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4 pt-5">
       {subtopics.map((subtopic) => (
@@ -49,7 +32,7 @@ const PucslLiss = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -57,4 +40,8 @@ const PucslLiss = () => {
 };
 
 export default PucslLiss;
+
+
+
+
 

@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const BillingFinanceReports = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Billing Finance Reports"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -22,19 +23,6 @@ const BillingFinanceReports = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (true) {
-      case matchesReportName(subtopicName, "Financial statement Reports"): 
-      case matchesReportName(subtopicName, "Financial Reports"):     
-        return <div>{subtopicName} Content</div>;
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
   return (
     <div className="flex flex-col gap-4 pt-5">
       {subtopics.map((subtopic) => (
@@ -45,7 +33,7 @@ const BillingFinanceReports = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
       <Outlet />
@@ -54,4 +42,8 @@ const BillingFinanceReports = () => {
 };
 
 export default BillingFinanceReports;
+
+
+
+
 

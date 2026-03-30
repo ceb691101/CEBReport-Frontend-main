@@ -1,15 +1,12 @@
 import {useState, useEffect} from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
-import ProvinceExpenditure from "../mainTopics/IncomeExpenditure/ProvinceExpenditure";
-import RegionExpenditure from "../mainTopics/IncomeExpenditure/RegionExpenditure";
-import IncomeExpenditureRegionDetailed from "../mainTopics/IncomeExpenditure/IncomeExpenditureRegionDetailed";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const IncomeExpenditure = () => {
 	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Income & Expenditure"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
 	useEffect(() => {
 		if (typeof selectedSubtopicId === "number") {
@@ -19,25 +16,6 @@ const IncomeExpenditure = () => {
 
 	const toggleCard = (id: number) => {
 		setExpandedCard(expandedCard === id ? null : id);
-	};
-
-	const renderSubtopicContent = (subtopicName: string) => {
-		switch (true) {
-			case matchesReportName(subtopicName, "Cost Center Wise Income & Expenditure"):
-				return <CostCenterIncomeExpenditure />;
-			case matchesReportName(subtopicName, "Province Wise Income & Expenditure"):
-				return <ProvinceExpenditure />;
-			case matchesReportName(subtopicName, "Region Wise Income & Expenditure"):
-				return <RegionExpenditure />;
-			case matchesReportName(subtopicName, "Region Wise Income & Expenditure (Detailed)"):
-				return <IncomeExpenditureRegionDetailed />;
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
-		}
 	};
 
 	return (
@@ -50,7 +28,7 @@ const IncomeExpenditure = () => {
 					expanded={expandedCard === subtopic.id}
 					onToggle={toggleCard}
 				>
-					{renderSubtopicContent(subtopic.name)}
+					{renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
 				</SubtopicCard>
 			))}
 		</div>
@@ -58,4 +36,8 @@ const IncomeExpenditure = () => {
 };
 
 export default IncomeExpenditure;
+
+
+
+
 

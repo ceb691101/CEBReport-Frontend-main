@@ -1,17 +1,12 @@
 import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
-import MaterialMaster from "../mainTopics/inventory/MaterialMaster";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import AverageConsumptions from "../mainTopics/inventory/AverageConsumptions";
-import CostCenterQuantityHnad from "../mainTopics/inventory/CostCenterQuantityHnad";
-import AverageConsumptionSelected from "../mainTopics/inventory/AverageConsumptionSelected";
-import QtyOnHandAllRegion from "../mainTopics/inventory/QtyOnHandAllRegions";
-import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const Inventory = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Inventory"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -27,33 +22,6 @@ const Inventory = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (true) {
-			case matchesReportName(subtopicName, "Material Details"):
-				return <MaterialMaster />;
-			case matchesReportName(subtopicName, "Cost Center wise Quantity on Hand"):
-				return <CostCenterQuantityHnad />;
-
-      case matchesReportName(subtopicName, "Provincial Quantity on Hand - Cross Tab"):
-				return <ProvincialQtyHand/>;
-
-
-			case matchesReportName(subtopicName, "Average Consumptions - All Material Codes"):
-				return <AverageConsumptions />;
-			case matchesReportName(subtopicName, "Average Consumptions - Selected Maerial Codes"):
-				return <AverageConsumptionSelected />;
-			case matchesReportName(subtopicName, "Quantity on Hand All Region Material (Active ,Online )"):
-				return <QtyOnHandAllRegion/>;
-
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
-		}
-  };
-
   return (
     <div className="flex flex-col gap-4 pt-5">
       {subtopics.map((subtopic) => (
@@ -64,7 +32,7 @@ const Inventory = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -72,4 +40,8 @@ const Inventory = () => {
 };
 
 export default Inventory;
+
+
+
+
 

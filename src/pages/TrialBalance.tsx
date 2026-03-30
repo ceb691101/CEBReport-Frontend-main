@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import CostCenterTrial from "../mainTopics/TrialBalance/CostCenterTrial";
-import ProvintionalWiseTrial from "../mainTopics/TrialBalance/ProvintionalWiseTrial";
-import ReagionTrial from "../mainTopics/TrialBalance/ReagionTrial";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const TrialBalance = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Trial Balance"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -24,25 +22,6 @@ const TrialBalance = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (true) {
-      case matchesReportName(subtopicName, "Cost Center Trial Balance - End of Month/Year"):
-        return <CostCenterTrial/>;
-
-         case matchesReportName(subtopicName, "Provintial Trial Balance - End of Month/Year"):
-        return <ProvintionalWiseTrial/>;
-         case matchesReportName(subtopicName, "Region Trial Balance - End of Month/Year"):
-        return <ReagionTrial/>;
-
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4 pt-5">
       {subtopics.map((subtopic) => (
@@ -53,7 +32,7 @@ const TrialBalance = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -61,4 +40,8 @@ const TrialBalance = () => {
 };
 
 export default TrialBalance;
+
+
+
+
 

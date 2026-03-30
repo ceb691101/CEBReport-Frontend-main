@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const Collections = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Collections"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -22,38 +22,6 @@ const Collections = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (true) {
-      case matchesReportName(subtopicName, "Online counter collections"):
-      case matchesReportName(subtopicName, "Sales and collection"):
-      case matchesReportName(subtopicName, "Stamp duty for payment collections"):
-      case matchesReportName(subtopicName, "Monthly revenue collection of different channels"):
-      case matchesReportName(subtopicName, "Kiosk payment collection"):
-      case matchesReportName(subtopicName, "Payment collection"):
-      case matchesReportName(subtopicName, "Suspense payment details"):
-      case matchesReportName(subtopicName, "Finalized account details"):
-      case matchesReportName(subtopicName, "Written off account details"):
-      case matchesReportName(subtopicName, "Receivable position"):
-      case matchesReportName(subtopicName, "Unload loan information"):
-
-      
-        
-        return <div>{subtopicName} Content</div>;
-case matchesReportName(subtopicName, "Dishonoured cheques"):
-  return <DishonouredCheques />;
-
-
-
-
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4 pt-5">
       {subtopics.map((subtopic) => (
@@ -64,7 +32,7 @@ case matchesReportName(subtopicName, "Dishonoured cheques"):
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -72,4 +40,8 @@ case matchesReportName(subtopicName, "Dishonoured cheques"):
 };
 
 export default Collections;
+
+
+
+
 

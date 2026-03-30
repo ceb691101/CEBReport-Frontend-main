@@ -81,6 +81,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
   Collections: { icon: BsFolder2Open, path: "/report/collections" },
   "Consumption Analysis": { icon: MdAssignmentTurnedIn, path: "/report/consumption-analysis" },
   "Solar Information - Billing": { icon: GiSolarPower, path: "/report/solar-information" },
+  "Solar Information Billing": { icon: GiSolarPower, path: "/report/solar-information" },
   "Solar Information - Jobs": { icon: GiSolarPower, path: "/report/SolarInformationJobs" },
   "PUCSL/LISS": { icon: GiSolarPower, path: "/report/pucsl-liss" },
   Inventory: { icon: MdInventory2, path: "/report/inventory" },
@@ -102,6 +103,7 @@ const normalizeCategoryKey = (value: string): string =>
   value
     .trim()
     .replace(/[\u2013\u2014]/g, "-")
+    .replace(/\s*-\s*/g, " - ")
     .replace(/\s+/g, " ");
 
 const normalizeText = (value: unknown): string => {

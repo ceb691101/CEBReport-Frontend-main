@@ -1,14 +1,12 @@
 import {useState, useEffect} from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
-import JobCardMaterials from "../mainTopics/JobCards/JobCardMaterials";
-import JobSearchOrdinary from "../mainTopics/JobCards/JobSearchOrdinary";
-import { matchesReportName } from "../utils/reportNameMatch";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const JobCardDetails = () => {
 	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Jobs"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
 	useEffect(() => {
 		if (typeof selectedSubtopicId === "number") {
@@ -24,25 +22,6 @@ const JobCardDetails = () => {
 		}
 	};
 
-	const renderSubtopicContent = (subtopicName: string) => {
-		switch (true) {
-			case matchesReportName(subtopicName, "Job Card Details"):
-				return <JobCardInfo />;
-			case matchesReportName(subtopicName, "Job Card -  Material Details"):
-				return <JobCardMaterials />;
-
-			case matchesReportName(subtopicName, "Job Search - Orinary"):
-				return <JobSearchOrdinary />;
-
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
-		}
-	};
-
 	return (
 		<div className="flex flex-col gap-4 pt-4 px-10">
 			{subtopics.map((subtopic) => (
@@ -53,7 +32,7 @@ const JobCardDetails = () => {
 					expanded={expandedCard === subtopic.id}
 					onToggle={toggleCard}
 				>
-					{renderSubtopicContent(subtopic.name)}
+					{renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
 				</SubtopicCard>
 			))}
 		</div>
@@ -61,4 +40,8 @@ const JobCardDetails = () => {
 };
 
 export default JobCardDetails;
+
+
+
+
 

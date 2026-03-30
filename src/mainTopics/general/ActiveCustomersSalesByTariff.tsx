@@ -49,7 +49,6 @@ interface DetailedTariffRow {
 }
 
 const ActiveCustomersSalesByTariff: React.FC = () => {
-  const maroon = "text-[#7A0000]";
 
   const [reportType, setReportType] = useState<"ordinary" | "bulk">("ordinary");
   const [fromCycle, setFromCycle] = useState("");
