@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { MdPayment, MdPower, MdAssignmentTurnedIn, MdBuild, MdInventory2 } from "react-icons/md";
+import { MdPayment, MdPower, MdAssignmentTurnedIn, MdBuild, MdInventory2, MdDashboard } from "react-icons/md";
 import { RiBankLine } from "react-icons/ri";
 import { FaBoxes, FaFileInvoiceDollar, FaBalanceScale, FaBookOpen, FaMoneyCheckAlt } from "react-icons/fa";
 import { BsFolder2Open } from "react-icons/bs";
@@ -75,6 +75,9 @@ const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
 export const data: Topic[] = [];
 
 export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
+  Dashboard: { icon: MdDashboard, path: "/home" },
+  DashBoard: { icon: MdDashboard, path: "/home" },
+  "Main Dashboard": { icon: MdDashboard, path: "/home" },
   General: { icon: MdPayment, path: "/report/general" },
   "Customer Details": { icon: RiBankLine, path: "/report/billing-payment" },
   Analysis: { icon: FaBoxes, path: "/report/analysis" },
@@ -213,7 +216,11 @@ const getReportName = (report: RoleReportApiItem): string =>
 
 const getCategoryConfig = (categoryName: string): CategoryConfig => {
   const normalized = normalizeCategoryKey(categoryName);
-  const configured = CATEGORY_CONFIG[normalized];
+  const configured =
+    CATEGORY_CONFIG[normalized] ??
+    Object.entries(CATEGORY_CONFIG).find(
+      ([key]) => normalizeCategoryKey(key).toLowerCase() === normalized.toLowerCase()
+    )?.[1];
   if (configured) {
     return configured;
   }

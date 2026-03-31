@@ -3,7 +3,6 @@ import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import { useReportRenderer } from "../hooks/useReportRenderer";
 
-
 const General = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["General"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
@@ -16,11 +15,7 @@ const General = () => {
   }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
-    if (expandedCard === id) {
-      setExpandedCard(null);
-    } else {
-      setExpandedCard(id);
-    }
+    setExpandedCard((prev) => (prev === id ? null : id));
   };
 
   return (
@@ -41,8 +36,3 @@ const General = () => {
 };
 
 export default General;
-
-
-
-
-

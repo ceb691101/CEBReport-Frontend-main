@@ -49,15 +49,13 @@ interface DetailedTariffRow {
 }
 
 const ActiveCustomersSalesByTariff: React.FC = () => {
-  const maroon = "text-[#7A0000]";
-
   const [reportType, setReportType] = useState<"ordinary" | "bulk">("ordinary");
   const [fromCycle, setFromCycle] = useState("");
   const [toCycle, setToCycle] = useState("");
   const [selectedOption, setSelectedOption] = useState("Area");
 
   const [billCycleOptions, setBillCycleOptions] = useState<BillCycleOption[]>([]);
-  const [isLoadingBillCycles, setIsLoadingBillCycles] = useState(false);
+  const [, setIsLoadingBillCycles] = useState(false);
 
   const [detailedTariffData, setDetailedTariffData] = useState<DetailedTariffRow[]>([]);
   const [isLoadingReport, setIsLoadingReport] = useState(false);

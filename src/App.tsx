@@ -10,7 +10,7 @@ import MaterialDetails from "./mainTopics/inventory/MaterialDetails";
 import ReportRoutes from "./routes/ReportRoutes";
 import CostCenterTrial from "./mainTopics/TrialBalance/CostCenterTrial";
 // import SelectCostCenterTrial from "./mainTopics/TrialBalance/SelectCostCeneterTrial";
-import Home from "./pages/Home";
+import Home from "./pages/Dashboard";
 
 function App() {
 	return (
@@ -20,6 +20,24 @@ function App() {
 
 				<Route
 					path="/home"
+					element={
+						<Layout>
+							<Home />
+						</Layout>
+					}
+				/>
+
+				<Route
+					path="/report/dashboard"
+					element={
+						<Layout>
+							<Home />
+						</Layout>
+					}
+				/>
+
+				<Route
+					path="/report/Dashboard"
 					element={
 						<Layout>
 							<Home />
