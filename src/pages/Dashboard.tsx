@@ -193,14 +193,14 @@ interface DrawingLineChartProps {
 
 const DrawingLineChart: React.FC<DrawingLineChartProps> = ({
   data,
-  //formatCurrency,
+  formatCurrency,
   formatCompact,
   chartKey,
 }) => {
   const svgRef       = React.useRef<SVGSVGElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = React.useState<{
-    x: number; y: number; month: string; ordinary: number; bulk: number;
+    index: number; x: number; y: number; month: string; ordinary: number; bulk: number;
   } | null>(null);
   const [animate, setAnimate] = React.useState(false);
 
@@ -259,7 +259,14 @@ const DrawingLineChart: React.FC<DrawingLineChartProps> = ({
     const step  = chartW / Math.max(data.length - 1, 1);
     const idx   = Math.max(0, Math.min(data.length - 1, Math.round(mx / step)));
     const d     = data[idx];
-    setTooltip({ x: xOf(idx), y: Math.min(yOf(d.ordinary), yOf(d.bulk)) - 8, month: d.month, ordinary: d.ordinary, bulk: d.bulk });
+    setTooltip({
+      index: idx,
+      x: xOf(idx),
+      y: Math.min(yOf(d.ordinary), yOf(d.bulk)) - 8,
+      month: d.month,
+      ordinary: d.ordinary,
+      bulk: d.bulk,
+    });
   };
 
   return (
@@ -306,6 +313,9 @@ const DrawingLineChart: React.FC<DrawingLineChartProps> = ({
         {yTicks.map((t, i) => (
           <line key={i} x1={padL} y1={t.y} x2={W - padR} y2={t.y} stroke="#eef2f7" strokeWidth="1" strokeDasharray="3 3" />
         ))}
+        {data.map((_, i) => (
+          <line key={`x-grid-${i}`} x1={xOf(i)} y1={padT} x2={xOf(i)} y2={padT + chartH} stroke="#eef2f7" strokeWidth="1" strokeDasharray="3 3" />
+        ))}
 
         {/* Y-axis labels */}
         {yTicks.map((t, i) => (
@@ -333,10 +343,24 @@ const DrawingLineChart: React.FC<DrawingLineChartProps> = ({
             style={{ "--line-len": `${bulkLen}` } as React.CSSProperties} />
         )}
 
-        {/* Hover dots */}
+        {/* Hover cursor + dots */}
+        {tooltip && (
+          <rect
+            x={Math.max(padL, xOf(tooltip.index) - (chartW / Math.max(data.length - 1, 1)) * 0.35)}
+            y={padT}
+            width={Math.min(
+              (chartW / Math.max(data.length - 1, 1)) * 0.7,
+              W - padR - Math.max(padL, xOf(tooltip.index) - (chartW / Math.max(data.length - 1, 1)) * 0.35)
+            )}
+            height={chartH}
+            fill="#f3f4f6"
+            opacity={0.45}
+            rx={4}
+          />
+        )}
         {tooltip && data.map((d, i) => (
           <g key={i}>
-            {xOf(i) === tooltip.x && (
+            {i === tooltip.index && (
               <>
                 <circle cx={xOf(i)} cy={yOf(d.ordinary)} r="5" fill="var(--ceb-maroon)" stroke="#fff" strokeWidth="2" />
                 <circle cx={xOf(i)} cy={yOf(d.bulk)}     r="5" fill="var(--ceb-gold)"   stroke="#fff" strokeWidth="2" />
@@ -348,18 +372,24 @@ const DrawingLineChart: React.FC<DrawingLineChartProps> = ({
 
         {/* Tooltip box */}
         {tooltip && (() => {
-          const bx = Math.min(tooltip.x - 2, W - padR - 130);
-          const by = Math.max(padT, tooltip.y - 60);
+          const boxW = 188;
+          const boxH = 66;
+          const placeLeft = tooltip.x > W * 0.62;
+          const preferredX = placeLeft ? tooltip.x - boxW - 12 : tooltip.x + 12;
+          const preferredY = tooltip.y - boxH / 2;
+          const bx = Math.max(padL, Math.min(preferredX, W - padR - boxW));
+          const by = Math.max(padT, Math.min(preferredY, padT + chartH - boxH));
           return (
             <g>
-              <rect x={bx} y={by} width="128" height="58" rx="6" fill="#1f2937" opacity="0.93" />
-              <text x={bx + 10} y={by + 16} fontSize="11" fontWeight="600" fill="#f9fafb">{tooltip.month}</text>
-              <circle cx={bx + 10} cy={by + 30} r="4" fill="var(--ceb-maroon)" />
-              <text x={bx + 20} y={by + 34} fontSize="10" fill="#d1d5db">Ordinary: </text>
-              <text x={bx + 72} y={by + 34} fontSize="10" fill="#f9fafb" fontWeight="500">{formatCompact(tooltip.ordinary)}</text>
-              <circle cx={bx + 10} cy={by + 46} r="4" fill="var(--ceb-gold)" />
-              <text x={bx + 20} y={by + 50} fontSize="10" fill="#d1d5db">Bulk: </text>
-              <text x={bx + 55} y={by + 50} fontSize="10" fill="#f9fafb" fontWeight="500">{formatCompact(tooltip.bulk)}</text>
+              <rect x={bx + 2} y={by + 3} width={boxW} height={boxH} rx="6" fill="#d1d5db" opacity="0.4" />
+              <rect x={bx} y={by} width={boxW} height={boxH} rx="6" fill="#ffffff" stroke="#e5e7eb" strokeWidth="1" />
+              <text x={bx + 10} y={by + 16} fontSize="11" fontWeight="600" fill="#111827">{tooltip.month}</text>
+              <circle cx={bx + 10} cy={by + 31} r="4" fill="var(--ceb-maroon)" />
+              <text x={bx + 20} y={by + 35} fontSize="10" fill="#6b7280">Ordinary :</text>
+              <text x={bx + 82} y={by + 35} fontSize="10" fill="#111827" fontWeight="500">{formatCurrency(tooltip.ordinary)}</text>
+              <circle cx={bx + 10} cy={by + 49} r="4" fill="var(--ceb-gold)" />
+              <text x={bx + 20} y={by + 53} fontSize="10" fill="#6b7280">Bulk :</text>
+              <text x={bx + 60} y={by + 53} fontSize="10" fill="#111827" fontWeight="500">{formatCurrency(tooltip.bulk)}</text>
             </g>
           );
         })()}
@@ -516,11 +546,13 @@ const Home: React.FC = () => {
   const newCustomersPieRef = useRef<HTMLDivElement>(null);
   const solarPieRef        = useRef<HTMLDivElement>(null);
   const bottomGridRef      = useRef<HTMLDivElement>(null);
+  const kioskTrendRef      = useRef<HTMLDivElement>(null);
 
   const { triggerCount: kpiTrigger }        = useInView(kpiRef        as React.RefObject<Element>, { threshold: 0.15 });
   const { triggerCount: newCustTrigger }    = useInView(newCustomersPieRef as React.RefObject<Element>, { threshold: 0.3 });
   const { triggerCount: solarPieTrigger }   = useInView(solarPieRef   as React.RefObject<Element>, { threshold: 0.3 });
   const { triggerCount: bottomGridTrigger } = useInView(bottomGridRef as React.RefObject<Element>, { threshold: 0.1 });
+  const { inView: kioskTrendInView, triggerCount: kioskTrendTrigger } = useInView(kioskTrendRef as React.RefObject<Element>, { threshold: 0.35 });
 
   // Pie chart animation keys — new key = new @keyframe names = animation replays
   const [newCustPieAnimKey, setNewCustPieAnimKey] = useState(0);
@@ -1167,7 +1199,7 @@ const Home: React.FC = () => {
                         </div>
                         <DollarSign className="w-5 h-5 text-gray-400" />
                       </div>
-                      <div className="mb-6 flex-1">
+                      <div ref={kioskTrendRef} className="mb-6 flex-1">
                         {kioskLoading ? (
                           <div className="h-64 flex items-center justify-center text-gray-400 text-sm">Loading...</div>
                         ) : kioskError ? (
@@ -1175,7 +1207,7 @@ const Home: React.FC = () => {
                         ) : kioskDailyRecords.length === 0 ? (
                           <div className="h-64 flex items-center justify-center text-gray-400 text-sm">No kiosk collection data for this week.</div>
                         ) : (
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer key={`kiosk-trend-${kioskTrendTrigger}`} width="100%" height="100%">
                             <LineChart data={kioskDailyRecords} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
                               <XAxis
@@ -1200,7 +1232,7 @@ const Home: React.FC = () => {
                                 strokeWidth={2.5}
                                 dot={{ fill: "var(--ceb-maroon)", r: 5 }}
                                 activeDot={{ r: 7 }}
-                                isAnimationActive={true}
+                                isAnimationActive={kioskTrendInView}
                                 animationDuration={900}
                                 animationEasing="ease-out"
                               />
