@@ -60,13 +60,19 @@ const initialForm: CreateRoleForm = {
 	costCentres: [],
 };
 
-const endpointMap: Record<RoleType, string> = {
-	admin: "/roleadminapi/api/roleinfo/admin",
-	user: "/roleadminapi/api/roleinfo/user",
+const endpointMap: Record<RoleType, string[]> = {
+	admin: ["/roleadminapi/api/roleinfo/ADMIN", "/roleadminapi/api/roleinfo/admin"],
+	user: ["/roleadminapi/api/roleinfo/USER", "/roleadminapi/api/roleinfo/user"],
 };
 
 const fieldBaseClass =
 	"w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10";
+
+const normalizeText = (value: unknown): string =>
+	(value ?? "").toString().trim();
+
+const normalizeKey = (value: unknown): string =>
+	normalizeText(value).toUpperCase();
 
 const actionButtonPrimaryClass =
 	"rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60";
@@ -101,6 +107,11 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch("/roleadminapi/api/roleinfo/companies");
+
+			if (!response.ok) {
+				throw new Error(`Failed to load companies. (${response.status})`);
+			}
+
 			const payload = await response.json();
 
 			if (payload?.errorMessage) {
@@ -137,6 +148,11 @@ const UserRoles = () => {
 			const response = await fetch(
 				`/roleadminapi/api/roleinfo/companies/${encodeURIComponent(companyId)}/costcentres`
 			);
+
+			if (!response.ok) {
+				throw new Error(`Failed to load cost centres. (${response.status})`);
+			}
+
 			const payload = await response.json();
 
 			if (payload?.errorMessage) {
@@ -165,11 +181,35 @@ const UserRoles = () => {
 		setIsLoading(true);
 
 		try {
-			const response = await fetch(endpointMap[type]);
-			const payload = await response.json();
+			let payload: any = null;
+			let lastError: Error | null = null;
 
-			if (payload?.errorMessage) {
-				throw new Error(payload.errorMessage);
+			for (const endpoint of endpointMap[type]) {
+				try {
+					const response = await fetch(endpoint);
+
+					if (!response.ok) {
+						throw new Error(`Failed to load roles. (${response.status})`);
+					}
+
+					const nextPayload = await response.json();
+
+					if (nextPayload?.errorMessage) {
+						throw new Error(nextPayload.errorMessage);
+					}
+
+					payload = nextPayload;
+					break;
+				} catch (error) {
+					lastError =
+						error instanceof Error
+							? error
+							: new Error("Failed to load roles.");
+				}
+			}
+
+			if (!payload) {
+				throw lastError ?? new Error("Failed to load roles.");
 			}
 
 			const nextRoles: RoleRecord[] = Array.isArray(payload?.data)
@@ -194,7 +234,7 @@ const UserRoles = () => {
 			setRoles(nextRoles);
 			setCurrentPage(1);
 			setSelectedEpfNo((current) =>
-				current && nextRoles.some((role: RoleRecord) => role.epfNo === current)
+				current && nextRoles.some((role: RoleRecord) => normalizeKey(role.epfNo) === normalizeKey(current))
 					? current
 					: null
 			);
@@ -214,6 +254,11 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch("/roleadminapi/api/roleinfo/usergroups");
+
+			if (!response.ok) {
+				throw new Error(`Failed to load user groups. (${response.status})`);
+			}
+
 			const payload = await response.json();
 
 			if (payload?.errorMessage) {
@@ -473,7 +518,7 @@ const UserRoles = () => {
 		}
 	};
 
-	const selectedRole = roles.find((role) => role.epfNo === selectedEpfNo) ?? null;
+	const selectedRole = roles.find((role) => normalizeKey(role.epfNo) === normalizeKey(selectedEpfNo)) ?? null;
 	const totalPages = Math.max(1, Math.ceil(roles.length / rolesPerPage));
 	const paginatedRoles = roles.slice(
 		(currentPage - 1) * rolesPerPage,
@@ -655,12 +700,12 @@ const UserRoles = () => {
 
 							<div className="inline-flex rounded-full border border-stone-200 bg-stone-100 p-1">
 								<TabButton
-									label="User Roles"
+									label="USER ROLES"
 									active={activeTab === "user"}
 									onClick={() => setActiveTab("user")}
 								/>
 								<TabButton
-									label="Admin Roles"
+									label="ADMIN ROLES"
 									active={activeTab === "admin"}
 									onClick={() => setActiveTab("admin")}
 								/>
@@ -694,8 +739,7 @@ const UserRoles = () => {
 											</tr>
 										) : (
 											paginatedRoles.map((role) => {
-												const isSelected = selectedEpfNo === role.epfNo;
-
+											const isSelected = normalizeKey(selectedEpfNo) === normalizeKey(role.epfNo);
 												return (
 													<tr
 														key={`${role.epfNo}-${role.roleId}`}

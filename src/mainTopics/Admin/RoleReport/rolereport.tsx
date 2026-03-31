@@ -33,6 +33,12 @@ type RoleReportMap = Record<string, string[]>;
 const fieldBaseClass =
   "w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10";
 
+const normalizeText = (value: unknown): string =>
+  (value ?? "").toString().trim();
+
+const normalizeKey = (value: unknown): string =>
+  normalizeText(value).toUpperCase();
+
 const RoleReport = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("category");
 
@@ -54,12 +60,41 @@ const RoleReport = () => {
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
 
-  const fetchRoleData = async (type: "user" | "admin") => {
-    const response = await fetch(`/roleadminapi/api/roleinfo/${type}`);
-    const payload = await response.json();
+  const fetchRoleData = async (type: "USER" | "ADMIN") => {
+    const endpointCandidates = [
+      `/roleadminapi/api/roleinfo/${type}`,
+      `/roleadminapi/api/roleinfo/${type.toLowerCase()}`,
+    ];
 
-    if (payload?.errorMessage) {
-      throw new Error(payload.errorMessage);
+    let payload: any = null;
+    let lastError: Error | null = null;
+
+    for (const endpoint of endpointCandidates) {
+      try {
+        const response = await fetch(endpoint);
+
+        if (!response.ok) {
+          throw new Error(`Failed to load ${type} roles. (${response.status})`);
+        }
+
+        const nextPayload = await response.json();
+
+        if (nextPayload?.errorMessage) {
+          throw new Error(nextPayload.errorMessage);
+        }
+
+        payload = nextPayload;
+        break;
+      } catch (error) {
+        lastError =
+          error instanceof Error
+            ? error
+            : new Error(`Failed to load ${type} roles.`);
+      }
+    }
+
+    if (!payload) {
+      throw lastError ?? new Error(`Failed to load ${type} roles.`);
     }
 
     const items = Array.isArray(payload?.data) ? payload.data : [];
@@ -77,12 +112,15 @@ const RoleReport = () => {
 
     try {
       const [users, admins] = await Promise.all([
-        fetchRoleData("user"),
-        fetchRoleData("admin"),
+        fetchRoleData("USER"),
+        fetchRoleData("ADMIN"),
       ]);
 
       const merged = [...users, ...admins].filter((role, index, arr) => {
-        return arr.findIndex((r) => r.roleId === role.roleId) === index;
+        return (
+          arr.findIndex((r) => normalizeKey(r.roleId) === normalizeKey(role.roleId)) ===
+          index
+        );
       });
 
       setRoles(merged);
@@ -100,6 +138,11 @@ const RoleReport = () => {
 
     try {
       const response = await fetch("/roleadminapi/api/reportcategory");
+
+      if (!response.ok) {
+        throw new Error(`Failed to load categories. (${response.status})`);
+      }
+
       const payload = await response.json();
 
       if (payload?.errorMessage) {
@@ -128,6 +171,11 @@ const RoleReport = () => {
 
     try {
       const response = await fetch("/roleadminapi/api/reportentry");
+
+      if (!response.ok) {
+        throw new Error(`Failed to load reports. (${response.status})`);
+      }
+
       const payload = await response.json();
 
       if (payload?.errorMessage) {
@@ -164,7 +212,9 @@ const RoleReport = () => {
   }, []);
 
   const selectedRole = useMemo(
-    () => roles.find((role) => role.roleId === selectedRoleId) ?? null,
+    () =>
+      roles.find((role) => normalizeKey(role.roleId) === normalizeKey(selectedRoleId)) ??
+      null,
     [roles, selectedRoleId]
   );
 
@@ -180,7 +230,7 @@ const RoleReport = () => {
 
   const categoryNameByCode = useMemo(() => {
     return categories.reduce<Record<string, string>>((acc, category) => {
-      acc[category.catCode] = category.catName;
+      acc[normalizeKey(category.catCode)] = category.catName;
       return acc;
     }, {});
   }, [categories]);
@@ -188,7 +238,7 @@ const RoleReport = () => {
   const reportsByCategory = useMemo(() => {
     return selectedCategories.flatMap((catCode) =>
       activeReports
-        .filter((report) => (report.catCode ?? "").toString().trim().toUpperCase() === (catCode ?? "").toString().trim().toUpperCase())
+        .filter((report) => normalizeKey(report.catCode) === normalizeKey(catCode))
         .map((report) => report.repId)
     );
   }, [activeReports, selectedCategories]);
@@ -196,13 +246,13 @@ const RoleReport = () => {
   const reportsByName = useMemo(() => {
     return activeReports.map((report) => ({
       ...report,
-      catName: report.catName || categoryNameByCode[report.catCode] || "",
+      catName: report.catName || categoryNameByCode[normalizeKey(report.catCode)] || "",
     }));
   }, [activeReports, categoryNameByCode]);
 
   const reportsByNameGrouped = useMemo(() => {
     const groups = reportsByName.reduce<Record<string, ReportRecord[]>>((acc, report) => {
-      const key = report.catCode || "UNCATEGORIZED";
+      const key = normalizeKey(report.catCode) || "UNCATEGORIZED";
       if (!acc[key]) {
         acc[key] = [];
       }
@@ -229,16 +279,16 @@ const RoleReport = () => {
 
   const toggleCategory = (catCode: string) => {
     setSelectedCategories((current) =>
-      current.includes(catCode)
-        ? current.filter((code) => code !== catCode)
+      current.some((code) => normalizeKey(code) === normalizeKey(catCode))
+        ? current.filter((code) => normalizeKey(code) !== normalizeKey(catCode))
         : [...current, catCode]
     );
   };
 
   const toggleReport = (repId: string) => {
     setSelectedReports((current) =>
-      current.includes(repId)
-        ? current.filter((id) => id !== repId)
+      current.some((id) => normalizeKey(id) === normalizeKey(repId))
+        ? current.filter((id) => normalizeKey(id) !== normalizeKey(repId))
         : [...current, repId]
     );
   };
@@ -257,7 +307,7 @@ const RoleReport = () => {
         ? activeReports
             .filter((report) =>
               selectedCategories.some(
-                (sc) => (report.catCode ?? "").toString().trim().toUpperCase() === (sc ?? "").toString().trim().toUpperCase()
+                (sc) => normalizeKey(report.catCode) === normalizeKey(sc)
               )
             )
             .map((r) => r.repId)
@@ -279,7 +329,7 @@ const RoleReport = () => {
       console.log("runAction", { selectedRoleId, viewMode, selectedCategories, selectedReports, targetRepIdsForAction });
       // build payload for selected report ids
       const reportsPayload = targetRepIdsForAction.map((repId) => {
-        const rep = reports.find((r) => r.repId === repId);
+        const rep = reports.find((r) => normalizeKey(r.repId) === normalizeKey(repId));
         return {
           CatCode: rep?.catCode ?? "",
           RepId: repId,
@@ -364,7 +414,12 @@ const RoleReport = () => {
 
         setRoleReportMap((current) => {
           const existing = current[selectedRoleId] ?? [];
-          const next = existing.filter((repId) => !targetRepIdsForAction.includes(repId));
+          const next = existing.filter(
+            (repId) =>
+              !targetRepIdsForAction.some(
+                (targetRepId) => normalizeKey(targetRepId) === normalizeKey(repId)
+              )
+          );
           return { ...current, [selectedRoleId]: next };
         });
 
@@ -457,7 +512,7 @@ const RoleReport = () => {
                           key={role.roleId}
                           onClick={() => setSelectedRoleId(role.roleId)}
                           className={`cursor-pointer border-t border-stone-100 transition ${
-                            selectedRoleId === role.roleId
+                            normalizeKey(selectedRoleId) === normalizeKey(role.roleId)
                               ? "bg-[#7A0000]/8"
                               : "bg-white hover:bg-stone-50"
                           }`}
@@ -551,7 +606,7 @@ const RoleReport = () => {
                                 <label key={category.catCode} className="flex items-start gap-2 rounded-lg bg-white px-2.5 py-2 text-sm text-stone-700">
                                   <input
                                     type="checkbox"
-                                    checked={selectedCategories.includes(category.catCode)}
+                                    checked={selectedCategories.some((code) => normalizeKey(code) === normalizeKey(category.catCode))}
                                     onChange={() => toggleCategory(category.catCode)}
                                     className="mt-0.5 h-4 w-4 rounded border-stone-300 text-[#7A0000] focus:ring-[#7A0000]"
                                   />
@@ -578,7 +633,7 @@ const RoleReport = () => {
                                       <CircleChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                                       <input
                                         type="checkbox"
-                                        checked={selectedReports.includes(report.repId)}
+                                        checked={selectedReports.some((id) => normalizeKey(id) === normalizeKey(report.repId))}
                                         onChange={() => toggleReport(report.repId)}
                                         className="mt-0.5 h-4 w-4 rounded border-stone-300 text-[#7A0000] focus:ring-[#7A0000]"
                                       />

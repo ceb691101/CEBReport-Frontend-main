@@ -9,7 +9,7 @@ import ceb from "../../assets/CEBLOGO.png";
 
 const LoginCard = () => {
   const { setLogged } = useLogged();
-  const { setUser } = useUser();
+  const userContext = useUser();
   const navigate = useNavigate();
 
   const [loginType, setLoginType] = useState<"HR" | "AD">("HR");
@@ -59,7 +59,7 @@ const LoginCard = () => {
           Password: password,
         });
 
-        setUser(userData);
+        userContext.setUser(userData);
 
         if (userData?.Logged) {
           console.log("User details have been fetched successfully");
