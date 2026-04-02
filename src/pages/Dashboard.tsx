@@ -507,11 +507,10 @@ interface SolarCapacityChartProps {
   data: SolarCapacityComparisonRow[];
   formatCompact: (n: number) => string;
   formatKW:      (n: number) => string;
-  formatInteger: (n: number) => string;
 }
 
 const SolarCapacityChart: React.FC<SolarCapacityChartProps> = ({
-  data, formatCompact, formatKW, formatInteger,
+  data, formatCompact, formatKW,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const { inView } = useInView(ref as React.RefObject<Element>, { threshold: 0.2 });
@@ -524,16 +523,15 @@ const SolarCapacityChart: React.FC<SolarCapacityChartProps> = ({
           <XAxis dataKey="netType" tick={{ fontSize: 11 }} interval={0} tickMargin={8} />
           <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompact(Number(v))} width={44} />
           <Tooltip
-            formatter={(value: any, name: any, props: any) => {
+            formatter={(value: any, name: any) => {
               const n = Number(value) || 0;
-              const row = props?.payload as SolarCapacityComparisonRow | undefined;
 
               if (name === "Ordinary") {
-                return [formatKW(n), `Ordinary Capacity${row ? ` • ${formatInteger(row.ordinaryCount)} accounts` : ""}`];
+                return [formatKW(n), "Ordinary Capacity"];
               }
 
               if (name === "Bulk") {
-                return [formatKW(n), `Bulk Capacity${row ? ` • ${formatInteger(row.bulkCount)} accounts` : ""}`];
+                return [formatKW(n), "Bulk Capacity"];
               }
 
               return [String(value), String(name)];
@@ -988,8 +986,33 @@ const Home: React.FC = () => {
   const formatNumber   = (n: number) => new Intl.NumberFormat("en-US").format(n);
   const formatCurrency = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "LKR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
   const formatCompact  = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
-  const formatInteger  = (n: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
   const formatKW       = (n: number) => `${formatCompact(n)} kW`;
+  const formatKioskDateTick = (value: string) => {
+    const [yearOrMonth, monthOrDay, dayOrYear] = value.split("-");
+
+    if (!yearOrMonth || !monthOrDay || !dayOrYear) {
+      return value;
+    }
+
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+
+    if (value.length >= 10) {
+      const monthIndex = Number(value.slice(5, 7)) - 1;
+      const day = value.slice(8, 10);
+      return `${months[monthIndex] || value.slice(5, 7)}-${day}`;
+    }
+
+    if (value.length === 5) {
+      const monthIndex = Number(value.slice(0, 2)) - 1;
+      const day = value.slice(3, 5);
+      return `${months[monthIndex] || value.slice(0, 2)}-${day}`;
+    }
+
+    return value;
+  };
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -1330,9 +1353,10 @@ const Home: React.FC = () => {
                       <div className="flex items-center justify-between mb-6">
                         <div>
                           <h3 className="font-semibold text-gray-900">Kiosk Daily Collection Trend</h3>
-                          <p className="text-sm text-gray-500 mt-1">Daily collection amounts for the week</p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Daily collection amounts for the week {kioskDateRange.fromDate && kioskDateRange.toDate ? `(${kioskDateRange.fromDate} to ${kioskDateRange.toDate})` : ""}
+                          </p>
                         </div>
-                        <DollarSign className="w-5 h-5 text-gray-400" />
                       </div>
                       <div ref={kioskTrendRef} className="mb-6 flex-1">
                         {kioskLoading ? (
@@ -1348,7 +1372,7 @@ const Home: React.FC = () => {
                               <XAxis
                                 dataKey="TransDate"
                                 tick={{ fontSize: 11 }}
-                                tickFormatter={(date) => date.slice(5)}
+                                tickFormatter={(date) => formatKioskDateTick(String(date))}
                               />
                               <YAxis
                                 tick={{ fontSize: 11 }}
@@ -1374,23 +1398,6 @@ const Home: React.FC = () => {
                             </LineChart>
                           </ResponsiveContainer>
                         )}
-                      </div>
-                      <div className="mt-auto pt-4 border-t border-gray-100">
-                        <p className="text-xs text-gray-500 mb-2">Weekly Summary</p>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <p className="text-xs text-gray-500">Period</p>
-                            <p className="text-sm font-semibold text-gray-900">{kioskDateRange.fromDate} to {kioskDateRange.toDate}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Weekly Total</p>
-                            <p className="text-sm font-semibold text-gray-900">{formatCurrency(kioskWeeklyTotal)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">User ID</p>
-                            <p className="text-sm font-semibold text-gray-900">{kioskUserId}</p>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </Reveal>
@@ -1644,7 +1651,7 @@ const Home: React.FC = () => {
                       ) : solarCapacityChartData.length === 0 ? (
                         <div className="h-56 flex items-center justify-center text-sm text-gray-400">No solar capacity data available.</div>
                       ) : (
-                        <SolarCapacityChart data={solarCapacityChartData} formatCompact={formatCompact} formatKW={formatKW} formatInteger={formatInteger} />
+                        <SolarCapacityChart data={solarCapacityChartData} formatCompact={formatCompact} formatKW={formatKW} />
                       )}
                     </div>
                   </Reveal>
