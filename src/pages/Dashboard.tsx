@@ -32,7 +32,6 @@ import {
   Bar,
   LineChart,
   Line,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -42,9 +41,8 @@ import {
 } from "recharts";
 import DashboardSelector from "../components/mainTopics/Dashboard/DashboardSelector";
 
-// ─── Bar chart color palette (auto-assigned per net-type) ─────────────────────
-const BAR_CAPACITY_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b"];
-const BAR_COUNT_COLORS    = ["#818cf8", "#38bdf8", "#34d399", "#fbbf24"];
+const SOLAR_ORDINARY_COLOR = "#0f4c81";
+const SOLAR_BULK_COLOR = "#f59e0b";
 const SOLAR_NET_TYPE_COLORS = [
   "#813405",
   "#d45113   ",
@@ -115,6 +113,37 @@ interface KioskCollectionApiResponse {
   } | null;
   errorMessage: string | null;
   errorDetails?: string;
+}
+
+interface SolarGenerationCapacityApiRecord {
+  NetType?: string;
+  AccountsCount?: number;
+  CapacityKw?: number;
+  netType?: string;
+  accountsCount?: number;
+  capacityKw?: number;
+}
+
+interface SolarGenerationCapacityApiData {
+  SelectedBillCycle?: string;
+  AvailableBillCycles?: string[];
+  Records?: SolarGenerationCapacityApiRecord[];
+  selectedBillCycle?: string;
+  availableBillCycles?: string[];
+  records?: SolarGenerationCapacityApiRecord[];
+}
+
+interface SolarGenerationCapacityApiResponse {
+  data: SolarGenerationCapacityApiData | null;
+  errorMessage?: string | null;
+}
+
+interface SolarCapacityComparisonRow {
+  netType: string;
+  ordinaryCapacity: number;
+  bulkCapacity: number;
+  ordinaryCount: number;
+  bulkCount: number;
 }
 
 // ─── useInView Hook ───────────────────────────────────────────────────────────
@@ -472,11 +501,10 @@ const RegionBar: React.FC<RegionBarProps> = ({ region, value, delay = 0 }) => {
 };
 
 // ─── SolarCapacityChart ───────────────────────────────────────────────────────
-// Separate component so useInView is called at the top level of a component.
-// Bars animate up when scrolled into view; each net-type gets a distinct color.
+// Grouped bars show ordinary vs bulk capacity per net type.
 
 interface SolarCapacityChartProps {
-  data: { netType: string; capacity: number; count: number }[];
+  data: SolarCapacityComparisonRow[];
   formatCompact: (n: number) => string;
   formatKW:      (n: number) => string;
   formatInteger: (n: number) => string;
@@ -491,30 +519,35 @@ const SolarCapacityChart: React.FC<SolarCapacityChartProps> = ({
   return (
     <div ref={ref} className="h-56">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 8 }} barCategoryGap="22%">
           <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
           <XAxis dataKey="netType" tick={{ fontSize: 11 }} interval={0} tickMargin={8} />
-          <YAxis yAxisId="kw"    tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompact(Number(v))} width={44} />
-          <YAxis yAxisId="count" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompact(Number(v))} width={44} />
+          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompact(Number(v))} width={44} />
           <Tooltip
-            formatter={(value: any, name: any) => {
+            formatter={(value: any, name: any, props: any) => {
               const n = Number(value) || 0;
-              if (name === "Capacity (kW)") return [formatKW(n), name];
-              if (name === "Accounts")      return [formatInteger(n), name];
+              const row = props?.payload as SolarCapacityComparisonRow | undefined;
+
+              if (name === "Ordinary") {
+                return [formatKW(n), `Ordinary Capacity${row ? ` • ${formatInteger(row.ordinaryCount)} accounts` : ""}`];
+              }
+
+              if (name === "Bulk") {
+                return [formatKW(n), `Bulk Capacity${row ? ` • ${formatInteger(row.bulkCount)} accounts` : ""}`];
+              }
+
               return [String(value), String(name)];
             }}
             labelStyle={{ fontWeight: 600 }}
           />
           <Legend />
-          <Bar yAxisId="kw" dataKey="capacity" name="Capacity (kW)" radius={[6,6,0,0]}
+          <Bar dataKey="ordinaryCapacity" name="Ordinary" fill={SOLAR_ORDINARY_COLOR} radius={[6,6,0,0]}
             isAnimationActive={inView} animationDuration={900} animationEasing="ease-out" animationBegin={0}>
-            {data.map((_, i) => <Cell key={i} fill={BAR_CAPACITY_COLORS[i % BAR_CAPACITY_COLORS.length]} />)}
-            <LabelList dataKey="capacity" position="top" formatter={(v: any) => formatCompact(Number(v) || 0)} style={{ fontSize: 10, fill: "#6b7280" }} />
+            <LabelList dataKey="ordinaryCapacity" position="top" formatter={(v: any) => formatCompact(Number(v) || 0)} style={{ fontSize: 10, fill: "#6b7280" }} />
           </Bar>
-          <Bar yAxisId="count" dataKey="count" name="Accounts" radius={[6,6,0,0]}
+          <Bar dataKey="bulkCapacity" name="Bulk" fill={SOLAR_BULK_COLOR} radius={[6,6,0,0]}
             isAnimationActive={inView} animationDuration={900} animationEasing="ease-out" animationBegin={250}>
-            {data.map((_, i) => <Cell key={i} fill={BAR_COUNT_COLORS[i % BAR_COUNT_COLORS.length]} />)}
-            <LabelList dataKey="count" position="top" formatter={(v: any) => formatCompact(Number(v) || 0)} style={{ fontSize: 10, fill: "#6b7280" }} />
+            <LabelList dataKey="bulkCapacity" position="top" formatter={(v: any) => formatCompact(Number(v) || 0)} style={{ fontSize: 10, fill: "#6b7280" }} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -615,12 +648,12 @@ const Home: React.FC = () => {
     })
   );
 
-  const [solarCapacity] = useState(() => ({
-    netMetering:   { count: 567, capacity: 2345 },
-    netAccounting: { count: 234, capacity: 1234 },
-    netPlus:       { count: 189, capacity: 890  },
-    netPlusPlus:   { count: 76,  capacity: 345  },
-  }));
+  const [selectedSolarBillCycle, setSelectedSolarBillCycle] = useState<string>("");
+  const [availableSolarBillCycles, setAvailableSolarBillCycles] = useState<string[]>([]);
+  const [solarCapacityChartData, setSolarCapacityChartData] = useState<SolarCapacityComparisonRow[]>([]);
+  const [solarCapacityLoading, setSolarCapacityLoading] = useState<boolean>(true);
+  const [solarCapacityError, setSolarCapacityError] = useState<string | null>(null);
+  const [solarCapacityInitialized, setSolarCapacityInitialized] = useState(false);
 
   // ── Dashboard card config ─────────────────────────────────────────────────
   const cardConfig = [
@@ -794,6 +827,113 @@ const Home: React.FC = () => {
     fetchSalesCollection();
   }, []);
 
+  useEffect(() => {
+    const normalizeRecords = (records: SolarGenerationCapacityApiRecord[] = []) =>
+      records.map((record) => ({
+        netType: String(record.NetType ?? record.netType ?? ""),
+        capacityKw: Number(record.CapacityKw ?? record.capacityKw ?? 0),
+        accountsCount: Number(record.AccountsCount ?? record.accountsCount ?? 0),
+      }));
+
+    const fetchCapacityByEndpoint = async (endpoint: string, billCycle: string) => {
+      const url = billCycle
+        ? `${endpoint}?billCycle=${encodeURIComponent(billCycle)}`
+        : endpoint;
+
+      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!res.ok) {
+        throw new Error(`Solar capacity fetch failed: ${res.status}`);
+      }
+
+      const json: SolarGenerationCapacityApiResponse = await res.json();
+      if (json?.errorMessage) {
+        throw new Error(json.errorMessage);
+      }
+
+      const data = json?.data;
+      return {
+        selectedBillCycle: String(data?.SelectedBillCycle ?? data?.selectedBillCycle ?? billCycle ?? ""),
+        availableBillCycles: (data?.AvailableBillCycles ?? data?.availableBillCycles ?? []).map(String),
+        records: normalizeRecords(data?.Records ?? data?.records ?? []),
+      };
+    };
+
+    const fetchSolarCapacityGraph = async () => {
+      setSolarCapacityLoading(true);
+      setSolarCapacityError(null);
+
+      try {
+        const ordinaryEndpoint = "/api/dashboard/solar-ordinary-customers/generation-capacity";
+        const bulkEndpoint = "/api/dashboard/solar-bulk-customers/generation-capacity";
+
+        const ordinaryData = await fetchCapacityByEndpoint(ordinaryEndpoint, selectedSolarBillCycle);
+
+        const resolvedBillCycles = ordinaryData.availableBillCycles;
+        const latestBillCycle = resolvedBillCycles[0] || ordinaryData.selectedBillCycle || selectedSolarBillCycle;
+
+        setAvailableSolarBillCycles(resolvedBillCycles);
+
+        if (!solarCapacityInitialized) {
+          setSolarCapacityInitialized(true);
+          if (latestBillCycle && latestBillCycle !== selectedSolarBillCycle) {
+            setSelectedSolarBillCycle(latestBillCycle);
+            return;
+          }
+        }
+
+        const resolvedBillCycle = selectedSolarBillCycle || latestBillCycle;
+        if (resolvedBillCycle && resolvedBillCycle !== selectedSolarBillCycle) {
+          setSelectedSolarBillCycle(resolvedBillCycle);
+        }
+
+        const bulkData = await fetchCapacityByEndpoint(bulkEndpoint, resolvedBillCycle);
+
+        const rows = new Map<string, SolarCapacityComparisonRow>();
+        const addRow = (item: SolarGenerationCapacityApiRecord, isOrdinary: boolean) => {
+          const netType = String(item.NetType ?? item.netType ?? "");
+          if (!netType) return;
+
+          if (!rows.has(netType)) {
+            rows.set(netType, {
+              netType,
+              ordinaryCapacity: 0,
+              bulkCapacity: 0,
+              ordinaryCount: 0,
+              bulkCount: 0,
+            });
+          }
+
+          const row = rows.get(netType)!;
+          if (isOrdinary) {
+            row.ordinaryCapacity += Number(item.CapacityKw ?? item.capacityKw ?? 0);
+            row.ordinaryCount += Number(item.AccountsCount ?? item.accountsCount ?? 0);
+          } else {
+            row.bulkCapacity += Number(item.CapacityKw ?? item.capacityKw ?? 0);
+            row.bulkCount += Number(item.AccountsCount ?? item.accountsCount ?? 0);
+          }
+        };
+
+        ordinaryData.records.forEach((item) => addRow(item, true));
+        bulkData.records.forEach((item) => addRow(item, false));
+
+        const ordered = ["Net Metering", "Net Accounting", "Net Plus", "Net Plus Plus"];
+        const chartRows = ordered
+          .filter((netType) => rows.has(netType))
+          .map((netType) => rows.get(netType)!);
+
+        setSolarCapacityChartData(chartRows);
+      } catch (err: any) {
+        console.error("Solar capacity graph fetch error:", err);
+        setSolarCapacityError(err?.message || "Failed to load solar capacity graph data.");
+        setSolarCapacityChartData([]);
+      } finally {
+        setSolarCapacityLoading(false);
+      }
+    };
+
+    fetchSolarCapacityGraph();
+  }, [selectedSolarBillCycle, solarCapacityInitialized]);
+
   const loggedUserId = (user?.Userno || "").trim().toUpperCase();
   const kioskUserId = loggedUserId.startsWith("KIOS") ? loggedUserId : "KIOS00";
 
@@ -885,12 +1025,7 @@ const Home: React.FC = () => {
   const C = 502.4;
   const createArcDasharray = (s: number, e: number) => { const arc = ((e - s) / 100) * C; return `${arc} ${C - arc}`; };
 
-  const solarCapacityChartData = [
-    { netType: "Net Metering",   capacity: solarCapacity.netMetering.capacity,   count: solarCapacity.netMetering.count   },
-    { netType: "Net Accounting", capacity: solarCapacity.netAccounting.capacity, count: solarCapacity.netAccounting.count },
-    { netType: "Net Plus",       capacity: solarCapacity.netPlus.capacity,       count: solarCapacity.netPlus.count       },
-    { netType: "Net Plus Plus",  capacity: solarCapacity.netPlusPlus.capacity,   count: solarCapacity.netPlusPlus.count   },
-  ].sort((a, b) => a.capacity - b.capacity);
+  const totalSolarCapacityKw = solarCapacityChartData.reduce((sum, item) => sum + item.ordinaryCapacity + item.bulkCapacity, 0);
 
   //const additionalCardIds = ["revenueCollection","disconnections","arrearsPosition","solarCapacity","consumptionAnalysis","billCycleStatus","newConnections"];
   //const hasAdditionalCards = additionalCardIds.some((id) => visibleCards.includes(id));
@@ -906,7 +1041,7 @@ const Home: React.FC = () => {
   const animatedRevenue     = useCountUp(125600000, 1400, true, kpiTrigger);
   const animatedDisconnect  = useCountUp(2456,      1400, true, kpiTrigger);
   const animatedArrears     = useCountUp(456780000, 1400, true, kpiTrigger);
-  const animatedSolarCap    = useCountUp(4814,      1400, true, kpiTrigger);
+  const animatedSolarCap    = useCountUp(totalSolarCapacityKw, 1400, !solarCapacityLoading, kpiTrigger);
   const animatedConsumption = useCountUp(3579000,   1400, true, kpiTrigger);
   const animatedNewConn     = useCountUp(1428,      1400, true, kpiTrigger);
 
@@ -1477,12 +1612,40 @@ const Home: React.FC = () => {
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="font-semibold text-gray-900">Solar Capacity (Last Month)</h3>
-                          <p className="text-xs text-gray-500 mt-1">Capacity (kW) and account count by net type (Sorted by Capacity)</p>
+                          <h3 className="font-semibold text-gray-900">Solar Generation Capacity</h3>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Capacity (kW) and account count by net type (Sorted by Capacity)
+                            {selectedSolarBillCycle ? ` - Bill Cycle ${selectedSolarBillCycle}` : ""}
+                          </p>
                         </div>
                         <span className="text-[color:var(--ceb-navy)] text-xs font-semibold tracking-wide">GRAPH</span>
                       </div>
-                      <SolarCapacityChart data={solarCapacityChartData} formatCompact={formatCompact} formatKW={formatKW} formatInteger={formatInteger} />
+
+                      <div className="mb-3">
+                        <label className="block text-xs text-gray-500 mb-1">Bill Cycle</label>
+                        <select
+                          value={selectedSolarBillCycle}
+                          onChange={(e) => setSelectedSolarBillCycle(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--ceb-maroon)]"
+                          disabled={solarCapacityLoading || availableSolarBillCycles.length === 0}
+                        >
+                          {availableSolarBillCycles.map((cycle) => (
+                            <option key={cycle} value={cycle}>
+                              {cycle}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {solarCapacityLoading ? (
+                        <div className="h-56 flex items-center justify-center text-sm text-gray-400">Loading solar capacity graph...</div>
+                      ) : solarCapacityError ? (
+                        <div className="h-56 flex items-center justify-center text-sm text-red-500">{solarCapacityError}</div>
+                      ) : solarCapacityChartData.length === 0 ? (
+                        <div className="h-56 flex items-center justify-center text-sm text-gray-400">No solar capacity data available.</div>
+                      ) : (
+                        <SolarCapacityChart data={solarCapacityChartData} formatCompact={formatCompact} formatKW={formatKW} formatInteger={formatInteger} />
+                      )}
                     </div>
                   </Reveal>
 
