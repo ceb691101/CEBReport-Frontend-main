@@ -11,6 +11,7 @@ import SolarPaymentBulk from "../mainTopics/SolarInformation/SolarPaymentBulk";
 import SolarConnectionDetailsRetail from "../mainTopics/SolarInformation/SolarConnectionDetailsRetail";
 import SolarConnectionDetailsBulk from "../mainTopics/SolarInformation/SolarConnectionDetailsBulk";
 import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustomerInformation";
+import RoofTopSolarInputData from "../mainTopics/SolarInformation/RoofTopSolarInputData";
 
 
 type Subtopic = {
@@ -61,7 +62,7 @@ const SolarInformation = () => {
       case "Solar customer information":
         return <SolarCustomerInformation />;
       case "Rooftop Solar Input Data portal for T and D Loss Calculation":     
-        return <div>{subtopicName} Content</div>;
+        return <RoofTopSolarInputData/>;
       default:
         return (
           <div className="text-red-500 text-xs">
