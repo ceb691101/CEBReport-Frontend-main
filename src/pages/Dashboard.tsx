@@ -40,6 +40,7 @@ import {
   LabelList,
 } from "recharts";
 import DashboardSelector from "../components/mainTopics/Dashboard/DashboardSelector";
+import KpiCard from "../components/mainTopics/Dashboard/KpiCard";
 
 const SOLAR_ORDINARY_COLOR = "#0f4c81";
 const SOLAR_BULK_COLOR = "#f59e0b";
@@ -567,7 +568,7 @@ const Home: React.FC = () => {
   const [activeSolarPieChart, setActiveSolarPieChart] = useState<string | null>(null);
   const [showMoreCards, setShowMoreCards]     = useState(false);
   const [visibleCards, setVisibleCards]       = useState<string[]>([
-    "totalCustomers", "solarCustomers", "zeroConsumption", "kioskCollection",
+    "totalCustomers", "solarCustomers", /* "zeroConsumption", */ "kioskCollection",
   ]);
   const [draggedCardId, setDraggedCardId]   = useState<string | null>(null);
   const [dragOverCardId, setDragOverCardId] = useState<string | null>(null);
@@ -657,7 +658,7 @@ const Home: React.FC = () => {
   const cardConfig = [
     { id: "totalCustomers",      title: "Total Customers",     default: true,  category: "customer"    },
     { id: "solarCustomers",      title: "Solar Customers",     default: true,  category: "solar"       },
-    { id: "zeroConsumption",     title: "Zero Consumption",    default: true,  category: "consumption" },
+    // { id: "zeroConsumption",     title: "Zero Consumption",    default: true,  category: "consumption" },
     { id: "kioskCollection",     title: "Kiosk Collection",    default: true,  category: "collection"  },
     { id: "revenueCollection",   title: "Revenue Collection",  default: false, category: "collection"  },
     { id: "disconnections",      title: "Disconnections",      default: false, category: "customer"    },
@@ -1169,134 +1170,229 @@ const Home: React.FC = () => {
                       const isDragging = draggedCardId === cardId;
                       const isDragOver = dragOverCardId === cardId;
 
-                      const wrapCard = (content: React.ReactNode) => (
-                        <div
-                          key={cardId}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, cardId)}
-                          onDragEnter={() => handleDragEnter(cardId)}
-                          onDragOver={handleDragOver}
-                          onDragEnd={handleDragEnd}
-                          className={[
-                            "relative bg-white rounded-2xl p-6 shadow-sm border transition-all duration-150 select-none group",
-                            isDragging ? "opacity-40 scale-95 border-blue-300 shadow-none" : "opacity-100 scale-100",
-                            isDragOver ? "border-blue-500 ring-2 ring-blue-300 shadow-md" : "border-gray-100",
-                          ].join(" ")}
-                          style={{ cursor: isDragging ? "grabbing" : "grab" }}
-                        >
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-40 transition-opacity">
-                            <svg width="12" height="16" viewBox="0 0 12 16" fill="#6b7280">
-                              <circle cx="3" cy="3"  r="1.5"/><circle cx="9" cy="3"  r="1.5"/>
-                              <circle cx="3" cy="8"  r="1.5"/><circle cx="9" cy="8"  r="1.5"/>
-                              <circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/>
-                            </svg>
-                          </div>
-                          {content}
-                        </div>
-                      );
+                      if (cardId === "totalCustomers") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Total Customers"
+                            value={customerCountsLoading && bulkCountLoading ? "Loading..." : formatNumber(animatedTotal)}
+                            details={
+                              <>
+                                <span>Ordinary: {customerCountsLoading ? "..." : formatNumber(animatedOrdinary)}</span>
+                                <span>Bulk: {bulkCountLoading ? "..." : formatNumber(animatedBulk)}</span>
+                              </>
+                            }
+                            icon={<Users className="w-5 h-5 text-blue-600" />}
+                            iconBgClass="bg-blue-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
 
-                      if (cardId === "totalCustomers") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-blue-100 rounded-lg"><Users className="w-5 h-5 text-blue-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Total Customers</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">
-                          {customerCountsLoading && bulkCountLoading ? "Loading..." : formatNumber(animatedTotal)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                          <span>Ordinary: {customerCountsLoading ? "..." : formatNumber(animatedOrdinary)}</span>
-                          <span>Bulk: {bulkCountLoading ? "..." : formatNumber(animatedBulk)}</span>
-                        </div>
-                      </>);
-                      if (cardId === "solarCustomers") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-yellow-100 rounded-lg"><Sun className="w-5 h-5 text-yellow-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Solar Customers</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{solarLoading || bulkSolarLoading ? "Loading..." : formatNumber(animatedSolar)}</p>
-                         <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                          <span>Ordinary: {solarLoading ? "..." : formatNumber(animatedOrdSolarTotal)}</span>
-                          <span>Bulk: {bulkSolarLoading ? "..." : formatNumber(animatedBulkSolarTotal)}</span>
-                        </div>
-                      </>);
-                      if (cardId === "zeroConsumption") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-red-100 rounded-lg"><Zap className="w-5 h-5 text-red-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Zero Consumption</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(animatedZero)}</p>
-                        <p className="text-xs text-gray-500 mt-2">Last 3 months</p>
-                      </>);
-                      if (cardId === "kioskCollection") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-green-100 rounded-lg"><DollarSign className="w-5 h-5 text-green-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Kiosk Collection</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">
-                          {kioskLoading ? "Loading..." : formatCurrency(animatedKiosk)}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">
-                          {kioskError
-                            ? kioskError
-                            : `${kioskDateRange.fromDate || "-"} to ${kioskDateRange.toDate || "-"}`}
-                        </p>
-                      </>);
-                      if (cardId === "revenueCollection") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-emerald-100 rounded-lg"><ShoppingCart className="w-5 h-5 text-emerald-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Revenue Collection</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(animatedRevenue)}</p>
-                        <p className="text-xs text-gray-500 mt-2">Year to date</p>
-                      </>);
-                      if (cardId === "disconnections") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-orange-100 rounded-lg"><AlertCircle className="w-5 h-5 text-orange-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Disconnections</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(animatedDisconnect)}</p>
-                        <p className="text-xs text-gray-500 mt-2">Pending action</p>
-                      </>);
-                      if (cardId === "arrearsPosition") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-rose-100 rounded-lg"><TrendingDown className="w-5 h-5 text-rose-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Arrears Position</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(animatedArrears)}</p>
-                        <p className="text-xs text-gray-500 mt-2">Total outstanding</p>
-                      </>);
-                      if (cardId === "solarCapacity") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-amber-100 rounded-lg"><Battery className="w-5 h-5 text-amber-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Solar Capacity</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{formatCompact(animatedSolarCap)} kW</p>
-                        <p className="text-xs text-gray-500 mt-2">Total installed</p>
-                      </>);
-                      if (cardId === "consumptionAnalysis") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-violet-100 rounded-lg"><Plug className="w-5 h-5 text-violet-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Consumption (kWh)</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{formatCompact(animatedConsumption)}</p>
-                        <p className="text-xs text-gray-500 mt-2">Monthly average</p>
-                      </>);
-                      if (cardId === "billCycleStatus") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-cyan-100 rounded-lg"><Clock className="w-5 h-5 text-cyan-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">Bill Cycle Status</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{activeBillCycle || "Cycle 450"}</p>
-                        <p className="text-xs text-gray-500 mt-2">Current cycle</p>
-                      </>);
-                      if (cardId === "newConnections") return wrapCard(<>
-                        <div className="flex items-center justify-end mb-2">
-                          <div className="p-2 bg-lime-100 rounded-lg"><Plus className="w-5 h-5 text-lime-600" /></div>
-                        </div>
-                        <h3 className="text-sm font-medium text-gray-500">New Connections</h3>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{formatNumber(animatedNewConn)}</p>
-                        <p className="text-xs text-gray-500 mt-2">Year to date</p>
-                      </>);
+                      if (cardId === "solarCustomers") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Solar Customers"
+                            value={solarLoading || bulkSolarLoading ? "Loading..." : formatNumber(animatedSolar)}
+                            details={
+                              <>
+                                <span>Ordinary: {solarLoading ? "..." : formatNumber(animatedOrdSolarTotal)}</span>
+                                <span>Bulk: {bulkSolarLoading ? "..." : formatNumber(animatedBulkSolarTotal)}</span>
+                              </>
+                            }
+                            icon={<Sun className="w-5 h-5 text-yellow-600" />}
+                            iconBgClass="bg-yellow-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "zeroConsumption") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Zero Consumption"
+                            value={formatNumber(animatedZero)}
+                            subtitle="Last 3 months"
+                            icon={<Zap className="w-5 h-5 text-red-600" />}
+                            iconBgClass="bg-red-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "kioskCollection") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Kiosk Collection"
+                            value={kioskLoading ? "Loading..." : formatCurrency(animatedKiosk)}
+                            subtitle={
+                              kioskError
+                                ? kioskError
+                                : `${kioskDateRange.fromDate || "-"} to ${kioskDateRange.toDate || "-"}`
+                            }
+                            icon={<DollarSign className="w-5 h-5 text-green-600" />}
+                            iconBgClass="bg-green-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "revenueCollection") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Revenue Collection"
+                            value={formatCurrency(animatedRevenue)}
+                            subtitle="Year to date"
+                            icon={<ShoppingCart className="w-5 h-5 text-emerald-600" />}
+                            iconBgClass="bg-emerald-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "disconnections") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Disconnections"
+                            value={formatNumber(animatedDisconnect)}
+                            subtitle="Pending action"
+                            icon={<AlertCircle className="w-5 h-5 text-orange-600" />}
+                            iconBgClass="bg-orange-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "arrearsPosition") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Arrears Position"
+                            value={formatCurrency(animatedArrears)}
+                            subtitle="Total outstanding"
+                            icon={<TrendingDown className="w-5 h-5 text-rose-600" />}
+                            iconBgClass="bg-rose-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "solarCapacity") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Solar Capacity"
+                            value={`${formatCompact(animatedSolarCap)} kW`}
+                            subtitle="Total installed"
+                            icon={<Battery className="w-5 h-5 text-amber-600" />}
+                            iconBgClass="bg-amber-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "consumptionAnalysis") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Consumption (kWh)"
+                            value={formatCompact(animatedConsumption)}
+                            subtitle="Monthly average"
+                            icon={<Plug className="w-5 h-5 text-violet-600" />}
+                            iconBgClass="bg-violet-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "billCycleStatus") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Bill Cycle Status"
+                            value={activeBillCycle || "Cycle 450"}
+                            subtitle="Current cycle"
+                            icon={<Clock className="w-5 h-5 text-cyan-600" />}
+                            iconBgClass="bg-cyan-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "newConnections") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="New Connections"
+                            value={formatNumber(animatedNewConn)}
+                            subtitle="Year to date"
+                            icon={<Plus className="w-5 h-5 text-lime-600" />}
+                            iconBgClass="bg-lime-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
                       return null;
                     })}
                   </div>
@@ -1373,6 +1469,8 @@ const Home: React.FC = () => {
                                 dataKey="TransDate"
                                 tick={{ fontSize: 11 }}
                                 tickFormatter={(date) => formatKioskDateTick(String(date))}
+                                interval={0}
+                                minTickGap={0}
                               />
                               <YAxis
                                 tick={{ fontSize: 11 }}
@@ -1621,7 +1719,7 @@ const Home: React.FC = () => {
                         <div>
                           <h3 className="font-semibold text-gray-900">Solar Generation Capacity</h3>
                           <p className="text-xs text-gray-500 mt-1">
-                            Capacity (kW) and account count by net type (Sorted by Capacity)
+                            Capacity (kW) 
                             {selectedSolarBillCycle ? ` - Bill Cycle ${selectedSolarBillCycle}` : ""}
                           </p>
                         </div>
