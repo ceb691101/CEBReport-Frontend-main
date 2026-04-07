@@ -17,6 +17,13 @@ type RoleLikeObject = {
   RoleId?: unknown;
   roleId?: unknown;
   roleid?: unknown;
+  UserNo?: unknown;
+  userNo?: unknown;
+  userno?: unknown;
+  EPFNo?: unknown;
+  EpfNo?: unknown;
+  epfNo?: unknown;
+  epfno?: unknown;
 };
 
 type RoleReportApiItem = {
@@ -138,6 +145,26 @@ const toIdNumber = (repIdNo: string, fallback: number): number => {
   return fallback;
 };
 
+const normalizeId = (value: string): string => value.trim().toLowerCase();
+
+const readUserIdFromObject = (value: RoleLikeObject): string | null => {
+  const raw =
+    value.UserNo ??
+    value.userNo ??
+    value.userno ??
+    value.EPFNo ??
+    value.EpfNo ??
+    value.epfNo ??
+    value.epfno;
+
+  if (raw === undefined || raw === null) {
+    return null;
+  }
+
+  const userId = String(raw).trim();
+  return userId.length > 0 ? userId : null;
+};
+
 const readRoleIdFromObject = (value: RoleLikeObject): string | null => {
   const raw = value.RoleId ?? value.roleId ?? value.roleid;
   if (raw === undefined || raw === null) {
@@ -148,8 +175,9 @@ const readRoleIdFromObject = (value: RoleLikeObject): string | null => {
   return roleId.length > 0 ? roleId : null;
 };
 
-const extractRoleIds = (value: unknown): string[] => {
+const extractRoleIds = (value: unknown, epfNo?: string): string[] => {
   const roleIds = new Set<string>();
+  const normalizedEpfNo = epfNo ? normalizeId(epfNo) : "";
 
   const addRoleId = (raw: unknown) => {
     if (raw === undefined || raw === null) {
@@ -175,7 +203,18 @@ const extractRoleIds = (value: unknown): string[] => {
       }
 
       if (item && typeof item === "object") {
-        const roleId = readRoleIdFromObject(item as RoleLikeObject);
+        const roleObject = item as RoleLikeObject;
+        const userId = readUserIdFromObject(roleObject);
+        const isMatchingUser =
+          !normalizedEpfNo ||
+          !userId ||
+          normalizeId(userId) === normalizedEpfNo;
+
+        if (!isMatchingUser) {
+          continue;
+        }
+
+        const roleId = readRoleIdFromObject(roleObject);
         if (roleId) {
           roleIds.add(roleId);
         }
@@ -186,7 +225,18 @@ const extractRoleIds = (value: unknown): string[] => {
   }
 
   if (value && typeof value === "object") {
-    const roleId = readRoleIdFromObject(value as RoleLikeObject);
+    const roleObject = value as RoleLikeObject;
+    const userId = readUserIdFromObject(roleObject);
+    const isMatchingUser =
+      !normalizedEpfNo ||
+      !userId ||
+      normalizeId(userId) === normalizedEpfNo;
+
+    if (!isMatchingUser) {
+      return [];
+    }
+
+    const roleId = readRoleIdFromObject(roleObject);
     if (roleId) {
       roleIds.add(roleId);
     }
@@ -359,7 +409,7 @@ export const loadRoleBasedSidebarData = async (epfNo: string): Promise<SidebarRe
       };
     }
 
-    const roleIds = extractRoleIds(roleResponse.data);
+    const roleIds = extractRoleIds(roleResponse.data, trimmedEpfNo);
     if (roleIds.length === 0) {
       return {
         data: [],
