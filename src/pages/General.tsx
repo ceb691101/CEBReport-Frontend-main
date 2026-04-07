@@ -1,62 +1,21 @@
 import { useState, useEffect } from "react";
-import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
-import SecurityDepositContractDemandBulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
-import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import BillCalculation from "../mainTopics/general/BillCalculation";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const General = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["General"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
-    const generalTopic = sidebarData.find((topic) => topic.name === "General");
-    if (generalTopic) {
-      setSubtopics(generalTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     setExpandedCard((prev) => (prev === id ? null : id));
-  };
-
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Active customers and sales by tariff":
-        return <ActiveCustomersSalesByTariff />;
-      case "Security deposit & Contract Demand - Bulk":
-        return <SecurityDepositContractDemandBulk />;
-      case "Registered consumers for SMS alerts":
-        return <RegisteredConsumersForSMSAlerts />;
-      case "Bill calculation":
-        return <BillCalculation />;
-      case "Listing of customers":
-      case "List of government accounts":
-      case "Largest 100 customer details":
-      case "Sequence change accounts":
-      case "Retails Journal":
-      case "Arrears position – meter reader wise":
-      case "List of customers (enlisted in Master Invoices)":
-      case "Disconnection list":
-      case "Shakthi LED distribution summary":
-      case "Standing order report":
-      case "Finalized Accounts":
-      case "Outstanding Dues":
-      case "Largest Consumption":
-        return <div>{subtopicName} Content</div>;
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
   };
 
   return (
@@ -69,7 +28,7 @@ const General = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>

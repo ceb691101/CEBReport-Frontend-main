@@ -1,51 +1,81 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { data } from "../../data/SideBarData";
+import {
+  loadRoleBasedSidebarData,
+  type Topic,
+  type Subtopic,
+} from "../../data/SideBarData";
+import { useUser } from "../../contexts/UserContext";
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useUser();
+  const epfNo = user?.Userno || "";
+
+  const [sidebarData, setSidebarData] = useState<Topic[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
 
-  const handleClick = (id: number, path: string, subtopics: any[]) => {
+  const handleClick = (id: number, path: string, subtopics: Subtopic[]) => {
     setActiveId(id);
     navigate(path, { state: { subtopics } });
   };
 
   useEffect(() => {
-    const currentPath = location.pathname;
-    
-    // // Special handling for home page - don't redirect and clear activeId
-    // if (currentPath === "/home") {
-    //   setActiveId(null); // Clear any active selection
-    //   return; // Exit early, don't interfere with home page
-    // }
-    
-    const matchedTopic = data.find((topic) => topic.path === currentPath);
+    let cancelled = false;
 
-    if (matchedTopic) {
-      if (activeId !== matchedTopic.id) {
-        setActiveId(matchedTopic.id);
+    const loadSidebar = async () => {
+      setLoading(true);
+      setMessage(null);
+
+      const result = await loadRoleBasedSidebarData(epfNo);
+      if (cancelled) {
+        return;
+      }
+
+      setSidebarData(result.data);
+      setMessage(result.message);
+      setLoading(false);
+    };
+
+    void loadSidebar();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [epfNo]);
+
+  useEffect(() => {
+    const currentPath = location.pathname;
+
+    if (sidebarData.length === 0) {
+      setActiveId(null);
+      return;
+    }
+
+    const exactMatch = sidebarData.find((topic) => topic.path === currentPath);
+
+    if (exactMatch) {
+      if (activeId !== exactMatch.id) {
+        setActiveId(exactMatch.id);
+      }
+      return;
+    }
+
+    const prefixMatch = sidebarData.find((topic) =>
+      currentPath.startsWith(topic.path)
+    );
+
+    if (prefixMatch) {
+      if (activeId !== prefixMatch.id) {
+        setActiveId(prefixMatch.id);
       }
     } else {
-      // Check if the current path starts with any of the known paths
-      const matchingTopic = data.find((topic) =>
-        currentPath.startsWith(topic.path)
-      );
-      if (matchingTopic) {
-        setActiveId(matchingTopic.id);
-      } else {
-        // Don't redirect for certain special paths like report display pages
-        const specialPaths = ["/report-display", "/user"];
-        if (!specialPaths.includes(currentPath)) {
-          // Only redirect to first item if we're on a completely unknown path
-          const first = data[0];
-          setActiveId(first.id);
-          navigate(first.path, { state: { subtopics: first.subtopics } });
-        }
-      }
+      setActiveId(null);
     }
-  }, [location.pathname]);
+  }, [location.pathname, sidebarData, activeId]);
 
   return (
     <div className="w-full bg-gradient-to-b from-gray-50 to-white border-r border-gray-100 p-2 sm:p-3 text-gray-700 font-normal cursor-pointer overflow-y-auto h-full">
@@ -55,8 +85,21 @@ const Sidebar = () => {
             Main Navigation
           </h2>
         </div>
+        {loading && (
+          <div className="px-4 pb-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="h-4 w-4 rounded-full border-2 border-gray-300 border-t-[#800000] animate-spin" />
+              <span>Loading reports...</span>
+            </div>
+          </div>
+        )}
+        {message && !loading && (
+          <div className="mx-4 mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {message}
+          </div>
+        )}
         <div className="space-y-0.5">
-          {data.map((topic) => {
+          {sidebarData.map((topic) => {
             const isActive = activeId === topic.id;
 
             return (
@@ -91,9 +134,6 @@ const Sidebar = () => {
                     <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#800000]/20 rounded-l-full" />
                   )}
                 </div>
-                {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#800000]/5 to-transparent" />
-                )}
               </div>
             );
           })}

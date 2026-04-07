@@ -1,50 +1,24 @@
 import {useState, useEffect} from "react";
-import {data as sidebarData} from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
-import JobCardMaterials from "../mainTopics/JobCards/JobCardMaterials";
-import JobSearchOrdinary from "../mainTopics/JobCards/JobSearchOrdinary";
-
-type Subtopic = {
-	id: number;
-	name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const JobCardDetails = () => {
-	const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Jobs"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
 	useEffect(() => {
-		const analysisTopic = sidebarData.find((topic) => topic.name === "Jobs");
-		if (analysisTopic) {
-			setSubtopics(analysisTopic.subtopics);
+		if (typeof selectedSubtopicId === "number") {
+			setExpandedCard(selectedSubtopicId);
 		}
-	}, []);
+	}, [selectedSubtopicId]);
 
 	const toggleCard = (id: number) => {
 		if (expandedCard === id) {
 			setExpandedCard(null);
 		} else {
 			setExpandedCard(id);
-		}
-	};
-
-	const renderSubtopicContent = (subtopicName: string) => {
-		switch (subtopicName) {
-			case "Job Card Details":
-				return <JobCardInfo />;
-			case "Job Card -  Material Details":
-				return <JobCardMaterials />;
-
-			case "Job Search - Orinary":
-				return <JobSearchOrdinary />;
-
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
 		}
 	};
 
@@ -58,7 +32,7 @@ const JobCardDetails = () => {
 					expanded={expandedCard === subtopic.id}
 					onToggle={toggleCard}
 				>
-					{renderSubtopicContent(subtopic.name)}
+					{renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
 				</SubtopicCard>
 			))}
 		</div>
@@ -66,3 +40,8 @@ const JobCardDetails = () => {
 };
 
 export default JobCardDetails;
+
+
+
+
+

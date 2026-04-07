@@ -91,6 +91,12 @@ export default defineConfig({
 				secure: false,
 				rewrite: (path) => path.replace(/^\/LedgerCard/, ""),
 			},
+			"/misreportsapi": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misreportsapi/, ""),
+			},
 		},
 	},
 });

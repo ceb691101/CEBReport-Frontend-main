@@ -1,27 +1,19 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
-import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const BillingPayment = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Customer Details"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+    const renderReport = useReportRenderer();
 
   useEffect(() => {
-    // Get Billing & Payment topic's subtopics directly from sidebarData
-    const billingTopic = sidebarData.find(
-      (topic) => topic.name === "Customer Details"
-    );
-    if (billingTopic) {
-      setSubtopics(billingTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -31,25 +23,6 @@ const BillingPayment = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Customer Information":
-        return <CustomerDetails />;
-      case "Transaction History":
-      case "Bill Information":
-      case "Payment Inquires": 
-      case "Bill SMS Inquiry": 
-      case "Arrears Position – Single customer": 
-      case "Suspense Payment":     
-        return <div>{subtopicName} Content</div>;
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
   return (
     <div className="flex flex-col gap-4 pt-5">
       {subtopics.map((subtopic) => (
@@ -60,7 +33,7 @@ const BillingPayment = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+              {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
       <Outlet />
@@ -69,3 +42,5 @@ const BillingPayment = () => {
 };
 
 export default BillingPayment;
+
+
