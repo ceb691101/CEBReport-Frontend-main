@@ -39,6 +39,7 @@ import {
   LabelList,
 } from "recharts";
 import DashboardSelector from "../components/mainTopics/Dashboard/DashboardSelector";
+import FinancialDashboard from "./FinancialDashboard";
 
 // ─── Bar chart color palette (auto-assigned per net-type) ─────────────────────
 const BAR_CAPACITY_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b"];
@@ -1429,25 +1430,7 @@ const Home: React.FC = () => {
           )}
 
           {activeDashboard === "financial" && (
-            <div className="p-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Financial/Accounting Dashboard</h1>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {[
-                  { icon: <DollarSign className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-100", label: "Monthly Revenue", value: "LKR 12.4M", badge: "+9.1%" },
-                  { icon: <TrendingDown className="w-5 h-5 text-rose-600" />, bg: "bg-rose-100", label: "Arrears Outstanding", value: "LKR 3.8M", badge: "-2.7%" },
-                  { icon: <Target className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", label: "Collection Target", value: "91.6%", badge: "+4.4%" },
-                  { icon: <PieChart className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100", label: "Billing Accuracy", value: "98.3%", badge: "+1.2%" },
-                ]
-                  .sort((a, b) => (parseFloat(a.value.replace(/[^0-9.-]/g, "")) || 0) - (parseFloat(b.value.replace(/[^0-9.-]/g, "")) || 0))
-                  .map(({ icon, bg, label, value, badge }) => (
-                    <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                      <div className="flex items-center justify-between mb-2"><div className={`p-2 ${bg} rounded-lg`}>{icon}</div><span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">{badge}</span></div>
-                      <h3 className="text-sm font-medium text-gray-500">{label}</h3>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-                    </div>
-                  ))}
-              </div>
-            </div>
+            <FinancialDashboard isLoaded={isLoaded} />
           )}
 
           {activeDashboard === "customer" && (

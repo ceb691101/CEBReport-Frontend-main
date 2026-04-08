@@ -97,6 +97,12 @@ export default defineConfig({
 				secure: false,
 				rewrite: (path) => path.replace(/^\/misreportsapi/, ""),
 			},
+			"/pivapi": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/pivapi/, ""),
+			},
 		},
 	},
 });

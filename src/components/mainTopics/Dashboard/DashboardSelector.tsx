@@ -18,7 +18,7 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
   // CEB-specific dashboards with role-based access control planned
   const dashboards = [
     { id: "default", label: "Default", icon: Home },
-    { id: "financial", label: "Financial/Accounting", icon: DollarSign },
+    { id: "financial", label: "Financial", icon: DollarSign },
     { id: "customer", label: "Customer Management", icon: Users },
     { id: "operations", label: "Operations/Field", icon: Briefcase },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
