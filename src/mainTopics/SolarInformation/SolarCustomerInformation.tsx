@@ -81,18 +81,45 @@ const SolarCustomerInformation: React.FC = () => {
 
     // Format number with comma separators
     const formatNumber = (value: number | string): string => {
-  const cleaned =
-    typeof value === 'string'
-      ? value.replace(/,/g, '')
-      : value;
+        const cleaned =
+            typeof value === 'string'
+                ? value.replace(/,/g, '')
+                : value;
 
-  const num = Number(cleaned);
+        const num = Number(cleaned);
 
-  if (isNaN(num)) return '0';
+        if (isNaN(num)) return '0';
 
-  return num.toLocaleString('en-US');
-};
+        return num.toLocaleString('en-US');
+    };
 
+    const convertToMonthYear = (billCycle: number | string): string => {
+        try {
+            const cycle = typeof billCycle === "string" ? parseInt(billCycle, 10) : billCycle;
+            if (isNaN(cycle)) return "Invalid";
+
+            let mnth = (cycle - 100) % 12;
+            let m_mnth = mnth;
+            let yr = 97 + Math.floor((cycle - 100) / 12);
+
+            if (mnth === 0) {
+                yr -= 1;
+                m_mnth = 12;
+            }
+
+            const yr1 = (yr % 100).toString().padStart(2, "0");
+            const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+            return m_mnth >= 1 && m_mnth <= 12 ? `${months[m_mnth]} ${yr1}` : "Unknown";
+        } catch {
+            return "Invalid";
+        }
+    };
+
+    const formatCalcCycle = (calcCycle: string): string => {
+        const label = convertToMonthYear(calcCycle);
+        return `${calcCycle} - ${label}`;
+    };
 
     const fetchCustomerInformation = async () => {
         if (!accountNumber.trim()) {
@@ -148,153 +175,153 @@ const SolarCustomerInformation: React.FC = () => {
 
 
     const downloadCustomerInfoCSV = () => {
-    if (!customerData) return;
+        if (!customerData) return;
 
-    const { CustomerInfo, CustomerType } = customerData;
+        const { CustomerInfo, CustomerType } = customerData;
 
-    // Helper function to escape CSV values
-    const escapeCSV = (value: any): string => {
-        if (value === null || value === undefined) return '""';
-        const strValue = String(value);
-        // If value contains comma, quote, or newline, wrap in quotes and escape quotes
-        if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n')) {
-            return `"${strValue.replace(/"/g, '""')}"`;
-        }
-        return strValue;
-    };
+        // Helper function to escape CSV values
+        const escapeCSV = (value: any): string => {
+            if (value === null || value === undefined) return '""';
+            const strValue = String(value);
+            // If value contains comma, quote, or newline, wrap in quotes and escape quotes
+            if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n')) {
+                return `"${strValue.replace(/"/g, '""')}"`;
+            }
+            return strValue;
+        };
 
-    const headers =
-        CustomerType === "Ordinary"
-            ? [
-                "Account No",
-                "Name",
-                "Address",
-                "Net Type",
-                "Tariff",
-                "Agreement Date",
-                "Generation Capacity (Kw)",
-                "Crnt Depot",
-                "Substn Code",
-                "Bank",
-                "Branch",
-                "Bank Account No",
-                "No of Phase",
-            ]
-            : [
-                "Account No",
-                "Name",
-                "Address",
-                "Net Type",
-                "Tariff",
-                "Agreement Date",
-                "Generation Capacity (Kw)",
-                "Bank",
-                "Branch",
-                "Bank Account No",
-                "Contract Demand",
-            ];
-
-    const row =
-        CustomerType === "Ordinary"
-            ? [
-                CustomerInfo.AccountNumber,
-                CustomerInfo.Name,
-                CustomerInfo.Address,
-                getNetTypeName(CustomerInfo.NetType),
-                CustomerInfo.TariffCode,
-                formatDate(CustomerInfo.AgreementDate),
-                CustomerInfo.GenerationCapacity,
-                CustomerInfo.CrntDepot || "",
-                CustomerInfo.SubstnCode || "",
-                CustomerInfo.Bank || "",
-                CustomerInfo.Branch || "",
-                CustomerInfo.BankAccountNumber || "",
-                CustomerInfo.NoOfPhase || "",
-            ]
-            : [
-                CustomerInfo.AccountNumber,
-                CustomerInfo.Name,
-                CustomerInfo.Address,
-                getNetTypeName(CustomerInfo.NetType),
-                CustomerInfo.TariffCode,
-                formatDate(CustomerInfo.AgreementDate),
-                CustomerInfo.GenerationCapacity,
-                CustomerInfo.Bank || "",
-                CustomerInfo.Branch || "",
-                CustomerInfo.BankAccountNumber || "",
-                CustomerInfo.ContractDemand || "",
-            ];
-
-    const csvContent = [
-        ["Solar Customer Information"],
-        [`Area: ${CustomerInfo.AreaCode} - ${CustomerInfo.AreaName}`],
-        [`Customer Type: ${CustomerType} Customer`],
-        [],
-        ["Customer Information"],
-        headers.map(escapeCSV),
-        row.map(escapeCSV),
-        [],
-        ["Last 6 Months Energy History"],
-        (CustomerType === "Ordinary"
-            ? [
-                "Calc Cycle",
-                "Energy Imported",
-                "Energy Exported",
-                "Meter Number 1",
-                "Meter Number 2",
-                "Meter Number 3",
-                "Unit Cost",
-                "Net Units",
-            ]
-            : [
-                "Bill Cycle",
-                "Meter Number",
-                "Kwo",
-                "Kwd",
-                "Kwp",
-                "Kva",
-                "Export Kwd",
-                "Unit Cost",
-                "Net Units",
-            ]).map(escapeCSV),
-        ...customerData.EnergyHistory.map((item) =>
-            (CustomerType === "Ordinary"
+        const headers =
+            CustomerType === "Ordinary"
                 ? [
-                    item.CalcCycle,
-                    formatNumber(item.EnergyImported),
-                    formatNumber(item.EnergyExported),
-                    item.MeterNumber1 || "",
-                    item.MeterNumber2 || "",
-                    item.MeterNumber3 || "",
-                    item.UnitCost.toFixed(2),
-                    formatNumber(item.UnitSale.toFixed(2)),
+                    "Account No",
+                    "Name",
+                    "Address",
+                    "Net Type",
+                    "Tariff",
+                    "Agreement Date",
+                    "Generation Capacity (Kw)",
+                    "Crnt Depot",
+                    "Substn Code",
+                    "Bank",
+                    "Branch",
+                    "Bank Account No",
+                    "No of Phase",
                 ]
                 : [
-                    item.CalcCycle,
-                    item.MeterNumber || "",
-                    formatNumber(item.Kwo),
-                    formatNumber(item.Kwd),
-                    formatNumber(item.Kwp),
-                    formatNumber(item.Kva),
-                    formatNumber(item.EnergyExported),
-                    item.UnitCost.toFixed(2),
-                    formatNumber(item.UnitSale.toFixed(2)),
-                ]).map(escapeCSV)
-        ),
-    ]
-        .map((row) => row.join(","))
-        .join("\n");
+                    "Account No",
+                    "Name",
+                    "Address",
+                    "Net Type",
+                    "Tariff",
+                    "Agreement Date",
+                    "Generation Capacity (Kw)",
+                    "Bank",
+                    "Branch",
+                    "Bank Account No",
+                    "Contract Demand",
+                ];
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Solar_Customer_Information_${accountNumber}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
+        const row =
+            CustomerType === "Ordinary"
+                ? [
+                    CustomerInfo.AccountNumber,
+                    CustomerInfo.Name,
+                    CustomerInfo.Address,
+                    getNetTypeName(CustomerInfo.NetType),
+                    CustomerInfo.TariffCode,
+                    formatDate(CustomerInfo.AgreementDate),
+                    CustomerInfo.GenerationCapacity,
+                    CustomerInfo.CrntDepot || "",
+                    CustomerInfo.SubstnCode || "",
+                    CustomerInfo.Bank || "",
+                    CustomerInfo.Branch || "",
+                    CustomerInfo.BankAccountNumber || "",
+                    CustomerInfo.NoOfPhase || "",
+                ]
+                : [
+                    CustomerInfo.AccountNumber,
+                    CustomerInfo.Name,
+                    CustomerInfo.Address,
+                    getNetTypeName(CustomerInfo.NetType),
+                    CustomerInfo.TariffCode,
+                    formatDate(CustomerInfo.AgreementDate),
+                    CustomerInfo.GenerationCapacity,
+                    CustomerInfo.Bank || "",
+                    CustomerInfo.Branch || "",
+                    CustomerInfo.BankAccountNumber || "",
+                    CustomerInfo.ContractDemand || "",
+                ];
+
+        const csvContent = [
+            ["Solar Customer Information"],
+            [`Area: ${CustomerInfo.AreaCode} - ${CustomerInfo.AreaName}`],
+            [`Customer Type: ${CustomerType} Customer`],
+            [],
+            ["Customer Information"],
+            headers.map(escapeCSV),
+            row.map(escapeCSV),
+            [],
+            ["Last 6 Months Energy History"],
+            (CustomerType === "Ordinary"
+                ? [
+                    "Calc Cycle",
+                    "Energy Imported",
+                    "Energy Exported",
+                    "Meter Number 1",
+                    "Meter Number 2",
+                    "Meter Number 3",
+                    "Unit Cost",
+                    "Net Units",
+                ]
+                : [
+                    "Bill Cycle",
+                    "Meter Number",
+                    "Kwo",
+                    "Kwd",
+                    "Kwp",
+                    "Kva",
+                    "Export Kwd",
+                    "Unit Cost",
+                    "Net Units",
+                ]).map(escapeCSV),
+            ...customerData.EnergyHistory.map((item) =>
+                (CustomerType === "Ordinary"
+                    ? [
+                        formatCalcCycle(item.CalcCycle),
+                        formatNumber(item.EnergyImported),
+                        formatNumber(item.EnergyExported),
+                        item.MeterNumber1 || "",
+                        item.MeterNumber2 || "",
+                        item.MeterNumber3 || "",
+                        item.UnitCost.toFixed(2),
+                        formatNumber(item.UnitSale.toFixed(2)),
+                    ]
+                    : [
+                        formatCalcCycle(item.CalcCycle),
+                        item.MeterNumber || "",
+                        formatNumber(item.Kwo),
+                        formatNumber(item.Kwd),
+                        formatNumber(item.Kwp),
+                        formatNumber(item.Kva),
+                        formatNumber(item.EnergyExported),
+                        item.UnitCost.toFixed(2),
+                        formatNumber(item.UnitSale.toFixed(2)),
+                    ]).map(escapeCSV)
+            ),
+        ]
+            .map((row) => row.join(","))
+            .join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Solar_Customer_Information_${accountNumber}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     const handlePrint = () => {
         if (printRef.current && customerData) {
@@ -339,6 +366,21 @@ const SolarCustomerInformation: React.FC = () => {
               margin-top: 10px; 
               font-size: 9px; 
               color: #666;
+            }
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
             }
             th { 
               background-color: #d3d3d3; 
@@ -514,7 +556,9 @@ const SolarCustomerInformation: React.FC = () => {
             {/* Error Message (when not in report view) */}
             {!reportVisible && error && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-                    {error}
+                    {error === "Account number not found in Ordinary or Bulk databases."
+                        ? "Invalid Solar customer account number."
+                        : error}
                 </div>
             )}
 
@@ -739,7 +783,7 @@ const SolarCustomerInformation: React.FC = () => {
 
                                             {customerData.CustomerType === "Ordinary" && (
                                                 <>
-                                                 <tr>
+                                                    <tr>
                                                         <td className="px-2 py-1 align-top">
                                                             <p className="text-xs text-gray-600">Number of Phases</p>
                                                         </td>
@@ -818,7 +862,7 @@ const SolarCustomerInformation: React.FC = () => {
                                                         {/* <th className="border border-gray-300 px-2 py-1 text-center">
                                                             Energy Imported
                                                         </th> */}
-                                                        
+
                                                         <th className="border border-gray-300 px-2 py-1 text-center">
                                                             Kwo
                                                         </th>
@@ -834,7 +878,7 @@ const SolarCustomerInformation: React.FC = () => {
                                                         <th className="border border-gray-300 px-2 py-1 text-center">
                                                             Export Kwd
                                                         </th>
-                                                        
+
                                                         <th className="border border-gray-300 px-2 py-1 text-center">
                                                             Unit Cost
                                                         </th>
@@ -854,7 +898,7 @@ const SolarCustomerInformation: React.FC = () => {
                                                     {customerData.CustomerType === "Ordinary" ? (
                                                         <>
                                                             <td className="border border-gray-300 px-2 py-1">
-                                                                {item.CalcCycle}
+                                                                {formatCalcCycle(item.CalcCycle)}
                                                             </td>
                                                             <td className="border border-gray-300 px-2 py-1 text-right">
                                                                 {formatNumber(item.EnergyImported)}
@@ -881,7 +925,7 @@ const SolarCustomerInformation: React.FC = () => {
                                                     ) : (
                                                         <>
                                                             <td className="border border-gray-300 px-2 py-1">
-                                                                {item.CalcCycle}
+                                                                {formatCalcCycle(item.CalcCycle)}
                                                             </td>
                                                             <td className="border border-gray-300 px-2 py-1 text-right">
                                                                 {item.MeterNumber || "N/A"}
@@ -889,7 +933,7 @@ const SolarCustomerInformation: React.FC = () => {
                                                             {/* <td className="border border-gray-300 px-2 py-1 text-right">
                                                                 {item.EnergyImported}
                                                             </td> */}
-                                                            
+
                                                             <td className="border border-gray-300 px-2 py-1 text-right">
                                                                 {formatNumber(item.Kwo)}
                                                             </td>
@@ -905,7 +949,7 @@ const SolarCustomerInformation: React.FC = () => {
                                                             <td className="border border-gray-300 px-2 py-1 text-right">
                                                                 {formatNumber(item.EnergyExported)}
                                                             </td>
-                                                            
+
                                                             <td className="border border-gray-300 px-2 py-1 text-right">
                                                                 {item.UnitCost.toFixed(2)}
                                                             </td>

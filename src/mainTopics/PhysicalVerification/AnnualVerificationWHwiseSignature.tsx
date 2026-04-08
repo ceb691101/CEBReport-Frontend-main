@@ -516,8 +516,7 @@ const printPDF = () => {
     pagesHTML += `
       <div class="page">
         <div class="header">
-          <h2>CEYLON ELECTRICITY BOARD</h2>
-<h3>ANNUAL VERIFICATION OF STORES - ${selectedYear} / COST CENTRE : ${selectedDept.DeptId} </h3>
+<h2>ANNUAL VERIFICATION OF STORES - ${selectedYear} / COST CENTRE : ${selectedDept.DeptId} </h2>
 <h3>${selectedDept.DeptName ? selectedDept.DeptName + ' - ' : ''}Warehouse Code :${selectedWarehouse}</h3></div>
 
         <div class="subtitles"><div>ORIGINAL : Accountant</div><div>From Ref : AV/1/A</div></div>

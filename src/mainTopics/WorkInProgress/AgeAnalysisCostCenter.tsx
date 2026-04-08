@@ -81,8 +81,6 @@ const AgeAnalysisCostCenter = () => {
 
 	// Debug log to see what EPF number is being used
 	useEffect(() => {
-		console.log("Current user:", user);
-		console.log("EPF Number being used:", epfNo);
 	}, [user, epfNo]);
 
 	// Colors
@@ -139,7 +137,6 @@ const AgeAnalysisCostCenter = () => {
 				) {
 					rawData = parsed.departments;
 				} else {
-					console.log("Unexpected response structure:", parsed);
 					rawData = [];
 				}
 
@@ -427,7 +424,7 @@ const AgeAnalysisCostCenter = () => {
 			grandTotalRow.join(","),
 			"", // Empty line
 			`"Generated: ${new Date().toLocaleString()}"`,
-			`"CEB@${new Date().getFullYear()}"`,
+			`"${new Date().getFullYear()}"`,
 		].join("\n");
 
 		// Create download link
@@ -596,10 +593,6 @@ const AgeAnalysisCostCenter = () => {
             ${tableRowsHTML}
           </tbody>
         </table>
-        
-        <div class="footer">
-          <p>CEB@2025</p>
-        </div>
       </body>
       </html>
     `;

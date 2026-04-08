@@ -6,6 +6,9 @@ import AverageConsumptions from "../mainTopics/inventory/AverageConsumptions";
 import CostCenterQuantityHnad from "../mainTopics/inventory/CostCenterQuantityHnad";
 import AverageConsumptionSelected from "../mainTopics/inventory/AverageConsumptionSelected";
 import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuantityOnHand";
+import QtyOnHandAllRegion from "../mainTopics/inventory/QtyOnHandAllRegions";
+import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
+
 type Subtopic = {
   id: number;
   name: string;
@@ -42,11 +45,16 @@ const Inventory = () => {
 
 			case "Province wise Quantity on Hand":
 				return <ProvinceWiseQuantityOnHand />;
+      case "Provincial Quantity on Hand - Cross Tab":
+				return <ProvincialQtyHand/>;
+
 
 			case "Average Consumptions - All Material Codes":
 				return <AverageConsumptions />;
 			case "Average Consumptions - Selected Maerial Codes":
 				return <AverageConsumptionSelected />;
+			case "Quantity on Hand All Region Material (Active ,Online )":
+				return <QtyOnHandAllRegion/>;
 
 			default:
 				return (

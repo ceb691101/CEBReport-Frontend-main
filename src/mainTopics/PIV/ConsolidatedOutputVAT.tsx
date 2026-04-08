@@ -150,7 +150,7 @@ const padRow = (text: string) =>
 const csvRows: string[] = [
 	padRow("Consolidated Output VAT Schedule"),
 	padRow(`Period: ${fromDate} To ${toDate}`),
-	padRow("To: CEB Tax Unit"),
+	padRow("To:Tax Unit"),
 	padRow("Currency: LKR"),
 	"",
 	columns.map(csvEscape).join(","),
@@ -279,7 +279,7 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 <body>
 <div class="header-line">
 My Ref No ....................................</div>
-<div class="header-line"><strong>To: </strong>CEB Tax Unit</div>
+<div class="header-line"><strong>To: </strong>Tax Unit</div>
 <h3>Consolidated Output VAT Schedule</h3>
 <div class="subtitles">
   <div class="subtitle-left">
@@ -340,7 +340,7 @@ My Ref No ....................................</div>
 					subtitlebold2="Period:"
 					subtitlenormal2={`${fromDate} to ${toDate}`}
 					subtitlebold3="To:"
-					subtitlenormal3="CEB Tax Unit"
+					subtitlenormal3="Tax Unit"
 					currency="Currency: LKR"
 					loading={reportLoading}
 					hasData={reportData.length > 0}

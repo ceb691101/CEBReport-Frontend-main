@@ -684,6 +684,21 @@ const SolarPaymentBulk: React.FC = () => {
               font-size: 9px; 
               color: #666;
             }
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+            }
             th { 
               background-color: #f0f0f0; 
               font-weight: bold; 
@@ -731,9 +746,6 @@ const SolarPaymentBulk: React.FC = () => {
             Month: <span class="bold">${selectedBillCycleDisplay}</span> | Net Type: <span class="bold">${netType}</span>
           </div>
           ${printRef.current.innerHTML}
-          <div class="footer">
-            Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | CEB@2025
-          </div>
         </body>
       </html>
     `);

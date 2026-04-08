@@ -145,8 +145,8 @@ const PHVEntryForm: React.FC = () => {
 <style>${tableStyle}</style>
 </head>
 <body>
-<h1>CEYLON ELECTRICITY BOARD</h1>
-<h2>ANNUAL VERIFICATION OF STORES ${repYear}</h2>
+
+<h1>ANNUAL VERIFICATION OF STORES ${repYear}</h1>
 
 <div class="header">
   <div>Cost center :  ${selectedDept.DeptName}</div>

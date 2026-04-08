@@ -164,7 +164,7 @@ const ProvincialConsolidatedOutputVAT: React.FC = () => {
 			"Consolidated Output VAT Schedule",
 			`Company / Branch: ${selectedCompany.compId}/${selectedCompany.CompName}`,
 			`Period: ${fromDate} To ${toDate}`,
-			"To: CEB Tax Unit",
+			"To:Tax Unit",
 			"Currency: LKR",
 			"",
 			columns.map(csvEscape).join(","),
@@ -294,7 +294,7 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 <div class="header-line">
 My Ref No ....................................
 </div>
-<div class="header-line"><strong>To: </strong>CEB Tax Unit</div>
+<div class="header-line"><strong>To: </strong> Tax Unit</div>
 <h3>Consolidated Output VAT Schedule</h3>
 <div class="subtitles">
   <div class="subtitle-left">
@@ -385,7 +385,7 @@ My Ref No ....................................
 					subtitlebold2="Period:"
 					subtitlenormal2={`${fromDate} to ${toDate}`}
 					subtitlebold3="To:"
-					subtitlenormal3="CEB Tax Unit"
+					subtitlenormal3="Tax Unit"
 					currency="Currency: LKR"
 					loading={reportLoading}
 					hasData={reportData.length > 0}

@@ -210,8 +210,6 @@ const AverageConsumption: React.FC = () => {
 				)}?costCenterId=${encodeURIComponent(
 					selectedDepartment.DeptId
 				)}&t=${Date.now()}`;
-				console.log("Fetching warehouses from:", url);
-				console.log("Selected Cost Center ID:", selectedDepartment.DeptId);
 				const response = await fetch(url, {
 					method: "GET",
 					headers: {
@@ -240,7 +238,6 @@ const AverageConsumption: React.FC = () => {
 				}
 
 				const result = await response.json();
-				console.log("Raw Warehouse API Response:", result);
 				const rawData = parseApiResponse(result);
 				const data: Warehouse[] = rawData.map(
 					(item: ApiWarehouseResponse) => ({
@@ -255,7 +252,6 @@ const AverageConsumption: React.FC = () => {
 						!item.CostCenterId ||
 						item.CostCenterId === selectedDepartment.DeptId
 				);
-				console.log("Filtered Warehouses:", filteredData);
 
 				setWarehouses(filteredData);
 				if (filteredData.length === 0) {
@@ -567,7 +563,7 @@ const AverageConsumption: React.FC = () => {
   <div class="container">
     <div class="header">${reportTitle}</div>
     <div class="info">
-      <div>CEYLON ELECTRICITY BOARD</div>
+      <div></div>
       <div class="currency">Currency: LKR</div>
     </div>
 

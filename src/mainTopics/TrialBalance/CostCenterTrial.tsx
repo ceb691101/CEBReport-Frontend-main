@@ -66,9 +66,6 @@ const CostCenterTrial: React.FC = () => {
 
 	// Debug log to see what EPF number is being used
 	useEffect(() => {
-		console.log("Current user:", user);
-		console.log("EPF Number being used:", epfNo);
-		console.log("User Userno field:", user?.Userno);
 	}, [user, epfNo]);
 
 	// Colors
@@ -119,9 +116,7 @@ const CostCenterTrial: React.FC = () => {
 				if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
 				const txt = await res.text();
-				console.log("Raw API response:", txt);
 				const parsed = JSON.parse(txt);
-				console.log("Parsed API response:", parsed);
 
 				// Handle different response structures
 				let rawData = [];
@@ -135,7 +130,6 @@ const CostCenterTrial: React.FC = () => {
 					rawData = [parsed];
 				}
 
-				console.log("Raw data extracted:", rawData);
 
 				const final: CostCenter[] = rawData.map((item: any) => ({
 					compId:
@@ -152,11 +146,9 @@ const CostCenterTrial: React.FC = () => {
 						"",
 				}));
 
-				console.log("Final mapped data:", final);
 
 				// If no data found, show test data for debugging
 				if (final.length === 0) {
-					console.log("No data found, showing test data");
 					const testData: CostCenter[] = [
 						{compId: "TEST001", CompName: "Test Division 1"},
 						{compId: "TEST002", CompName: "Test Division 2"},
@@ -206,7 +198,6 @@ const CostCenterTrial: React.FC = () => {
 
 	// Handle cost center selection - Auto fetch data when selected
 	const handleCostCenterSelect = (costCenter: CostCenter) => {
-		console.log("Cost center selected:", costCenter);
 		setSelectedCostCenter(costCenter);
 		// Auto fetch trial balance data when cost center is selected
 		fetchTrialBalanceData(costCenter);
@@ -581,7 +572,7 @@ const CostCenterTrial: React.FC = () => {
 		// Add footer information
 		csvRows.push(
 			[""],
-			[`Report generated on: ${new Date().toLocaleDateString()} | CEB@2025`]
+			[`Report generated on: ${new Date().toLocaleDateString()}`]
 		);
 
 		// Convert to CSV format with proper escaping

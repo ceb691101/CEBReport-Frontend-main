@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
 import { data as sidebarData } from "../data/SideBarData";
 import SubtopicCard from "../components/shared/SubtopicCard";
+import BillCalculation from "../mainTopics/general/BillCalculation";
 
 
 type Subtopic = {
@@ -30,8 +32,10 @@ const General = () => {
 
   const renderSubtopicContent = (subtopicName: string) => {
     switch (subtopicName) {
-      
+      case "Active customers and sales by tariff":
+        return <ActiveCustomersSalesByTariff />;
       case "Bill calculation":
+        return <BillCalculation />;
       case "Listing of customers":
       case "List of government accounts":
       case "Largest 100 customer details":
@@ -41,15 +45,12 @@ const General = () => {
       case "List of customers (enlisted in Master Invoices)":
       case "Disconnection list":
       case "Shakthi LED distribution summary":
-      case "Active customers and sales by tariff":
       case "Standing order report":
       case "Registered consumers for SMS alerts":
-      case "Transformer wise Consumption Analysis":
       case "Finalized Accounts":
       case "Outstanding Dues":
       case "Largest Consumption": 
-      case "Security deposit & Contract Demand - Bulk":
-      case "Arrears Position":  
+      case "Security deposit & Contract Demand - Bulk":  
         return <div>{subtopicName} Content</div>;
       default:
         return (

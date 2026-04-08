@@ -459,7 +459,7 @@ const CompletedCostCenterWise = () => {
 			["Grand Total", formatNum(totals.total)],
 			[],
 			[`Generated: ${new Date().toLocaleString()}`],
-			[`CEB@${new Date().getFullYear()}`],
+			[`${new Date().getFullYear()}`],
 		];
 
 		const csvContent = csvRows.map((r) => r.join(",")).join("\n");
@@ -740,7 +740,7 @@ const CompletedCostCenterWise = () => {
       </div>
 
       <div class="footer">
-        <p>Generated on: ${new Date().toLocaleDateString()} | CEB@${new Date().getFullYear()}</p>
+        <p>Generated on: ${new Date().toLocaleDateString()} |  @${new Date().getFullYear()}</p>
       </div>
     </body>
     </html>

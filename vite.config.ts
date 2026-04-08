@@ -6,6 +6,12 @@ export default defineConfig({
 	plugins: [react(), tailwindcss()],
 	server: {
 		proxy: {
+			"/smsapi": {
+				target: "http://10.128.1.126",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/smsapi/, ""),
+			},
 			"/CBRSAPI": {
 				target: "http://10.128.1.126",
 				changeOrigin: true,

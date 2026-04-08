@@ -41,7 +41,7 @@ const Home: React.FC = () => {
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 rounded-full shadow-lg mb-6 backdrop-blur-sm">
               <CheckCircle className="w-5 h-5 text-green-500" />
-              <span className="text-sm font-medium text-gray-700">CEB Reporting Management Portal</span>
+              <span className="text-sm font-medium text-gray-700">Reporting System Management Portal</span>
             </div>
             
             <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-[#7A0000] to-[#A52A2A] bg-clip-text text-transparent">
@@ -49,7 +49,7 @@ const Home: React.FC = () => {
               </h1>
             
             <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
-              Comprehensive management reports and analytics for data-driven decision making at CEB
+              Comprehensive management reports and analytics for data-driven decision making
             </p>
             
             <div className="flex flex-wrap justify-center gap-4 mb-8">

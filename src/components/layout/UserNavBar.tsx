@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { useState, useRef, useEffect } from "react";
 import { useLogged } from "../../contexts/UserLoggedStateContext";
-import CEBlogo from "../../assets/CEBLOGO.png";
+// import CEBlogo from "../../assets/CEBLOGO.png";
 
 const UserNavBar = () => {
   const navigate = useNavigate();
@@ -65,7 +65,7 @@ const UserNavBar = () => {
           className="flex items-center group transition-all duration-300 hover:scale-105"
           aria-label="Go to Home"
         >
-          <div className="relative">
+          {/* <div className="relative">
             <div className="w-12 sm:w-14 md:w-16 transition-all duration-300 flex items-center group-hover:scale-110">
               <img
                 src={CEBlogo}
@@ -73,17 +73,17 @@ const UserNavBar = () => {
                 className="w-full h-auto object-contain max-h-12"
               />
             </div>
-          </div>
+          </div> */}
 
           <div className="ml-3 sm:ml-4 flex items-center gap-2">
             <div className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide">
-              CEB REPORTING
+              REPORTING System
             </div>
             {/* <div className="text-xs sm:text-sm md:text-base font-semibold text-white/80">
     Version 1.1
   </div> */}
             <div className="text-[11px] px-2 py-0.5 rounded-full bg-white/20 text-white">
-              v1.1
+              v1.3
             </div>
           </div>
         </Link>
@@ -126,7 +126,7 @@ const UserNavBar = () => {
                 </div>
                 <div>
                   <div className="font-semibold text-gray-900 text-sm">{user.Name}</div>
-                  <div className="text-xs text-gray-500">CEB Management</div>
+                  <div className="text-xs text-gray-500">System Management</div>
                 </div>
               </div>
             </div>
@@ -157,7 +157,7 @@ const UserNavBar = () => {
 
             <div className="p-3 bg-gray-50 border-t border-gray-100">
               <div className="text-xs text-gray-500 text-center">
-                CEB Reporting Portal v2.1
+                Reporting System Portal v1.3
               </div>
             </div>
           </div>

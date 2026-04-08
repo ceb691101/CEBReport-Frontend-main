@@ -1,4 +1,4 @@
-import CEBlogo from "../../assets/CEBLOGO.png";
+// import CEBlogo from "../../assets/CEBLOGO.png";
 import { Link } from "react-router-dom";
 
 const Navbar = () => {
@@ -24,7 +24,7 @@ const Navbar = () => {
           className="flex items-center group transition-all duration-300 hover:scale-105" 
           aria-label="Go to Home"
         >
-          <div className="relative">
+          {/* <div className="relative">
             <div className="w-12 sm:w-16 md:w-18 transition-all duration-300 flex items-center group-hover:scale-110">
               <img
                 src={CEBlogo}
@@ -32,11 +32,11 @@ const Navbar = () => {
                 className="w-full h-auto object-contain max-h-12"
               />
             </div>
-          </div>
+          </div> */}
           
           <div className="ml-3 sm:ml-4">
             <div className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-[#7A0000] to-[#A52A2A] bg-clip-text text-transparent tracking-wide">
-              CEB REPORTING
+              REPORTING System
             </div>
           </div>
         </Link>
