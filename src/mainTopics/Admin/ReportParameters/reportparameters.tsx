@@ -1,15 +1,10 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { RefreshCw } from "lucide-react";
 
 type SaveParamForm = {
   paraId: string;
   paraDesc: string;
-};
-
-type PopulateParamForm = {
-  repId: string;
-  overrideParamList: string;
 };
 
 type LastSaveResult = {
@@ -23,6 +18,15 @@ type ParameterRow = {
   paraName: string;
   description: string;
   populated: boolean;
+};
+
+const isPopulatedValue = (value: unknown): boolean => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  const normalized = (value ?? "").toString().trim().toLowerCase();
+  return normalized === "1" || normalized === "yes" || normalized === "true";
 };
 
 const alphabetFilters = [
@@ -53,23 +57,21 @@ const saveParamInitial: SaveParamForm = {
   paraDesc: "",
 };
 
-const populateInitial: PopulateParamForm = {
-  repId: "",
-  overrideParamList: "",
-};
-
 const ReportParameters = () => {
   const [saveForm, setSaveForm] = useState<SaveParamForm>(saveParamInitial);
-  const [populateForm, setPopulateForm] = useState<PopulateParamForm>(populateInitial);
   const [letterFilter, setLetterFilter] = useState<(typeof alphabetFilters)[number]>("All");
   const [onlyPopulated, setOnlyPopulated] = useState(false);
   const [parameterRows, setParameterRows] = useState<ParameterRow[]>([]);
 
   const [isSavingParam, setIsSavingParam] = useState(false);
   const [isUpdatingList, setIsUpdatingList] = useState(false);
+  const [isLoadingParams, setIsLoadingParams] = useState(false);
+  const [isDeletingParamName, setIsDeletingParamName] = useState<string | null>(null);
+  const [editingParamName, setEditingParamName] = useState<string | null>(null);
 
   const [lastSaveResult, setLastSaveResult] = useState<LastSaveResult | null>(null);
   const [lastUpdatedRows, setLastUpdatedRows] = useState<number | null>(null);
+  const isEditMode = Boolean(editingParamName);
 
   const filteredRows = useMemo(() => {
     return parameterRows.filter((row) => {
@@ -83,21 +85,54 @@ const ReportParameters = () => {
     });
   }, [parameterRows, letterFilter, onlyPopulated]);
 
-  const computedParamList = useMemo(() => {
-    const sourceRows = filteredRows.length > 0 ? filteredRows : parameterRows;
+  const buildParamList = (_repId: string, rows: ParameterRow[]) => {
+    const sourceRows = rows.length > 0 ? rows : parameterRows;
 
     if (sourceRows.length === 0) {
-      return "<REP_ID>";
+      return "";
     }
 
     const tokens = sourceRows.map((row) => `${row.paraName}=0`);
-    return `<REP_ID>&${tokens.join("&")}`;
+    return tokens.join("&");
+  };
+
+  const computedParamList = useMemo(() => {
+    return buildParamList("", filteredRows);
   }, [filteredRows, parameterRows]);
 
-  const paramListToSave = useMemo(() => {
-    const override = populateForm.overrideParamList.trim();
-    return override || computedParamList;
-  }, [populateForm.overrideParamList, computedParamList]);
+  const loadParameters = async () => {
+    setIsLoadingParams(true);
+
+    try {
+      const response = await fetch("/roleadminapi/api/reppara/GET_REPORTPARAMS");
+      const payload = await response.json();
+
+      if (payload?.errorMessage) {
+        throw new Error(payload.errorMessage);
+      }
+
+      const rows: ParameterRow[] = Array.isArray(payload?.data)
+        ? payload.data.map((item: any) => ({
+            paraName: (item?.ParaName ?? item?.paraName ?? "").toString().trim(),
+            description: (item?.Description ?? item?.description ?? "").toString().trim(),
+            populated: isPopulatedValue(item?.Populated ?? item?.populated),
+          }))
+        : [];
+
+      setParameterRows(rows);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load report parameters.";
+      toast.error(message);
+      setParameterRows([]);
+    } finally {
+      setIsLoadingParams(false);
+    }
+  };
+
+  useEffect(() => {
+    loadParameters();
+  }, []);
 
   const handleSaveParam = async (event: FormEvent) => {
     event.preventDefault();
@@ -168,6 +203,10 @@ const ReportParameters = () => {
         };
         return copy.sort((a, b) => a.paraName.localeCompare(b.paraName));
       });
+
+      await loadParameters();
+      setEditingParamName(null);
+      setSaveForm(saveParamInitial);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to save parameter.";
       toast.error(message);
@@ -176,16 +215,17 @@ const ReportParameters = () => {
     }
   };
 
-  const handlePopulateParamList = async (event?: FormEvent) => {
-    if (event) event.preventDefault();
+  const resetSaveForm = () => {
+    setSaveForm(saveParamInitial);
+    setEditingParamName(null);
+    setLastSaveResult(null);
+  };
 
-    if (!populateForm.repId.trim()) {
-      toast.error("Report ID is required.");
-      return;
-    }
-
+  const handlePopulateParamList = async () => {
     setIsUpdatingList(true);
     setLastUpdatedRows(null);
+
+    const paramList = buildParamList("", filteredRows);
 
     try {
       const response = await fetch("/roleadminapi/api/reppara/populateparamts", {
@@ -194,8 +234,7 @@ const ReportParameters = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          repId: populateForm.repId.trim(),
-          paramList: paramListToSave,
+          paramList,
         }),
       });
 
@@ -206,38 +245,127 @@ const ReportParameters = () => {
       }
 
       const rows = Number(payload?.data?.updatedRows ?? 0);
+      const reports = Number(payload?.data?.processedReports ?? 0);
+      const params = Number(payload?.data?.processedParams ?? 0);
+      const appended = Number(payload?.data?.appendedParams ?? 0);
       setLastUpdatedRows(rows);
 
-      if (rows > 0) {
-        toast.success("Report parameter list updated.");
-        setParameterRows((current) => current.map((row) => ({ ...row, populated: true })));
+      if (params === 0) {
+        toast.info("No pending parameters found to populate.");
       } else {
-        toast.info("No rows updated. Check Report ID.");
+        toast.success(
+          `Populate completed. Reports processed: ${reports}, updated: ${rows}, appended params: ${appended}.`
+        );
       }
+
+      setParameterRows((current) => current.map((row) => ({ ...row, populated: true })));
+      await loadParameters();
+
+      return true;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to update parameter list.";
       toast.error(message);
+      return false;
     } finally {
       setIsUpdatingList(false);
     }
   };
 
-  const resetSaveForm = () => {
-    setSaveForm(saveParamInitial);
-    setLastSaveResult(null);
-  };
+  const handlePopulateClick = async () => {
+    const confirmed = window.confirm("Populate all pending parameters to all reports?");
+    if (!confirmed) {
+      return;
+    }
 
-  const resetPopulateForm = () => {
-    setPopulateForm(populateInitial);
-    setLastUpdatedRows(null);
+    await handlePopulateParamList();
   };
 
   const handleResetAll = () => {
     resetSaveForm();
-    resetPopulateForm();
+    setLastUpdatedRows(null);
     setLetterFilter("All");
     setOnlyPopulated(false);
+  };
+
+  const handleEditRow = (row: ParameterRow) => {
+    setSaveForm({
+      paraId: row.paraName,
+      paraDesc: row.description || "",
+    });
+    setEditingParamName(row.paraName);
+    setLastSaveResult(null);
+  };
+
+  const handleDeleteRow = async (row: ParameterRow) => {
+    const paraName = row.paraName.trim();
+
+    if (!paraName) {
+      toast.error("Parameter ID is invalid.");
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete parameter \"${paraName}\"?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeletingParamName(paraName);
+
+    try {
+      const response = await fetch("/roleadminapi/api/reppara/delete-reportparams", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paraId: paraName,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (payload?.errorMessage) {
+        throw new Error(payload.errorMessage);
+      }
+
+      const deletedRows = Number(payload?.data?.deletedRows ?? 0);
+      if (deletedRows > 0) {
+        toast.success("Parameter deleted successfully.");
+      } else {
+        toast.info("No parameter deleted.");
+      }
+
+      if (editingParamName?.toUpperCase() === paraName.toUpperCase()) {
+        resetSaveForm();
+      }
+
+      await loadParameters();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete parameter.";
+      toast.error(message);
+    } finally {
+      setIsDeletingParamName(null);
+    }
+  };
+
+  const handleDeleteAction = async () => {
+    const paraName = saveForm.paraId.trim();
+    if (!paraName) {
+      toast.error("Select or enter a Parameter Name first.");
+      return;
+    }
+
+    const row = parameterRows.find(
+      (item) => item.paraName.toUpperCase() === paraName.toUpperCase()
+    );
+
+    if (!row) {
+      toast.error("Parameter not found in table.");
+      return;
+    }
+
+    await handleDeleteRow(row);
   };
 
   return (
@@ -255,6 +383,12 @@ const ReportParameters = () => {
               </div>
 
               <form className="space-y-4" onSubmit={handleSaveParam}>
+                {isEditMode && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                    Edit mode active for: {editingParamName}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-medium text-stone-600 mb-1">Parameter Name</label>
                   <input
@@ -263,6 +397,7 @@ const ReportParameters = () => {
                     value={saveForm.paraId}
                     onChange={(e) => setSaveForm({ ...saveForm, paraId: e.target.value })}
                     placeholder="e.g., PROVINCE"
+                    disabled={isEditMode}
                   />
                 </div>
 
@@ -277,33 +412,6 @@ const ReportParameters = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-stone-600 mb-1">Report ID</label>
-                  <input
-                    type="text"
-                    className={fieldBaseClass}
-                    value={populateForm.repId}
-                    onChange={(e) => setPopulateForm({ ...populateForm, repId: e.target.value })}
-                    placeholder="e.g., RPT_001"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-stone-600 mb-1">Override Param List (Optional)</label>
-                  <input
-                    type="text"
-                    className={fieldBaseClass}
-                    value={populateForm.overrideParamList}
-                    onChange={(e) =>
-                      setPopulateForm({
-                        ...populateForm,
-                        overrideParamList: e.target.value,
-                      })
-                    }
-                    placeholder="Leave empty to use generated URL pattern"
-                  />
-                </div>
-
                 <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-3">
                   <p className="text-xs font-semibold text-stone-600 mb-1">Generated URL Pattern</p>
                   <p className="text-xs font-mono text-[#8B0000] break-all">{computedParamList}</p>
@@ -315,17 +423,26 @@ const ReportParameters = () => {
                     className={`${buttonBaseClass} bg-[#7A0000] text-white hover:bg-[#620000]`}
                     disabled={isSavingParam}
                   >
-                    {isSavingParam ? "ADDING..." : "ADD"}
+                    {isSavingParam ? (isEditMode ? "UPDATING..." : "ADDING...") : isEditMode ? "UPDATE" : "ADD"}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => handlePopulateParamList()}
+                    onClick={handlePopulateClick}
                     className={`${buttonBaseClass} bg-[#7A0000]/85 text-white hover:bg-[#620000] inline-flex items-center gap-2`}
                     disabled={isUpdatingList}
                   >
                     <RefreshCw className={`h-4 w-4 ${isUpdatingList ? "animate-spin" : ""}`} />
                     {isUpdatingList ? "POPULATING..." : "POPULATE"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDeleteAction}
+                    className={`${buttonBaseClass} border border-red-200 bg-white text-red-700 hover:bg-red-50`}
+                    disabled={Boolean(isDeletingParamName) || isLoadingParams}
+                  >
+                    {isDeletingParamName ? "DELETING..." : "DELETE"}
                   </button>
 
                   <button
@@ -346,7 +463,6 @@ const ReportParameters = () => {
                     </p>
                   )}
                   {lastUpdatedRows !== null && <p>Last POPULATE updated rows: {lastUpdatedRows}</p>}
-                  <p className="break-all">Applied param list value: {paramListToSave}</p>
                 </div>
               )}
             </div>
@@ -355,6 +471,14 @@ const ReportParameters = () => {
           <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-2">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-semibold text-stone-900">Report Parameters Table</h2>
+              <button
+                type="button"
+                onClick={loadParameters}
+                className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 px-4 py-2 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoadingParams ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
             </div>
 
             <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold">
@@ -397,7 +521,14 @@ const ReportParameters = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRows.length === 0 ? (
+                    {isLoadingParams ? (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-10 text-center text-stone-500 border border-stone-200">
+                          <RefreshCw className="mr-2 inline h-4 w-4 animate-spin" />
+                          Loading parameters...
+                        </td>
+                      </tr>
+                    ) : filteredRows.length === 0 ? (
                       <tr>
                         <td colSpan={3} className="px-4 py-10 text-center text-stone-500 border border-stone-200">
                           No parameters available.
@@ -405,7 +536,15 @@ const ReportParameters = () => {
                       </tr>
                     ) : (
                       filteredRows.map((row) => (
-                        <tr key={row.paraName} className="hover:bg-[#7A0000]/5 transition-colors">
+                        <tr
+                          key={row.paraName}
+                          onClick={() => handleEditRow(row)}
+                          className={`hover:bg-[#7A0000]/5 transition-colors ${
+                            editingParamName?.toUpperCase() === row.paraName.toUpperCase()
+                              ? "bg-amber-50"
+                              : ""
+                          }`}
+                        >
                           <td className="px-4 py-2 border border-stone-200 font-semibold text-stone-800">{row.paraName}</td>
                           <td className="px-4 py-2 border border-stone-200 text-stone-700">{row.description || "-"}</td>
                           <td className="px-4 py-2 border border-stone-200 text-stone-700">{row.populated ? "Yes" : "No"}</td>

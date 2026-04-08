@@ -11,6 +11,7 @@ type ViewMode = "category" | "name";
 type RoleRecord = {
   roleId: string;
   roleName: string;
+  epfNo: string;
   userType: string;
   company: string;
 };
@@ -102,6 +103,14 @@ const RoleReport = () => {
     return items.map((item: any) => ({
       roleId: item?.RoleId ?? item?.roleId ?? "",
       roleName: item?.RoleName ?? item?.roleName ?? "",
+      epfNo:
+        item?.EpfNo ??
+        item?.epfNo ??
+        item?.EPFNo ??
+        item?.epfno ??
+        item?.UserNo ??
+        item?.userNo ??
+        "",
       userType: item?.UserType ?? item?.userType ?? "",
       company: item?.Company ?? item?.company ?? "",
     })) as RoleRecord[];
@@ -339,7 +348,7 @@ const RoleReport = () => {
 
       // Replace: delete existing then insert
       if (mode === "replace") {
-        const deleteAllResp = await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports`, {
+        const deleteAllResp = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports`, {
           method: "DELETE",
         });
         const deleteAllPayload = await deleteAllResp.json();
@@ -388,9 +397,11 @@ const RoleReport = () => {
 
       // Remove: delete by selected category or selected report names.
       if (mode === "remove") {
+        let totalDeletedRows = 0;
+
         if (viewMode === "category" && selectedCategories.length > 0) {
           for (const catCode of selectedCategories) {
-            const resp = await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports/category/${encodeURIComponent(catCode)}`, {
+            const resp = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports/category/${encodeURIComponent(catCode)}`, {
               method: "DELETE",
             });
 
@@ -398,10 +409,12 @@ const RoleReport = () => {
             if (payload?.errorMessage) {
               throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
             }
+
+            totalDeletedRows += Number(payload?.data?.deletedRows ?? 0);
           }
         } else {
           for (const repId of targetRepIdsForAction) {
-            const resp = await fetch(`/roleadminapi/api/role-report/user/${selectedRoleId}/reports/${repId}`, {
+            const resp = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports/${encodeURIComponent(repId)}`, {
               method: "DELETE",
             });
 
@@ -409,7 +422,14 @@ const RoleReport = () => {
             if (payload?.errorMessage) {
               throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
             }
+
+            totalDeletedRows += Number(payload?.data?.deletedRows ?? 0);
           }
+        }
+
+        if (totalDeletedRows === 0) {
+          toast.info("No matching reports were deleted for this role.");
+          return;
         }
 
         setRoleReportMap((current) => {
@@ -488,6 +508,7 @@ const RoleReport = () => {
                 <table className="w-full text-left text-sm">
                   <thead className="sticky top-0 z-10 bg-stone-100 text-xs uppercase tracking-[0.15em] text-stone-500">
                     <tr>
+                      <th className="px-3 py-2">EPF No</th>
                       <th className="px-3 py-2">Name</th>
                       <th className="px-3 py-2">User Name</th>
                       <th className="px-3 py-2">Company Name</th>
@@ -496,13 +517,13 @@ const RoleReport = () => {
                   <tbody>
                     {isRolesLoading ? (
                       <tr>
-                        <td colSpan={3} className="px-3 py-8 text-center text-stone-500">
+                        <td colSpan={4} className="px-3 py-8 text-center text-stone-500">
                           Loading report users...
                         </td>
                       </tr>
                     ) : roles.length === 0 ? (
                       <tr>
-                        <td colSpan={3} className="px-3 py-8 text-center text-stone-500">
+                        <td colSpan={4} className="px-3 py-8 text-center text-stone-500">
                           No users found.
                         </td>
                       </tr>
@@ -517,6 +538,7 @@ const RoleReport = () => {
                               : "bg-white hover:bg-stone-50"
                           }`}
                         >
+                          <td className="px-3 py-2 text-stone-700">{role.epfNo || "-"}</td>
                           <td className="px-3 py-2 font-semibold text-stone-800">{role.roleName || "-"}</td>
                           <td className="px-3 py-2 text-stone-700">{role.roleId || "-"}</td>
                           <td className="px-3 py-2 text-stone-600">{role.company || "-"}</td>
@@ -601,7 +623,7 @@ const RoleReport = () => {
                           ) : categories.length === 0 ? (
                             <div className="text-sm text-stone-500">No categories found.</div>
                           ) : (
-                            <div className="grid max-h-[220px] grid-cols-1 gap-2 overflow-auto pr-1 sm:grid-cols-2">
+                            <div className="grid max-h-[220px] grid-cols-1 gap-2 overflow-auto pr-1">
                               {categories.map((category) => (
                                 <label key={category.catCode} className="flex items-start gap-2 rounded-lg bg-white px-2.5 py-2 text-sm text-stone-700">
                                   <input

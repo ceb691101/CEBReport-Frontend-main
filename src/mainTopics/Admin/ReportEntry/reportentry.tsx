@@ -12,8 +12,24 @@ type ReportEntryRecord = {
     repId: string;
     catCode: string;
     repName: string;
+    paramList: string;
     favorite: number;
     active: number;
+};
+
+type ReportParameterRecord = {
+    paraName: string;
+    description: string;
+    populated: boolean;
+};
+
+const isPopulatedValue = (value: unknown): boolean => {
+    if (typeof value === "boolean") {
+        return value;
+    }
+
+    const normalized = (value ?? "").toString().trim().toLowerCase();
+    return normalized === "1" || normalized === "yes" || normalized === "true";
 };
 
 type CreateEntryForm = {
@@ -52,11 +68,14 @@ const actionButtonLightClass =
 const ReportEntry = () => {
     const [categories, setCategories] = useState<CategoryRecord[]>([]);
     const [entries, setEntries] = useState<ReportEntryRecord[]>([]);
+    const [parameters, setParameters] = useState<ReportParameterRecord[]>([]);
+    const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
     const [selectedRepIdNo, setSelectedRepIdNo] = useState<number | null>(null);
     const [selectedCatCode, setSelectedCatCode] = useState<string | null>(null);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isEntriesLoading, setIsEntriesLoading] = useState(false);
+    const [isParametersLoading, setIsParametersLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [form, setForm] = useState<CreateEntryForm>(initialForm);
@@ -104,6 +123,7 @@ const ReportEntry = () => {
                     repId: item?.RepId ?? item?.repId ?? "",
                     catCode: item?.CatCode ?? item?.catCode ?? "",
                     repName: item?.RepName ?? item?.repName ?? "",
+                    paramList: item?.ParamList ?? item?.paramList ?? "",
                     favorite: Number(item?.Favorite ?? item?.favorite ?? 0),
                     active: Number(item?.Active ?? item?.active ?? 0),
                 }))
@@ -116,6 +136,83 @@ const ReportEntry = () => {
             setEntries([]);
         } finally {
             setIsEntriesLoading(false);
+        }
+    };
+
+    const loadParameters = async () => {
+        setIsParametersLoading(true);
+
+        try {
+            const response = await fetch("/roleadminapi/api/reppara/GET_POPEDREPPARAMS");
+            const payload = await response.json();
+
+            if (payload?.errorMessage) {
+                throw new Error(payload.errorMessage);
+            }
+
+            const nextParameters = Array.isArray(payload?.data)
+                ? payload.data.map((item: any) => ({
+                    paraName: (item?.ParaName ?? item?.paraName ?? "").toString().trim(),
+                    description: (item?.Description ?? item?.description ?? "").toString().trim(),
+                    populated: isPopulatedValue(item?.Populated ?? item?.populated),
+                }))
+                : [];
+
+            setParameters(nextParameters);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to load report parameters.";
+            toast.error(message);
+            setParameters([]);
+        } finally {
+            setIsParametersLoading(false);
+        }
+    };
+
+    const buildParamListValue = (reportId: string, paraNames: string[]) => {
+        const uniqueParams = Array.from(new Set(paraNames.map((item) => item.trim()).filter(Boolean)));
+        if (uniqueParams.length === 0) {
+            return `<${reportId.trim()}>`;
+        }
+
+        const tokenString = uniqueParams.map((item) => `${item}=0`).join("&");
+        return `<${reportId.trim()}>&${tokenString}`;
+    };
+
+    const extractParamsFromList = (paramListValue: string) => {
+        const raw = (paramListValue || "").trim();
+        if (!raw) return [] as string[];
+
+        const normalized = raw.startsWith("<")
+            ? raw.replace(/^<[^>]*>&?/, "")
+            : raw;
+
+        return normalized
+            .split("&")
+            .map((token) => token.trim())
+            .filter(Boolean)
+            .map((token) => token.split("=")[0]?.trim())
+            .filter(Boolean);
+    };
+
+    const saveEntryParamList = async (reportId: string, paraNames: string[]) => {
+        if (!reportId.trim()) return;
+
+        const paramList = buildParamListValue(reportId, paraNames);
+
+        const response = await fetch("/roleadminapi/api/reppara/populateparamts", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                repId: reportId.trim(),
+                paramList,
+            }),
+        });
+
+        const payload = await response.json();
+        if (payload?.errorMessage) {
+            throw new Error(payload.errorMessage);
         }
     };
 
@@ -165,6 +262,10 @@ const ReportEntry = () => {
 
             if (payload?.errorMessage) {
                 throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
+            }
+
+            if (selectedParameters.length > 0) {
+                await saveEntryParamList(form.repId.trim(), selectedParameters);
             }
 
             toast.success(payload?.data?.message || "Report entry added successfully.");
@@ -219,6 +320,8 @@ const ReportEntry = () => {
             if (payload?.data && !payload.data.success) {
                 throw new Error(payload.data.message || "Failed to update report entry.");
             }
+
+            await saveEntryParamList(form.repId.trim(), selectedParameters);
 
             toast.success(payload?.data?.message || "Report entry updated successfully.");
             handleReset();
@@ -281,6 +384,7 @@ const ReportEntry = () => {
             favorite: entry.active === 1 && entry.favorite === 1,
             active: entry.active === 1,
         });
+        setSelectedParameters(extractParamsFromList(entry.paramList));
         setMode("edit");
     };
 
@@ -289,11 +393,13 @@ const ReportEntry = () => {
         setMode("add");
         setSelectedRepIdNo(null);
         setSelectedCatCode(null);
+        setSelectedParameters([]);
     };
 
     useEffect(() => {
         loadCategories();
         loadReportEntries();
+        loadParameters();
     }, []);
 
     const getCategoryLabel = (catCode: string) => {
@@ -363,6 +469,54 @@ const ReportEntry = () => {
                                     onChange={(value) => setForm({ ...form, repName: value })}
                                     placeholder="e.g., Monthly Summary"
                                 />
+
+                                <div>
+                                    <span className="mb-2 block text-sm font-medium text-stone-700">Report Parameters</span>
+                                    <div className="rounded-2xl border border-stone-200 bg-stone-50/60 p-3">
+                                        {isParametersLoading ? (
+                                            <div className="text-xs text-stone-500">Loading parameters...</div>
+                                        ) : parameters.length === 0 ? (
+                                            <div className="text-xs text-stone-500">No parameters found in parameter table.</div>
+                                        ) : (
+                                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                                {parameters.map((parameter) => {
+                                                    const isChecked = selectedParameters.some(
+                                                        (item) => item.toUpperCase() === parameter.paraName.toUpperCase()
+                                                    );
+
+                                                    return (
+                                                        <Checkbox
+                                                            key={parameter.paraName}
+                                                            label={parameter.description
+                                                                ? `${parameter.paraName} - ${parameter.description}`
+                                                                : parameter.paraName}
+                                                            checked={isChecked}
+                                                            onChange={(checked) => {
+                                                                setSelectedParameters((current) => {
+                                                                    if (checked) {
+                                                                        return Array.from(new Set([...current, parameter.paraName]));
+                                                                    }
+                                                                    return current.filter(
+                                                                        (item) => item.toUpperCase() !== parameter.paraName.toUpperCase()
+                                                                    );
+                                                                });
+                                                            }}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                                    <p className="text-xs font-semibold text-stone-600">Generated Parameters URL Pattern</p>
+                                    <p className="mt-1 break-all font-mono text-xs text-[#8B0000]">
+                                        {form.repId.trim()
+                                            ? buildParamListValue(form.repId.trim(), selectedParameters)
+                                            : "Enter Report ID to generate parameter URL pattern."}
+                                    </p>
+                                </div>
 
                                 <div className="flex gap-6 mt-2">
                                     <Checkbox
@@ -473,7 +627,7 @@ const ReportEntry = () => {
                                                     <td className="border border-stone-200 px-3 py-2 text-center">{entry.repIdNo || "-"}</td>
                                                     <td className="border border-stone-200 px-3 py-2">{getCategoryLabel(entry.catCode)}</td>
                                                     <td className="border border-stone-200 px-3 py-2 font-semibold text-stone-800">{entry.repId || "-"}</td>
-                                                    <td className="border border-stone-200 px-3 py-2">{entry.repName || "-"}</td>
+                                                    <td className="border border-stone-200 px-3 py-2">{entry.paramList || "-"}</td>
                                                     <td className="border border-stone-200 px-3 py-2 text-center">{entry.favorite === 1 ? "Yes" : "No"}</td>
                                                     <td className="border border-stone-200 px-3 py-2 text-center">{entry.active === 1 ? "Yes" : "No"}</td>
                                                 </tr>
