@@ -243,23 +243,24 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
         )}
 
         <Reveal delay={0}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="relative bg-gradient-to-br from-white to-orange-50/30 rounded-2xl p-6 shadow-sm border border-gray-100 transition-all duration-300 hover:border-[color:var(--ceb-maroon)]/40 hover:shadow-lg transform hover:-translate-y-1">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-[color:var(--ceb-maroon)]/10 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="relative bg-gradient-to-br from-white to-orange-50/30 rounded-2xl p-7 shadow-sm border border-gray-100 transition-all duration-300 hover:border-[color:var(--ceb-maroon)]/40 hover:shadow-lg transform hover:-translate-y-1">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-[color:var(--ceb-maroon)]/10 rounded-lg">
                   <Wallet className="w-5 h-5 text-[color:var(--ceb-maroon)]" />
                 </div>
+                <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">7 Days</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-500">PIV Collection (Last 7 Days)</h3>
+              <h3 className="text-xl font-bold text-gray-900">PIV Collection</h3>
               {pivLoading ? (
                 <div className="h-8 w-48 bg-gray-100 rounded-lg animate-pulse mt-1" />
               ) : null}
-              <p className="text-xs text-gray-500 mt-2">
-                Last 7 Days — All Divisions
-                {pivTotalTime && <span className="block text-[10px] opacity-70 mt-0.5 whitespace-nowrap">Data from DB: {pivTotalTime}</span>}
+              <p className="text-xs text-gray-500 mt-1.5">
+                All Divisions
+                {pivTotalTime && <span className="block text-[10px] opacity-70 mt-1 whitespace-nowrap">Data from DB: {pivTotalTime}</span>}
               </p>
               {!pivLoading && pivDailySeries.length > 0 && (
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 pt-4 border-t border-gray-200/50 space-y-2">
                   {pivDailySeries.map((item) => (
                     <div key={item.date} className="flex items-center justify-between gap-3 text-xs">
                       <span className="min-w-[56px] font-medium text-gray-500">{item.label}</span>
@@ -278,39 +279,60 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
               )}
             </div>
 
-            <div className="relative bg-gradient-to-br from-white to-blue-50/30 rounded-2xl p-6 shadow-sm border border-gray-100 transition-all duration-300 hover:border-[color:var(--ceb-navy)]/40 hover:shadow-lg transform hover:-translate-y-1">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-[color:var(--ceb-navy)]/10 rounded-lg">
-                  <BarChart3 className="w-5 h-5 text-[color:var(--ceb-navy)]" />
+            <div className="relative bg-gradient-to-br from-white to-blue-50/30 rounded-2xl p-7 shadow-sm border border-gray-100 transition-all duration-300 hover:border-[color:var(--ceb-navy)]/40 hover:shadow-lg transform hover:-translate-y-1 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2.5 bg-[color:var(--ceb-navy)]/10 rounded-lg">
+                    <BarChart3 className="w-5 h-5 text-[color:var(--ceb-navy)]" />
+                  </div>
+                  <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Now</span>
                 </div>
-                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">Now</span>
-              </div>
-              <h3 className="text-sm font-medium text-gray-500">Total Stock Value</h3>
-              {pivLoading ? (
-                <div className="h-8 w-48 bg-gray-100 rounded-lg animate-pulse mt-1" />
-              ) : (
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {(stockTotal / 1_000_000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M LKR
+                <h3 className="text-xl font-bold text-gray-900">Stock Value</h3>
+                {pivLoading ? (
+                  <div className="h-8 w-48 bg-gray-100 rounded-lg animate-pulse mt-2" />
+                ) : (
+                  <p className="text-3xl font-bold text-gray-900 mt-2">
+                    {(stockTotal / 1_000_000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M LKR
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  {formattedToday} — NEW grade items
+                  {stockTotalTime && <span className="block text-[10px] opacity-70 mt-0.5 whitespace-nowrap">Data from DB: {stockTotalTime}</span>}
                 </p>
+              </div>
+              {!pivLoading && stockDivision.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200/50 space-y-2">
+                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Breakdown by Division</p>
+                  {stockDivision.map((item) => (
+                    <div key={item.company} className="flex items-center justify-between gap-3 text-xs">
+                      <span className="min-w-[56px] font-medium text-gray-600">{normalizeCompany(item.company)}</span>
+                      <div className="flex-1 h-2 rounded-full bg-blue-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[color:var(--ceb-navy)]"
+                          style={{ width: `${stockTotal > 0 ? Math.max((item.amount / stockTotal) * 100, 8) : 0}%` }}
+                        />
+                      </div>
+                      <span className="min-w-[80px] text-right font-semibold text-gray-800">
+                        LKR {(item.amount / 1_000_000).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
-              <p className="text-xs text-gray-500 mt-2">
-                {formattedToday} — NEW grade items
-                {stockTotalTime && <span className="block text-[10px] opacity-70 mt-0.5 whitespace-nowrap">Data from DB: {stockTotalTime}</span>}
-              </p>
             </div>
           </div>
         </Reveal>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 gap-6 mb-6">
           <Reveal delay={100} className="h-full">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h2 className="text-base font-bold text-gray-800">PIV Collection by Division</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Last 7 Days collection — company-wise breakdown</p>
+                  <h2 className="text-lg font-bold text-gray-900">PIV Collection by Division</h2>
+                  <p className="text-xs text-gray-400 mt-1">Breakdown across 7 days — grouped by company</p>
                 </div>
                 <div className="p-2 bg-[color:var(--ceb-maroon)]/10 rounded-xl">
-                  <TrendingUp className="w-4 h-4 text-[color:var(--ceb-maroon)]" />
+                  <TrendingUp className="w-5 h-5 text-[color:var(--ceb-maroon)]" />
                 </div>
               </div>
               {pivLoading ? (
@@ -319,8 +341,9 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
                 </div>
               ) : companyKeys.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-52 text-gray-400 flex-1">
-                  <BarChart3 className="w-10 h-10 mb-2 opacity-30" />
-                  <p className="text-sm">No division data available</p>
+                  <BarChart3 className="w-12 h-12 mb-3 opacity-20" />
+                  <p className="text-sm font-medium">No division data</p>
+                  <p className="text-xs opacity-60 mt-1">Data will appear once available</p>
                 </div>
               ) : (
                 <div className="flex-1 min-h-[240px]">
@@ -361,84 +384,31 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
               )}
             </div>
           </Reveal>
-
-
-          <Reveal delay={200} className="h-full">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h2 className="text-base font-bold text-gray-800">Stock Value by Division</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Current NEW-grade stock — company-wise breakdown</p>
-                </div>
-                <div className="p-2 bg-[color:var(--ceb-navy)]/10 rounded-xl">
-                  <Battery className="w-4 h-4 text-[color:var(--ceb-navy)]" />
-                </div>
-              </div>
-              {pivLoading ? (
-                <div className="space-y-3 flex-1">
-                  {[1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />)}
-                </div>
-              ) : stockDivision.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-52 text-gray-400 flex-1">
-                  <BarChart3 className="w-10 h-10 mb-2 opacity-30" />
-                  <p className="text-sm">No division data available</p>
-                </div>
-              ) : (
-                <div className="flex-1 min-h-[240px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={stockDivision.map(d => ({ name: d.company || "Other", value: d.amount }))}
-                      margin={{ top: 10, right: 10, left: 0, bottom: 8 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#edf1f8" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={false} tickLine={false} />
-                      <YAxis
-                        tick={{ fontSize: 11, fill: "#9ca3af" }}
-                        tickFormatter={(v) => `${(Number(v) / 1_000_000).toFixed(1)}M`}
-                        axisLine={false} tickLine={false} width={52}
-                      />
-                      <Tooltip
-                        formatter={(val: any) => [`LKR ${Number(val).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, "Stock Value"]}
-                        contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.4)", boxShadow: "0 8px 32px rgba(0,0,0,0.12)", fontSize: 13, backgroundColor: "rgba(255, 255, 255, 0.8)", backdropFilter: "blur(12px)" }}
-                        cursor={{ fill: "rgba(0,0,0,0.03)" }}
-                      />
-                      <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={56}
-                        isAnimationActive animationDuration={900} animationEasing="ease-out">
-                        {stockDivision.map((_, i) => (
-                          <Cell key={i} fill={["#23498c", "#3568b8", "#5c84c8", "#8ea8d8"][i % 4]} />
-                        ))}
-                        <LabelList
-                          dataKey="value"
-                          position="top"
-                          formatter={(v: any) => `${(Number(v) / 1_000_000).toFixed(2)}M`}
-                          style={{ fontSize: 10, fill: "#6b7280" }}
-                        />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </div>
-          </Reveal>
         </div>
 
         <Reveal delay={300}>
           {!pivLoading && (pivDivision.length > 0 || stockDivision.length > 0) && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-                <FileText className="w-4 h-4 text-gray-400" />
-                <h2 className="text-sm font-bold text-gray-700">Division Summary Table</h2>
+              <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center gap-3">
+                <FileText className="w-5 h-5 text-[color:var(--ceb-maroon)]/60" />
+                <h2 className="text-base font-bold text-gray-900">Division Summary</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50">
-                      <th className="px-6 py-3 text-left">Company / Division</th>
-                      <th className="px-6 py-3 text-right">
-                        PIV Collection ({latestPivLabel}{pivTotalTime ? ` ${pivTotalTime}` : ""})
+                    <tr className="text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gradient-to-r from-gray-50 to-gray-50 border-b-2 border-gray-200">
+                      <th className="px-6 py-4 text-left">Company / Division</th>
+                      <th className="px-6 py-4 text-right">
+                        <div className="flex flex-col items-end">
+                          <span>PIV Collection</span>
+                          <span className="text-[10px] font-normal text-gray-400 mt-0.5">{latestPivLabel}{pivTotalTime ? ` • ${pivTotalTime}` : ""}</span>
+                        </div>
                       </th>
-                      <th className="px-6 py-3 text-right">
-                        Stock Value ({formattedToday}{stockTotalTime ? ` ${stockTotalTime}` : ""})
+                      <th className="px-6 py-4 text-right">
+                        <div className="flex flex-col items-end">
+                          <span>Stock Value</span>
+                          <span className="text-[10px] font-normal text-gray-400 mt-0.5">{formattedToday}{stockTotalTime ? ` • ${stockTotalTime}` : ""}</span>
+                        </div>
                       </th>
                     </tr>
                   </thead>
@@ -453,28 +423,29 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
                       const stk = stockDivision.find(d => (d.company || "Other") === company);
                       return (
                         <tr key={company}
-                          className={`border-t border-gray-50 hover:bg-gray-100/60 transition-colors ${i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
+                          className={`border-b border-gray-100 hover:bg-orange-50/30 transition-colors duration-150 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
                         >
                           <td className="px-6 py-4 font-semibold text-gray-800">
                             <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{backgroundColor: colors[(Array.from(new Set([...pivDivisionLatest.map(d => normalizeCompany(d.company)), ...stockDivision.map(d => d.company || "Other")])).indexOf(company)) % colors.length]}} />
                               {company}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-maroon)]">
+                          <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-maroon)] font-medium">
                             {piv ? `LKR ${piv.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—"}
                           </td>
-                          <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-navy)]">
+                          <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-navy)] font-medium">
                             {stk ? `LKR ${stk.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—"}
                           </td>
                         </tr>
                       );
                     })}
-                    <tr className="border-t-2 border-gray-200 bg-gray-50 font-bold">
+                    <tr className="border-t-2 border-gray-300 bg-gradient-to-r from-gray-100 to-gray-50 font-bold">
                       <td className="px-6 py-4 text-gray-700">Total</td>
-                      <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-maroon)]">
+                      <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-maroon)] text-base">
                         LKR {pivDivisionLatestTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-navy)]">
+                      <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-navy)] text-base">
                         LKR {stockTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     </tr>
