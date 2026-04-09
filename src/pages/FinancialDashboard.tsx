@@ -16,6 +16,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   LabelList,
 } from "recharts";
 
@@ -79,8 +80,8 @@ interface PIVDashboardProps {
 
 export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
   // State
-  const [pivTotal, setPivTotal] = useState<number>(0);
-  const [pivDivision, setPivDivision] = useState<{ company: string; amount: number }[]>([]);
+  const [pivTotal, setPivTotal] = useState<{ date: string; amount: number }[]>([]);
+  const [pivDivision, setPivDivision] = useState<{ date: string; company: string; amount: number }[]>([]);
   const [stockTotal, setStockTotal] = useState<number>(0);
   const [stockDivision, setStockDivision] = useState<{ company: string; amount: number }[]>([]);
   const [pivLoading, setPivLoading] = useState(false);
@@ -114,14 +115,14 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
           r1.json(), r2.json(), r3.json(), r4.json(),
         ]);
 
-        // Helper to handle both PascalCase and camelCase
         const getVal = (obj: any) => obj?.Value ?? obj?.value;
         const getAt = (obj: any) => obj?.FetchedAt ?? obj?.fetchedAt;
 
-        setPivTotal(typeof getVal(pivTotalData) === "number" ? getVal(pivTotalData) : 0);
-        setPivDivision(Array.isArray(getVal(pivDivData)) ? getVal(getVal(pivDivData)) : Array.isArray(getVal(pivDivData)) ? getVal(pivDivData) : []); // Wait, I need to be careful with nested Values if I return objects.
-        // Actually, for list, the value IS the list.
-        setPivDivision(Array.isArray(getVal(pivDivData)) ? getVal(pivDivData) : []);
+        const pTotalList = Array.isArray(getVal(pivTotalData)) ? getVal(pivTotalData) : Array.isArray(pivTotalData) ? pivTotalData : [];
+        const pDivList = Array.isArray(getVal(pivDivData)) ? getVal(pivDivData) : Array.isArray(pivDivData) ? pivDivData : [];
+
+        setPivTotal(pTotalList);
+        setPivDivision(pDivList);
         setStockTotal(typeof getVal(stockTotalData) === "number" ? getVal(stockTotalData) : 0);
         setStockDivision(Array.isArray(getVal(stockDivData)) ? getVal(stockDivData) : []);
 
@@ -139,6 +140,68 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
     fetchPivData();
   }, [pivFetchCount]);
 
+  const normalizeCompany = (value?: string) => {
+    const v = (value || "Other").trim();
+    return v === "A" ? "hq" : v;
+  };
+
+  // Transform division data for Stacked Bar Chart
+  const divisionChartData = React.useMemo(() => {
+    const dateMap: { [key: string]: any } = {};
+    pivDivision.forEach((item) => {
+      const dateKey = new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      if (!dateMap[dateKey]) {
+        dateMap[dateKey] = { name: dateKey };
+      }
+      const comp = normalizeCompany(item.company);
+      dateMap[dateKey][comp] = (dateMap[dateKey][comp] || 0) + item.amount;
+    });
+    return Object.values(dateMap).sort((a, b) => new Date(b.name).getTime() - new Date(a.name).getTime());
+  }, [pivDivision]);
+
+  // Extract unique companies for Chart Legend & Bars
+  const companyKeys = React.useMemo(() => {
+    const keys = new Set<string>();
+    pivDivision.forEach(item => keys.add(normalizeCompany(item.company)));
+    return Array.from(keys);
+  }, [pivDivision]);
+  
+  // Calculate total across 7 days
+  const total7DayCollection = React.useMemo(() => {
+    return pivTotal.reduce((sum, item) => sum + (item.amount || 0), 0);
+  }, [pivTotal]);
+
+  const latestPivDate = React.useMemo(() => {
+    if (pivTotal.length === 0) return null;
+    return pivTotal.reduce((max, item) => (new Date(item.date) > new Date(max) ? item.date : max), pivTotal[0].date);
+  }, [pivTotal]);
+
+  const latestPivLabel = React.useMemo(() => {
+    return latestPivDate
+      ? new Date(latestPivDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : formattedYesterday;
+  }, [latestPivDate, formattedYesterday]);
+
+  const pivDivisionLatest = React.useMemo(() => {
+    if (!latestPivDate) return [] as { date: string; company: string; amount: number }[];
+    return pivDivision.filter((item) => item.date === latestPivDate);
+  }, [pivDivision, latestPivDate]);
+
+  const pivDivisionLatestTotal = React.useMemo(() => {
+    return pivDivisionLatest.reduce((sum, item) => sum + (item.amount || 0), 0);
+  }, [pivDivisionLatest]);
+
+  const pivDailySeries = React.useMemo(() => {
+    return [...pivTotal]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .map((item) => ({
+        ...item,
+        label: new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      }));
+  }, [pivTotal]);
+
+  const colors = ["#813405", "#d45113", "#f9a03f", "#f8dda4", "#a1a1aa"];
+
   return (
     <>
       <div className={`bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-10 transition-all duration-1000 ${isLoaded ? "opacity-100" : "opacity-0"}`}>
@@ -147,7 +210,7 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Financial Dashboard</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Yesterday's collections &amp; current stock — All Divisions
+                Last 7 Days Collections &amp; Current Stock — All Divisions
               </p>
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -187,18 +250,32 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
                   <Wallet className="w-5 h-5 text-[color:var(--ceb-maroon)]" />
                 </div>
               </div>
-              <h3 className="text-sm font-medium text-gray-500">PIV Collection</h3>
+              <h3 className="text-sm font-medium text-gray-500">PIV Collection (Last 7 Days)</h3>
               {pivLoading ? (
                 <div className="h-8 w-48 bg-gray-100 rounded-lg animate-pulse mt-1" />
-              ) : (
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  LKR {pivTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              )}
+              ) : null}
               <p className="text-xs text-gray-500 mt-2">
-                {formattedYesterday} — All Divisions
+                Last 7 Days — All Divisions
                 {pivTotalTime && <span className="block text-[10px] opacity-70 mt-0.5 whitespace-nowrap">Data from DB: {pivTotalTime}</span>}
               </p>
+              {!pivLoading && pivDailySeries.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {pivDailySeries.map((item) => (
+                    <div key={item.date} className="flex items-center justify-between gap-3 text-xs">
+                      <span className="min-w-[56px] font-medium text-gray-500">{item.label}</span>
+                      <div className="flex-1 h-2 rounded-full bg-orange-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[color:var(--ceb-maroon)]"
+                          style={{ width: `${total7DayCollection > 0 ? Math.max((item.amount / total7DayCollection) * 100, 8) : 0}%` }}
+                        />
+                      </div>
+                      <span className="min-w-[110px] text-right font-semibold text-gray-800">
+                        LKR {item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="relative bg-gradient-to-br from-white to-blue-50/30 rounded-2xl p-6 shadow-sm border border-gray-100 transition-all duration-300 hover:border-[color:var(--ceb-navy)]/40 hover:shadow-lg transform hover:-translate-y-1">
@@ -230,7 +307,7 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="text-base font-bold text-gray-800">PIV Collection by Division</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">{formattedYesterday} collection — company-wise breakdown</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Last 7 Days collection — company-wise breakdown</p>
                 </div>
                 <div className="p-2 bg-[color:var(--ceb-maroon)]/10 rounded-xl">
                   <TrendingUp className="w-4 h-4 text-[color:var(--ceb-maroon)]" />
@@ -240,7 +317,7 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
                 <div className="space-y-3 flex-1">
                   {[1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />)}
                 </div>
-              ) : pivDivision.length === 0 ? (
+              ) : companyKeys.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-52 text-gray-400 flex-1">
                   <BarChart3 className="w-10 h-10 mb-2 opacity-30" />
                   <p className="text-sm">No division data available</p>
@@ -249,7 +326,7 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
                 <div className="flex-1 min-h-[240px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={pivDivision.map(d => ({ name: d.company || "Other", value: d.amount }))}
+                      data={divisionChartData}
                       margin={{ top: 10, right: 10, left: 0, bottom: 8 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#f3ece8" vertical={false} />
@@ -260,28 +337,31 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
                         axisLine={false} tickLine={false} width={52}
                       />
                       <Tooltip
-                        formatter={(val: any) => [`LKR ${Number(val).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, "Collection"]}
+                        formatter={(val: any, name: string) => [`LKR ${Number(val).toLocaleString("en-US", { minimumFractionDigits: 2 })}`, name]}
+                        labelStyle={{ color: "#374151", fontWeight: 600 }}
                         contentStyle={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.4)", boxShadow: "0 8px 32px rgba(0,0,0,0.12)", fontSize: 13, backgroundColor: "rgba(255, 255, 255, 0.8)", backdropFilter: "blur(12px)" }}
                         cursor={{ fill: "rgba(0,0,0,0.03)" }}
                       />
-                      <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={56}
-                        isAnimationActive animationDuration={900} animationEasing="ease-out">
-                        {pivDivision.map((_, i) => (
-                          <Cell key={i} fill={["#813405", "#d45113", "#f9a03f", "#f8dda4"][i % 4]} />
-                        ))}
-                        <LabelList
-                          dataKey="value"
-                          position="top"
-                          formatter={(v: any) => `${(Number(v) / 1_000_000).toFixed(2)}M`}
-                          style={{ fontSize: 10, fill: "#6b7280" }}
+                      <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                      {companyKeys.map((company, i) => (
+                        <Bar
+                          key={company}
+                          dataKey={company}
+                          fill={colors[i % colors.length]}
+                          maxBarSize={20}
+                          radius={[4, 4, 0, 0]}
+                          isAnimationActive
+                          animationDuration={900}
+                          animationEasing="ease-out"
                         />
-                      </Bar>
+                      ))}
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               )}
             </div>
           </Reveal>
+
 
           <Reveal delay={200} className="h-full">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
@@ -354,18 +434,22 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
                   <thead>
                     <tr className="text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50">
                       <th className="px-6 py-3 text-left">Company / Division</th>
-                      <th className="px-6 py-3 text-right">PIV Collection ({formattedYesterday})</th>
-                      <th className="px-6 py-3 text-right">Stock Value ({formattedToday})</th>
+                      <th className="px-6 py-3 text-right">
+                        PIV Collection ({latestPivLabel}{pivTotalTime ? ` ${pivTotalTime}` : ""})
+                      </th>
+                      <th className="px-6 py-3 text-right">
+                        Stock Value ({formattedToday}{stockTotalTime ? ` ${stockTotalTime}` : ""})
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.from(
                       new Set([
-                        ...pivDivision.map(d => d.company || "Other"),
+                        ...pivDivisionLatest.map(d => normalizeCompany(d.company)),
                         ...stockDivision.map(d => d.company || "Other"),
                       ])
                     ).map((company, i) => {
-                      const piv = pivDivision.find(d => (d.company || "Other") === company);
+                      const piv = pivDivisionLatest.find(d => normalizeCompany(d.company) === company);
                       const stk = stockDivision.find(d => (d.company || "Other") === company);
                       return (
                         <tr key={company}
@@ -373,9 +457,6 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
                         >
                           <td className="px-6 py-4 font-semibold text-gray-800">
                             <div className="flex items-center gap-2">
-                              <span className="inline-flex w-7 h-7 items-center justify-center rounded-lg bg-[color:var(--ceb-maroon)]/10 text-[color:var(--ceb-maroon)] font-bold text-xs">
-                                {company.slice(0, 2).toUpperCase()}
-                              </span>
                               {company}
                             </div>
                           </td>
@@ -391,7 +472,7 @@ export default function PIVDashboard({ isLoaded }: PIVDashboardProps) {
                     <tr className="border-t-2 border-gray-200 bg-gray-50 font-bold">
                       <td className="px-6 py-4 text-gray-700">Total</td>
                       <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-maroon)]">
-                        LKR {pivTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        LKR {pivDivisionLatestTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-navy)]">
                         LKR {stockTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
