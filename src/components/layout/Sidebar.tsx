@@ -16,7 +16,7 @@ const Sidebar = () => {
     const currentPath = location.pathname;
     
     // // Special handling for home page - don't redirect and clear activeId
-    // if (currentPath === "/home") {
+    // if (currentPath === "/dashboard") {
     //   setActiveId(null); // Clear any active selection
     //   return; // Exit early, don't interfere with home page
     // }
