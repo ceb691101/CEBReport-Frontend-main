@@ -17,14 +17,16 @@ const LoginCard = () => {
   const [loginType, setLoginType] = useState<"HR" | "AD">("HR");
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: any, selectedLoginType?: "HR" | "AD") => {
     e.preventDefault();
     localStorage.removeItem("userData");
 
     try {
       let isLoginSuccess = false;
 
-      if (loginType === "HR") {
+      const currentLoginType = selectedLoginType ?? loginType;
+
+      if (currentLoginType === "HR") {
         const IsLogged = await postJSON("/CBRSAPI/CBRSUPERUserLogin", {
           Username: username,
           Password: password,
@@ -76,18 +78,18 @@ const LoginCard = () => {
               );
               if (!isAdminInDb) {
                 toast.error("You do not have administrative privileges.");
-                setLogged({ Logged: false });
+                setLogged({ Logged: false, Errormsg: "" });
                 return; // Stop the login process
               }
             } else {
               toast.error("Failed to verify admin status.");
-              setLogged({ Logged: false });
+              setLogged({ Logged: false, Errormsg: "" });
               return;
             }
           } catch (err) {
              console.error("Admin verification error:", err);
              toast.error("Error verifying admin status.");
-             setLogged({ Logged: false });
+             setLogged({ Logged: false, Errormsg: "" });
              return;
           }
         }
@@ -136,31 +138,6 @@ const LoginCard = () => {
           />
         </div>
         
-        <div className="flex justify-center gap-4 mb-4">
-          <button
-            type="button"
-            className={`py-2 px-4 rounded shadow text-sm sm:text-base transition-all duration-150 ${
-              loginType === "HR"
-                ? "bg-[#7c0000] text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-            onClick={() => setLoginType("HR")}
-          >
-            HR Login
-          </button>
-          <button
-            type="button"
-            className={`py-2 px-4 rounded shadow text-sm sm:text-base transition-all duration-150 ${
-              loginType === "AD"
-                ? "bg-[#7c0000] text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-            onClick={() => setLoginType("AD")}
-          >
-            AD Login
-          </button>
-        </div>
-
         <div className="text-center text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
           Sign In With Credentials
         </div>
@@ -197,12 +174,36 @@ const LoginCard = () => {
               <span className="ml-2 text-sm text-gray-600">Admin User</span>
             </div>
           </div>
-          <button
-            type="submit"
-            className="w-full bg-[#7c0000] text-white py-2 px-4 rounded shadow hover:shadow-lg transition-all duration-150 text-sm sm:text-base"
-          >
-            Sign In
-          </button>
+          <div className="mt-2 flex w-full flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              className={`w-full rounded-md px-4 py-2.5 text-sm font-semibold sm:text-base shadow-sm transition-all duration-150 ${
+                loginType === "HR"
+                  ? "bg-[#7c0000] text-white hover:bg-[#690000]"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+              onClick={(e) => {
+                setLoginType("HR");
+                handleSubmit(e, "HR");
+              }}
+            >
+              HR Sign In
+            </button>
+            <button
+              type="button"
+              className={`w-full rounded-md px-4 py-2.5 text-sm font-semibold sm:text-base shadow-sm transition-all duration-150 ${
+                loginType === "AD"
+                  ? "bg-[#7c0000] text-white hover:bg-[#690000]"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+              onClick={(e) => {
+                setLoginType("AD");
+                handleSubmit(e, "AD");
+              }}
+            >
+              AD Sign In
+            </button>
+          </div>
         </form>
         <div className="flex justify-between mt-4 sm:mt-6 text-xs sm:text-sm text-gray-500"></div>
       </div>

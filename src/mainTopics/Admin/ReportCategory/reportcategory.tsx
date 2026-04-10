@@ -55,7 +55,7 @@ const ReportCategory = () => {
       setCategories(nextCategories);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to load categories.";
+        error instanceof Error ? error.message : "FAILED TO LOAD CATEGORIES.";
       toast.error(message);
       setCategories([]);
     } finally {
@@ -67,9 +67,11 @@ const ReportCategory = () => {
     e.preventDefault();
 
     if (!form.catCode.trim() || !form.catName.trim()) {
-      toast.error("Category Code and Description are required.");
+      toast.error("CATEGORY CODE AND DESCRIPTION ARE REQUIRED.");
       return;
     }
+
+    const normalizedCatCode = form.catCode.trim().toUpperCase();
 
     setIsSubmitting(true);
 
@@ -80,7 +82,7 @@ const ReportCategory = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          catCode: form.catCode.trim(),
+          catCode: normalizedCatCode,
           catName: form.catName.trim(),
         }),
       });
@@ -91,12 +93,12 @@ const ReportCategory = () => {
         throw new Error(payload.errorMessage);
       }
 
-      toast.success("Category added successfully.");
+      toast.success("CATEGORY ADDED SUCCESSFULLY.");
       setForm(initialForm);
       await loadCategories();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to add category.";
+        error instanceof Error ? error.message : "FAILED TO ADD CATEGORY.";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -107,22 +109,24 @@ const ReportCategory = () => {
     e.preventDefault();
 
     if (!form.catCode.trim() || !form.catName.trim()) {
-      toast.error("Category Code and Description are required.");
+      toast.error("CATEGORY CODE AND DESCRIPTION ARE REQUIRED.");
       return;
     }
+
+    const normalizedCatCode = form.catCode.trim().toUpperCase();
 
     setIsSubmitting(true);
 
     try {
       const response = await fetch(
-        `/roleadminapi/api/reportcategory/${encodeURIComponent(form.catCode.trim())}`,
+        `/roleadminapi/api/reportcategory/${encodeURIComponent(normalizedCatCode)}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            catCode: form.catCode.trim(),
+            catCode: normalizedCatCode,
             catName: form.catName.trim(),
           }),
         }
@@ -135,17 +139,17 @@ const ReportCategory = () => {
       }
 
       if (payload?.data && !payload.data.success) {
-        throw new Error(payload.data.message || "Failed to update category.");
+        throw new Error(payload.data.message || "FAILED TO UPDATE CATEGORY.");
       }
 
-      toast.success(payload?.data?.message || "Category updated successfully.");
+      toast.success(payload?.data?.message || "CATEGORY UPDATED SUCCESSFULLY.");
       setForm(initialForm);
       setMode("add");
       setSelectedCatCode(null);
       await loadCategories();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to update category.";
+        error instanceof Error ? error.message : "FAILED TO UPDATE CATEGORY.";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -154,11 +158,11 @@ const ReportCategory = () => {
 
   const handleDelete = async () => {
     if (!selectedCatCode) {
-      toast.error("No category selected for deletion.");
+      toast.error("NO CATEGORY SELECTED FOR DELETION.");
       return;
     }
 
-    if (!window.confirm(`Delete category: ${selectedCatCode}?`)) {
+    if (!window.confirm(`DELETE CATEGORY: ${selectedCatCode}?`)) {
       return;
     }
 
@@ -179,17 +183,17 @@ const ReportCategory = () => {
       }
 
       if (payload?.data && !payload.data.success) {
-        throw new Error(payload.data.message || "Failed to delete category.");
+        throw new Error(payload.data.message || "FAILED TO DELETE CATEGORY.");
       }
 
-      toast.success(payload?.data?.message || "Category deleted successfully.");
+      toast.success(payload?.data?.message || "CATEGORY DELETED SUCCESSFULLY.");
       setForm(initialForm);
       setMode("add");
       setSelectedCatCode(null);
       await loadCategories();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to delete category.";
+        error instanceof Error ? error.message : "FAILED TO DELETE CATEGORY.";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -244,7 +248,9 @@ const ReportCategory = () => {
                 type="text"
                 className={fieldBaseClass}
                 value={form.catCode}
-                onChange={(e) => setForm({ ...form, catCode: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, catCode: e.target.value.toUpperCase() })
+                }
                 placeholder="e.g., WIP"
                 disabled={mode === "edit"}
               />
@@ -280,7 +286,7 @@ const ReportCategory = () => {
                     ? undefined
                     : () => {
                       if (selectedCatCode) setMode("edit");
-                      else toast.error("Select a category to edit");
+                      else toast.error("SELECT A CATEGORY TO EDIT.");
                     }
                 }
                 className={`${buttonBaseClass} bg-[#7A0000]/85 text-white hover:bg-[#620000]`}
@@ -347,7 +353,7 @@ const ReportCategory = () => {
                       className="px-4 py-6 text-center text-stone-500 text-sm"
                     >
                       <RefreshCw className="inline w-4 h-4 animate-spin mr-2" />
-                      Loading categories...
+                      LOADING CATEGORIES...
                     </td>
                   </tr>
                 ) : categories.length > 0 ? (
@@ -374,7 +380,7 @@ const ReportCategory = () => {
                       colSpan={2}
                       className="px-4 py-6 text-center text-stone-500 text-sm"
                     >
-                      No categories found.
+                      NO CATEGORIES FOUND.
                     </td>
                   </tr>
                 )}
