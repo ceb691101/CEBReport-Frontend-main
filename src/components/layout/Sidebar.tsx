@@ -50,6 +50,12 @@ const Sidebar = () => {
   useEffect(() => {
     const currentPath = location.pathname;
 
+    // // Special handling for home page - don't redirect and clear activeId
+    // if (currentPath === "/dashboard") {
+    //   setActiveId(null); // Clear any active selection
+    //   return; // Exit early, don't interfere with home page
+    // }
+
     if (sidebarData.length === 0) {
       setActiveId(null);
       return;
@@ -72,7 +78,7 @@ const Sidebar = () => {
       if (activeId !== prefixMatch.id) {
         setActiveId(prefixMatch.id);
       }
-    } else {
+    } else if (activeId !== null) {
       setActiveId(null);
     }
   }, [location.pathname, sidebarData, activeId]);

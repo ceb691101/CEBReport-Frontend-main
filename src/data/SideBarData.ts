@@ -82,9 +82,9 @@ const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
 export const data: Topic[] = [];
 
 export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
-  Dashboard: { icon: MdDashboard, path: "/home" },
-  DashBoard: { icon: MdDashboard, path: "/home" },
-  "Main Dashboard": { icon: MdDashboard, path: "/home" },
+  Dashboard: { icon: MdDashboard, path: "/dashboard" },
+  DashBoard: { icon: MdDashboard, path: "/dashboard" },
+  "Main Dashboard": { icon: MdDashboard, path: "/dashboard" },
   General: { icon: MdPayment, path: "/report/general" },
   "Customer Details": { icon: RiBankLine, path: "/report/billing-payment" },
   Analysis: { icon: FaBoxes, path: "/report/analysis" },
@@ -337,6 +337,21 @@ export const buildTopics = (roleReports: RoleReportApiItem[]): Topic[] => {
 
     topicIndex += 1;
   }
+
+  topics.sort((a, b) => {
+    const aIsDashboard = a.path.toLowerCase() === "/dashboard";
+    const bIsDashboard = b.path.toLowerCase() === "/dashboard";
+
+    if (aIsDashboard && !bIsDashboard) {
+      return -1;
+    }
+
+    if (!aIsDashboard && bIsDashboard) {
+      return 1;
+    }
+
+    return 0;
+  });
 
   return topics;
 };
