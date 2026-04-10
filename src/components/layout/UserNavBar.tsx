@@ -61,9 +61,9 @@ const UserNavBar = () => {
       {/* Left Side - Logo & Branding */}
       <div className="absolute left-4 sm:left-6 top-1/2 transform -translate-y-1/2">
         <Link
-          to="/home"
+          to="/dashboard"
           className="flex items-center group transition-all duration-300 hover:scale-105"
-          aria-label="Go to Home"
+          aria-label="Go to Dashboard"
         >
           {/* <div className="relative">
             <div className="w-12 sm:w-14 md:w-16 transition-all duration-300 flex items-center group-hover:scale-110">

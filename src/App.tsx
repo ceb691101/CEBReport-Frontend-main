@@ -10,7 +10,7 @@ import MaterialDetails from "./mainTopics/inventory/MaterialDetails";
 import ReportRoutes from "./routes/ReportRoutes";
 import CostCenterTrial from "./mainTopics/TrialBalance/CostCenterTrial";
 // import SelectCostCenterTrial from "./mainTopics/TrialBalance/SelectCostCeneterTrial";
-import Home from "./pages/Dashboard";
+import Dashboard from "./pages/Dashboard.tsx";
 
 function App() {
 	return (
@@ -19,10 +19,19 @@ function App() {
 				<Route path="/" element={<LoginPage />} />
 
 				<Route
-					path="/home"
+					path="/dashboard"
 					element={
 						<Layout>
-							<Home />
+							<Dashboard />
+						</Layout>
+					}
+				/>
+
+				<Route
+					path="/dashboard/:dashboardId"
+					element={
+						<Layout>
+							<Dashboard />
 						</Layout>
 					}
 				/>
