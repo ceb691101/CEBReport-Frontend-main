@@ -1,26 +1,19 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const BillingFinanceReports = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Billing Finance Reports"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
-    // Get Billing & Payment topic's subtopics directly from sidebarData
-    const billingFTopic = sidebarData.find(
-      (topic) => topic.name === "Billing Finance Reports"
-    );
-    if (billingFTopic) {
-      setSubtopics(billingFTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -30,19 +23,6 @@ const BillingFinanceReports = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Financial statement Reports": 
-      case "Financial Reports":     
-        return <div>{subtopicName} Content</div>;
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
   return (
     <div className="flex flex-col gap-4 pt-5">
       {subtopics.map((subtopic) => (
@@ -53,7 +33,7 @@ const BillingFinanceReports = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
       <Outlet />
@@ -62,3 +42,8 @@ const BillingFinanceReports = () => {
 };
 
 export default BillingFinanceReports;
+
+
+
+
+

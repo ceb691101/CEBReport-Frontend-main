@@ -37,6 +37,24 @@ function App() {
 				/>
 
 				<Route
+					path="/report/dashboard"
+					element={
+						<Layout>
+							<Home />
+						</Layout>
+					}
+				/>
+
+				<Route
+					path="/report/Dashboard"
+					element={
+						<Layout>
+							<Home />
+						</Layout>
+					}
+				/>
+
+				<Route
 					path="/user"
 					element={
 						<Layout>
