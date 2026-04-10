@@ -5,6 +5,7 @@ import "./index.css";
 
 import LoginPage from "./pages/LoginPage";
 import Layout from "./Layout";
+import HomePage from "./pages/HomePage.tsx";
 import UserDetails from "./pages/UserDetails";
 import MaterialDetails from "./mainTopics/inventory/MaterialDetails";
 import ReportRoutes from "./routes/ReportRoutes";
@@ -17,6 +18,15 @@ function App() {
 		<>
 			<Routes>
 				<Route path="/" element={<LoginPage />} />
+
+				<Route
+					path="/home"
+					element={
+						<Layout>
+							<HomePage />
+						</Layout>
+					}
+				/>
 
 				<Route
 					path="/dashboard"
@@ -36,11 +46,11 @@ function App() {
 					}
 				/>
 
-				<Route
+				{/* <Route
 					path="/report/dashboard"
 					element={
 						<Layout>
-							<Home />
+							<HomePage />
 						</Layout>
 					}
 				/>
@@ -49,10 +59,10 @@ function App() {
 					path="/report/Dashboard"
 					element={
 						<Layout>
-							<Home />
+							<HomePage />
 						</Layout>
 					}
-				/>
+				/> */}
 
 				<Route
 					path="/user"
