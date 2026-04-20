@@ -74,6 +74,7 @@ const Reveal: React.FC<RevealProps> = ({ children, delay = 0, className = "" }) 
 export default function FinancialDashboardPage() {
   const navigate = useNavigate();
   const activeDashboard = "financial";
+  const [selectedDivision, setSelectedDivision] = useState("all");
   const [pivTotal, setPivTotal] = useState<{ date: string; amount: number }[]>([]);
   const [pivDivision, setPivDivision] = useState<{ date: string; company: string; amount: number }[]>([]);
   const [stockTotal, setStockTotal] = useState<number>(0);
@@ -119,11 +120,26 @@ export default function FinancialDashboardPage() {
         setStockTotal(typeof getVal(stockTotalData) === "number" ? getVal(stockTotalData) : 0);
         setStockDivision(Array.isArray(getVal(stockDivData)) ? getVal(stockDivData) : []);
 
-        const fmtDate = (d: string) => d ? new Date(d).toLocaleTimeString() : null;
+        const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleTimeString() : null);
         setPivTotalTime(fmtDate(getAt(pivTotalData)));
         setStockTotalTime(fmtDate(getAt(stockTotalData)));
 
-        setPivLastUpdated(new Date().toLocaleTimeString());
+        const fetchedAtValues = [
+          getAt(pivTotalData),
+          getAt(pivDivData),
+          getAt(stockTotalData),
+          getAt(stockDivData),
+        ]
+          .filter(Boolean)
+          .map((d: string) => new Date(d))
+          .filter((d) => !isNaN(d.getTime()));
+
+        const latestFetchedAt =
+          fetchedAtValues.length > 0
+            ? new Date(Math.max(...fetchedAtValues.map((d) => d.getTime())))
+            : null;
+
+        setPivLastUpdated(latestFetchedAt ? latestFetchedAt.toLocaleTimeString() : null);
       } catch (err: any) {
         setPivError(err.message || "Failed to load PIV data");
       } finally {
@@ -138,9 +154,33 @@ export default function FinancialDashboardPage() {
     return v === "A" ? "hq" : v;
   };
 
+  const displayPivDivision = React.useMemo(() => {
+    if (selectedDivision === "all") return pivDivision;
+    return pivDivision.filter(item => normalizeCompany(item.company).toLowerCase() === selectedDivision.toLowerCase());
+  }, [pivDivision, selectedDivision]);
+
+  const displayStockDivision = React.useMemo(() => {
+    if (selectedDivision === "all") return stockDivision;
+    return stockDivision.filter(item => normalizeCompany(item.company).toLowerCase() === selectedDivision.toLowerCase());
+  }, [stockDivision, selectedDivision]);
+
+  const displayPivTotal = React.useMemo(() => {
+    if (selectedDivision === "all") return pivTotal;
+    const dailyMap: Record<string, number> = {};
+    displayPivDivision.forEach(item => {
+      dailyMap[item.date] = (dailyMap[item.date] || 0) + item.amount;
+    });
+    return Object.entries(dailyMap).map(([date, amount]) => ({ date, amount }));
+  }, [pivTotal, displayPivDivision, selectedDivision]);
+
+  const displayStockTotal = React.useMemo(() => {
+    if (selectedDivision === "all") return stockTotal;
+    return displayStockDivision.reduce((sum, item) => sum + (item.amount || 0), 0);
+  }, [stockTotal, displayStockDivision, selectedDivision]);
+
   const divisionChartData = React.useMemo(() => {
     const dateMap: { [key: string]: any } = {};
-    pivDivision.forEach((item) => {
+    displayPivDivision.forEach((item) => {
       const dateKey = new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
       if (!dateMap[dateKey]) {
         dateMap[dateKey] = { name: dateKey };
@@ -149,22 +189,22 @@ export default function FinancialDashboardPage() {
       dateMap[dateKey][comp] = (dateMap[dateKey][comp] || 0) + item.amount;
     });
     return Object.values(dateMap).sort((a, b) => new Date(b.name).getTime() - new Date(a.name).getTime());
-  }, [pivDivision]);
+  }, [displayPivDivision]);
 
   const companyKeys = React.useMemo(() => {
     const keys = new Set<string>();
-    pivDivision.forEach(item => keys.add(normalizeCompany(item.company)));
+    displayPivDivision.forEach(item => keys.add(normalizeCompany(item.company)));
     return Array.from(keys);
-  }, [pivDivision]);
+  }, [displayPivDivision]);
 
   const total7DayCollection = React.useMemo(() => {
-    return pivTotal.reduce((sum, item) => sum + (item.amount || 0), 0);
-  }, [pivTotal]);
+    return displayPivTotal.reduce((sum, item) => sum + (item.amount || 0), 0);
+  }, [displayPivTotal]);
 
   const latestPivDate = React.useMemo(() => {
-    if (pivTotal.length === 0) return null;
-    return pivTotal.reduce((max, item) => (new Date(item.date) > new Date(max) ? item.date : max), pivTotal[0].date);
-  }, [pivTotal]);
+    if (displayPivTotal.length === 0) return null;
+    return displayPivTotal.reduce((max, item) => (new Date(item.date) > new Date(max) ? item.date : max), displayPivTotal[0].date);
+  }, [displayPivTotal]);
 
   const latestPivLabel = React.useMemo(() => {
     return latestPivDate
@@ -174,21 +214,21 @@ export default function FinancialDashboardPage() {
 
   const pivDivisionLatest = React.useMemo(() => {
     if (!latestPivDate) return [] as { date: string; company: string; amount: number }[];
-    return pivDivision.filter((item) => item.date === latestPivDate);
-  }, [pivDivision, latestPivDate]);
+    return displayPivDivision.filter((item) => item.date === latestPivDate);
+  }, [displayPivDivision, latestPivDate]);
 
   const pivDivisionLatestTotal = React.useMemo(() => {
     return pivDivisionLatest.reduce((sum, item) => sum + (item.amount || 0), 0);
   }, [pivDivisionLatest]);
 
   const pivDailySeries = React.useMemo(() => {
-    return [...pivTotal]
+    return [...displayPivTotal]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .map((item) => ({
         ...item,
         label: new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       }));
-  }, [pivTotal]);
+  }, [displayPivTotal]);
 
   const colors = ["#813405", "#d45113", "#f9a03f", "#f8dda4", "#a1a1aa"];
 
@@ -200,16 +240,10 @@ export default function FinancialDashboardPage() {
           onSelectDashboard={(dashboard) => navigate(`/dashboard/${dashboard}`)}
         />
         <div className="flex-1">
-          <DashboardHeader title="Financial/Accounting Dashboard" />
+          <DashboardHeader title="Financial/Accounting Dashboard" selectedDivision={selectedDivision} onDivisionChange={setSelectedDivision} />
           <div className={`bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-10 transition-all duration-1000 opacity-100`}>
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Financial Dashboard</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Last 7 Days Collections &amp; Current Stock — All Divisions
-              </p>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto">
               {pivLastUpdated && (
                 <span className="text-xs text-gray-500 bg-gray-100 rounded-lg px-3 py-1.5 font-medium">
@@ -249,13 +283,13 @@ export default function FinancialDashboardPage() {
                 <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">7 Days</span>
               </div>
               <h3 className="text-xl font-bold text-gray-900">PIV Collection</h3>
-              {pivLoading ? (
-                <div className="h-8 w-48 bg-gray-100 rounded-lg animate-pulse mt-1" />
-              ) : null}
-              <p className="text-xs text-gray-500 mt-1.5">
-                All Divisions
-                {pivTotalTime && <span className="block text-[10px] opacity-70 mt-1 whitespace-nowrap">Data from DB: {pivTotalTime}</span>}
-              </p>
+                {pivLoading ? (
+                  <div className="h-8 w-48 bg-gray-100 rounded-lg animate-pulse mt-1" />
+                ) : null}
+                <p className="text-xs text-gray-500 mt-1.5">
+                  {selectedDivision === "all" ? "All Divisions" : `Division ${selectedDivision.toUpperCase()}`}
+                  {pivTotalTime && <span className="block text-[10px] opacity-70 mt-1 whitespace-nowrap">Data from DB: {pivTotalTime}</span>}
+                </p>
               {!pivLoading && pivDailySeries.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-200/50 space-y-2">
                   {pivDailySeries.map((item) => (
@@ -289,7 +323,7 @@ export default function FinancialDashboardPage() {
                   <div className="h-8 w-48 bg-gray-100 rounded-lg animate-pulse mt-2" />
                 ) : (
                   <p className="text-3xl font-bold text-gray-900 mt-2">
-                    {(stockTotal / 1_000_000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M LKR
+                    {(displayStockTotal / 1_000_000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M LKR
                   </p>
                 )}
                 <p className="text-xs text-gray-500 mt-2">
@@ -297,16 +331,16 @@ export default function FinancialDashboardPage() {
                   {stockTotalTime && <span className="block text-[10px] opacity-70 mt-0.5 whitespace-nowrap">Data from DB: {stockTotalTime}</span>}
                 </p>
               </div>
-              {!pivLoading && stockDivision.length > 0 && (
+              {!pivLoading && displayStockDivision.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-200/50 space-y-2">
                   <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-3">Breakdown by Division</p>
-                  {stockDivision.map((item) => (
+                  {displayStockDivision.map((item) => (
                     <div key={item.company} className="flex items-center justify-between gap-3 text-xs">
                       <span className="min-w-[56px] font-medium text-gray-600">{normalizeCompany(item.company)}</span>
                       <div className="flex-1 h-2 rounded-full bg-blue-100 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-[color:var(--ceb-navy)]"
-                          style={{ width: `${stockTotal > 0 ? Math.max((item.amount / stockTotal) * 100, 8) : 0}%` }}
+                          style={{ width: `${displayStockTotal > 0 ? Math.max((item.amount / displayStockTotal) * 100, 8) : 0}%` }}
                         />
                       </div>
                       <span className="min-w-[80px] text-right font-semibold text-gray-800">
@@ -384,7 +418,7 @@ export default function FinancialDashboardPage() {
         </div>
 
         <Reveal delay={300}>
-          {!pivLoading && (pivDivision.length > 0 || stockDivision.length > 0) && (
+          {!pivLoading && (displayPivDivision.length > 0 || displayStockDivision.length > 0) && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white flex items-center gap-3">
                 <FileText className="w-5 h-5 text-[color:var(--ceb-maroon)]/60" />
@@ -413,11 +447,11 @@ export default function FinancialDashboardPage() {
                     {Array.from(
                       new Set([
                         ...pivDivisionLatest.map(d => normalizeCompany(d.company)),
-                        ...stockDivision.map(d => d.company || "Other"),
+                        ...displayStockDivision.map(d => d.company || "Other"),
                       ])
                     ).map((company, i) => {
                       const piv = pivDivisionLatest.find(d => normalizeCompany(d.company) === company);
-                      const stk = stockDivision.find(d => (d.company || "Other") === company);
+                      const stk = displayStockDivision.find(d => (d.company || "Other") === company);
                       return (
                         <tr key={company}
                           className={`border-b border-gray-100 hover:bg-orange-50/30 transition-colors duration-150 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
@@ -443,7 +477,7 @@ export default function FinancialDashboardPage() {
                         LKR {pivDivisionLatestTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-4 text-right font-mono text-[color:var(--ceb-navy)] text-base">
-                        LKR {stockTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        LKR {displayStockTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                     </tr>
                   </tbody>

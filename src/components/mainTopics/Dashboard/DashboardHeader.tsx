@@ -2,19 +2,25 @@ import React, { useState } from "react";
 
 interface DashboardHeaderProps {
   title: string;
+  selectedDivision?: string;
+  onDivisionChange?: (id: string) => void;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   title,
+  selectedDivision: externalDivision,
+  onDivisionChange,
 }) => {
-  const [selectedDivision, setSelectedDivision] = useState("all");
+  const [internalDivision, setInternalDivision] = useState("all");
+  const selectedDivision = externalDivision !== undefined ? externalDivision : internalDivision;
+  const setDivision = onDivisionChange || setInternalDivision;
 
   const divisions = [
     { id: "all", label: "All Divisions" },
-    { id: "r1", label: "R1" },
-    { id: "r2", label: "R2" },
-    { id: "r3", label: "R3" },
-    { id: "r4", label: "R4" },
+    { id: "d1", label: "D1" },
+    { id: "d2", label: "D2" },
+    { id: "d3", label: "D3" },
+    { id: "d4", label: "D4" },
   ];
 
   return (
@@ -31,7 +37,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   <button
                     key={division.id}
                     type="button"
-                    onClick={() => setSelectedDivision(division.id)}
+                    onClick={() => setDivision(division.id)}
                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                       isSelected
                         ? "bg-white shadow-sm text-gray-900"
