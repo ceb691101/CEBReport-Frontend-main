@@ -26,6 +26,23 @@ const fieldBaseClass =
 const buttonBaseClass =
   "rounded-lg px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
 
+const toTitleCase = (value: string) => {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  return trimmed
+    .split(/\s+/)
+    .map((word) =>
+      word.length === 1
+        ? word.toUpperCase()
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join(" ");
+};
+
 const ReportCategory = () => {
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
   const [selectedCatCode, setSelectedCatCode] = useState<string | null>(null);
@@ -72,6 +89,7 @@ const ReportCategory = () => {
     }
 
     const normalizedCatCode = form.catCode.trim().toUpperCase();
+    const normalizedCatName = toTitleCase(form.catName);
 
     setIsSubmitting(true);
 
@@ -83,7 +101,7 @@ const ReportCategory = () => {
         },
         body: JSON.stringify({
           catCode: normalizedCatCode,
-          catName: form.catName.trim(),
+          catName: normalizedCatName,
         }),
       });
 
@@ -114,6 +132,7 @@ const ReportCategory = () => {
     }
 
     const normalizedCatCode = form.catCode.trim().toUpperCase();
+    const normalizedCatName = toTitleCase(form.catName);
 
     setIsSubmitting(true);
 
@@ -127,7 +146,7 @@ const ReportCategory = () => {
           },
           body: JSON.stringify({
             catCode: normalizedCatCode,
-            catName: form.catName.trim(),
+            catName: normalizedCatName,
           }),
         }
       );
@@ -204,7 +223,7 @@ const ReportCategory = () => {
     setSelectedCatCode(category.catCode);
     setForm({
       catCode: category.catCode,
-      catName: category.catName,
+      catName: toTitleCase(category.catName),
     });
     setMode("edit");
   };
@@ -222,9 +241,9 @@ const ReportCategory = () => {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,40%)_minmax(0,60%)] xl:items-start">
       {/* Right side: Form */}
-      <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-1">
+      <div className="w-full bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-1">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold text-stone-900">Report Category Form</h2>
         </div>
@@ -265,6 +284,9 @@ const ReportCategory = () => {
                 className={fieldBaseClass}
                 value={form.catName}
                 onChange={(e) => setForm({ ...form, catName: e.target.value })}
+                onBlur={(e) =>
+                  setForm({ ...form, catName: toTitleCase(e.target.value) })
+                }
                 placeholder="e.g., Work In Progress"
               />
             </div>
@@ -317,7 +339,7 @@ const ReportCategory = () => {
       </div>
 
       {/* Left side: Table */}
-      <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-2">
+      <div className="w-full bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-2">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold text-stone-900">Report Category Table</h2>
           <button

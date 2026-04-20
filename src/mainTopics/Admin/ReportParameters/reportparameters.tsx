@@ -225,17 +225,13 @@ const ReportParameters = () => {
     setIsUpdatingList(true);
     setLastUpdatedRows(null);
 
-    const paramList = buildParamList("", filteredRows);
-
     try {
-      const response = await fetch("/roleadminapi/api/reppara/populateparamts", {
+      const response = await fetch("/roleadminapi/api/reppara/populate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          paramList,
-        }),
+        body: JSON.stringify({}),
       });
 
       const payload = await response.json();
@@ -244,9 +240,9 @@ const ReportParameters = () => {
         throw new Error(payload.errorMessage);
       }
 
-      const rows = Number(payload?.data?.updatedRows ?? 0);
-      const reports = Number(payload?.data?.processedReports ?? 0);
-      const params = Number(payload?.data?.processedParams ?? 0);
+      const rows     = Number(payload?.data?.updatedRows ?? 0);
+      const reports  = Number(payload?.data?.processedReports ?? 0);
+      const params   = Number(payload?.data?.processedParams ?? 0);
       const appended = Number(payload?.data?.appendedParams ?? 0);
       setLastUpdatedRows(rows);
 
@@ -254,11 +250,10 @@ const ReportParameters = () => {
         toast.info("No pending parameters found to populate.");
       } else {
         toast.success(
-          `Populate completed. Reports processed: ${reports}, updated: ${rows}, appended params: ${appended}.`
+          `Populate completed. Params processed: ${params}, reports updated: ${rows}, appended: ${appended}.`
         );
       }
 
-      setParameterRows((current) => current.map((row) => ({ ...row, populated: true })));
       await loadParameters();
 
       return true;
@@ -371,8 +366,8 @@ const ReportParameters = () => {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
-          <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-1">
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,40%)_minmax(0,60%)] xl:items-start">
+          <div className="w-full bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-1">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-semibold text-stone-900">Report Parameters Form</h2>
             </div>
@@ -468,7 +463,7 @@ const ReportParameters = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-2">
+          <div className="w-full bg-white rounded-3xl shadow-sm border border-stone-200 p-6 flex flex-col h-full xl:order-2">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-semibold text-stone-900">Report Parameters Table</h2>
               <button

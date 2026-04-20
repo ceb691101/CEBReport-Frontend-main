@@ -296,7 +296,12 @@ const UserRoles = () => {
 	}, [form.motherCompany]);
 
 	const handleFieldChange = (field: keyof CreateRoleForm, value: string) => {
-		setForm((current) => ({ ...current, [field]: value }));
+		const normalizedValue =
+			field === "roleId" || field === "userType"
+				? value.toUpperCase()
+				: value;
+
+		setForm((current) => ({ ...current, [field]: normalizedValue }));
 	};
 
 	const handleReset = () => {
@@ -385,9 +390,9 @@ const UserRoles = () => {
 	const buildRolePayload = (originalEpfNo?: string) => ({
 		originalEpfNo: originalEpfNo?.trim() ?? "",
 		epfNo: form.epfNo.trim(),
-		roleId: form.roleId.trim(),
+		roleId: form.roleId.trim().toUpperCase(),
 		roleName: form.name.trim(),
-		userType: form.userType.trim(),
+		userType: form.userType.trim().toUpperCase(),
 		company: form.motherCompany.trim(),
 		motherCompany: form.businessCompany.trim(),
 		userGroup: form.userGroup.trim(),
@@ -535,10 +540,10 @@ const UserRoles = () => {
 	return (
 		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
 			<div className="mx-auto max-w-7xl space-y-6">
-				<section className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
+				<section className="grid gap-6 xl:grid-cols-[minmax(0,40%)_minmax(0,60%)] xl:items-start">
 					<form
 						onSubmit={handleSubmit}
-						className="rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)] xl:order-1"
+						className="w-full rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)] xl:order-1"
 					>
 						<div className="flex items-start justify-between gap-4">
 							<div>
@@ -692,7 +697,7 @@ const UserRoles = () => {
 						</div>
 					</form>
 
-					<section className="rounded-[28px] border border-stone-200 bg-white p-6 shadow-[0_16px_50px_rgba(70,40,20,0.06)] xl:order-2">
+					<section className="w-full rounded-[28px] border border-stone-200 bg-white p-6 shadow-[0_16px_50px_rgba(70,40,20,0.06)] xl:order-2">
 						<div className="flex flex-wrap items-center justify-between gap-4">
 							<div>
 								<h2 className="text-2xl font-semibold text-stone-900">User Role Table</h2>

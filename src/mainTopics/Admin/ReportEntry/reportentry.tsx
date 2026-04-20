@@ -65,6 +65,8 @@ const actionButtonDarkClass =
 const actionButtonLightClass =
     "rounded-lg border border-[#7A0000]/20 bg-white px-5 py-2.5 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5";
 
+const normalizeRepId = (value: string) => value.trim().toUpperCase();
+
 const ReportEntry = () => {
     const [categories, setCategories] = useState<CategoryRecord[]>([]);
     const [entries, setEntries] = useState<ReportEntryRecord[]>([]);
@@ -197,7 +199,8 @@ const ReportEntry = () => {
     const saveEntryParamList = async (reportId: string, paraNames: string[]) => {
         if (!reportId.trim()) return;
 
-        const paramList = buildParamListValue(reportId, paraNames);
+        const normalizedReportId = normalizeRepId(reportId);
+        const paramList = buildParamListValue(normalizedReportId, paraNames);
 
         const response = await fetch("/roleadminapi/api/reppara/populateparamts", {
             method: "POST",
@@ -205,7 +208,7 @@ const ReportEntry = () => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                repId: reportId.trim(),
+                repId: normalizedReportId,
                 paramList,
             }),
         });
@@ -219,7 +222,9 @@ const ReportEntry = () => {
     const handleAdd = async (e?: FormEvent) => {
         if (e) e.preventDefault();
 
-        if (!form.repId.trim() || !form.catCode.trim() || !form.repName.trim()) {
+        const normalizedRepId = normalizeRepId(form.repId);
+
+        if (!normalizedRepId || !form.catCode.trim() || !form.repName.trim()) {
             toast.error("Report ID, Category, and Name are required.");
             return;
         }
@@ -250,7 +255,7 @@ const ReportEntry = () => {
                 },
                 body: JSON.stringify({
                     repIdNo: nextRepIdNo,
-                    repId: form.repId.trim(),
+                    repId: normalizedRepId,
                     catCode: form.catCode.trim(),
                     repName: form.repName.trim(),
                     favorite: form.favorite ? 1 : 0,
@@ -265,7 +270,7 @@ const ReportEntry = () => {
             }
 
             if (selectedParameters.length > 0) {
-                await saveEntryParamList(form.repId.trim(), selectedParameters);
+                await saveEntryParamList(normalizedRepId, selectedParameters);
             }
 
             toast.success(payload?.data?.message || "Report entry added successfully.");
@@ -321,7 +326,7 @@ const ReportEntry = () => {
                 throw new Error(payload.data.message || "Failed to update report entry.");
             }
 
-            await saveEntryParamList(form.repId.trim(), selectedParameters);
+            await saveEntryParamList(normalizeRepId(form.repId), selectedParameters);
 
             toast.success(payload?.data?.message || "Report entry updated successfully.");
             handleReset();
@@ -410,10 +415,10 @@ const ReportEntry = () => {
     return (
         <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
             <div className="mx-auto max-w-7xl space-y-6">
-                <section className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
+                <section className="grid gap-6 xl:grid-cols-[minmax(0,40%)_minmax(0,60%)] xl:items-start">
                     <form
                         onSubmit={(event) => event.preventDefault()}
-                        className="rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)] h-fit"
+                        className="h-fit w-full rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)]"
                     >
                         <div className="flex items-start justify-between gap-4">
                             <div>
@@ -448,7 +453,7 @@ const ReportEntry = () => {
                                     <Input
                                         label="Report ID"
                                         value={form.repId}
-                                        onChange={(value) => setForm({ ...form, repId: value })}
+                                        onChange={(value) => setForm({ ...form, repId: value.toUpperCase() })}
                                         placeholder="e.g., REP01"
                                         disabled={mode === "edit"}
                                     />
@@ -513,7 +518,7 @@ const ReportEntry = () => {
                                     <p className="text-xs font-semibold text-stone-600">Generated Parameters URL Pattern</p>
                                     <p className="mt-1 break-all font-mono text-xs text-[#8B0000]">
                                         {form.repId.trim()
-                                            ? buildParamListValue(form.repId.trim(), selectedParameters)
+                                            ? buildParamListValue(normalizeRepId(form.repId), selectedParameters)
                                             : "Enter Report ID to generate parameter URL pattern."}
                                     </p>
                                 </div>
@@ -577,7 +582,7 @@ const ReportEntry = () => {
                         </div>
                     </form>
 
-                    <div className="rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)]">
+                    <div className="w-full rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)]">
                         <div className="mb-4 flex items-center justify-between gap-3">
                             <h2 className="text-2xl font-semibold text-stone-900">Report Entry Table</h2>
                             <button

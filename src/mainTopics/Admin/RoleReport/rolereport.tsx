@@ -42,6 +42,7 @@ const normalizeKey = (value: unknown): string =>
 
 const RoleReport = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("category");
+  const [reportSearch, setReportSearch] = useState<string>("");
 
   const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
@@ -260,7 +261,23 @@ const RoleReport = () => {
   }, [activeReports, categoryNameByCode]);
 
   const reportsByNameGrouped = useMemo(() => {
-    const groups = reportsByName.reduce<Record<string, ReportRecord[]>>((acc, report) => {
+    const query = normalizeText(reportSearch).toUpperCase();
+    const searchableReports = query
+      ? reportsByName.filter((report) => {
+          const haystack = [
+            report.repId,
+            report.repName,
+            report.catCode,
+            report.catName,
+          ]
+            .map((item) => normalizeText(item).toUpperCase())
+            .join(" ");
+
+          return haystack.includes(query);
+        })
+      : reportsByName;
+
+    const groups = searchableReports.reduce<Record<string, ReportRecord[]>>((acc, report) => {
       const key = normalizeKey(report.catCode) || "UNCATEGORIZED";
       if (!acc[key]) {
         acc[key] = [];
@@ -276,7 +293,7 @@ const RoleReport = () => {
         catName: groupReports[0]?.catName || categoryNameByCode[catCode] || "",
         reports: groupReports.sort((a, b) => a.repId.localeCompare(b.repId)),
       }));
-  }, [reportsByName, categoryNameByCode]);
+  }, [reportsByName, categoryNameByCode, reportSearch]);
 
   const selectedRepIdsForAction = useMemo(() => {
     if (viewMode === "category") {
@@ -285,6 +302,16 @@ const RoleReport = () => {
 
     return Array.from(new Set(selectedReports));
   }, [viewMode, reportsByCategory, selectedReports]);
+
+  const allCategoryCodes = useMemo(
+    () => Array.from(new Set(categories.map((category) => category.catCode).filter(Boolean))),
+    [categories]
+  );
+
+  const allReportIds = useMemo(
+    () => Array.from(new Set(activeReports.map((report) => report.repId).filter(Boolean))),
+    [activeReports]
+  );
 
   const toggleCategory = (catCode: string) => {
     setSelectedCategories((current) =>
@@ -300,6 +327,41 @@ const RoleReport = () => {
         ? current.filter((id) => normalizeKey(id) !== normalizeKey(repId))
         : [...current, repId]
     );
+  };
+
+  const selectAllForCurrentMode = () => {
+    if (viewMode === "category") {
+      setSelectedCategories(allCategoryCodes);
+      return;
+    }
+
+    setSelectedReports(allReportIds);
+  };
+
+  const invertSelectionForCurrentMode = () => {
+    if (viewMode === "category") {
+      setSelectedCategories((current) =>
+        allCategoryCodes.filter(
+          (catCode) => !current.some((item) => normalizeKey(item) === normalizeKey(catCode))
+        )
+      );
+      return;
+    }
+
+    setSelectedReports((current) =>
+      allReportIds.filter(
+        (repId) => !current.some((item) => normalizeKey(item) === normalizeKey(repId))
+      )
+    );
+  };
+
+  const clearSelectionForCurrentMode = () => {
+    if (viewMode === "category") {
+      setSelectedCategories([]);
+      return;
+    }
+
+    setSelectedReports([]);
   };
 
   const runAction = async (mode: "add" | "replace" | "remove") => {
@@ -460,6 +522,7 @@ const RoleReport = () => {
     setEnteredUserName("");
     setSelectedCategories([]);
     setSelectedReports([]);
+    setReportSearch("");
     setViewMode("category");
     toast.info("Selections reset.");
   };
@@ -497,14 +560,17 @@ const RoleReport = () => {
           </div>
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-[1fr_1.5fr]">
-          <div className="rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)] xl:order-2">
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,50%)_minmax(0,50%)] xl:items-stretch">
+          <div className="flex h-full min-h-[78vh] w-full flex-col rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)] xl:order-2">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-2xl font-semibold text-stone-900">Role Report Table</h2>
+              <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-semibold text-stone-600">
+                {roles.length} users
+              </span>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-stone-200">
-              <div className="max-h-[420px] overflow-auto">
+            <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-stone-200">
+              <div className="max-h-[calc(78vh-11rem)] overflow-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="sticky top-0 z-10 bg-stone-100 text-xs uppercase tracking-[0.15em] text-stone-500">
                     <tr>
@@ -556,15 +622,15 @@ const RoleReport = () => {
             </div>
           </div>
 
-          <div className="space-y-5 xl:order-1">
-            <div className="rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)]">
+          <div className="flex h-full min-h-[78vh] w-full flex-col space-y-5 xl:order-1">
+            <div className="flex h-full flex-col rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)]">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-2xl font-semibold text-stone-900">Role Report Form</h2>
               </div>
-              <fieldset className="rounded-2xl border border-stone-300 px-3 pb-4 pt-2">
+              <fieldset className="flex flex-1 flex-col rounded-2xl border border-stone-300 px-3 pb-4 pt-2">
                 <legend className="px-2 text-sm font-semibold text-stone-800"></legend>
 
-                <div className="grid gap-3 pt-1">
+                <div className="grid flex-1 gap-3 pt-1">
                   <div className="grid items-center gap-2 sm:grid-cols-[80px_16px_1fr]">
                     <label className="text-sm font-medium text-stone-800">Name</label>
                     <span className="text-sm text-stone-500">:</span>
@@ -616,14 +682,42 @@ const RoleReport = () => {
                         </label>
                       </div>
 
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={selectAllForCurrentMode}
+                          className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-700 hover:bg-stone-100"
+                        >
+                          select all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={invertSelectionForCurrentMode}
+                          className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-700 hover:bg-stone-100"
+                        >
+                          invert selection
+                        </button>
+                        <button
+                          type="button"
+                          onClick={clearSelectionForCurrentMode}
+                          className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-700 hover:bg-stone-100"
+                        >
+                          select none
+                        </button>
+                      </div>
+
                       {viewMode === "category" ? (
                         <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                          <div className="mb-2 flex items-center justify-between text-xs font-semibold text-stone-600">
+                            <span>Categories</span>
+                            <span>{selectedCategories.length} selected</span>
+                          </div>
                           {isCategoriesLoading ? (
                             <div className="text-sm text-stone-500">Loading categories...</div>
                           ) : categories.length === 0 ? (
                             <div className="text-sm text-stone-500">No categories found.</div>
                           ) : (
-                            <div className="grid max-h-[220px] grid-cols-1 gap-2 overflow-auto pr-1">
+                            <div className="grid max-h-[240px] grid-cols-1 gap-2 overflow-auto pr-1">
                               {categories.map((category) => (
                                 <label key={category.catCode} className="flex items-start gap-2 rounded-lg bg-white px-2.5 py-2 text-sm text-stone-700">
                                   <input
@@ -642,7 +736,19 @@ const RoleReport = () => {
                         </div>
                       ) : (
                         <div className="space-y-3 rounded-2xl border border-stone-200 bg-stone-50 p-3">
-                          <div className="max-h-[300px] space-y-3 overflow-auto pr-1">
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={reportSearch}
+                              onChange={(e) => setReportSearch(e.target.value)}
+                              placeholder="Search report id, name, or category"
+                              className={fieldBaseClass}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-xs font-semibold text-stone-600">
+                            <span>Reports</span>
+                            <span>{selectedReports.length} selected</span>
+                          </div>
+                          <div className="max-h-[320px] space-y-3 overflow-auto pr-1">
                             {reportsByNameGrouped.map((group) => (
                               <div key={group.catCode}>
                                 <div className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-stone-800">
@@ -709,7 +815,6 @@ const RoleReport = () => {
                 Selected for action: <span className="font-semibold text-stone-800">{selectedRepIdsForAction.length}</span> reports
               </p>
             </div>
-
           </div>
         </section>
       </div>
