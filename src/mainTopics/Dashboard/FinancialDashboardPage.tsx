@@ -99,10 +99,10 @@ export default function FinancialDashboardPage() {
       try {
         const query = pivFetchCount > 0 ? "?refresh=true" : "";
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(`/pivapi/api/piv/piv-total${query}`, { headers: { Accept: "application/json" } }),
-          fetch(`/pivapi/api/piv/piv-division${query}`, { headers: { Accept: "application/json" } }),
-          fetch(`/pivapi/api/piv/stock-total${query}`, { headers: { Accept: "application/json" } }),
-          fetch(`/pivapi/api/piv/stock-division${query}`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/pivapi/api/piv/piv-total${query}`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/pivapi/api/piv/piv-division${query}`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/pivapi/api/piv/stock-total${query}`, { headers: { Accept: "application/json" } }),
+          fetch(`/misapi/pivapi/api/piv/stock-division${query}`, { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch PIV data");
         const [pivTotalData, pivDivData, stockTotalData, stockDivData] = await Promise.all([
