@@ -5,7 +5,6 @@ import {
   Users,
   Zap,
   DollarSign,
-  Target,
   PieChart,
   Sun,
   ArrowUp,
@@ -58,12 +57,6 @@ interface CustomerCounts {
     netPlusPlus: number;
   };
   zeroConsumption: number;
-}
-
-interface TopCustomer {
-  name: string;
-  consumption: number;
-  type: string;
 }
 
 interface MonthlySalesData {
@@ -451,52 +444,6 @@ const Reveal: React.FC<RevealProps> = ({ children, delay = 0, className = "" }) 
   );
 };
 
-// ─── RegionBar ────────────────────────────────────────────────────────────────
-// Animates a progress bar from 0 → value on scroll, auto-colors by performance.
-
-interface RegionBarProps {
-  region: string;
-  value: number;
-  delay?: number;
-}
-
-const RegionBar: React.FC<RegionBarProps> = ({ region, value, delay = 0 }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const { inView } = useInView(ref as React.RefObject<Element>, { threshold: 0.15 });
-
-  const barColor =
-    value >= 80 ? "#16a34a" :
-    value >= 65 ? "#2563eb" :
-    value >= 50 ? "#d97706" :
-                  "#dc2626";
-
-  const labelColor = barColor;
-
-  return (
-    <div ref={ref}>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="text-gray-600">{region}</span>
-        <span className="font-medium">
-          <span style={{ color: labelColor }}>{value}%</span>
-          <span className="text-gray-400 mx-1">/</span>
-          <span className="text-gray-500">100%</span>
-        </span>
-      </div>
-      <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-        <div
-          style={{
-            height: "100%",
-            borderRadius: "9999px",
-            backgroundColor: barColor,
-            width:      inView ? `${value}%` : "0%",
-            transition: inView ? `width 0.9s cubic-bezier(0.4,0,0.2,1) ${delay}ms` : "none",
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
 // ─── SolarCapacityChart ───────────────────────────────────────────────────────
 // Grouped bars show ordinary vs bulk capacity per net type.
 
@@ -578,7 +525,6 @@ const DefaultDashboardPage: React.FC = () => {
   const { triggerCount: kpiTrigger }        = useInView(kpiRef        as React.RefObject<Element>, { threshold: 0.15 });
   const { triggerCount: newCustTrigger }    = useInView(newCustomersPieRef as React.RefObject<Element>, { threshold: 0.3 });
   const { triggerCount: solarPieTrigger }   = useInView(solarPieRef   as React.RefObject<Element>, { threshold: 0.3 });
-  const { triggerCount: bottomGridTrigger } = useInView(bottomGridRef as React.RefObject<Element>, { threshold: 0.1 });
   const { inView: kioskTrendInView, triggerCount: kioskTrendTrigger } = useInView(kioskTrendRef as React.RefObject<Element>, { threshold: 0.35 });
 
   // Pie chart animation keys — new key = new @keyframe names = animation replays
@@ -599,12 +545,12 @@ const DefaultDashboardPage: React.FC = () => {
   });
   const [activeBillCycle, setActiveBillCycle]         = useState<string>("");
   const [customerCountsLoading, setCustomerCountsLoading] = useState(true);
-  const [customerCountsError, setCustomerCountsError]     = useState<string | null>(null);
+  const [, setCustomerCountsError]     = useState<string | null>(null);
   const [solarLoading, setSolarLoading]                   = useState(true);
   const [bulkSolarLoading, setBulkSolarLoading]           = useState(true);
-  const [solarError, setSolarError]                       = useState<string | null>(null);
+  const [, setSolarError]                       = useState<string | null>(null);
   const [bulkCountLoading, setBulkCountLoading]           = useState(true);
-  const [bulkCountError, setBulkCountError]               = useState<string | null>(null);
+  const [, setBulkCountError]               = useState<string | null>(null);
 
   // ── Sales / Collection ────────────────────────────────────────────────────
   const [monthlySalesData, setMonthlySalesData]         = useState<MonthlySalesData[]>([]);
@@ -616,17 +562,6 @@ const DefaultDashboardPage: React.FC = () => {
   const [kioskDailyRecords, setKioskDailyRecords]           = useState<KioskCollectionRecord[]>([]);
   const [kioskLoading, setKioskLoading]                     = useState(true);
   const [kioskError, setKioskError]                         = useState<string | null>(null);
-
-  // ── Static / mock data ────────────────────────────────────────────────────
-  const [topCustomers] = useState<TopCustomer[]>(
-    [
-      { name: "Robert Johnson", consumption: 29876, type: "Bulk"     },
-      { name: "Emily Davis",    consumption: 32456, type: "Ordinary" },
-      { name: "Michael Brown",  consumption: 35678, type: "Ordinary" },
-      { name: "Jane Smith",     consumption: 38456, type: "Bulk"     },
-      { name: "John Doe",       consumption: 45231, type: "Bulk"     },
-    ].sort((a, b) => a.consumption - b.consumption)
-  );
 
   const [monthlyNewCustomers] = useState<MonthlyNewCustomers[]>(
     [
@@ -839,12 +774,12 @@ const DefaultDashboardPage: React.FC = () => {
 
         const [ordinaryRecords, bulkRecords] = await Promise.all([
           fetchSalesApiWithFallback(
-            "/api/dashboard/salesCollection/range/ordinary",
+            "/misapi/api/dashboard/salesCollection/range/ordinary",
             "/misapi/api/dashboard/salesCollection/range/ordinary",
             "Ordinary sales/collection"
           ),
           fetchSalesApiWithFallback(
-            "/api/dashboard/salesCollection/range/bulk",
+            "/misapi/api/dashboard/salesCollection/range/bulk",
             "/misapi/api/dashboard/salesCollection/range/bulk",
             "Bulk sales/collection"
           ),
@@ -911,8 +846,8 @@ const DefaultDashboardPage: React.FC = () => {
       setSolarCapacityError(null);
 
       try {
-        const ordinaryEndpoint = "/api/dashboard/solar-ordinary-customers/generation-capacity";
-        const bulkEndpoint = "/api/dashboard/solar-bulk-customers/generation-capacity";
+        const ordinaryEndpoint = "/misapi/api/dashboard/solar-ordinary-customers/generation-capacity";
+        const bulkEndpoint = "/misapi/api/dashboard/solar-bulk-customers/generation-capacity";
 
         const ordinaryData = await fetchCapacityByEndpoint(ordinaryEndpoint, selectedSolarBillCycle);
 
@@ -992,7 +927,7 @@ const DefaultDashboardPage: React.FC = () => {
 
       try {
         const res = await fetch(
-          `/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`,
+          `/misapi/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`,
           { headers: { Accept: "application/json" } }
         );
 
@@ -1121,10 +1056,6 @@ const DefaultDashboardPage: React.FC = () => {
   const animatedNewOrdinary = useCountUp(totalNewOrdinary,  1400, true, newCustTrigger);
   const animatedNewBulk     = useCountUp(totalNewBulk,      1400, true, newCustTrigger);
   const animatedNewTotal    = useCountUp(totalNewCustomers, 1400, true, newCustTrigger);
-
-  const animatedSegOrdinary = useCountUp(customerCounts.ordinary, 1400, !customerCountsLoading, bottomGridTrigger);
-  const animatedSegBulk     = useCountUp(customerCounts.bulk,     1400, !bulkCountLoading,      bottomGridTrigger);
-  const animatedSegSolar    = useCountUp(totalSolarCustomers,      1400, !solarLoading && !bulkSolarLoading, bottomGridTrigger);
 
   // Solar pie — animated counts for each net type (ordinary + bulk), replay on solarPieTrigger
   const animatedOrdNetMetering   = useCountUp(customerCounts.solar.netMetering,   1200, !solarLoading, solarPieTrigger);
@@ -1713,39 +1644,10 @@ const DefaultDashboardPage: React.FC = () => {
                   </Reveal>
                 </div>
 
-                {/* ── Bottom 3-col grid ────────────────────────────────────── */}
-                <div ref={bottomGridRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* ── Bottom 1-col grid ────────────────────────────────────── */}
+                <div ref={bottomGridRef} className="grid grid-cols-1 gap-6">
 
                   <Reveal delay={0} className="lg:col-span-1 space-y-6">
-
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-gray-900">Top Customers (Sorted by Consumption - Lowest to Highest)</h3>
-                        <span className="text-xs text-gray-500">Current Month</span>
-                      </div>
-                      <div className="space-y-4">
-                        {topCustomers.map((customer, index) => (
-                          <div key={index} className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[color:var(--ceb-maroon)] to-[color:var(--ceb-maroon-2)] flex items-center justify-center text-white font-medium text-sm">
-                                {customer.name.charAt(0)}
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{customer.name}</p>
-                                <p className="text-xs text-gray-500">{customer.type}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-semibold text-gray-900">{formatNumber(customer.consumption)}</p>
-                              <p className="text-xs text-gray-500">kWh</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <button className="mt-4 w-full text-center text-sm text-[color:var(--ceb-maroon)] hover:text-[color:var(--ceb-maroon-2)] font-medium">
-                        View All Customers →
-                      </button>
-                    </div>
 
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                       <div className="flex items-center justify-between mb-4">
@@ -1787,89 +1689,6 @@ const DefaultDashboardPage: React.FC = () => {
                     </div>
                   </Reveal>
 
-                  <Reveal delay={120} className="lg:col-span-1 space-y-6">
-
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-gray-900">Target vs Actual by Region</h3>
-                        <Target className="w-4 h-4 text-gray-400" />
-                      </div>
-                      <div className="space-y-4">
-                        {([
-                          { region: "Central", value: 85 },
-                          { region: "East",    value: 72 },
-                          { region: "North",   value: 61 },
-                          { region: "South",   value: 78 },
-                          { region: "West",    value: 54 },
-                        ] as { region: string; value: number }[]).map(({ region, value }, i) => (
-                          <RegionBar key={region} region={region} value={value} delay={i * 80} />
-                        ))}
-                      </div>
-                      <div className="flex flex-wrap gap-3 mt-4 pt-3 border-t border-gray-100">
-                        {[
-                          { label: "≥ 80%",  color: "#16a34a" },
-                          { label: "65–79%", color: "#2563eb" },
-                          { label: "50–64%", color: "#d97706" },
-                          { label: "< 50%",  color: "#dc2626" },
-                        ].map(({ label, color }) => (
-                          <span key={label} className="flex items-center gap-1.5 text-xs text-gray-500">
-                            <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", backgroundColor: color }} />
-                            {label}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    
-                  </Reveal>
-
-                  <Reveal delay={240} className="lg:col-span-1 space-y-6">
-
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                      <h3 className="font-semibold text-gray-900 mb-3">Customer Segments (Sorted by Count)</h3>
-                      <div className="space-y-2">
-                        {[
-                          { label: "Ordinary", value: animatedSegOrdinary, loading: customerCountsLoading, error: customerCountsError },
-                          { label: "Bulk",     value: animatedSegBulk,     loading: bulkCountLoading,      error: bulkCountError      },
-                          { label: "Solar",    value: animatedSegSolar,    loading: solarLoading,          error: solarError          },
-                        ]
-                          .sort((a, b) => (typeof a.value === "number" ? a.value : 0) - (typeof b.value === "number" ? b.value : 0))
-                          .map((item) => (
-                            <div key={item.label} className="flex justify-between text-sm">
-                              <span>{item.label}</span>
-                              <span className="font-medium">
-                                {item.loading ? "Loading..." : item.error ? "Error" : formatNumber(item.value)}
-                              </span>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                      <h3 className="font-semibold text-gray-900 mb-3">Quick Actions</h3>
-                      <div className="space-y-2">
-                        {["Generate Monthly Report", "Export Dashboard Data", "View Solar Capacity Graph"].sort().map((action) => (
-                          <button key={action} className="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                            {action}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                      <div className="text-center">
-                        <p className="text-sm text-gray-500 mb-2">Profit Margin</p>
-                        <p className="text-4xl font-bold text-gray-900 mb-2">15.34%</p>
-                        <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-                          <div className="bg-green-500 h-3 rounded-full" style={{ width: "15.34%" }} />
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          Sales Target Achievement:{" "}
-                          <span className="font-semibold text-[color:var(--ceb-maroon)]">52.21%</span>
-                        </p>
-                      </div>
-                    </div>
-                  </Reveal>
                 </div>
               </div>
           </>
