@@ -5,6 +5,8 @@ export const normalizeReportName = (value: string) =>
 		.toLowerCase()
 		.replace(/[\u2013\u2014]/g, "-")
 		.replace(/[^a-z0-9]+/g, " ")
+		// Align British and US spellings used across DB labels and registry keys.
+		.replace(/\bcentre(s)?\b/g, "center$1")
 		.trim();
 
 export const matchesReportName = (actual: string, expected: string) => {

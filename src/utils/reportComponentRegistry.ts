@@ -270,6 +270,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// JobCard reports
 	"job card details": JobCardInfo,
 	"job card material details": JobCardMaterials,
+	"job search ordinary": JobSearchOrdinary,
 	"job search orinary": JobSearchOrdinary,
 
 	// Ledger Card reports
