@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
+import SecurityDepositContractDemandBulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
+import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
+import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
+import AreasPosition from "../mainTopics/general/Arreasposition";
 import { data as sidebarData } from "../data/SideBarData";
 import SubtopicCard from "../components/shared/SubtopicCard";
-
 
 type Subtopic = {
   id: number;
@@ -14,7 +17,6 @@ const General = () => {
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   useEffect(() => {
-    // Get General topic's subtopics directly from sidebarData
     const generalTopic = sidebarData.find((topic) => topic.name === "General");
     if (generalTopic) {
       setSubtopics(generalTopic.subtopics);
@@ -22,33 +24,33 @@ const General = () => {
   }, []);
 
   const toggleCard = (id: number) => {
-    if (expandedCard === id) {
-      setExpandedCard(null);
-    } else {
-      setExpandedCard(id);
-    }
+    setExpandedCard((prev) => (prev === id ? null : id));
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
     switch (subtopicName) {
       case "Active customers and sales by tariff":
         return <ActiveCustomersSalesByTariff />;
+      case "Security deposit & Contract Demand - Bulk":
+        return <SecurityDepositContractDemandBulk />;
+      case "Registered consumers for SMS alerts":
+        return <RegisteredConsumersForSMSAlerts />;
+      case "List of government accounts":
+        return <ListOfGovernmentAccounts />;
+      case "Arrears position \u2013 meter reader wise":
+        return <AreasPosition />;
       case "Bill calculation":
       case "Listing of customers":
-      case "List of government accounts":
       case "Largest 100 customer details":
       case "Sequence change accounts":
       case "Retails Journal":
-      case "Arrears position – meter reader wise":
       case "List of customers (enlisted in Master Invoices)":
       case "Disconnection list":
       case "Shakthi LED distribution summary":
       case "Standing order report":
-      case "Registered consumers for SMS alerts":
       case "Finalized Accounts":
       case "Outstanding Dues":
-      case "Largest Consumption": 
-      case "Security deposit & Contract Demand - Bulk":  
+      case "Largest Consumption":
         return <div>{subtopicName} Content</div>;
       default:
         return (

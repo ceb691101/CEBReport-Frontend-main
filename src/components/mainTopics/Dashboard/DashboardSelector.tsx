@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { 
   BarChart3, Menu, X, Home, DollarSign, Users,
-  Briefcase, Sun, CreditCard, Target, Package, TrendingUp
+  Briefcase, Sun, CreditCard, Target, Package,
 } from "lucide-react";
 
 interface DashboardSelectorProps {
@@ -13,7 +13,7 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
   activeDashboard,
   onSelectDashboard,
 }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   // CEB-specific dashboards with role-based access control planned
   const dashboards = [

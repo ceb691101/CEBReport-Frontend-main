@@ -1,8 +1,14 @@
-import {defineConfig} from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+	const env = loadEnv(mode, process.cwd(), "");
+	const apiTarget = env.VITE_API_BASE && env.VITE_API_BASE.trim()
+		? env.VITE_API_BASE.trim()
+		: "http://localhost:44381";
+
+	return {
 	plugins: [react(), tailwindcss()],
 	server: {
 		proxy: {
@@ -22,7 +28,7 @@ export default defineConfig({
 				secure: false,
 			},
 			"/api": {
-				target: "http://10.128.1.126",
+				target: apiTarget,
 				changeOrigin: true,
 				secure: false,
 			},
@@ -33,33 +39,33 @@ export default defineConfig({
 			//   rewrite: (path) => path.replace(/^\/debtorsapi/, "") // <-- fix added here
 			// },
 			"/provincetrial": {
-				target: "http://localhost:44381",
+				target: apiTarget,
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/provincetrial/, ""), // <-- fix added here
 			},
 
 			"/debtorsage": {
-				target: "http://localhost:44381",
+				target: apiTarget,
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/debtorsage/, ""),
 			},
 
 			"/solarapi": {
-				target: "http://localhost:44381",
+				target: apiTarget,
 				changeOrigin: true,
 				secure: false,
 			},
 			"/workprogress": {
-				target: "http://localhost:44381",
+				target: apiTarget,
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/workprogress/, ""),
 			},
 
 			"/materials": {
-				target: "http://localhost:44381",
+				target: apiTarget,
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/materials/, ""),
@@ -67,24 +73,25 @@ export default defineConfig({
 
 			// Added for jobcard
 			"/jobcard": {
-				target: "http://localhost:44381",
+				target: apiTarget,
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/jobcard/, ""),
 			},
 			"/avgConsumption": {
-				target: "http://localhost:44381",
+				target: apiTarget,
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/avgConsumption/, ""),
 			},
 
 			"/LedgerCard": {
-				target: "http://localhost:44381",
+				target: apiTarget,
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/LedgerCard/, ""),
 			},
 		},
 	},
+	};
 });

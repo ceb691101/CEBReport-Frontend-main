@@ -12,8 +12,17 @@ import {FaArrowDownShortWide} from "react-icons/fa6";
 import {MdInventory2} from "react-icons/md";
 import {FaMoneyCheckAlt} from "react-icons/fa";
 import {TbReportAnalytics} from "react-icons/tb";
+import {MdDashboard} from "react-icons/md";
 
 export const data = [
+	{
+		id: 0,
+		name: "Dashboard",
+		icon: MdDashboard,
+		subtopics: [],
+		path: "/home",
+	},
+
 	{
 		id: 1,
 		name: "General",
