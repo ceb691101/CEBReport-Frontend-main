@@ -60,13 +60,31 @@ const initialForm: CreateRoleForm = {
 	costCentres: [],
 };
 
-const endpointMap: Record<RoleType, string> = {
-	admin: "/roleadminapi/api/roleinfo/admin",
-	user: "/roleadminapi/api/roleinfo/user",
+const endpointMap: Record<RoleType, string[]> = {
+	admin: ["/roleadminapi/api/roleinfo/ADMIN", "/roleadminapi/api/roleinfo/admin"],
+	user: ["/roleadminapi/api/roleinfo/USER", "/roleadminapi/api/roleinfo/user"],
 };
 
 const fieldBaseClass =
 	"w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10";
+
+const normalizeText = (value: unknown): string =>
+	(value ?? "").toString().trim();
+
+const normalizeKey = (value: unknown): string =>
+	normalizeText(value).toUpperCase();
+
+const actionButtonPrimaryClass =
+	"rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60";
+
+const actionButtonSoftClass =
+	"rounded-lg bg-[#7A0000]/85 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-50";
+
+const actionButtonDarkClass =
+	"rounded-lg bg-stone-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50";
+
+const actionButtonLightClass =
+	"rounded-lg border border-[#7A0000]/20 bg-white px-5 py-2.5 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5";
 
 const UserRoles = () => {
 	const [activeTab, setActiveTab] = useState<RoleType>("user");
@@ -82,12 +100,18 @@ const UserRoles = () => {
 	const [userGroups, setUserGroups] = useState<UserGroupOption[]>([]);
 	const [isUserGroupsLoading, setIsUserGroupsLoading] = useState(false);
 	const [form, setForm] = useState<CreateRoleForm>(initialForm);
+	const [isAddingCostCentresToRole, setIsAddingCostCentresToRole] = useState(false);
 
 	const loadMotherCompanies = async () => {
 		setIsCompaniesLoading(true);
 
 		try {
 			const response = await fetch("/roleadminapi/api/roleinfo/companies");
+
+			if (!response.ok) {
+				throw new Error(`Failed to load companies. (${response.status})`);
+			}
+
 			const payload = await response.json();
 
 			if (payload?.errorMessage) {
@@ -124,6 +148,11 @@ const UserRoles = () => {
 			const response = await fetch(
 				`/roleadminapi/api/roleinfo/companies/${encodeURIComponent(companyId)}/costcentres`
 			);
+
+			if (!response.ok) {
+				throw new Error(`Failed to load cost centres. (${response.status})`);
+			}
+
 			const payload = await response.json();
 
 			if (payload?.errorMessage) {
@@ -152,11 +181,35 @@ const UserRoles = () => {
 		setIsLoading(true);
 
 		try {
-			const response = await fetch(endpointMap[type]);
-			const payload = await response.json();
+			let payload: any = null;
+			let lastError: Error | null = null;
 
-			if (payload?.errorMessage) {
-				throw new Error(payload.errorMessage);
+			for (const endpoint of endpointMap[type]) {
+				try {
+					const response = await fetch(endpoint);
+
+					if (!response.ok) {
+						throw new Error(`Failed to load roles. (${response.status})`);
+					}
+
+					const nextPayload = await response.json();
+
+					if (nextPayload?.errorMessage) {
+						throw new Error(nextPayload.errorMessage);
+					}
+
+					payload = nextPayload;
+					break;
+				} catch (error) {
+					lastError =
+						error instanceof Error
+							? error
+							: new Error("Failed to load roles.");
+				}
+			}
+
+			if (!payload) {
+				throw lastError ?? new Error("Failed to load roles.");
 			}
 
 			const nextRoles: RoleRecord[] = Array.isArray(payload?.data)
@@ -181,7 +234,7 @@ const UserRoles = () => {
 			setRoles(nextRoles);
 			setCurrentPage(1);
 			setSelectedEpfNo((current) =>
-				current && nextRoles.some((role: RoleRecord) => role.epfNo === current)
+				current && nextRoles.some((role: RoleRecord) => normalizeKey(role.epfNo) === normalizeKey(current))
 					? current
 					: null
 			);
@@ -201,6 +254,11 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch("/roleadminapi/api/roleinfo/usergroups");
+
+			if (!response.ok) {
+				throw new Error(`Failed to load user groups. (${response.status})`);
+			}
+
 			const payload = await response.json();
 
 			if (payload?.errorMessage) {
@@ -238,7 +296,12 @@ const UserRoles = () => {
 	}, [form.motherCompany]);
 
 	const handleFieldChange = (field: keyof CreateRoleForm, value: string) => {
-		setForm((current) => ({ ...current, [field]: value }));
+		const normalizedValue =
+			field === "roleId" || field === "userType"
+				? value.toUpperCase()
+				: value;
+
+		setForm((current) => ({ ...current, [field]: normalizedValue }));
 	};
 
 	const handleReset = () => {
@@ -279,12 +342,57 @@ const UserRoles = () => {
 		}));
 	};
 
+	const handleAddCostCentresToSelectedRole = async () => {
+		if (!selectedRole) {
+			toast.warning("Please select a role first.");
+			return;
+		}
+
+		if (form.costCentres.length === 0) {
+			toast.warning("Please select at least one cost centre.");
+			return;
+		}
+
+		setIsAddingCostCentresToRole(true);
+
+		try {
+			const response = await fetch(
+				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/costcentres`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						costCentres: form.costCentres,
+					}),
+				}
+			);
+
+			const payload = await response.json();
+
+			if (payload?.errorMessage) {
+				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
+			}
+
+			toast.success(payload?.data?.message ?? "Cost centres added successfully.");
+			await loadRoles(activeTab);
+			setSelectedEpfNo(selectedRole.epfNo);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Failed to add cost centres.";
+			toast.error(message);
+		} finally {
+			setIsAddingCostCentresToRole(false);
+		}
+	};
+
 	const buildRolePayload = (originalEpfNo?: string) => ({
 		originalEpfNo: originalEpfNo?.trim() ?? "",
 		epfNo: form.epfNo.trim(),
-		roleId: form.roleId.trim(),
+		roleId: form.roleId.trim().toUpperCase(),
 		roleName: form.name.trim(),
-		userType: form.userType.trim(),
+		userType: form.userType.trim().toUpperCase(),
 		company: form.motherCompany.trim(),
 		motherCompany: form.businessCompany.trim(),
 		userGroup: form.userGroup.trim(),
@@ -415,7 +523,7 @@ const UserRoles = () => {
 		}
 	};
 
-	const selectedRole = roles.find((role) => role.epfNo === selectedEpfNo) ?? null;
+	const selectedRole = roles.find((role) => normalizeKey(role.epfNo) === normalizeKey(selectedEpfNo)) ?? null;
 	const totalPages = Math.max(1, Math.ceil(roles.length / rolesPerPage));
 	const paginatedRoles = roles.slice(
 		(currentPage - 1) * rolesPerPage,
@@ -432,10 +540,10 @@ const UserRoles = () => {
 	return (
 		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
 			<div className="mx-auto max-w-7xl space-y-6">
-				<section className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+				<section className="grid gap-6 xl:grid-cols-[minmax(0,40%)_minmax(0,60%)] xl:items-start">
 					<form
 						onSubmit={handleSubmit}
-						className="rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)]"
+						className="w-full rounded-[28px] border border-[#7A0000]/10 bg-white p-6 shadow-[0_16px_50px_rgba(122,0,0,0.08)] xl:order-1"
 					>
 						<div className="flex items-start justify-between gap-4">
 							<div>
@@ -504,7 +612,19 @@ const UserRoles = () => {
 							</div>
 
 							<div>
-								<div className="mb-2 text-sm font-medium text-stone-700">Cost Center</div>
+								<div className="mb-2 flex items-center justify-between gap-3">
+									<span className="text-sm font-medium text-stone-700">Cost Center</span>
+									<button
+										type="button"
+										onClick={handleAddCostCentresToSelectedRole}
+										aria-label="Add cost centers"
+										disabled={!selectedRole || isAddingCostCentresToRole || isSubmitting}
+										className="inline-flex items-center gap-2 rounded-md bg-[#7A0000] px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-[#620000] border border-transparent focus:outline-none focus:ring-2 focus:ring-[#7A0000]/30"
+									>
+										<span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#7A0000] font-semibold">+</span>
+										<span className="text-sm">{isAddingCostCentresToRole ? "Adding..." : "Add cost centers"}</span>
+									</button>
+								</div>
 								<div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
 									{isCostCentresLoading ? (
 										<div className="text-sm text-stone-500">Loading cost centres...</div>
@@ -547,7 +667,7 @@ const UserRoles = () => {
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								className="rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60"
+								className={actionButtonPrimaryClass}
 							>
 								{isSubmitting ? "Saving..." : "ADD"}
 							</button>
@@ -555,7 +675,7 @@ const UserRoles = () => {
 								type="button"
 								disabled={!selectedRole || isSubmitting}
 								onClick={handleEdit}
-								className="rounded-lg bg-[#7A0000]/85 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-50"
+								className={actionButtonSoftClass}
 							>
 								EDIT
 							</button>
@@ -563,44 +683,44 @@ const UserRoles = () => {
 								type="button"
 								disabled={!selectedRole || isSubmitting}
 								onClick={handleDelete}
-								className="rounded-lg bg-stone-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+								className={actionButtonDarkClass}
 							>
 								DELETE
 							</button>
 							<button
 								type="button"
 								onClick={handleReset}
-								className="rounded-lg border border-[#7A0000]/20 bg-white px-5 py-2.5 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5"
+								className={actionButtonLightClass}
 							>
 								RESET
 							</button>
 						</div>
 					</form>
 
-					<section className="rounded-[28px] border border-stone-200 bg-white p-6 shadow-[0_16px_50px_rgba(70,40,20,0.06)]">
+					<section className="w-full rounded-[28px] border border-stone-200 bg-white p-6 shadow-[0_16px_50px_rgba(70,40,20,0.06)] xl:order-2">
 						<div className="flex flex-wrap items-center justify-between gap-4">
 							<div>
-								<h2 className="text-2xl font-semibold text-stone-900">Role Directory</h2>
+								<h2 className="text-2xl font-semibold text-stone-900">User Role Table</h2>
 							</div>
 
 							<div className="inline-flex rounded-full border border-stone-200 bg-stone-100 p-1">
 								<TabButton
-									label="User Roles"
+									label="USER ROLES"
 									active={activeTab === "user"}
 									onClick={() => setActiveTab("user")}
 								/>
 								<TabButton
-									label="Admin Roles"
+									label="ADMIN ROLES"
 									active={activeTab === "admin"}
 									onClick={() => setActiveTab("admin")}
 								/>
 							</div>
 						</div>
 
-						<div className="mt-6 overflow-hidden rounded-2xl border border-stone-200">
+						<div className="mt-6 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50/40">
 							<div className="overflow-x-auto">
 								<table className="min-w-full divide-y divide-stone-200 text-sm">
-									<thead className="bg-stone-100 text-left text-xs uppercase tracking-[0.2em] text-stone-500">
+									<thead className="bg-stone-100 text-left text-xs uppercase tracking-[0.15em] text-stone-500">
 										<tr>
 											<th className="px-4 py-3">EPF No</th>
 											<th className="px-4 py-3">Role ID</th>
@@ -624,8 +744,7 @@ const UserRoles = () => {
 											</tr>
 										) : (
 											paginatedRoles.map((role) => {
-												const isSelected = selectedEpfNo === role.epfNo;
-
+											const isSelected = normalizeKey(selectedEpfNo) === normalizeKey(role.epfNo);
 												return (
 													<tr
 														key={`${role.epfNo}-${role.roleId}`}

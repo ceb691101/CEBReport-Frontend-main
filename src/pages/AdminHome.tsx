@@ -4,6 +4,7 @@ import ReportCategory from "../mainTopics/Admin/ReportCategory/reportcategory";
 import RoleReport from "../mainTopics/Admin/RoleReport/rolereport";
 import ReportEntry from "../mainTopics/Admin/ReportEntry/reportentry";
 import AdminLanding from "../mainTopics/Admin/AdminLanding/adminlanding";
+import ReportParameters from "../mainTopics/Admin/ReportParameters/reportparameters";
 
 const AdminHome = () => {
   const location = useLocation();
@@ -23,12 +24,7 @@ const AdminHome = () => {
   }
 
   if (section === "report-parameters") {
-    return (
-      <div className="p-6 bg-white rounded-lg text-center">
-        <h2 className="text-2xl font-bold text-stone-800">Report Parameters</h2>
-        <p className="text-stone-600 mt-2">Coming Soon</p>
-      </div>
-    );
+    return <ReportParameters />;
   }
 
   if (section === "report-entry") {
