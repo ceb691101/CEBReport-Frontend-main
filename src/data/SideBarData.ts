@@ -88,6 +88,8 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
   General: { icon: MdPayment, path: "/report/general" },
   "Customer Details": { icon: RiBankLine, path: "/report/billing-payment" },
   Analysis: { icon: FaBoxes, path: "/report/analysis" },
+
+
   Collections: { icon: BsFolder2Open, path: "/report/collections" },
   "Consumption Analysis": { icon: MdAssignmentTurnedIn, path: "/report/consumption-analysis" },
   "Solar Information - Billing": { icon: GiSolarPower, path: "/report/solar-information" },
