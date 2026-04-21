@@ -241,7 +241,6 @@ const ReportParameters = () => {
       }
 
       const rows     = Number(payload?.data?.updatedRows ?? 0);
-      const reports  = Number(payload?.data?.processedReports ?? 0);
       const params   = Number(payload?.data?.processedParams ?? 0);
       const appended = Number(payload?.data?.appendedParams ?? 0);
       setLastUpdatedRows(rows);

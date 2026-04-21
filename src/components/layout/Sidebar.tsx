@@ -24,36 +24,6 @@ const Sidebar = () => {
   };
 
   useEffect(() => {
-    const currentPath = location.pathname;
-    
-    // Special handling for home page - don't redirect and clear activeId
-    if (currentPath === "/home" || currentPath === "/adminhome") {
-      setActiveId(null); // Clear any active selection
-      return; // Exit early, don't interfere with home page
-    }
-    
-    const matchedTopic = data.find((topic) => topic.path === currentPath);
-
-    if (matchedTopic) {
-      if (activeId !== matchedTopic.id) {
-        setActiveId(matchedTopic.id);
-      }
-    } else {
-      // Check if the current path starts with any of the known paths
-      const matchingTopic = data.find((topic) =>
-        currentPath.startsWith(topic.path)
-      );
-      if (matchingTopic) {
-        setActiveId(matchingTopic.id);
-      } else {
-        // Don't redirect for certain special paths like report display pages
-        const specialPaths = ["/report-display", "/user", "/adminhome"];
-        if (!specialPaths.includes(currentPath)) {
-          // Only redirect to first item if we're on a completely unknown path
-          const first = data[0];
-          setActiveId(first.id);
-          navigate(first.path, { state: { subtopics: first.subtopics } });
-        }
     let cancelled = false;
 
     const loadSidebar = async () => {
