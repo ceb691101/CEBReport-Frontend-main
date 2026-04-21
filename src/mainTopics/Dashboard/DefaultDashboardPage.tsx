@@ -8,8 +8,8 @@ import {
   PieChart,
   Sun,
   Battery,
-  Eye,
-  EyeOff,
+  // Eye,
+  // EyeOff,
   X,
 } from "lucide-react";
 import {
