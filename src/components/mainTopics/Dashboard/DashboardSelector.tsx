@@ -18,7 +18,7 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
   // CEB-specific dashboards with role-based access control planned
   const dashboards = [
     { id: "default", label: "Default", icon: Home },
-    { id: "financial", label: "Financial/Accounting", icon: DollarSign },
+    { id: "financial", label: "Financial", icon: DollarSign },
     { id: "customer", label: "Customer Management", icon: Users },
     { id: "operations", label: "Operations/Field", icon: Briefcase },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
@@ -36,7 +36,7 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
         {isOpen && (
           <div className="flex items-center gap-3 overflow-hidden">
             <BarChart3 className="w-5 h-5 text-[var(--ceb-maroon)] flex-shrink-0" />
-            <h2 className="text-lg font-bold text-gray-900 truncate">Dashboard</h2>
+            <h2 className="text-sm font-semibold text-gray-900 truncate tracking-wide">Dashboard</h2>
           </div>
         )}
         
@@ -56,17 +56,17 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
             <button
               key={dashboard.id}
               onClick={() => onSelectDashboard(dashboard.id)}
-              className={`w-full rounded-lg font-medium transition-all flex items-center ${
+              className={`w-full rounded-lg text-sm transition-all flex items-center ${
                 isOpen ? 'px-4 py-3 gap-3 justify-start' : 'p-3 justify-center'
               } ${
                 activeDashboard === dashboard.id
-                  ? "bg-[var(--ceb-maroon)] text-white shadow-md"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "bg-[var(--ceb-maroon)] text-white shadow-md font-medium"
+                  : "text-gray-700 hover:bg-gray-100 font-normal"
               }`}
               title={!isOpen ? dashboard.label : ""}
             >
               <Icon className={`w-5 h-5 flex-shrink-0`} />
-              {isOpen && <span className="truncate">{dashboard.label}</span>}
+              {isOpen && <span className="truncate tracking-wide">{dashboard.label}</span>}
             </button>
           );
         })}

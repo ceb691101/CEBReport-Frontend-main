@@ -5,12 +5,13 @@ import "./index.css";
 
 import LoginPage from "./pages/LoginPage";
 import Layout from "./Layout";
+import HomePage from "./pages/HomePage.tsx";
 import UserDetails from "./pages/UserDetails";
 import MaterialDetails from "./mainTopics/inventory/MaterialDetails";
 import ReportRoutes from "./routes/ReportRoutes";
 import CostCenterTrial from "./mainTopics/TrialBalance/CostCenterTrial";
 // import SelectCostCenterTrial from "./mainTopics/TrialBalance/SelectCostCeneterTrial";
-import Home from "./pages/Dashboard";
+import Dashboard from "./pages/Dashboard.tsx";
 
 function App() {
 	return (
@@ -22,16 +23,34 @@ function App() {
 					path="/home"
 					element={
 						<Layout>
-							<Home />
+							<HomePage />
 						</Layout>
 					}
 				/>
 
 				<Route
+					path="/dashboard"
+					element={
+						<Layout>
+							<Dashboard />
+						</Layout>
+					}
+				/>
+
+				<Route
+					path="/dashboard/:dashboardId"
+					element={
+						<Layout>
+							<Dashboard />
+						</Layout>
+					}
+				/>
+
+				{/* <Route
 					path="/report/dashboard"
 					element={
 						<Layout>
-							<Home />
+							<HomePage />
 						</Layout>
 					}
 				/>
@@ -40,10 +59,10 @@ function App() {
 					path="/report/Dashboard"
 					element={
 						<Layout>
-							<Home />
+							<HomePage />
 						</Layout>
 					}
-				/>
+				/> */}
 
 				<Route
 					path="/user"

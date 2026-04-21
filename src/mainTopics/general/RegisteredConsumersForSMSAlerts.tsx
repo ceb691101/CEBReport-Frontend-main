@@ -246,7 +246,7 @@ const RegisteredConsumersForSMSAlerts = () => {
       query.append("typeCode", reportType === "entireceb" ? "" : typeCode);
 
       const response = await fetchWithErrorHandling<SMSRegisteredResponse>(
-        `/api/original/smsRegisteredRange?${query.toString()}`
+        `/misapi/api/original/smsRegisteredRange?${query.toString()}`
       );
 
       if (response.errorMessage) {
