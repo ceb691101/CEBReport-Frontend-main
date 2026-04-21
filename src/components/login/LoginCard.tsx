@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useUser } from "../../contexts/UserContext";
 import { useLogged } from "../../contexts/UserLoggedStateContext";
 import { postJSON } from "../../helpers/LoginHelper";
+import { loadRoleBasedSidebarData } from "../../data/SideBarData";
 import InputField from "../shared/InputField";
 import ceb from "../../assets/CEBLOGO.png";
 
@@ -112,6 +113,22 @@ const LoginCard = () => {
         }
 
         setUser(userData);
+
+        const userNo = String(userData?.Userno ?? "").trim();
+        let destination = "/home";
+
+        if (userNo) {
+          const sidebarResult = await loadRoleBasedSidebarData(userNo);
+          const hasDashboardAccess = sidebarResult.data.some(
+            (topic) => topic.path.toLowerCase() === "/dashboard"
+          );
+
+          if (hasDashboardAccess) {
+            destination = "/dashboard";
+          }
+        }
+
+        navigate(destination);
 
         if (userData?.Logged) {
           console.log("User details have been fetched successfully");
@@ -247,7 +264,7 @@ export default LoginCard;
 
 //       if (IsLogged?.Logged) {
 //         toast.success("Login successful!", { autoClose: 2000 });
-//         navigate("/home");
+//         navigate("/dashboard");
 
 //         const userData = await postJSON("/CBRSAPI/CBRSEPFNOLogin", {
 //           Username: username,
