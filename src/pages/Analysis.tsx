@@ -1,29 +1,20 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import DebtorsAnalysis from "../mainTopics/Analysis/DebtorsAnalysis";
-import AgeAnalysis from "../mainTopics/Analysis/AgeAnalysis";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
 
 const Analysis = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Analysis"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+    const renderReport = useReportRenderer();
 
   useEffect(() => {
-    // Get Analysis topic's subtopics directly from sidebarData
-    const analysisTopic = sidebarData.find(
-      (topic) => topic.name === "Analysis"
-    );
-    if (analysisTopic) {
-      setSubtopics(analysisTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -33,24 +24,6 @@ const Analysis = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-     
-      case "Total Debtors Analysis":
-        return <DebtorsAnalysis/>;
-      case "Debtors Age Analysis (Individual Customers)":
-        return <AgeAnalysis/>;
-      case "Age Analysis – Bulk":  
-      case "Consumption Pattern Analysis":   
-        return <div>{subtopicName} Content</div>;  
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
-    }
-  };
 
   return (
     <div className="flex flex-col gap-4 pt-5">
@@ -62,7 +35,7 @@ const Analysis = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+            {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -70,3 +43,5 @@ const Analysis = () => {
 };
 
 export default Analysis;
+
+

@@ -1,47 +1,21 @@
 import {useState, useEffect} from "react";
-import {data as sidebarData} from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import CashBookDetailsReport from "../mainTopics/CashBook/CashBookDetailsReport";
-import CashBookCCReport from "../mainTopics/CashBook/CashBookCCReport";
-import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
-
-type Subtopic = {
-	id: number;
-	name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const CashBookDetails = () => {
-	const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Cash Book"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
 	useEffect(() => {
-		const cashBookTopic = sidebarData.find(
-			(topic) => topic.name === "Cash Book"
-		);
-		if (cashBookTopic) {
-			setSubtopics(cashBookTopic.subtopics);
+		if (typeof selectedSubtopicId === "number") {
+			setExpandedCard(selectedSubtopicId);
 		}
-	}, []);
+	}, [selectedSubtopicId]);
 
 	const toggleCard = (id: number) => {
 		setExpandedCard((prev) => (prev === id ? null : id));
-	};
-
-	const renderSubtopicContent = (subtopicName: string) => {
-		switch (subtopicName) {
-			case "Selected Payee Within Date Range":
-				return <CashBookDetailsReport />;
-			case "Cost Center Wise Selected Payee Within Date Range":
-				return <CashBookCCReport />;
-			case "Cost Center Wise Document Inquiry Cash Book With Cheque Details":
-				return <DocumentInquiry />;
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
-		}
 	};
 
 	return (
@@ -54,7 +28,7 @@ const CashBookDetails = () => {
 					expanded={expandedCard === subtopic.id}
 					onToggle={toggleCard}
 				>
-					{renderSubtopicContent(subtopic.name)}
+					{renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
 				</SubtopicCard>
 			))}
 		</div>
@@ -62,3 +36,8 @@ const CashBookDetails = () => {
 };
 
 export default CashBookDetails;
+
+
+
+
+

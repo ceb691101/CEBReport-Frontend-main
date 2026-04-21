@@ -1,47 +1,24 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const PucslLiss = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["PUCSL/LISS"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
-    // Get PUCSL/LISS topic's subtopics directly from sidebarData
-    const pucslTopic = sidebarData.find((topic) => topic.name === "PUCSL/LISS");
-    if (pucslTopic) {
-      setSubtopics(pucslTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
       setExpandedCard(null);
     } else {
       setExpandedCard(id);
-    }
-  };
-
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "LISS submission – retail journal adjustments":
-      case "PUCSL Reports (LISS Data)":
-      case "PUCSL Reports – solar connections (New)":
-        return <PUCSLSolarConnection />;
-      case "Solar data for UNT calculation":
-        return <div>{subtopicName} Content</div>;
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
     }
   };
 
@@ -55,7 +32,7 @@ const PucslLiss = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -63,3 +40,8 @@ const PucslLiss = () => {
 };
 
 export default PucslLiss;
+
+
+
+
+

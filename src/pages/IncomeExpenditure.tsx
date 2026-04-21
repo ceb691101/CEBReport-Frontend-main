@@ -1,51 +1,21 @@
 import {useState, useEffect} from "react";
-import {data as sidebarData} from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
-import ProvinceExpenditure from "../mainTopics/IncomeExpenditure/ProvinceExpenditure";
-import RegionExpenditure from "../mainTopics/IncomeExpenditure/RegionExpenditure";
-import IncomeExpenditureRegionDetailed from "../mainTopics/IncomeExpenditure/IncomeExpenditureRegionDetailed";
-
-type Subtopic = {
-	id: number;
-	name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const IncomeExpenditure = () => {
-	const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Income & Expenditure"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
 	useEffect(() => {
-		// Get Income Expenditure topic's subtopics directly from sidebarData
-		const topic = sidebarData.find(
-			(topic) => topic.name === "Income & Expenditure"
-		);
-		if (topic) {
-			setSubtopics(topic.subtopics);
+		if (typeof selectedSubtopicId === "number") {
+			setExpandedCard(selectedSubtopicId);
 		}
-	}, []);
+	}, [selectedSubtopicId]);
 
 	const toggleCard = (id: number) => {
 		setExpandedCard(expandedCard === id ? null : id);
-	};
-
-	const renderSubtopicContent = (subtopicName: string) => {
-		switch (subtopicName) {
-			case "Cost Center Wise Income & Expenditure":
-				return <CostCenterIncomeExpenditure />;
-			case "Province Wise Income & Expenditure":
-				return <ProvinceExpenditure />;
-			case "Region Wise Income & Expenditure":
-				return <RegionExpenditure />;
-			case "Region Wise Income & Expenditure (Detailed)":
-				return <IncomeExpenditureRegionDetailed />;
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
-		}
 	};
 
 	return (
@@ -58,7 +28,7 @@ const IncomeExpenditure = () => {
 					expanded={expandedCard === subtopic.id}
 					onToggle={toggleCard}
 				>
-					{renderSubtopicContent(subtopic.name)}
+					{renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
 				</SubtopicCard>
 			))}
 		</div>
@@ -66,3 +36,8 @@ const IncomeExpenditure = () => {
 };
 
 export default IncomeExpenditure;
+
+
+
+
+

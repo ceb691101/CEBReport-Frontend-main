@@ -1,28 +1,18 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
-import MaterialMaster from "../mainTopics/inventory/MaterialMaster";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import AverageConsumptions from "../mainTopics/inventory/AverageConsumptions";
-import CostCenterQuantityHnad from "../mainTopics/inventory/CostCenterQuantityHnad";
-import AverageConsumptionSelected from "../mainTopics/inventory/AverageConsumptionSelected";
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const Inventory = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Inventory"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
-    // Get Inventory topic's subtopics directly from sidebarData
-    const inventoryTopic = sidebarData.find(
-      (topic) => topic.name === "Inventory"
-    );
-    if (inventoryTopic) {
-      setSubtopics(inventoryTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -30,27 +20,6 @@ const Inventory = () => {
     } else {
       setExpandedCard(id);
     }
-  };
-
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-			case "Material Details":
-				return <MaterialMaster />;
-			case "Cost Center wise Quantity on Hand":
-				return <CostCenterQuantityHnad />;
-
-			case "Average Consumptions - All Material Codes":
-				return <AverageConsumptions />;
-			case "Average Consumptions - Selected Maerial Codes":
-				return <AverageConsumptionSelected />;
-
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
-		}
   };
 
   return (
@@ -63,7 +32,7 @@ const Inventory = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -71,3 +40,8 @@ const Inventory = () => {
 };
 
 export default Inventory;
+
+
+
+
+
