@@ -52,6 +52,8 @@ import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
 import BillCalculation from "../mainTopics/general/BillCalculation";
+import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
+import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -248,11 +250,11 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"disconnection list": ActiveCustomersSalesByTariff,
 	"shakthi led distribution summary": ActiveCustomersSalesByTariff,
 	"standing order report": ActiveCustomersSalesByTariff,
-	"registered consumers for sms alerts": ActiveCustomersSalesByTariff,
+	"registered consumers for sms alerts": RegisteredConsumersForSMSAlerts,
 	"finalized accounts": ActiveCustomersSalesByTariff,
 	"outstanding dues": ActiveCustomersSalesByTariff,
 	"largest consumption": ActiveCustomersSalesByTariff,
-	"security deposit contract demand bulk": ActiveCustomersSalesByTariff,
+	"security deposit contract demand bulk": Securitydepositcontractdemandbulk,
 
 	// Income & Expenditure reports
 	"cost center wise income expenditure": CostCenterIncomeExpenditure,
@@ -271,6 +273,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// JobCard reports
 	"job card details": JobCardInfo,
 	"job card material details": JobCardMaterials,
+	"job search ordinary": JobSearchOrdinary,
 	"job search orinary": JobSearchOrdinary,
 
 	// Ledger Card reports
