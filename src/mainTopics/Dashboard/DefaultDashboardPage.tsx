@@ -7,16 +7,9 @@ import {
   DollarSign,
   PieChart,
   Sun,
-  ArrowUp,
-  ShoppingCart,
-  Clock,
-  AlertCircle,
-  TrendingDown,
   Battery,
-  Plug,
   Eye,
   EyeOff,
-  Plus,
   X,
 } from "lucide-react";
 import {
@@ -64,12 +57,6 @@ interface MonthlySalesData {
   ordinary: number;
   bulk: number;
   target: number;
-}
-
-interface MonthlyNewCustomers {
-  month: string;
-  ordinary: number;
-  bulk: number;
 }
 
 interface SalesCollectionRecord {
@@ -506,7 +493,6 @@ const DefaultDashboardPage: React.FC = () => {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [isLoaded, setIsLoaded]               = useState(false);
-  const [activePieChart, setActivePieChart]   = useState<string | null>(null);
   const [activeSolarPieChart, setActiveSolarPieChart] = useState<string | null>(null);
   const [showMoreCards, setShowMoreCards]     = useState(false);
   const [visibleCards, setVisibleCards]       = useState<string[]>([
@@ -517,21 +503,16 @@ const DefaultDashboardPage: React.FC = () => {
 
   // ── Scroll-trigger refs ───────────────────────────────────────────────────
   const kpiRef             = useRef<HTMLDivElement>(null);
-  const newCustomersPieRef = useRef<HTMLDivElement>(null);
   const solarPieRef        = useRef<HTMLDivElement>(null);
-  const bottomGridRef      = useRef<HTMLDivElement>(null);
   const kioskTrendRef      = useRef<HTMLDivElement>(null);
 
   const { triggerCount: kpiTrigger }        = useInView(kpiRef        as React.RefObject<Element>, { threshold: 0.15 });
-  const { triggerCount: newCustTrigger }    = useInView(newCustomersPieRef as React.RefObject<Element>, { threshold: 0.3 });
   const { triggerCount: solarPieTrigger }   = useInView(solarPieRef   as React.RefObject<Element>, { threshold: 0.3 });
   const { inView: kioskTrendInView, triggerCount: kioskTrendTrigger } = useInView(kioskTrendRef as React.RefObject<Element>, { threshold: 0.35 });
 
   // Pie chart animation keys — new key = new @keyframe names = animation replays
-  const [newCustPieAnimKey, setNewCustPieAnimKey] = useState(0);
   const [solarPieAnimKey,   setSolarPieAnimKey]   = useState(0);
 
-  useEffect(() => { setNewCustPieAnimKey((k) => k + 1); }, [newCustTrigger]);
   useEffect(() => { setSolarPieAnimKey((k)   => k + 1); }, [solarPieTrigger]);
 
   // ── Customer counts ────────────────────────────────────────────────────────
@@ -543,7 +524,6 @@ const DefaultDashboardPage: React.FC = () => {
   const [bulkSolarCustomers, setBulkSolarCustomers] = useState({
     netMetering: 0, netAccounting: 0, netPlus: 0, netPlusPlus: 0,
   });
-  const [activeBillCycle, setActiveBillCycle]         = useState<string>("");
   const [customerCountsLoading, setCustomerCountsLoading] = useState(true);
   const [, setCustomerCountsError]     = useState<string | null>(null);
   const [solarLoading, setSolarLoading]                   = useState(true);
@@ -563,20 +543,6 @@ const DefaultDashboardPage: React.FC = () => {
   const [kioskLoading, setKioskLoading]                     = useState(true);
   const [kioskError, setKioskError]                         = useState<string | null>(null);
 
-  const [monthlyNewCustomers] = useState<MonthlyNewCustomers[]>(
-    [
-      { month: "Jan", ordinary: 210, bulk: 38 },
-      { month: "Feb", ordinary: 225, bulk: 42 },
-      { month: "Mar", ordinary: 234, bulk: 45 },
-      { month: "Apr", ordinary: 218, bulk: 40 },
-      { month: "May", ordinary: 242, bulk: 48 },
-      { month: "Jun", ordinary: 238, bulk: 44 },
-    ].sort((a, b) => {
-      const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      return mo.indexOf(a.month) - mo.indexOf(b.month);
-    })
-  );
-
   const [selectedSolarBillCycle, setSelectedSolarBillCycle] = useState<string>("");
   const [availableSolarBillCycles, setAvailableSolarBillCycles] = useState<string[]>([]);
   const [solarCapacityChartData, setSolarCapacityChartData] = useState<SolarCapacityComparisonRow[]>([]);
@@ -590,13 +556,7 @@ const DefaultDashboardPage: React.FC = () => {
     { id: "solarCustomers",      title: "Solar Customers",     default: true,  category: "solar"       },
     // { id: "zeroConsumption",     title: "Zero Consumption",    default: true,  category: "consumption" },
     { id: "kioskCollection",     title: "Kiosk Collection",    default: true,  category: "collection"  },
-    { id: "revenueCollection",   title: "Revenue Collection",  default: false, category: "collection"  },
-    { id: "disconnections",      title: "Disconnections",      default: false, category: "customer"    },
-    { id: "arrearsPosition",     title: "Arrears Position",    default: false, category: "billing"     },
     { id: "solarCapacity",       title: "Solar Capacity (kW)", default: false, category: "solar"       },
-    { id: "consumptionAnalysis", title: "Consumption (kWh)",   default: false, category: "consumption" },
-    { id: "billCycleStatus",     title: "Bill Cycle Status",   default: false, category: "billing"     },
-    { id: "newConnections",      title: "New Connections",     default: false, category: "customer"    },
   ].sort((a, b) => a.title.localeCompare(b.title));
 
   const toggleCardVisibility = (cardId: string) =>
@@ -654,7 +614,7 @@ const DefaultDashboardPage: React.FC = () => {
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, ordinary: json?.data?.TotalCount ?? 0 }));
-        setActiveBillCycle(json?.data?.BillCycle ?? "");
+
       } catch (err: any) { setCustomerCountsError(err.message || "Failed to load ordinary customer count"); }
       finally { setCustomerCountsLoading(false); }
     };
@@ -1000,12 +960,6 @@ const DefaultDashboardPage: React.FC = () => {
   const totalOrdinarySales = monthlySalesData.reduce((s, d) => s + d.ordinary, 0);
   const totalBulkSales     = monthlySalesData.reduce((s, d) => s + d.bulk, 0);
 
-  const totalNewCustomers     = monthlyNewCustomers.reduce((s, d) => s + d.ordinary + d.bulk, 0);
-  const totalNewOrdinary      = monthlyNewCustomers.reduce((s, d) => s + d.ordinary, 0);
-  const totalNewBulk          = monthlyNewCustomers.reduce((s, d) => s + d.bulk, 0);
-  const newOrdinaryPercentage = (totalNewOrdinary / totalNewCustomers) * 100;
-  const newBulkPercentage     = (totalNewBulk     / totalNewCustomers) * 100;
-
   const salesLineData = monthlySalesData
     .map((item) => ({ month: item.month, ordinary: item.ordinary, bulk: item.bulk, total: item.ordinary + item.bulk }))
     .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
@@ -1035,7 +989,7 @@ const DefaultDashboardPage: React.FC = () => {
 
   const totalSolarCapacityKw = solarCapacityChartData.reduce((sum, item) => sum + item.ordinaryCapacity + item.bulkCapacity, 0);
 
-  //const additionalCardIds = ["revenueCollection","disconnections","arrearsPosition","solarCapacity","consumptionAnalysis","billCycleStatus","newConnections"];
+  //const additionalCardIds = ["solarCapacity"];
   //const hasAdditionalCards = additionalCardIds.some((id) => visibleCards.includes(id));
 
   // ── Animated values ───────────────────────────────────────────────────────
@@ -1046,16 +1000,7 @@ const DefaultDashboardPage: React.FC = () => {
   const animatedSolar       = useCountUp(totalSolarCustomers,          1400, !solarLoading && !bulkSolarLoading, kpiTrigger);
   const animatedZero        = useCountUp(customerCounts.zeroConsumption, 1400, true, kpiTrigger);
   const animatedKiosk       = useCountUp(kioskWeeklyTotal,             1400, !kioskLoading, kpiTrigger);
-  const animatedRevenue     = useCountUp(125600000, 1400, true, kpiTrigger);
-  const animatedDisconnect  = useCountUp(2456,      1400, true, kpiTrigger);
-  const animatedArrears     = useCountUp(456780000, 1400, true, kpiTrigger);
   const animatedSolarCap    = useCountUp(totalSolarCapacityKw, 1400, !solarCapacityLoading, kpiTrigger);
-  const animatedConsumption = useCountUp(3579000,   1400, true, kpiTrigger);
-  const animatedNewConn     = useCountUp(1428,      1400, true, kpiTrigger);
-
-  const animatedNewOrdinary = useCountUp(totalNewOrdinary,  1400, true, newCustTrigger);
-  const animatedNewBulk     = useCountUp(totalNewBulk,      1400, true, newCustTrigger);
-  const animatedNewTotal    = useCountUp(totalNewCustomers, 1400, true, newCustTrigger);
 
   // Solar pie — animated counts for each net type (ordinary + bulk), replay on solarPieTrigger
   const animatedOrdNetMetering   = useCountUp(customerCounts.solar.netMetering,   1200, !solarLoading, solarPieTrigger);
@@ -1071,19 +1016,6 @@ const DefaultDashboardPage: React.FC = () => {
   const animatedBulkSolarTotal    = useCountUp(totalBulkSolar,                   1200, true, solarPieTrigger);
 
   // ── Pie chart CSS animation strings ──────────────────────────────────────
-
-  const newCustPieStyles = `
-    @keyframes pieChartLoadOrdinary_${newCustPieAnimKey} {
-      0%   { stroke-dasharray: 0 ${C}; stroke-dashoffset: 0; }
-      100% { stroke-dasharray: ${(newOrdinaryPercentage / 100) * C} ${C}; stroke-dashoffset: 0; }
-    }
-    @keyframes pieChartLoadBulk_${newCustPieAnimKey} {
-      0%   { stroke-dasharray: 0 ${C}; stroke-dashoffset: ${-((newOrdinaryPercentage / 100) * C)}; }
-      100% { stroke-dasharray: ${(newBulkPercentage / 100) * C} ${C}; stroke-dashoffset: ${-((newOrdinaryPercentage / 100) * C)}; }
-    }
-    .pie-segment-ordinary-${newCustPieAnimKey} { animation: pieChartLoadOrdinary_${newCustPieAnimKey} 0.9s ease-out forwards; animation-delay: 0.3s; }
-    .pie-segment-bulk-${newCustPieAnimKey}     { animation: pieChartLoadBulk_${newCustPieAnimKey}     0.9s ease-out forwards; animation-delay: 1.2s; }
-  `;
 
   const solarPieStyles = `
     @keyframes solarOrdNetMeteringLoad_${solarPieAnimKey}    { 0% { stroke-dasharray: 0 ${C}; stroke-dashoffset: 0; } 100% { stroke-dasharray: ${createArcDasharray(0, ordSolarNetMeteringPct).split(" ")[0]} ${C}; stroke-dashoffset: 0; } }
@@ -1220,63 +1152,6 @@ const DefaultDashboardPage: React.FC = () => {
                         );
                       }
 
-                      if (cardId === "revenueCollection") {
-                        return (
-                          <KpiCard
-                            cardId={cardId}
-                            title="Revenue Collection"
-                            value={formatCurrency(animatedRevenue)}
-                            subtitle="Year to date"
-                            icon={<ShoppingCart className="w-5 h-5 text-emerald-600" />}
-                            iconBgClass="bg-emerald-100"
-                            isDragging={isDragging}
-                            isDragOver={isDragOver}
-                            onDragStart={(e) => handleDragStart(e, cardId)}
-                            onDragEnter={() => handleDragEnter(cardId)}
-                            onDragOver={handleDragOver}
-                            onDragEnd={handleDragEnd}
-                          />
-                        );
-                      }
-
-                      if (cardId === "disconnections") {
-                        return (
-                          <KpiCard
-                            cardId={cardId}
-                            title="Disconnections"
-                            value={formatNumber(animatedDisconnect)}
-                            subtitle="Pending action"
-                            icon={<AlertCircle className="w-5 h-5 text-orange-600" />}
-                            iconBgClass="bg-orange-100"
-                            isDragging={isDragging}
-                            isDragOver={isDragOver}
-                            onDragStart={(e) => handleDragStart(e, cardId)}
-                            onDragEnter={() => handleDragEnter(cardId)}
-                            onDragOver={handleDragOver}
-                            onDragEnd={handleDragEnd}
-                          />
-                        );
-                      }
-
-                      if (cardId === "arrearsPosition") {
-                        return (
-                          <KpiCard
-                            cardId={cardId}
-                            title="Arrears Position"
-                            value={formatCurrency(animatedArrears)}
-                            subtitle="Total outstanding"
-                            icon={<TrendingDown className="w-5 h-5 text-rose-600" />}
-                            iconBgClass="bg-rose-100"
-                            isDragging={isDragging}
-                            isDragOver={isDragOver}
-                            onDragStart={(e) => handleDragStart(e, cardId)}
-                            onDragEnter={() => handleDragEnter(cardId)}
-                            onDragOver={handleDragOver}
-                            onDragEnd={handleDragEnd}
-                          />
-                        );
-                      }
-
                       if (cardId === "solarCapacity") {
                         return (
                           <KpiCard
@@ -1286,63 +1161,6 @@ const DefaultDashboardPage: React.FC = () => {
                             subtitle="Total installed"
                             icon={<Battery className="w-5 h-5 text-amber-600" />}
                             iconBgClass="bg-amber-100"
-                            isDragging={isDragging}
-                            isDragOver={isDragOver}
-                            onDragStart={(e) => handleDragStart(e, cardId)}
-                            onDragEnter={() => handleDragEnter(cardId)}
-                            onDragOver={handleDragOver}
-                            onDragEnd={handleDragEnd}
-                          />
-                        );
-                      }
-
-                      if (cardId === "consumptionAnalysis") {
-                        return (
-                          <KpiCard
-                            cardId={cardId}
-                            title="Consumption (kWh)"
-                            value={formatCompact(animatedConsumption)}
-                            subtitle="Monthly average"
-                            icon={<Plug className="w-5 h-5 text-violet-600" />}
-                            iconBgClass="bg-violet-100"
-                            isDragging={isDragging}
-                            isDragOver={isDragOver}
-                            onDragStart={(e) => handleDragStart(e, cardId)}
-                            onDragEnter={() => handleDragEnter(cardId)}
-                            onDragOver={handleDragOver}
-                            onDragEnd={handleDragEnd}
-                          />
-                        );
-                      }
-
-                      if (cardId === "billCycleStatus") {
-                        return (
-                          <KpiCard
-                            cardId={cardId}
-                            title="Bill Cycle Status"
-                            value={activeBillCycle || "Cycle 450"}
-                            subtitle="Current cycle"
-                            icon={<Clock className="w-5 h-5 text-cyan-600" />}
-                            iconBgClass="bg-cyan-100"
-                            isDragging={isDragging}
-                            isDragOver={isDragOver}
-                            onDragStart={(e) => handleDragStart(e, cardId)}
-                            onDragEnter={() => handleDragEnter(cardId)}
-                            onDragOver={handleDragOver}
-                            onDragEnd={handleDragEnd}
-                          />
-                        );
-                      }
-
-                      if (cardId === "newConnections") {
-                        return (
-                          <KpiCard
-                            cardId={cardId}
-                            title="New Connections"
-                            value={formatNumber(animatedNewConn)}
-                            subtitle="Year to date"
-                            icon={<Plus className="w-5 h-5 text-lime-600" />}
-                            iconBgClass="bg-lime-100"
                             isDragging={isDragging}
                             isDragOver={isDragOver}
                             onDragStart={(e) => handleDragStart(e, cardId)}
@@ -1401,7 +1219,7 @@ const DefaultDashboardPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* ── Sales Chart + New Customers ──────────────────────────── */}
+                {/* ── Sales Chart ───────────────────────────────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 auto-rows-fr">
 
                   <Reveal delay={0} className="h-full">
@@ -1578,78 +1396,7 @@ const DefaultDashboardPage: React.FC = () => {
                   </Reveal>
 
                   <Reveal delay={300} className="h-full">
-                    <div ref={newCustomersPieRef} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
-                      <style key={newCustPieAnimKey}>{newCustPieStyles}</style>
-                      <div className="flex items-center justify-between mb-6">
-                        <div>
-                          <h3 className="font-semibold text-gray-900">New Customers (YTD)</h3>
-                          <p className="text-sm text-gray-500 mt-1">Customer Acquisition Distribution</p>
-                        </div>
-                        <span className="text-gray-500 text-xs font-semibold tracking-wide">NEW</span>
-                      </div>
-                      <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-                        <div className="relative w-48 h-48">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
-                            <circle cx="100" cy="100" r="80" fill="none" stroke="#f3f4f6" strokeWidth="30" />
-                            <circle cx="100" cy="100" r="80" fill="none" stroke="var(--ceb-maroon)" strokeWidth="30"
-                              strokeDasharray={`0 ${C}`} strokeDashoffset="0"
-                              className={`pie-segment-ordinary-${newCustPieAnimKey}`}
-                              onMouseEnter={() => setActivePieChart("newOrdinary")}
-                              onMouseLeave={() => setActivePieChart(null)} />
-                            <circle cx="100" cy="100" r="80" fill="none" stroke="var(--ceb-gold)" strokeWidth="30"
-                              strokeDasharray={`0 ${C}`} strokeDashoffset={-((newOrdinaryPercentage / 100) * C)}
-                              className={`pie-segment-bulk-${newCustPieAnimKey}`}
-                              onMouseEnter={() => setActivePieChart("newBulk")}
-                              onMouseLeave={() => setActivePieChart(null)} />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-center">
-                              <p className="text-2xl font-bold text-gray-900">{formatNumber(animatedNewTotal)}</p>
-                              <p className="text-xs text-gray-500">Total New</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          <div className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${activePieChart === "newOrdinary" ? "bg-[color:var(--ceb-maroon)]/5" : ""}`}
-                            onMouseEnter={() => setActivePieChart("newOrdinary")} onMouseLeave={() => setActivePieChart(null)}>
-                            <div className="w-4 h-4 bg-[color:var(--ceb-maroon)] rounded-full" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">New Ordinary</p>
-                              <p className="text-xs text-gray-500">{formatNumber(animatedNewOrdinary)} ({newOrdinaryPercentage.toFixed(1)}%)</p>
-                            </div>
-                          </div>
-                          <div className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${activePieChart === "newBulk" ? "bg-[color:var(--ceb-gold)]/15" : ""}`}
-                            onMouseEnter={() => setActivePieChart("newBulk")} onMouseLeave={() => setActivePieChart(null)}>
-                            <div className="w-4 h-4 bg-[color:var(--ceb-gold)] rounded-full" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">New Bulk</p>
-                              <p className="text-xs text-gray-500">{formatNumber(animatedNewBulk)} ({newBulkPercentage.toFixed(1)}%)</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-auto pt-4 border-t border-gray-100">
-                        <p className="text-xs text-gray-500 mb-2">Monthly Average New Customers</p>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div><p className="text-xs text-gray-500">Ordinary</p><p className="text-sm font-semibold text-gray-900">{Math.round(totalNewOrdinary / 6)} / month</p></div>
-                          <div><p className="text-xs text-gray-500">Bulk</p><p className="text-sm font-semibold text-gray-900">{Math.round(totalNewBulk / 6)} / month</p></div>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex items-center justify-center gap-4 text-xs">
-                        <span className="flex items-center gap-1 text-green-600"><ArrowUp className="w-3 h-3" />+12% vs last year</span>
-                        <span className="text-gray-300">|</span>
-                        <span className="text-gray-500">Target: 500/month</span>
-                      </div>
-                    </div>
-                  </Reveal>
-                </div>
-
-                {/* ── Bottom 1-col grid ────────────────────────────────────── */}
-                <div ref={bottomGridRef} className="grid grid-cols-1 gap-6">
-
-                  <Reveal delay={0} className="lg:col-span-1 space-y-6">
-
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h3 className="font-semibold text-gray-900">Solar Generation Capacity</h3>
