@@ -196,29 +196,6 @@ const ReportEntry = () => {
             .filter(Boolean);
     };
 
-    const saveEntryParamList = async (reportId: string, paraNames: string[]) => {
-        if (!reportId.trim()) return;
-
-        const normalizedReportId = normalizeRepId(reportId);
-        const paramList = buildParamListValue(normalizedReportId, paraNames);
-
-        const response = await fetch("/roleadminapi/api/reppara/populateparamts", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                repId: normalizedReportId,
-                paramList,
-            }),
-        });
-
-        const payload = await response.json();
-        if (payload?.errorMessage) {
-            throw new Error(payload.errorMessage);
-        }
-    };
-
     const handleAdd = async (e?: FormEvent) => {
         if (e) e.preventDefault();
 
@@ -248,6 +225,8 @@ const ReportEntry = () => {
                 }
             }
 
+            const paramList = buildParamListValue(normalizedRepId, selectedParameters);
+
             const response = await fetch("/roleadminapi/api/reportentry", {
                 method: "POST",
                 headers: {
@@ -258,6 +237,7 @@ const ReportEntry = () => {
                     repId: normalizedRepId,
                     catCode: form.catCode.trim(),
                     repName: form.repName.trim(),
+                    paramList,
                     favorite: form.favorite ? 1 : 0,
                     active: form.active ? 1 : 0,
                 }),
@@ -267,10 +247,6 @@ const ReportEntry = () => {
 
             if (payload?.errorMessage) {
                 throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
-            }
-
-            if (selectedParameters.length > 0) {
-                await saveEntryParamList(normalizedRepId, selectedParameters);
             }
 
             toast.success(payload?.data?.message || "Report entry added successfully.");
@@ -300,6 +276,8 @@ const ReportEntry = () => {
         setIsSubmitting(true);
 
         try {
+            const paramList = buildParamListValue(normalizeRepId(form.repId), selectedParameters);
+
             const response = await fetch(
                 `/roleadminapi/api/reportentry/${selectedRepIdNo}/${encodeURIComponent(selectedCatCode)}`,
                 {
@@ -310,6 +288,7 @@ const ReportEntry = () => {
                     body: JSON.stringify({
                         catCode: form.catCode.trim(),
                         repName: form.repName.trim(),
+                        paramList,
                         favorite: form.favorite ? 1 : 0,
                         active: form.active ? 1 : 0,
                     }),
@@ -325,8 +304,6 @@ const ReportEntry = () => {
             if (payload?.data && !payload.data.success) {
                 throw new Error(payload.data.message || "Failed to update report entry.");
             }
-
-            await saveEntryParamList(normalizeRepId(form.repId), selectedParameters);
 
             toast.success(payload?.data?.message || "Report entry updated successfully.");
             handleReset();
