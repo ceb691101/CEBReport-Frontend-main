@@ -19,13 +19,13 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
   const dashboards = [
     { id: "default", label: "Default", icon: Home },
     { id: "financial", label: "Financial", icon: DollarSign },
-    { id: "customer", label: "Customer Management", icon: Users },
-    { id: "operations", label: "Operations/Field", icon: Briefcase },
-    { id: "analytics", label: "Analytics", icon: BarChart3 },
-    { id: "solar", label: "Solar Operations", icon: Sun },
-    { id: "collections", label: "Collections & Payments", icon: CreditCard },
-    { id: "executive", label: "Executive/KPI", icon: Target },
-    { id: "inventory", label: "Inventory & Procurement", icon: Package },
+   // { id: "customer", label: "Customer Management", icon: Users },
+   // { id: "operations", label: "Operations/Field", icon: Briefcase },
+    //{ id: "analytics", label: "Analytics", icon: BarChart3 },
+    //{ id: "solar", label: "Solar Operations", icon: Sun },
+    //{ id: "collections", label: "Collections & Payments", icon: CreditCard },
+    //{ id: "executive", label: "Executive/KPI", icon: Target },
+    //{ id: "inventory", label: "Inventory & Procurement", icon: Package },
   ];
 
   return (
