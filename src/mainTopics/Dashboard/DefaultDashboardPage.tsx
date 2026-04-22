@@ -903,6 +903,7 @@ const DefaultDashboardPage: React.FC = () => {
         }
 
         const records = json?.data?.records ?? [];
+        const trendRecords = records.slice(-7);
         const weeklyTotal = records.reduce(
           (sum, row) => sum + (Number(row.CollectionAmount) || 0),
           0
@@ -911,8 +912,8 @@ const DefaultDashboardPage: React.FC = () => {
         setKioskWeeklyTotal(weeklyTotal);
         setKioskDailyRecords(records);
         setKioskDateRange({
-          fromDate: json?.data?.fromDate ?? "",
-          toDate: json?.data?.toDate ?? "",
+          fromDate: trendRecords[0]?.TransDate ?? json?.data?.fromDate ?? "",
+          toDate: trendRecords[trendRecords.length - 1]?.TransDate ?? json?.data?.toDate ?? "",
         });
       } catch (err: any) {
         console.error("Error fetching kiosk collection data:", err);
