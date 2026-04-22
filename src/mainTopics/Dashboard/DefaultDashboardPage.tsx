@@ -8,8 +8,8 @@ import {
   PieChart,
   Sun,
   Battery,
-  Eye,
-  EyeOff,
+  // Eye,
+  // EyeOff,
   X,
 } from "lucide-react";
 import {
@@ -734,12 +734,12 @@ const DefaultDashboardPage: React.FC = () => {
 
         const [ordinaryRecords, bulkRecords] = await Promise.all([
           fetchSalesApiWithFallback(
-            "/misapi/api/dashboard/salesCollection/range/ordinary",
+            "/api/dashboard/salesCollection/range/ordinary",
             "/misapi/api/dashboard/salesCollection/range/ordinary",
             "Ordinary sales/collection"
           ),
           fetchSalesApiWithFallback(
-            "/misapi/api/dashboard/salesCollection/range/bulk",
+            "/api/dashboard/salesCollection/range/bulk",
             "/misapi/api/dashboard/salesCollection/range/bulk",
             "Bulk sales/collection"
           ),
@@ -887,7 +887,7 @@ const DefaultDashboardPage: React.FC = () => {
 
       try {
         const res = await fetch(
-          `/misapi/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`,
+          `/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`,
           { headers: { Accept: "application/json" } }
         );
 
@@ -1176,12 +1176,12 @@ const DefaultDashboardPage: React.FC = () => {
                   </div>
 
                   {/* Customize button */}
-                  <div className="flex justify-end mb-6">
+                  {/* <div className="flex justify-end mb-6">
                     <button onClick={() => setShowMoreCards(!showMoreCards)}
                       className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                       {showMoreCards ? <><EyeOff className="w-4 h-4" /> Hide Cards</> : <><Eye className="w-4 h-4" /> Show More Cards</>}
                     </button>
-                  </div>
+                  </div> */}
 
                   {/* Card selection panel */}
                   {showMoreCards && (
