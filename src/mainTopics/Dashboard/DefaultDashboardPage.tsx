@@ -56,7 +56,6 @@ interface MonthlySalesData {
   month: string;
   ordinary: number;
   bulk: number;
-  target: number;
 }
 
 interface SalesCollectionRecord {
@@ -753,7 +752,6 @@ const DefaultDashboardPage: React.FC = () => {
           month: date,
           ordinary: ordinaryByDate.get(date) ?? 0,
           bulk: bulkByDate.get(date) ?? 0,
-          target: 0,
         }));
 
         if (merged.length === 0) {
