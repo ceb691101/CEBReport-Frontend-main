@@ -58,8 +58,6 @@ const fmt = (num: number, decimals = 2) =>
     maximumFractionDigits: decimals,
   });
 
-const API_BASE = "http://localhost:44381";
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,7 +126,7 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
       setIsLoadingBillCycles(true);
       setBillCycleError(null);
       try {
-        const response = await fetchWithErrorHandling(`${API_BASE}/api/contract-demand/bill-cycles`);
+        const response = await fetchWithErrorHandling(`/misapi/api/contract-demand/bill-cycles`);
         console.log("Bill cycle response:", response);
 
         const billCyclesArray = response?.data?.BillCycles ?? response?.data?.billCycles;
@@ -165,7 +163,7 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
       setIsLoadingAreas(true);
       setAreaError(null);
       try {
-        const areaData = await fetchWithErrorHandling(`${API_BASE}/api/shared/areas`);
+        const areaData = await fetchWithErrorHandling(`/misapi/api/bulk/areas`);
         setAreas(areaData.data || []);
       } catch (err: any) {
         console.error("Error fetching areas:", err);
@@ -183,7 +181,7 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
       setIsLoadingProvinces(true);
       setProvinceError(null);
       try {
-        const provinceData = await fetchWithErrorHandling(`${API_BASE}/api/shared/provinces`);
+        const provinceData = await fetchWithErrorHandling(`/misapi/api/bulk/province`);
         setProvinces(provinceData.data || []);
       } catch (err: any) {
         console.error("Error fetching provinces:", err);
@@ -228,8 +226,8 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
     setReportError(null);
     try {
       const url = reportCategory === "Province"
-        ? `${API_BASE}/api/contract-demand/bulk/province?billCycle=${billCycle}&provCode=${categoryValue}`
-        : `${API_BASE}/api/contract-demand/bulk/area?billCycle=${billCycle}&areaCode=${categoryValue}`;
+        ? `/misapi/api/contract-demand/bulk/province?billCycle=${billCycle}&provCode=${categoryValue}`
+        : `/misapi/api/contract-demand/bulk/area?billCycle=${billCycle}&areaCode=${categoryValue}`;
 
       console.log("Request URL:", url);
       const data = await fetchWithErrorHandling(url);

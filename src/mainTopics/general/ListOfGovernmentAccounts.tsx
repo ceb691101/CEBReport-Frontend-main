@@ -32,10 +32,7 @@ interface GovernmentAccount {
 
 type ReportMode = "area" | "department" | null;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// API Base
-// ─────────────────────────────────────────────────────────────────────────────
-const API_BASE = "http://localhost:44381";
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -152,7 +149,7 @@ const ListOfGovernmentAccounts: React.FC = () => {
       setLoadingAreas(true);
       setAreaError("");
       try {
-        const response = await apiFetch<any[]>(`${API_BASE}/api/shared/areas`);
+        const response = await apiFetch<any[]>(`/misapi/api/shared/areas`);
         if (response.errorMessage) {
           setAreaError(response.errorMessage);
         } else if (response.data && Array.isArray(response.data)) {
@@ -191,7 +188,7 @@ const ListOfGovernmentAccounts: React.FC = () => {
         // Try to fetch departments for the selected area
         // This matches the old website pattern where departments are filtered by area
         const response = await apiFetch<any[]>(
-          `${API_BASE}/api/government-accounts/departments?areaCode=${encodeURIComponent(selectedArea)}`
+          `/misapi/api/government-accounts/departments?areaCode=${encodeURIComponent(selectedArea)}`
         );
         
         console.log("Departments API Response:", response);
@@ -275,7 +272,7 @@ const ListOfGovernmentAccounts: React.FC = () => {
       try {
         // Step 1: Get max bill cycle
         const maxBillCycleResponse = await apiFetch<MaxBillCycleModel>(
-          `${API_BASE}/api/government-accounts/max-bill-cycle?areaCode=${encodeURIComponent(areaCodeSnapshot)}`
+          `/misapi/api/government-accounts/max-bill-cycle?areaCode=${encodeURIComponent(areaCodeSnapshot)}`
         );
 
         if (maxBillCycleResponse.errorMessage) {
@@ -292,9 +289,9 @@ const ListOfGovernmentAccounts: React.FC = () => {
         // Step 2: Fetch report data
         let url: string;
         if (mode === "area") {
-          url = `${API_BASE}/api/government-accounts/area?areaCode=${encodeURIComponent(areaCodeSnapshot)}&billCycle=${encodeURIComponent(maxBillCycle)}`;
+          url = `/misapi/api/government-accounts/area?areaCode=${encodeURIComponent(areaCodeSnapshot)}&billCycle=${encodeURIComponent(maxBillCycle)}`;
         } else {
-          url = `${API_BASE}/api/government-accounts/department?areaCode=${encodeURIComponent(areaCodeSnapshot)}&departmentCode=${encodeURIComponent(deptCodeSnapshot)}&billCycle=${encodeURIComponent(maxBillCycle)}`;
+          url = `/misapi/api/government-accounts/department?areaCode=${encodeURIComponent(areaCodeSnapshot)}&departmentCode=${encodeURIComponent(deptCodeSnapshot)}&billCycle=${encodeURIComponent(maxBillCycle)}`;
         }
 
         console.log("Fetching URL:", url);

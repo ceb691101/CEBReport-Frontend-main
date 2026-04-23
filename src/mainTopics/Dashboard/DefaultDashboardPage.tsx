@@ -734,12 +734,12 @@ const DefaultDashboardPage: React.FC = () => {
 
         const [ordinaryRecords, bulkRecords] = await Promise.all([
           fetchSalesApiWithFallback(
-            "/misapi/api/dashboard/salesCollection/range/ordinary",
+            "/api/dashboard/salesCollection/range/ordinary",
             "/misapi/api/dashboard/salesCollection/range/ordinary",
             "Ordinary sales/collection"
           ),
           fetchSalesApiWithFallback(
-            "/misapi/api/dashboard/salesCollection/range/bulk",
+            "/api/dashboard/salesCollection/range/bulk",
             "/misapi/api/dashboard/salesCollection/range/bulk",
             "Bulk sales/collection"
           ),
@@ -887,7 +887,7 @@ const DefaultDashboardPage: React.FC = () => {
 
       try {
         const res = await fetch(
-          `/misapi/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`,
+          `/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`,
           { headers: { Accept: "application/json" } }
         );
 

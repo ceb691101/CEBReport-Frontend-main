@@ -21,10 +21,6 @@ interface AreasPositionApiResult {
   rows: AreasPositionRow[];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// API Base
-// ─────────────────────────────────────────────────────────────────────────────
-const API_BASE = "http://localhost:44381";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -116,7 +112,7 @@ const AreasPosition: React.FC = () => {
       setLoadingAreas(true);
       setAreaError("");
       try {
-        const response = await apiFetch<any[]>(`${API_BASE}/api/shared/areas`);
+        const response = await apiFetch<any[]>(`/misapi/api/shared/areas`);
         if (response.errorMessage) {
           setAreaError(response.errorMessage);
         } else if (response.data && Array.isArray(response.data)) {
@@ -155,7 +151,7 @@ const AreasPosition: React.FC = () => {
 
       try {
         const response = await apiFetch<{ billCycle: string }>(
-          `${API_BASE}/api/areas-position/max-bill-cycle?areaCode=${encodeURIComponent(selectedArea)}`
+          `/misapi/api/areas-position/max-bill-cycle?areaCode=${encodeURIComponent(selectedArea)}`
         );
 
         if (response.errorMessage) {
@@ -196,7 +192,7 @@ const AreasPosition: React.FC = () => {
 
     try {
       const reportResponse = await apiFetch<AreasPositionApiResult>(
-        `${API_BASE}/api/areas-position/report?areaCode=${encodeURIComponent(areaCodeSnapshot)}&billCycle=${encodeURIComponent(billCycleSnapshot)}`
+        `/misapi/api/areas-position/report?areaCode=${encodeURIComponent(areaCodeSnapshot)}&billCycle=${encodeURIComponent(billCycleSnapshot)}`
       );
 
       if (reportResponse.errorMessage) {
