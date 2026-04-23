@@ -490,6 +490,18 @@ const DefaultDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const activeDashboard = "default";
 
+  const [selectedDivision, setSelectedDivision] = useState("all");
+  const toRegion = (division: string) => {
+    const match = /^d(\d+)$/i.exec(division || "");
+    return match ? `R${match[1]}` : null;
+  };
+  const selectedRegion = toRegion(selectedDivision);
+  const withRegion = (url: string) => {
+    if (!selectedRegion) return url;
+    const joiner = url.includes("?") ? "&" : "?";
+    return `${url}${joiner}region=${encodeURIComponent(selectedRegion)}`;
+  };
+
   // ── UI state ──────────────────────────────────────────────────────────────
   const [isLoaded, setIsLoaded]               = useState(false);
   const [activeSolarPieChart, setActiveSolarPieChart] = useState<string | null>(null);
@@ -609,7 +621,7 @@ const DefaultDashboardPage: React.FC = () => {
     const fetchOrdinaryCount = async () => {
       setCustomerCountsLoading(true); setCustomerCountsError(null);
       try {
-        const res  = await fetch(`/misapi/api/dashboard/ordinary-customers-summary?billCycle=0`, { headers: { Accept: "application/json" } });
+        const res  = await fetch(withRegion(`/api/dashboard/ordinary-customers-summary?billCycle=0`), { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, ordinary: json?.data?.TotalCount ?? 0 }));
@@ -618,13 +630,13 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setCustomerCountsLoading(false); }
     };
     fetchOrdinaryCount();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const fetchBulkCount = async () => {
       setBulkCountLoading(true); setBulkCountError(null);
       try {
-        const res  = await fetch("/misapi/api/dashboard/customers/active-count", { headers: { Accept: "application/json" } });
+        const res  = await fetch(withRegion("/api/dashboard/customers/active-count"), { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, bulk: json?.data?.activeCustomerCount ?? 0 }));
@@ -632,19 +644,19 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setBulkCountLoading(false); }
     };
     fetchBulkCount();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const fetchSolarCustomerData = async () => {
       setSolarLoading(true); setSolarError(null);
       try {
-        const maxRes = await fetch(`/misapi/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
+        const maxRes = await fetch(`/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
         if (!maxRes.ok) throw new Error(`Failed to fetch max bill cycle`);
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-1`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-2`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-3`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-4`), { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch one or more net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -661,17 +673,17 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setSolarLoading(false); }
     };
     fetchSolarCustomerData();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const fetchBulkSolarCustomerData = async () => {
       setBulkSolarLoading(true);
       try {
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-1`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-2`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-3`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-4`), { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch bulk solar net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -685,7 +697,7 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setBulkSolarLoading(false); }
     };
     fetchBulkSolarCustomerData();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const fetchSalesCollection = async () => {
@@ -733,13 +745,13 @@ const DefaultDashboardPage: React.FC = () => {
 
         const [ordinaryRecords, bulkRecords] = await Promise.all([
           fetchSalesApiWithFallback(
-            "/api/dashboard/salesCollection/range/ordinary",
-            "/misapi/api/dashboard/salesCollection/range/ordinary",
+            withRegion("/api/dashboard/salesCollection/range/ordinary"),
+            withRegion("/api/dashboard/salesCollection/range/ordinary"),
             "Ordinary sales/collection"
           ),
           fetchSalesApiWithFallback(
-            "/api/dashboard/salesCollection/range/bulk",
-            "/misapi/api/dashboard/salesCollection/range/bulk",
+            withRegion("/api/dashboard/salesCollection/range/bulk"),
+            withRegion("/api/dashboard/salesCollection/range/bulk"),
             "Bulk sales/collection"
           ),
         ]);
@@ -766,7 +778,7 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setSalesCollectionLoading(false); }
     };
     fetchSalesCollection();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const normalizeRecords = (records: SolarGenerationCapacityApiRecord[] = []) =>
@@ -778,8 +790,8 @@ const DefaultDashboardPage: React.FC = () => {
 
     const fetchCapacityByEndpoint = async (endpoint: string, billCycle: string) => {
       const url = billCycle
-        ? `${endpoint}?billCycle=${encodeURIComponent(billCycle)}`
-        : endpoint;
+        ? withRegion(`${endpoint}?billCycle=${encodeURIComponent(billCycle)}`)
+        : withRegion(endpoint);
 
       const res = await fetch(url, { headers: { Accept: "application/json" } });
       if (!res.ok) {
@@ -804,8 +816,8 @@ const DefaultDashboardPage: React.FC = () => {
       setSolarCapacityError(null);
 
       try {
-        const ordinaryEndpoint = "/misapi/api/dashboard/solar-ordinary-customers/generation-capacity";
-        const bulkEndpoint = "/misapi/api/dashboard/solar-bulk-customers/generation-capacity";
+        const ordinaryEndpoint = "/api/dashboard/solar-ordinary-customers/generation-capacity";
+        const bulkEndpoint = "/api/dashboard/solar-bulk-customers/generation-capacity";
 
         const ordinaryData = await fetchCapacityByEndpoint(ordinaryEndpoint, selectedSolarBillCycle);
 
@@ -873,7 +885,7 @@ const DefaultDashboardPage: React.FC = () => {
     };
 
     fetchSolarCapacityGraph();
-  }, [selectedSolarBillCycle, solarCapacityInitialized]);
+  }, [selectedSolarBillCycle, solarCapacityInitialized, selectedRegion]);
 
   const loggedUserId = (user?.Userno || "").trim().toUpperCase();
   const kioskUserId = loggedUserId.startsWith("KIOS") ? loggedUserId : "KIOS00";
@@ -885,7 +897,7 @@ const DefaultDashboardPage: React.FC = () => {
 
       try {
         const res = await fetch(
-          `/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`,
+          withRegion(`/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`),
           { headers: { Accept: "application/json" } }
         );
 
@@ -923,7 +935,7 @@ const DefaultDashboardPage: React.FC = () => {
     };
 
     fetchKioskWeeklyCollection();
-  }, [kioskUserId]);
+  }, [kioskUserId, selectedRegion]);
 
   // ── Formatters ────────────────────────────────────────────────────────────
 
@@ -1050,6 +1062,8 @@ const DefaultDashboardPage: React.FC = () => {
           <>
               <DashboardHeader
                 title="Dashboard"
+                selectedDivision={selectedDivision}
+                onDivisionChange={setSelectedDivision}
               />
 
               <div className="max-w-7xl mx-auto px-4 py-6">
