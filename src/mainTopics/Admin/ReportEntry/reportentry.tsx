@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { CheckSquare, RefreshCw, Square } from "lucide-react";
+import { CheckSquare, RefreshCw, Search, Square } from "lucide-react";
 
 type CategoryRecord = {
     catCode: string;
@@ -18,6 +18,7 @@ type ReportEntryRecord = {
 };
 
 type ReportParameterRecord = {
+    paraId: number;
     paraName: string;
     description: string;
     populated: boolean;
@@ -60,7 +61,7 @@ const actionButtonSoftClass =
     "rounded-lg bg-[#7A0000]/85 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-50";
 
 const actionButtonDarkClass =
-    "rounded-lg bg-stone-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50";
+    "rounded-lg bg-[#8E8E8E] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#7A7A7A] disabled:cursor-not-allowed disabled:opacity-50";
 
 const actionButtonLightClass =
     "rounded-lg border border-[#7A0000]/20 bg-white px-5 py-2.5 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5";
@@ -74,6 +75,8 @@ const ReportEntry = () => {
     const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
     const [selectedRepIdNo, setSelectedRepIdNo] = useState<number | null>(null);
     const [selectedCatCode, setSelectedCatCode] = useState<string | null>(null);
+    const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("");
+    const [searchQuery, setSearchQuery] = useState<string>("");
 
     const [isLoading, setIsLoading] = useState(false);
     const [isEntriesLoading, setIsEntriesLoading] = useState(false);
@@ -82,6 +85,7 @@ const ReportEntry = () => {
 
     const [form, setForm] = useState<CreateEntryForm>(initialForm);
     const [mode, setMode] = useState<"add" | "edit">("add");
+    const [deleteTargetEntry, setDeleteTargetEntry] = useState<ReportEntryRecord | null>(null);
 
     const loadCategories = async () => {
         setIsLoading(true);
@@ -96,8 +100,13 @@ const ReportEntry = () => {
 
             const nextCategories = Array.isArray(payload?.data)
                 ? payload.data.map((item: any) => ({
-                    catCode: item?.CatCode ?? item?.catCode ?? "",
-                    catName: item?.CatName ?? item?.catName ?? "",
+                    catCode: (item?.CatCode ?? item?.catCode ?? "").toString().trim().toUpperCase(),
+                    catName:
+                        item?.CatName ??
+                        item?.catName ??
+                        item?.Description ??
+                        item?.description ??
+                        "",
                 }))
                 : [];
             setCategories(nextCategories);
@@ -108,11 +117,15 @@ const ReportEntry = () => {
         }
     };
 
-    const loadReportEntries = async () => {
+    const loadReportEntries = async (categoryCode?: string) => {
         setIsEntriesLoading(true);
 
         try {
-            const response = await fetch("/roleadminapi/api/reportentry");
+            let normalizedCategory = (categoryCode ?? activeCategoryFilter).trim().toUpperCase();
+            const endpoint = normalizedCategory
+                ? `/roleadminapi/api/reportentry?catcode=${encodeURIComponent(normalizedCategory)}`
+                : "/roleadminapi/api/reportentry";
+            const response = await fetch(endpoint);
             const payload = await response.json();
 
             if (payload?.errorMessage) {
@@ -123,7 +136,7 @@ const ReportEntry = () => {
                 ? payload.data.map((item: any) => ({
                     repIdNo: Number(item?.RepIdNo ?? item?.repIdNo ?? 0),
                     repId: item?.RepId ?? item?.repId ?? "",
-                    catCode: item?.CatCode ?? item?.catCode ?? "",
+                    catCode: (item?.CatCode ?? item?.catCode ?? "").toString().trim().toUpperCase(),
                     repName: item?.RepName ?? item?.repName ?? "",
                     paramList: item?.ParamList ?? item?.paramList ?? "",
                     favorite: Number(item?.Favorite ?? item?.favorite ?? 0),
@@ -154,10 +167,11 @@ const ReportEntry = () => {
 
             const nextParameters = Array.isArray(payload?.data)
                 ? payload.data.map((item: any) => ({
+                    paraId: Number(item?.ParaId ?? item?.paraId ?? 0),
                     paraName: (item?.ParaName ?? item?.paraName ?? "").toString().trim(),
                     description: (item?.Description ?? item?.description ?? "").toString().trim(),
                     populated: isPopulatedValue(item?.Populated ?? item?.populated),
-                }))
+                })).sort((a: ReportParameterRecord, b: ReportParameterRecord) => a.paraId - b.paraId)
                 : [];
 
             setParameters(nextParameters);
@@ -170,13 +184,16 @@ const ReportEntry = () => {
         }
     };
 
-    const buildParamListValue = (reportId: string, paraNames: string[]) => {
-        const uniqueParams = Array.from(new Set(paraNames.map((item) => item.trim()).filter(Boolean)));
+    const buildParamListValue = (reportId: string, allParaNames: string[], selectedParaNames: string[]) => {
+        const uniqueParams = Array.from(new Set(allParaNames.map((item) => item.trim()).filter(Boolean)));
         if (uniqueParams.length === 0) {
             return `<${reportId.trim()}>`;
         }
 
-        const tokenString = uniqueParams.map((item) => `${item}=0`).join("&");
+        const selectedSet = new Set(selectedParaNames.map((item) => item.trim().toUpperCase()).filter(Boolean));
+        const tokenString = uniqueParams
+            .map((item) => `${item}=${selectedSet.has(item.toUpperCase()) ? "1" : "0"}`)
+            .join("&");
         return `<${reportId.trim()}>&${tokenString}`;
     };
 
@@ -192,7 +209,16 @@ const ReportEntry = () => {
             .split("&")
             .map((token) => token.trim())
             .filter(Boolean)
-            .map((token) => token.split("=")[0]?.trim())
+            .map((token) => {
+                const [name, value] = token.split("=");
+                return {
+                    name: (name ?? "").trim(),
+                    value: (value ?? "").trim(),
+                };
+            })
+            .filter((item) => item.name)
+            .filter((item) => item.value === "1" || item.value.toLowerCase() === "true")
+            .map((item) => item.name)
             .filter(Boolean);
     };
 
@@ -200,10 +226,29 @@ const ReportEntry = () => {
         if (e) e.preventDefault();
 
         const normalizedRepId = normalizeRepId(form.repId);
+        const normalizedRepIdNo = Number(form.repIdNo ?? 0);
 
         if (!normalizedRepId || !form.catCode.trim() || !form.repName.trim()) {
             toast.error("Report ID, Category, and Name are required.");
             return;
+        }
+
+        if (selectedParameters.length === 0) {
+            toast.error("At least one parameter is required.");
+            return;
+        }
+
+        if (normalizedRepIdNo > 0) {
+            const duplicateEntry = entries.some(
+                (entry) =>
+                    Number(entry.repIdNo) === normalizedRepIdNo &&
+                    normalizeRepId(entry.repId) === normalizedRepId
+            );
+
+            if (duplicateEntry) {
+                toast.error("Same Report ID NO and Report ID already exists.");
+                return;
+            }
         }
 
         setIsSubmitting(true);
@@ -225,7 +270,11 @@ const ReportEntry = () => {
                 }
             }
 
-            const paramList = buildParamListValue(normalizedRepId, selectedParameters);
+            const paramList = buildParamListValue(
+                normalizedRepId,
+                parameters.map((item) => item.paraName),
+                selectedParameters
+            );
 
             const response = await fetch("/roleadminapi/api/reportentry", {
                 method: "POST",
@@ -251,7 +300,7 @@ const ReportEntry = () => {
 
             toast.success(payload?.data?.message || "Report entry added successfully.");
             handleReset();
-            await loadReportEntries();
+            await loadReportEntries(form.catCode.trim());
         } catch (error) {
             const message = error instanceof Error ? error.message : "Failed to add report entry.";
             toast.error(message);
@@ -273,10 +322,19 @@ const ReportEntry = () => {
             return;
         }
 
+        if (selectedParameters.length === 0) {
+            toast.error("At least one parameter is required.");
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
-            const paramList = buildParamListValue(normalizeRepId(form.repId), selectedParameters);
+            const paramList = buildParamListValue(
+                normalizeRepId(form.repId),
+                parameters.map((item) => item.paraName),
+                selectedParameters
+            );
 
             const response = await fetch(
                 `/roleadminapi/api/reportentry/${selectedRepIdNo}/${encodeURIComponent(selectedCatCode)}`,
@@ -307,7 +365,7 @@ const ReportEntry = () => {
 
             toast.success(payload?.data?.message || "Report entry updated successfully.");
             handleReset();
-            await loadReportEntries();
+            await loadReportEntries(form.catCode.trim());
         } catch (error) {
             const message = error instanceof Error ? error.message : "Failed to update report entry.";
             toast.error(message);
@@ -316,9 +374,28 @@ const ReportEntry = () => {
         }
     };
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
         if (selectedRepIdNo === null || !selectedCatCode) {
             toast.error("No entry selected for deletion.");
+            return;
+        }
+
+        const selectedEntry = entries.find(
+            (entry) =>
+                Number(entry.repIdNo) === Number(selectedRepIdNo) &&
+                entry.catCode.trim().toUpperCase() === selectedCatCode.trim().toUpperCase()
+        );
+
+        if (!selectedEntry) {
+            toast.error("Selected report entry was not found. Please refresh and select again.");
+            return;
+        }
+
+        setDeleteTargetEntry(selectedEntry);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTargetEntry) {
             return;
         }
 
@@ -326,7 +403,7 @@ const ReportEntry = () => {
 
         try {
             const response = await fetch(
-                `/roleadminapi/api/reportentry/${selectedRepIdNo}/${encodeURIComponent(selectedCatCode)}`,
+                `/roleadminapi/api/reportentry/${deleteTargetEntry.repIdNo}/${encodeURIComponent(deleteTargetEntry.catCode)}`,
                 {
                     method: "DELETE",
                 }
@@ -343,6 +420,7 @@ const ReportEntry = () => {
             }
 
             toast.success(payload?.data?.message || "Report entry deleted successfully.");
+            setDeleteTargetEntry(null);
             handleReset();
             await loadReportEntries();
         } catch (error) {
@@ -353,15 +431,15 @@ const ReportEntry = () => {
         }
     };
 
+    const handleRowDoubleClick = (entry: ReportEntryRecord) => {
+        const normalizedCatCode = entry.catCode.toString().trim().toUpperCase();
 
-
-    const handleRowClick = (entry: ReportEntryRecord) => {
         setSelectedRepIdNo(entry.repIdNo);
-        setSelectedCatCode(entry.catCode);
+        setSelectedCatCode(normalizedCatCode);
         setForm({
             repIdNo: entry.repIdNo,
             repId: entry.repId,
-            catCode: entry.catCode,
+            catCode: normalizedCatCode,
             repName: entry.repName,
             favorite: entry.active === 1 && entry.favorite === 1,
             active: entry.active === 1,
@@ -376,6 +454,9 @@ const ReportEntry = () => {
         setSelectedRepIdNo(null);
         setSelectedCatCode(null);
         setSelectedParameters([]);
+        setActiveCategoryFilter("");
+        setSearchQuery("");
+        loadReportEntries("");
     };
 
     useEffect(() => {
@@ -384,10 +465,43 @@ const ReportEntry = () => {
         loadParameters();
     }, []);
 
+    const handleCategoryFilterClick = (catCode: string) => {
+        setActiveCategoryFilter(catCode);
+        setSelectedRepIdNo(null);
+        setSelectedCatCode(null);
+        setMode("add");
+        setForm({ ...initialForm, catCode });
+        setSelectedParameters([]);
+        loadReportEntries(catCode);
+    };
+
+    const filteredEntries = entries.filter((entry) => {
+        const matchesSearch = searchQuery.trim() === "" || 
+            entry.repIdNo.toString().includes(searchQuery) ||
+            entry.repId.toUpperCase().includes(searchQuery.toUpperCase()) ||
+            entry.catCode.toUpperCase().includes(searchQuery.toUpperCase()) ||
+            entry.repName.toUpperCase().includes(searchQuery.toUpperCase());
+        return matchesSearch;
+    });
+
     const getCategoryLabel = (catCode: string) => {
         const category = categories.find((item) => item.catCode === catCode);
-        return category ? `${catCode} - ${category.catName}` : catCode;
+        return category?.catName || catCode;
     };
+
+    const normalizedSelectedCatCode = form.catCode.trim().toUpperCase();
+    const categoryOptionValues = categories.map((c) => c.catCode);
+    const categoryOptionLabels = categories.map((c) =>
+        c.catName?.trim() ? `${c.catCode} - ${c.catName}` : c.catCode
+    );
+
+    if (
+        normalizedSelectedCatCode &&
+        !categoryOptionValues.includes(normalizedSelectedCatCode)
+    ) {
+        categoryOptionValues.unshift(normalizedSelectedCatCode);
+        categoryOptionLabels.unshift(normalizedSelectedCatCode);
+    }
 
     return (
         <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
@@ -416,7 +530,7 @@ const ReportEntry = () => {
                                 <div className="flex gap-4">
                                     <Input
                                         label="Report ID NO"
-                                        value={form.repIdNo ? form.repIdNo.toString() : ""}
+                                        value={form.repIdNo === 0 ? "0" : form.repIdNo ? form.repIdNo.toString() : ""}
                                         onChange={(value) => {
                                             const nextValue = value.trim();
                                             setForm({
@@ -439,9 +553,9 @@ const ReportEntry = () => {
                                 <Select
                                     label="Category"
                                     value={form.catCode}
-                                    onChange={(value) => setForm({ ...form, catCode: value })}
-                                    options={categories.map(c => c.catCode)}
-                                    optionValues={categories.map(c => c.catCode)}
+                                    onChange={(value) => setForm({ ...form, catCode: value.trim().toUpperCase() })}
+                                    options={categoryOptionLabels}
+                                    optionValues={categoryOptionValues}
                                     placeholder="Select a category"
                                 />
 
@@ -469,10 +583,9 @@ const ReportEntry = () => {
                                                     return (
                                                         <Checkbox
                                                             key={parameter.paraName}
-                                                            label={parameter.description
-                                                                ? `${parameter.paraName} - ${parameter.description}`
-                                                                : parameter.paraName}
+                                                            label={parameter.description || parameter.paraName}
                                                             checked={isChecked}
+                                                            asImage
                                                             onChange={(checked) => {
                                                                 setSelectedParameters((current) => {
                                                                     if (checked) {
@@ -495,7 +608,11 @@ const ReportEntry = () => {
                                     <p className="text-xs font-semibold text-stone-600">Generated Parameters URL Pattern</p>
                                     <p className="mt-1 break-all font-mono text-xs text-[#8B0000]">
                                         {form.repId.trim()
-                                            ? buildParamListValue(normalizeRepId(form.repId), selectedParameters)
+                                            ? buildParamListValue(
+                                                normalizeRepId(form.repId),
+                                                parameters.map((item) => item.paraName),
+                                                selectedParameters
+                                            )
                                             : "Enter Report ID to generate parameter URL pattern."}
                                     </p>
                                 </div>
@@ -564,12 +681,51 @@ const ReportEntry = () => {
                             <h2 className="text-2xl font-semibold text-stone-900">Report Entry Table</h2>
                             <button
                                 type="button"
-                                onClick={loadReportEntries}
+                                onClick={() => loadReportEntries()}
                                 className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 px-4 py-2 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
                             >
                                 <RefreshCw className={`h-4 w-4 ${isEntriesLoading ? "animate-spin" : ""}`} />
                                 Refresh
                             </button>
+                        </div>
+
+                        <div className="mb-4 flex gap-3">
+                            <select
+                                value={activeCategoryFilter}
+                                onChange={(e) => {
+                                    const catCode = e.target.value;
+                                    handleCategoryFilterClick(catCode);
+                                }}
+                                className="flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10"
+                            >
+                                <option value="">All Categories</option>
+                                {categories.map((category) => (
+                                    <option key={category.catCode} value={category.catCode}>
+                                        {category.catCode} - {category.catName}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <div className="flex flex-1 items-center gap-2">
+                                <div className="relative flex-1">
+                                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search report id or name"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full rounded-lg border border-stone-300 bg-white py-2 pl-10 pr-3 text-sm text-stone-700 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery("")}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-[#7A0000]/25 bg-white px-6 py-2 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5"
+                                >
+                                    <Search className="h-4 w-4" />
+                                    Clear
+                                </button>
+                            </div>
                         </div>
 
                         <div className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50/40">
@@ -593,21 +749,21 @@ const ReportEntry = () => {
                                                     Loading report entries...
                                                 </td>
                                             </tr>
-                                        ) : entries.length === 0 ? (
+                                        ) : filteredEntries.length === 0 ? (
                                             <tr>
                                                 <td colSpan={6} className="px-3 py-8 text-center text-stone-500">
                                                     No report entries found.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            entries.map((entry) => (
+                                            filteredEntries.map((entry) => (
                                                 <tr
                                                     key={`${entry.repIdNo}-${entry.catCode}-${entry.repId}`}
-                                                    onClick={() => handleRowClick(entry)}
+                                                    onClick={() => handleRowDoubleClick(entry)}
                                                     className={`cursor-pointer transition ${selectedRepIdNo === entry.repIdNo && selectedCatCode === entry.catCode ? "bg-blue-50" : "bg-white hover:bg-stone-50"}`}
                                                 >
-                                                    <td className="border border-stone-200 px-3 py-2 text-center">{entry.repIdNo || "-"}</td>
-                                                    <td className="border border-stone-200 px-3 py-2">{getCategoryLabel(entry.catCode)}</td>
+                                                    <td className="border border-stone-200 px-3 py-2 text-center">{entry.repIdNo ?? "-"}</td>
+                                                    <td className="border border-stone-200 px-3 py-2">{entry.catCode || "-"}</td>
                                                     <td className="border border-stone-200 px-3 py-2 font-semibold text-stone-800">{entry.repId || "-"}</td>
                                                     <td className="border border-stone-200 px-3 py-2">{entry.paramList || "-"}</td>
                                                     <td className="border border-stone-200 px-3 py-2 text-center">{entry.favorite === 1 ? "Yes" : "No"}</td>
@@ -622,6 +778,42 @@ const ReportEntry = () => {
                     </div>
                 </section>
             </div>
+
+            {deleteTargetEntry && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/45 px-4">
+                    <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl">
+                        <h3 className="text-lg font-semibold text-stone-900">Delete Report Entry</h3>
+                        <p className="mt-2 text-sm text-stone-600">
+                            Are you sure you want to delete this report entry?
+                        </p>
+
+                        <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
+                            <p><span className="font-semibold text-stone-900">Report ID NO:</span> {deleteTargetEntry.repIdNo}</p>
+                            <p><span className="font-semibold text-stone-900">Report ID:</span> {deleteTargetEntry.repId || "-"}</p>
+                            <p><span className="font-semibold text-stone-900">Category:</span> {deleteTargetEntry.catCode || "-"}</p>
+                        </div>
+
+                        <div className="mt-5 flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setDeleteTargetEntry(null)}
+                                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDelete}
+                                className="rounded-lg bg-[#8E8E8E] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#7A7A7A] disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? "Deleting..." : "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -712,7 +904,7 @@ const Checkbox = ({
                 aria-label={label}
             >
                 {checked ? (
-                    <CheckSquare className="h-6 w-6 text-green-600" />
+                    <CheckSquare className="h-6 w-6 text-blue-600" />
                 ) : (
                     <Square className="h-6 w-6 text-stone-400" />
                 )}

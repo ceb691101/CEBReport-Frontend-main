@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 
 type SaveParamForm = {
   paraId: string;
@@ -15,6 +15,7 @@ type LastSaveResult = {
 };
 
 type ParameterRow = {
+  paraId: string;
   paraName: string;
   description: string;
   populated: boolean;
@@ -29,23 +30,6 @@ const isPopulatedValue = (value: unknown): boolean => {
   return normalized === "1" || normalized === "yes" || normalized === "true";
 };
 
-const alphabetFilters = [
-  "A",
-  "C",
-  "D",
-  "E",
-  "F",
-  "G",
-  "M",
-  "P",
-  "R",
-  "S",
-  "T",
-  "W",
-  "Y",
-  "All",
-] as const;
-
 const fieldBaseClass =
   "w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10";
 
@@ -59,7 +43,8 @@ const saveParamInitial: SaveParamForm = {
 
 const ReportParameters = () => {
   const [saveForm, setSaveForm] = useState<SaveParamForm>(saveParamInitial);
-  const [letterFilter, setLetterFilter] = useState<(typeof alphabetFilters)[number]>("All");
+  const [searchInput, setSearchInput] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [onlyPopulated, setOnlyPopulated] = useState(false);
   const [parameterRows, setParameterRows] = useState<ParameterRow[]>([]);
 
@@ -67,23 +52,48 @@ const ReportParameters = () => {
   const [isUpdatingList, setIsUpdatingList] = useState(false);
   const [isLoadingParams, setIsLoadingParams] = useState(false);
   const [isDeletingParamName, setIsDeletingParamName] = useState<string | null>(null);
+  const [deleteTargetRow, setDeleteTargetRow] = useState<ParameterRow | null>(null);
   const [editingParamName, setEditingParamName] = useState<string | null>(null);
 
   const [lastSaveResult, setLastSaveResult] = useState<LastSaveResult | null>(null);
   const [lastUpdatedRows, setLastUpdatedRows] = useState<number | null>(null);
   const isEditMode = Boolean(editingParamName);
 
-  const filteredRows = useMemo(() => {
-    return parameterRows.filter((row) => {
-      const byLetter =
-        letterFilter === "All"
-          ? true
-          : row.paraName.toUpperCase().startsWith(letterFilter.toUpperCase());
+  const orderedRows = useMemo(() => {
+    const query = appliedSearch.trim().toUpperCase();
 
-      const byPopulated = onlyPopulated ? row.populated : true;
-      return byLetter && byPopulated;
+    const sortedRows = [...parameterRows].sort((a, b) => {
+      const aNum = Number(a.paraId);
+      const bNum = Number(b.paraId);
+      const aIsNum = Number.isFinite(aNum) && a.paraId.trim() !== "";
+      const bIsNum = Number.isFinite(bNum) && b.paraId.trim() !== "";
+
+      if (aIsNum && bIsNum) {
+        return aNum - bNum;
+      }
+
+      return a.paraName.localeCompare(b.paraName);
     });
-  }, [parameterRows, letterFilter, onlyPopulated]);
+
+    const rowsByPopulated = onlyPopulated
+      ? sortedRows.filter((row) => row.populated)
+      : sortedRows;
+
+    if (!query) {
+      return rowsByPopulated;
+    }
+
+    return rowsByPopulated.filter((row, index) => {
+      const serialId = String(index + 1);
+
+      return (
+        serialId.includes(query) ||
+        row.paraId.toUpperCase().includes(query) ||
+        row.paraName.toUpperCase().includes(query) ||
+        row.description.toUpperCase().includes(query)
+      );
+    });
+  }, [parameterRows, onlyPopulated, appliedSearch]);
 
   const buildParamList = (_repId: string, rows: ParameterRow[]) => {
     const sourceRows = rows.length > 0 ? rows : parameterRows;
@@ -97,8 +107,8 @@ const ReportParameters = () => {
   };
 
   const computedParamList = useMemo(() => {
-    return buildParamList("", filteredRows);
-  }, [filteredRows, parameterRows]);
+    return buildParamList("", orderedRows);
+  }, [orderedRows, parameterRows]);
 
   const loadParameters = async () => {
     setIsLoadingParams(true);
@@ -113,6 +123,7 @@ const ReportParameters = () => {
 
       const rows: ParameterRow[] = Array.isArray(payload?.data)
         ? payload.data.map((item: any) => ({
+            paraId: (item?.ParaId ?? item?.paraId ?? "").toString().trim(),
             paraName: (item?.ParaName ?? item?.paraName ?? "").toString().trim(),
             description: (item?.Description ?? item?.description ?? "").toString().trim(),
             populated: isPopulatedValue(item?.Populated ?? item?.populated),
@@ -187,6 +198,7 @@ const ReportParameters = () => {
       setParameterRows((current) => {
         const index = current.findIndex((row) => row.paraName.toUpperCase() === paraName);
         const nextRow: ParameterRow = {
+          paraId: "",
           paraName,
           description,
           populated: false,
@@ -241,7 +253,6 @@ const ReportParameters = () => {
       }
 
       const rows     = Number(payload?.data?.updatedRows ?? 0);
-      const reports  = Number(payload?.data?.processedReports ?? 0);
       const params   = Number(payload?.data?.processedParams ?? 0);
       const appended = Number(payload?.data?.appendedParams ?? 0);
       setLastUpdatedRows(rows);
@@ -279,8 +290,14 @@ const ReportParameters = () => {
   const handleResetAll = () => {
     resetSaveForm();
     setLastUpdatedRows(null);
-    setLetterFilter("All");
     setOnlyPopulated(false);
+    setSearchInput("");
+    setAppliedSearch("");
+  };
+
+  const handleSearchSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    setAppliedSearch(searchInput);
   };
 
   const handleEditRow = (row: ParameterRow) => {
@@ -292,7 +309,30 @@ const ReportParameters = () => {
     setLastSaveResult(null);
   };
 
-  const handleDeleteRow = async (row: ParameterRow) => {
+  const handleEditAction = () => {
+    if (isEditMode) {
+      return;
+    }
+
+    const paraName = saveForm.paraId.trim();
+    if (!paraName) {
+      toast.error("Select or enter a Parameter Name first.");
+      return;
+    }
+
+    const row = parameterRows.find(
+      (item) => item.paraName.toUpperCase() === paraName.toUpperCase()
+    );
+
+    if (!row) {
+      toast.error("Parameter not found in table.");
+      return;
+    }
+
+    handleEditRow(row);
+  };
+
+  const handleDeleteRow = (row: ParameterRow) => {
     const paraName = row.paraName.trim();
 
     if (!paraName) {
@@ -300,8 +340,19 @@ const ReportParameters = () => {
       return;
     }
 
-    const confirmed = window.confirm(`Delete parameter \"${paraName}\"?`);
-    if (!confirmed) {
+    setDeleteTargetRow(row);
+  };
+
+  const confirmDeleteRow = async () => {
+    if (!deleteTargetRow) {
+      return;
+    }
+
+    const paraName = deleteTargetRow.paraName.trim();
+
+    if (!paraName) {
+      toast.error("Parameter ID is invalid.");
+      setDeleteTargetRow(null);
       return;
     }
 
@@ -335,6 +386,8 @@ const ReportParameters = () => {
         resetSaveForm();
       }
 
+      setDeleteTargetRow(null);
+
       await loadParameters();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to delete parameter.";
@@ -344,7 +397,7 @@ const ReportParameters = () => {
     }
   };
 
-  const handleDeleteAction = async () => {
+  const handleDeleteAction = () => {
     const paraName = saveForm.paraId.trim();
     if (!paraName) {
       toast.error("Select or enter a Parameter Name first.");
@@ -360,7 +413,7 @@ const ReportParameters = () => {
       return;
     }
 
-    await handleDeleteRow(row);
+    handleDeleteRow(row);
   };
 
   return (
@@ -414,11 +467,27 @@ const ReportParameters = () => {
 
                 <div className="flex flex-wrap gap-3 pt-2">
                   <button
-                    type="submit"
+                    type={isEditMode ? "button" : "submit"}
+                    onClick={
+                      isEditMode
+                        ? () => {
+                            setEditingParamName(null);
+                          }
+                        : undefined
+                    }
                     className={`${buttonBaseClass} bg-[#7A0000] text-white hover:bg-[#620000]`}
                     disabled={isSavingParam}
                   >
-                    {isSavingParam ? (isEditMode ? "UPDATING..." : "ADDING...") : isEditMode ? "UPDATE" : "ADD"}
+                    {isSavingParam ? "ADDING..." : "ADD"}
+                  </button>
+
+                  <button
+                    type={isEditMode ? "submit" : "button"}
+                    onClick={isEditMode ? undefined : handleEditAction}
+                    className={`${buttonBaseClass} bg-[#7A0000]/85 text-white hover:bg-[#620000]`}
+                    disabled={isSavingParam}
+                  >
+                    {isSavingParam && isEditMode ? "UPDATING..." : "EDIT"}
                   </button>
 
                   <button
@@ -434,7 +503,7 @@ const ReportParameters = () => {
                   <button
                     type="button"
                     onClick={handleDeleteAction}
-                    className={`${buttonBaseClass} border border-red-200 bg-white text-red-700 hover:bg-red-50`}
+                    className={`${buttonBaseClass} bg-[#8E8E8E] text-white hover:bg-[#7A7A7A]`}
                     disabled={Boolean(isDeletingParamName) || isLoadingParams}
                   >
                     {isDeletingParamName ? "DELETING..." : "DELETE"}
@@ -477,20 +546,30 @@ const ReportParameters = () => {
             </div>
 
             <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold">
-              {alphabetFilters.map((letter) => (
+              <form onSubmit={handleSearchSubmit} className="mr-2 flex min-w-[280px] flex-1 items-center gap-2">
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSearchInput(value);
+                    setAppliedSearch(value);
+                  }}
+                  placeholder="Search ID / Name / Description"
+                  className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10"
+                />
                 <button
-                  key={letter}
                   type="button"
-                  onClick={() => setLetterFilter(letter)}
-                  className={`rounded-full px-3 py-1 border transition-colors ${
-                    letterFilter === letter
-                      ? "bg-[#7A0000] text-white border-[#7A0000]"
-                      : "bg-white text-[#7A0000] border-[#7A0000]/25 hover:bg-[#7A0000]/5"
-                  }`}
+                  onClick={() => {
+                    setSearchInput("");
+                    setAppliedSearch("");
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#7A0000]/25 bg-white px-6 py-2 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5"
                 >
-                  {letter}
+                  <Search className="h-4 w-4" />
+                  Clear
                 </button>
-              ))}
+              </form>
 
               <button
                 type="button"
@@ -510,6 +589,7 @@ const ReportParameters = () => {
                 <table className="w-full text-left text-sm border-collapse">
                   <thead className="bg-stone-100 text-stone-500 text-xs uppercase tracking-[0.15em]">
                     <tr>
+                      <th className="px-4 py-2 border border-stone-200 w-24">Parameter ID</th>
                       <th className="px-4 py-2 border border-stone-200">Parameter Name</th>
                       <th className="px-4 py-2 border border-stone-200">Description</th>
                       <th className="px-4 py-2 border border-stone-200 w-28">Populated</th>
@@ -518,21 +598,21 @@ const ReportParameters = () => {
                   <tbody>
                     {isLoadingParams ? (
                       <tr>
-                        <td colSpan={3} className="px-4 py-10 text-center text-stone-500 border border-stone-200">
+                        <td colSpan={4} className="px-4 py-10 text-center text-stone-500 border border-stone-200">
                           <RefreshCw className="mr-2 inline h-4 w-4 animate-spin" />
                           Loading parameters...
                         </td>
                       </tr>
-                    ) : filteredRows.length === 0 ? (
+                    ) : orderedRows.length === 0 ? (
                       <tr>
-                        <td colSpan={3} className="px-4 py-10 text-center text-stone-500 border border-stone-200">
+                        <td colSpan={4} className="px-4 py-10 text-center text-stone-500 border border-stone-200">
                           No parameters available.
                         </td>
                       </tr>
                     ) : (
-                      filteredRows.map((row) => (
+                      orderedRows.map((row, index) => (
                         <tr
-                          key={row.paraName}
+                          key={`${row.paraId}-${row.paraName}`}
                           onClick={() => handleEditRow(row)}
                           className={`hover:bg-[#7A0000]/5 transition-colors ${
                             editingParamName?.toUpperCase() === row.paraName.toUpperCase()
@@ -540,6 +620,7 @@ const ReportParameters = () => {
                               : ""
                           }`}
                         >
+                          <td className="px-4 py-2 border border-stone-200 text-stone-700">{index + 1}</td>
                           <td className="px-4 py-2 border border-stone-200 font-semibold text-stone-800">{row.paraName}</td>
                           <td className="px-4 py-2 border border-stone-200 text-stone-700">{row.description || "-"}</td>
                           <td className="px-4 py-2 border border-stone-200 text-stone-700">{row.populated ? "Yes" : "No"}</td>
@@ -553,6 +634,40 @@ const ReportParameters = () => {
           </div>
         </section>
       </div>
+
+      {deleteTargetRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/45 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-stone-900">Delete Parameter</h3>
+            <p className="mt-2 text-sm text-stone-600">
+              Are you sure you want to delete
+              <span className="mx-1 font-semibold text-stone-900">
+                {deleteTargetRow.paraName}
+              </span>
+              ?
+            </p>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetRow(null)}
+                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                disabled={Boolean(isDeletingParamName)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteRow}
+                className="rounded-lg bg-[#8E8E8E] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#7A7A7A] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={Boolean(isDeletingParamName)}
+              >
+                {isDeletingParamName ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

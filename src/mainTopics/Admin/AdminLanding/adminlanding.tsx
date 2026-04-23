@@ -16,17 +16,10 @@ const AdminLanding = () => {
               <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-stone-900">
                 Coming Soon
               </h1>
-              <p className="text-lg sm:text-xl text-stone-600 max-w-md mx-auto">
-                The Admin Dashboard is currently under development. We're working hard to bring you an enhanced experience.
-              </p>
             </div>
 
             <div className="pt-4">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#7A0000]/10 border border-[#7A0000]/20">
-                <div className="h-2 w-2 rounded-full bg-[#7A0000] animate-pulse"></div>
-                <span className="text-sm font-medium text-[#7A0000]">
-                  Check back soon for updates
-                </span>
               </div>
             </div>
           </div>

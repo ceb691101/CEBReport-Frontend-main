@@ -1,6 +1,6 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 
 // Single record coming from backend
 // Backend: GET /roleadminapi/api/reportcategory -> data: [{ CatCode, CatName }]
@@ -45,11 +45,27 @@ const toTitleCase = (value: string) => {
 
 const ReportCategory = () => {
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
+  const [searchInput, setSearchInput] = useState("");
   const [selectedCatCode, setSelectedCatCode] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<CreateCategoryForm>(initialForm);
   const [mode, setMode] = useState<"add" | "edit">("add");
+
+  const filteredCategories = useMemo(() => {
+    const query = searchInput.trim().toUpperCase();
+
+    if (!query) {
+      return categories;
+    }
+
+    return categories.filter(
+      (category) =>
+        category.catCode.toUpperCase().includes(query) ||
+        category.catName.toUpperCase().includes(query)
+    );
+  }, [categories, searchInput]);
 
   const loadCategories = async () => {
     setIsLoading(true);
@@ -181,7 +197,13 @@ const ReportCategory = () => {
       return;
     }
 
-    if (!window.confirm(`DELETE CATEGORY: ${selectedCatCode}?`)) {
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedCatCode) {
+      toast.error("NO CATEGORY SELECTED FOR DELETION.");
+      setIsDeleteModalOpen(false);
       return;
     }
 
@@ -209,6 +231,7 @@ const ReportCategory = () => {
       setForm(initialForm);
       setMode("add");
       setSelectedCatCode(null);
+      setIsDeleteModalOpen(false);
       await loadCategories();
     } catch (error) {
       const message =
@@ -354,6 +377,26 @@ const ReportCategory = () => {
           </button>
         </div>
 
+        <div className="mb-4 space-y-2">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search category code or name"
+              className="flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10"
+            />
+            <button
+              type="button"
+              onClick={() => setSearchInput("")}
+              className="inline-flex items-center gap-2 rounded-lg border border-[#7A0000]/20 bg-white px-4 py-2 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5"
+            >
+              <Search className="h-4 w-4" />
+              Clear
+            </button>
+          </div>
+        </div>
+
         <div className="flex-1 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50/40">
           <div className="max-h-[520px] overflow-auto">
             <table className="w-full text-left text-sm border-collapse">
@@ -378,8 +421,8 @@ const ReportCategory = () => {
                       LOADING CATEGORIES...
                     </td>
                   </tr>
-                ) : categories.length > 0 ? (
-                  categories.map((category) => (
+                ) : filteredCategories.length > 0 ? (
+                  filteredCategories.map((category) => (
                     <tr
                       key={category.catCode}
                       onClick={() => handleRowClick(category)}
@@ -402,7 +445,9 @@ const ReportCategory = () => {
                       colSpan={2}
                       className="px-4 py-6 text-center text-stone-500 text-sm"
                     >
-                      NO CATEGORIES FOUND.
+                      {searchInput.trim()
+                        ? "NO MATCHING CATEGORIES FOUND."
+                        : "NO CATEGORIES FOUND."}
                     </td>
                   </tr>
                 )}
@@ -413,6 +458,40 @@ const ReportCategory = () => {
       </div>
         </section>
       </div>
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/45 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-stone-900">Delete Category</h3>
+            <p className="mt-2 text-sm text-stone-600">
+              Are you sure you want to delete
+              <span className="mx-1 font-semibold text-stone-900">
+                {selectedCatCode || "this category"}
+              </span>
+              ?
+            </p>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="rounded-lg bg-[#7A0000] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

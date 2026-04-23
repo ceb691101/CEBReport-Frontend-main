@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 
 type RoleType = "admin" | "user";
 
@@ -101,6 +101,7 @@ const UserRoles = () => {
 	const [isUserGroupsLoading, setIsUserGroupsLoading] = useState(false);
 	const [form, setForm] = useState<CreateRoleForm>(initialForm);
 	const [isAddingCostCentresToRole, setIsAddingCostCentresToRole] = useState(false);
+	const [tableSearch, setTableSearch] = useState("");
 
 	const loadMotherCompanies = async () => {
 		setIsCompaniesLoading(true);
@@ -407,14 +408,18 @@ const UserRoles = () => {
 		// Denormalize userType: backend stores "ADMIN" but form needs "ADMINISTRATOR"
 		const userTypeForForm = role.userType === "ADMIN" ? "ADMINISTRATOR" : role.userType;
 
+		const businessCompanyMatched = businessCompanyOptions.find(
+			(opt) => opt.toUpperCase() === role.motherCompany?.trim().toUpperCase()
+		);
+
 		setForm({
 			name: role.roleName,
 			epfNo: role.epfNo,
 			roleId: role.roleId,
 			userType: userTypeForForm,
-			businessCompany: role.motherCompany,
+			businessCompany: businessCompanyMatched || initialForm.businessCompany,
 			userGroup: role.userGroup || initialForm.userGroup,
-			motherCompany: role.company,
+			motherCompany: role.company?.trim() || initialForm.motherCompany,
 			costCentres: role.costCentres,
 		});
 
@@ -524,11 +529,28 @@ const UserRoles = () => {
 	};
 
 	const selectedRole = roles.find((role) => normalizeKey(role.epfNo) === normalizeKey(selectedEpfNo)) ?? null;
-	const totalPages = Math.max(1, Math.ceil(roles.length / rolesPerPage));
-	const paginatedRoles = roles.slice(
+	const filteredRoles = roles.filter((role) => {
+		const query = normalizeKey(tableSearch);
+
+		if (!query) {
+			return true;
+		}
+
+		const haystack = [role.epfNo, role.roleId, role.roleName]
+			.map((item) => normalizeKey(item))
+			.join(" ");
+
+		return haystack.includes(query);
+	});
+	const totalPages = Math.max(1, Math.ceil(filteredRoles.length / rolesPerPage));
+	const paginatedRoles = filteredRoles.slice(
 		(currentPage - 1) * rolesPerPage,
 		currentPage * rolesPerPage
 	);
+
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [tableSearch, activeTab]);
 
 	const changePage = (page: number) => {
 		if (page < 1 || page > totalPages) {
@@ -717,6 +739,27 @@ const UserRoles = () => {
 							</div>
 						</div>
 
+						<div className="mt-4 flex items-center gap-2">
+							<div className="relative flex-1">
+								<Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+								<input
+									type="text"
+									value={tableSearch}
+									onChange={(e) => setTableSearch(e.target.value)}
+									placeholder="Search by EPF No, Role ID, or User Name"
+									className={`${fieldBaseClass} pl-10`}
+								/>
+							</div>
+							<button
+								type="button"
+								onClick={() => setTableSearch("")}
+								className="inline-flex items-center gap-2 rounded-xl border border-[#7A0000]/25 bg-white px-6 py-2 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5"
+							>
+								<Search className="h-4 w-4" />
+								Clear
+							</button>
+						</div>
+
 						<div className="mt-6 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50/40">
 							<div className="overflow-x-auto">
 								<table className="min-w-full divide-y divide-stone-200 text-sm">
@@ -736,10 +779,10 @@ const UserRoles = () => {
 													Loading roles...
 												</td>
 											</tr>
-										) : roles.length === 0 ? (
+										) : filteredRoles.length === 0 ? (
 											<tr>
 												<td colSpan={5} className="px-4 py-10 text-center text-stone-500">
-													No roles found for this view.
+													No matching roles found.
 												</td>
 											</tr>
 										) : (
@@ -766,10 +809,10 @@ const UserRoles = () => {
 							</div>
 						</div>
 
-						{roles.length > 0 && (
+						{filteredRoles.length > 0 && (
 							<div className="mt-4 flex items-center justify-between gap-3 text-sm">
 								<div className="text-stone-600">
-									Page {currentPage} of {totalPages}
+									Page {currentPage} of {totalPages} ({filteredRoles.length} shown)
 								</div>
 								<div className="flex items-center gap-2">
 									<button

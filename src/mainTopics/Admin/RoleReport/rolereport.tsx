@@ -4,6 +4,7 @@ import {
   RefreshCw,
   Folder,
   CircleChevronRight,
+  Search,
 } from "lucide-react";
 
 type ViewMode = "category" | "name";
@@ -43,6 +44,10 @@ const normalizeKey = (value: unknown): string =>
 const RoleReport = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("category");
   const [reportSearch, setReportSearch] = useState<string>("");
+  const [roleSearch, setRoleSearch] = useState<string>("");
+  const [activeRoleTab, setActiveRoleTab] = useState<"user" | "admin">("user");
+  const [currentPage, setCurrentPage] = useState(1);
+  const rolesPerPage = 10;
 
   const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
@@ -61,6 +66,7 @@ const RoleReport = () => {
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const fetchRoleData = async (type: "USER" | "ADMIN") => {
     const endpointCandidates = [
@@ -228,9 +234,69 @@ const RoleReport = () => {
     [roles, selectedRoleId]
   );
 
+  const filteredRoles = useMemo(() => {
+    let result = roles.filter(role => {
+      const type = normalizeKey(role.userType) === "ADMIN" ? "admin" : "user";
+      return type === activeRoleTab;
+    });
+
+    const query = normalizeText(roleSearch).toUpperCase();
+
+    if (query) {
+      result = result.filter((role) => {
+        const haystack = [role.epfNo, role.roleId, role.roleName]
+          .map((item) => normalizeText(item).toUpperCase())
+          .join(" ");
+
+        return haystack.includes(query);
+      });
+    }
+
+    return result;
+  }, [roles, roleSearch, activeRoleTab]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRoles.length / rolesPerPage));
+  const paginatedRoles = filteredRoles.slice((currentPage - 1) * rolesPerPage, currentPage * rolesPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleSearch, activeRoleTab]);
+
+  const changePage = (page: number) => {
+    if (page < 1 || page > totalPages) {
+      return;
+    }
+    setCurrentPage(page);
+  };
+
   useEffect(() => {
     setEnteredName(selectedRole?.roleName ?? "");
     setEnteredUserName(selectedRole?.roleId ?? "");
+
+    if (!selectedRole?.roleId) {
+      setSelectedCategories([]);
+      setSelectedReports([]);
+      return;
+    }
+
+    const loadAssignedReports = async () => {
+      try {
+        const response = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRole.roleId)}/reports`);
+        if (response.ok) {
+          const payload = await response.json();
+          const items = Array.isArray(payload?.data) ? payload.data : [];
+          const repIds = items.map((item: any) => item?.repId ?? item?.RepId ?? "").filter(Boolean);
+          const catCodes = items.map((item: any) => item?.catCode ?? item?.CatCode ?? "").filter(Boolean);
+          
+          setSelectedReports(repIds);
+          setSelectedCategories(Array.from(new Set(catCodes)) as string[]);
+        }
+      } catch (error) {
+        console.error("Failed to load assigned reports", error);
+      }
+    };
+
+    loadAssignedReports();
   }, [selectedRole]);
 
   const activeReports = useMemo(
@@ -527,46 +593,75 @@ const RoleReport = () => {
     toast.info("Selections reset.");
   };
 
-  return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.14),_transparent_32%),linear-gradient(180deg,_#f8f5ee_0%,_#ece4d8_100%)] px-2 py-4 text-stone-900">
-      <div className="mx-auto max-w-7xl space-y-5">
-        <section className="rounded-[26px] border border-[#7A0000]/15 bg-white/90 p-5 shadow-[0_16px_45px_rgba(90,26,13,0.10)] backdrop-blur-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-stone-900">User Role and Report</h2>
-              <p className="text-sm text-stone-600">Map report access by category or report name with a cleaner workflow.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={loadRoles}
-                className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/30 px-4 py-2 text-sm font-semibold text-[#7A0000] hover:bg-[#7A0000]/5"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRolesLoading ? "animate-spin" : ""}`} />
-                Refresh Users
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  loadCategories();
-                  loadReports();
-                }}
-                className="inline-flex items-center gap-2 rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-100"
-              >
-                <RefreshCw className={`h-4 w-4 ${isCategoriesLoading || isReportsLoading ? "animate-spin" : ""}`} />
-                Refresh Reports
-              </button>
-            </div>
-          </div>
-        </section>
+  const handleDeleteClick = () => {
+    if (!selectedRoleId) {
+      toast.error("Select a user role first.");
+      return;
+    }
 
+    if (selectedRepIdsForAction.length === 0) {
+      toast.error("Select at least one report or category to delete.");
+      return;
+    }
+
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsDeleteConfirmOpen(false);
+    await runAction("remove");
+  };
+
+  return (
+    <div className="min-h-screen bg-[linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
+      <div className="mx-auto max-w-7xl space-y-5">
         <section className="grid gap-5 xl:grid-cols-[minmax(0,50%)_minmax(0,50%)] xl:items-stretch">
           <div className="flex h-full min-h-[78vh] w-full flex-col rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)] xl:order-2">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-stone-900">Role Report Table</h2>
-              <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-semibold text-stone-600">
-                {roles.length} users
-              </span>
+            <div className="mb-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-2xl font-semibold text-stone-900">Role Report Table</h2>
+                <button
+                  type="button"
+                  onClick={loadRoles}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 bg-white px-4 py-1.5 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRolesLoading ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+              </div>
+
+              <div className="inline-flex rounded-full border border-stone-200 bg-stone-100 p-1">
+                <TabButton
+                  label="USER ROLES"
+                  active={activeRoleTab === "user"}
+                  onClick={() => setActiveRoleTab("user")}
+                />
+                <TabButton
+                  label="ADMIN ROLES"
+                  active={activeRoleTab === "admin"}
+                  onClick={() => setActiveRoleTab("admin")}
+                />
+              </div>
+            </div>
+
+            <div className="mb-4 flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                <input
+                  value={roleSearch}
+                  onChange={(e) => setRoleSearch(e.target.value)}
+                  placeholder="Search by EPF No, Role ID, or User Name"
+                  className={`${fieldBaseClass} pl-10`}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setRoleSearch("")}
+                className="inline-flex items-center gap-2 rounded-xl border border-[#7A0000]/25 bg-white px-6 py-2 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5"
+              >
+                <Search className="h-4 w-4" />
+                Clear
+              </button>
             </div>
 
             <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-stone-200">
@@ -577,55 +672,107 @@ const RoleReport = () => {
                       <th className="px-3 py-2">EPF No</th>
                       <th className="px-3 py-2">Name</th>
                       <th className="px-3 py-2">User Name</th>
+                      <th className="px-3 py-2">User Type</th>
                       <th className="px-3 py-2">Company Name</th>
                     </tr>
                   </thead>
                   <tbody>
                     {isRolesLoading ? (
                       <tr>
-                        <td colSpan={4} className="px-3 py-8 text-center text-stone-500">
+                        <td colSpan={5} className="px-3 py-8 text-center text-stone-500">
                           Loading report users...
                         </td>
                       </tr>
-                    ) : roles.length === 0 ? (
+                    ) : filteredRoles.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-3 py-8 text-center text-stone-500">
+                        <td colSpan={5} className="px-3 py-8 text-center text-stone-500">
                           No users found.
                         </td>
                       </tr>
                     ) : (
-                      roles.map((role) => (
-                        <tr
-                          key={role.roleId}
-                          onClick={() => setSelectedRoleId(role.roleId)}
-                          className={`cursor-pointer border-t border-stone-100 transition ${
-                            normalizeKey(selectedRoleId) === normalizeKey(role.roleId)
-                              ? "bg-[#7A0000]/8"
-                              : "bg-white hover:bg-stone-50"
-                          }`}
-                        >
-                          <td className="px-3 py-2 text-stone-700">{role.epfNo || "-"}</td>
-                          <td className="px-3 py-2 font-semibold text-stone-800">{role.roleName || "-"}</td>
-                          <td className="px-3 py-2 text-stone-700">{role.roleId || "-"}</td>
-                          <td className="px-3 py-2 text-stone-600">{role.company || "-"}</td>
-                        </tr>
-                      ))
+                      paginatedRoles.map((role) => {
+                        return (
+                          <tr
+                            key={role.roleId}
+                            onClick={() => setSelectedRoleId(role.roleId)}
+                            className={`cursor-pointer border-t border-stone-100 transition ${
+                              normalizeKey(selectedRoleId) === normalizeKey(role.roleId)
+                                ? "bg-[#7A0000]/8"
+                                : "bg-white hover:bg-stone-50"
+                            }`}
+                          >
+                            <td className="px-3 py-2 text-stone-700">{role.epfNo || "-"}</td>
+                            <td className="px-3 py-2 font-semibold text-stone-800">{role.roleName || "-"}</td>
+                            <td className="px-3 py-2 text-stone-700">{role.roleId || "-"}</td>
+                            <td className="px-3 py-2 text-stone-700">{normalizeKey(role.userType) === "ADMIN" ? "ADMIN" : "USER"}</td>
+                            <td className="px-3 py-2 text-stone-600">{role.company || "-"}</td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
 
+            {filteredRoles.length > 0 && (
+              <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+                <div className="text-stone-600">
+                  Page {currentPage} of {totalPages} ({filteredRoles.length} shown)
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => changePage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="rounded-md border border-stone-300 px-3 py-1.5 text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => changePage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="rounded-md border border-stone-300 px-3 py-1.5 text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600">
               Selected: <span className="font-semibold text-stone-800">{selectedRole?.roleName || "None"}</span>
-              {selectedRole ? ` (${selectedRole.roleId})` : ""}
+              {selectedRole ? (
+                <>
+                  {" "}
+                  <span>
+                    ({selectedRole.roleId}) - {normalizeKey(selectedRole.userType) === "ADMIN" ? "ADMIN" : "USER"}
+                  </span>
+                </>
+              ) : (
+                ""
+              )}
             </div>
           </div>
 
           <div className="flex h-full min-h-[78vh] w-full flex-col space-y-5 xl:order-1">
             <div className="flex h-full flex-col rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)]">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-stone-900">Role Report Form</h2>
+                <div>
+                  <h2 className="text-2xl font-semibold text-stone-900">Role Report Form</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadCategories();
+                    loadReports();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 px-4 py-2 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isCategoriesLoading || isReportsLoading ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
               </div>
               <fieldset className="flex flex-1 flex-col rounded-2xl border border-stone-300 px-3 pb-4 pt-2">
                 <legend className="px-2 text-sm font-semibold text-stone-800"></legend>
@@ -736,17 +883,20 @@ const RoleReport = () => {
                         </div>
                       ) : (
                         <div className="space-y-3 rounded-2xl border border-stone-200 bg-stone-50 p-3">
-                          <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                             <input
                               value={reportSearch}
                               onChange={(e) => setReportSearch(e.target.value)}
                               placeholder="Search report id, name, or category"
-                              className={fieldBaseClass}
+                              className={`${fieldBaseClass} pl-10`}
                             />
                           </div>
                           <div className="flex items-center justify-between text-xs font-semibold text-stone-600">
                             <span>Reports</span>
-                            <span>{selectedReports.length} selected</span>
+                            <span>
+                              {reportsByNameGrouped.reduce((total, group) => total + group.reports.length, 0)} shown, {selectedReports.length} selected
+                            </span>
                           </div>
                           <div className="max-h-[320px] space-y-3 overflow-auto pr-1">
                             {reportsByNameGrouped.map((group) => (
@@ -799,7 +949,7 @@ const RoleReport = () => {
                 />
                 <ActionButton
                   label="DELETE"
-                  onClick={() => runAction("remove")}
+                  onClick={handleDeleteClick}
                   disabled={isBusy}
                   tone="dark"
                 />
@@ -818,6 +968,51 @@ const RoleReport = () => {
           </div>
         </section>
       </div>
+
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/45 px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-stone-900">Confirm Delete</h3>
+            <p className="mt-2 text-sm text-stone-600">
+              This will remove selected report assignments from the chosen role.
+            </p>
+
+            <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
+              <p>
+                <span className="font-semibold text-stone-900">Role:</span>{" "}
+                {selectedRole?.roleName || "-"} ({selectedRole?.roleId || "-"})
+              </p>
+              <p>
+                <span className="font-semibold text-stone-900">Mode:</span>{" "}
+                {viewMode === "category" ? "By Category" : "By Name"}
+              </p>
+              <p>
+                <span className="font-semibold text-stone-900">Reports to remove:</span>{" "}
+                {selectedRepIdsForAction.length}
+              </p>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                disabled={isBusy}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="rounded-lg bg-[#8E8E8E] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#7A7A7A] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isBusy}
+              >
+                {isBusy ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -851,5 +1046,25 @@ const ActionButton = ({
     </button>
   );
 };
+
+const TabButton = ({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+      active ? "bg-[#7A0000] text-white shadow" : "text-stone-600 hover:text-stone-900"
+    }`}
+  >
+    {label}
+  </button>
+);
 
 export default RoleReport;
