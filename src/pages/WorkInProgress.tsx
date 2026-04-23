@@ -1,29 +1,19 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import AgeAnalysisCostCenter from "../mainTopics/WorkInProgress/AgeAnalysisCostCenter";
-import CompletedCostCenterWise from "../mainTopics/WorkInProgress/CompletedCostCenterWise";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
 
 const WorkInProgress = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Work In Progress"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
-    
-    
-    const analysisTopic = sidebarData.find(
-      (topic) => topic.name === "Work In Progress"
-    );
-    if (analysisTopic) {
-      setSubtopics(analysisTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -31,22 +21,6 @@ const WorkInProgress = () => {
     } else {
       setExpandedCard(id);
     }
-  };
-
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-			case "Cost Center Wise Work In Progress With Age Analysis":
-				return <AgeAnalysisCostCenter />;
-			case "Cost Center Wise Work In Progress ( Completed Projects )":
-				return <CompletedCostCenterWise />;
-
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
-		}
   };
 
   return (
@@ -59,7 +33,7 @@ const WorkInProgress = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -67,3 +41,8 @@ const WorkInProgress = () => {
 };
 
 export default WorkInProgress;
+
+
+
+
+

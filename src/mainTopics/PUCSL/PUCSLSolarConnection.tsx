@@ -85,7 +85,7 @@ const PUCSLSolarConnection: React.FC = () => {
             setIsLoadingBillCycles(true);
             setBillCycleError(null);
             try {
-                const response = await fetchWithErrorHandling("/misapi/api/areas/billcycle/max");
+                const response = await fetchWithErrorHandling("/misapi/api/ordinary/areas/billcycle/min");
                 const { BillCycles, MaxBillCycle } = response?.data ?? {};
                 if (!Array.isArray(BillCycles) || !MaxBillCycle)
                     throw new Error("Invalid bill cycle data format");

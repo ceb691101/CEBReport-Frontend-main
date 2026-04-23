@@ -5,6 +5,7 @@ import "./index.css";
 
 import LoginPage from "./pages/LoginPage";
 import Layout from "./Layout";
+import HomePage from "./pages/HomePage.tsx";
 import UserDetails from "./pages/UserDetails";
 import MaterialDetails from "./mainTopics/inventory/MaterialDetails";
 import ReportRoutes from "./routes/ReportRoutes";
@@ -12,6 +13,7 @@ import CostCenterTrial from "./mainTopics/TrialBalance/CostCenterTrial";
 // import SelectCostCenterTrial from "./mainTopics/TrialBalance/SelectCostCeneterTrial";
 import Home from "./pages/Home";
 import AdminHome from "./pages/AdminHome";
+import Dashboard from "./pages/Dashboard.tsx";
 
 function App() {
 	return (
@@ -40,10 +42,46 @@ function App() {
 					path="/home"
 					element={
 						<Layout>
-							<Home />
+							<HomePage />
 						</Layout>
 					}
 				/>
+
+				<Route
+					path="/dashboard"
+					element={
+						<Layout>
+							<Dashboard />
+						</Layout>
+					}
+				/>
+
+				<Route
+					path="/dashboard/:dashboardId"
+					element={
+						<Layout>
+							<Dashboard />
+						</Layout>
+					}
+				/>
+
+				{/* <Route
+					path="/report/dashboard"
+					element={
+						<Layout>
+							<HomePage />
+						</Layout>
+					}
+				/>
+
+				<Route
+					path="/report/Dashboard"
+					element={
+						<Layout>
+							<HomePage />
+						</Layout>
+					}
+				/> */}
 
 				<Route
 					path="/user"

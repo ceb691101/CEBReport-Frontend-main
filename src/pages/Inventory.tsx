@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
-import MaterialMaster from "../mainTopics/inventory/MaterialMaster";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import AverageConsumptions from "../mainTopics/inventory/AverageConsumptions";
 import CostCenterQuantityHnad from "../mainTopics/inventory/CostCenterQuantityHnad";
@@ -13,20 +12,18 @@ type Subtopic = {
   id: number;
   name: string;
 };
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const Inventory = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Inventory"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
-    // Get Inventory topic's subtopics directly from sidebarData
-    const inventoryTopic = sidebarData.find(
-      (topic) => topic.name === "Inventory"
-    );
-    if (inventoryTopic) {
-      setSubtopics(inventoryTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
@@ -75,7 +72,7 @@ const Inventory = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -83,3 +80,8 @@ const Inventory = () => {
 };
 
 export default Inventory;
+
+
+
+
+

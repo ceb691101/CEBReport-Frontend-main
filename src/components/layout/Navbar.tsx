@@ -20,9 +20,9 @@ const Navbar = () => {
       <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-full">
         {/* Left Side - Logo & Branding */}
         <Link 
-          to="/home" 
+          to="/dashboard" 
           className="flex items-center group transition-all duration-300 hover:scale-105" 
-          aria-label="Go to Home"
+          aria-label="Go to Dashboard"
         >
           {/* <div className="relative">
             <div className="w-12 sm:w-16 md:w-18 transition-all duration-300 flex items-center group-hover:scale-110">

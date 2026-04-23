@@ -1,64 +1,24 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const Collections = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Collections"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
-    // Get Collections topic's subtopics directly from sidebarData
-    const collectionsTopic = sidebarData.find(
-      (topic) => topic.name === "Collections"
-    );
-    if (collectionsTopic) {
-      setSubtopics(collectionsTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
       setExpandedCard(null);
     } else {
       setExpandedCard(id);
-    }
-  };
-
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Online counter collections":
-      case "Sales and collection":
-      case "Stamp duty for payment collections":
-      case "Monthly revenue collection of different channels":
-      case "Kiosk payment collection":
-      case "Payment collection":
-      case "Suspense payment details":
-      case "Finalized account details":
-      case "Written off account details":
-      case "Receivable position":
-      case "Unload loan information":
-
-      
-        
-        return <div>{subtopicName} Content</div>;
-case "Dishonoured cheques":
-  return <DishonouredCheques />;
-
-
-
-
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
     }
   };
 
@@ -72,7 +32,7 @@ case "Dishonoured cheques":
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -80,3 +40,8 @@ case "Dishonoured cheques":
 };
 
 export default Collections;
+
+
+
+
+

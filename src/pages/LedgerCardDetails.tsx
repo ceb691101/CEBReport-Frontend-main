@@ -1,54 +1,24 @@
 import {useState, useEffect} from "react";
-import {data as sidebarData} from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import LedgerCardReport from "../mainTopics/LedgerCard/LedgerCardReport";
-import LCWithoutSubAcc from "../mainTopics/LedgerCard/LCWithoutSubAcc";
-import LedgerCardSubAccountTotal from "../mainTopics/LedgerCard/LedgerCardSubAccountTotal";
-import DivisionalLedgerCard from "../mainTopics/LedgerCard/DivisionalLedgerCard";
-
-type Subtopic = {
-	id: number;
-	name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const LedgerCardDetails = () => {
-	const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+	const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Ledger Cards"]);
 	const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
 	useEffect(() => {
-		const analysisTopic = sidebarData.find(
-			(topic) => topic.name === "Ledger Cards"
-		);
-		if (analysisTopic) {
-			setSubtopics(analysisTopic.subtopics);
+		if (typeof selectedSubtopicId === "number") {
+			setExpandedCard(selectedSubtopicId);
 		}
-	}, []);
+	}, [selectedSubtopicId]);
 
 	const toggleCard = (id: number) => {
 		if (expandedCard === id) {
 			setExpandedCard(null);
 		} else {
 			setExpandedCard(id);
-		}
-	};
-
-	const renderSubtopicContent = (subtopicName: string) => {
-		switch (subtopicName) {
-			case "Ledger Card with Subaccounts":
-				return <LedgerCardReport />;
-			case "Ledger Card without Subaccounts":
-				return <LCWithoutSubAcc />;
-			case "Ledger Card  Subaccounts Total":
-				return <LedgerCardSubAccountTotal />;
-			case "Sub Accounts Transactions for Account Code within Selected Company":
-				return <DivisionalLedgerCard />;
-
-			default:
-				return (
-					<div className="text-red-500 text-xs">
-						No content available for {subtopicName}
-					</div>
-				);
 		}
 	};
 
@@ -62,7 +32,7 @@ const LedgerCardDetails = () => {
 					expanded={expandedCard === subtopic.id}
 					onToggle={toggleCard}
 				>
-					{renderSubtopicContent(subtopic.name)}
+					{renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
 				</SubtopicCard>
 			))}
 		</div>
@@ -70,3 +40,8 @@ const LedgerCardDetails = () => {
 };
 
 export default LedgerCardDetails;
+
+
+
+
+

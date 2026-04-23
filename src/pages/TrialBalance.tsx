@@ -1,53 +1,24 @@
 import { useState, useEffect } from "react";
-import { data as sidebarData } from "../data/SideBarData";
+import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
-import CostCenterTrial from "../mainTopics/TrialBalance/CostCenterTrial";
-import ProvintionalWiseTrial from "../mainTopics/TrialBalance/ProvintionalWiseTrial";
-import ReagionTrial from "../mainTopics/TrialBalance/ReagionTrial";
-
-type Subtopic = {
-  id: number;
-  name: string;
-};
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 const TrialBalance = () => {
-  const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Trial Balance"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
-    // Get PUCSL/LISS topic's subtopics directly from sidebarData
-    const pucslTopic = sidebarData.find(
-      (topic) => topic.name === "Trial Balance"
-    );
-    if (pucslTopic) {
-      setSubtopics(pucslTopic.subtopics);
+    if (typeof selectedSubtopicId === "number") {
+      setExpandedCard(selectedSubtopicId);
     }
-  }, []);
+  }, [selectedSubtopicId]);
 
   const toggleCard = (id: number) => {
     if (expandedCard === id) {
       setExpandedCard(null);
     } else {
       setExpandedCard(id);
-    }
-  };
-
-  const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Cost Center Trial Balance - End of Month/Year":
-        return <CostCenterTrial/>;
-
-         case "Provintial Trial Balance - End of Month/Year":
-        return <ProvintionalWiseTrial/>;
-         case "Region Trial Balance - End of Month/Year":
-        return <ReagionTrial/>;
-
-      default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
     }
   };
 
@@ -61,7 +32,7 @@ const TrialBalance = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -69,3 +40,8 @@ const TrialBalance = () => {
 };
 
 export default TrialBalance;
+
+
+
+
+
