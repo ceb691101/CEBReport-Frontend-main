@@ -91,6 +91,28 @@ export default defineConfig({
 				secure: false,
 				rewrite: (path) => path.replace(/^\/LedgerCard/, ""),
 			},
+			"/roleadminapi": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/roleadminapi/, ""),
+			},
+			"/srpapi": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/srpapi/, ""),
+			},
+			"/committedstock": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/committedstock/, ""),
+			},
+			"/SMART_API": {
+				target: "http://smartceb.ceb:81",
+				changeOrigin: true,
+				secure: false,
 			"/misreportsapi": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
