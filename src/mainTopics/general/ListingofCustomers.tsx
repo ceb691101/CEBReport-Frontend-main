@@ -67,6 +67,9 @@ const pick = <T,>(a: T | undefined, b: T | undefined, fb: T): T => a ?? b ?? fb;
 // ─────────────────────────────────────────────────────────────────────────────
 const ListingOfCustomers: React.FC = () => {
 
+  const maroon = "text-[#7A0000]";
+  const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
+
   // ── Core state ─────────────────────────────────────────────────────────────
   const [areaCode,  setAreaCode]  = useState("");
   const [billCycle, setBillCycle] = useState("");
@@ -121,8 +124,18 @@ const ListingOfCustomers: React.FC = () => {
   // ── 1. Load areas on mount ─────────────────────────────────────────────────
   useEffect(() => {
     setIsLoadingAreas(true);
-    fetch("/misapi/api/bulk/areas", { headers: { Accept: "application/json" } })
-      .then(r => r.json())
+    setAreaError(null);
+    fetch("/api/bulk/areas", { headers: { Accept: "application/json" } })
+      .then(async r => {
+        if (!r.ok) {
+          throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        }
+        try {
+          return await r.json();
+        } catch (e) {
+          throw new Error("Invalid JSON response from areas API");
+        }
+      })
       .then(d => setAreas(d.data || []))
       .catch(e => setAreaError(e.message))
       .finally(() => setIsLoadingAreas(false));
@@ -170,15 +183,21 @@ const ListingOfCustomers: React.FC = () => {
         let resolvedBc = "";
 
         for (const url of [
-          `/misapi/api/listing-of-customers/max-bill-cycle?areaCode=${areaCode}`,
-          `/misapi/api/areas-position/max-bill-cycle?areaCode=${areaCode}`,
+          `/api/listing-of-customers/max-bill-cycle?areaCode=${areaCode}`,
+          `/api/areas-position/max-bill-cycle?areaCode=${areaCode}`,
         ]) {
           try {
             const r = await fetch(url, { headers: { Accept: "application/json" } });
             // A 404 response still parses as JSON on this server (IIS returns
             // {"Message":"No HTTP resource…"}), so we check status first.
             if (!r.ok) { console.warn(`[LOC] ${url} → ${r.status}`); continue; }
-            const j = await r.json();
+            let j;
+            try {
+              j = await r.json();
+            } catch (e) {
+              console.warn(`[LOC] ${url} → Invalid JSON response:`, e);
+              continue;
+            }
             console.log(`[LOC] bill-cycle from ${url}:`, JSON.stringify(j));
             resolvedBc = extractBc(j);
             if (resolvedBc) break;
@@ -202,26 +221,34 @@ const ListingOfCustomers: React.FC = () => {
         // inputs fall back to free-text when no options are available.
         try {
           const fRes = await fetch(
-            `misapi/api/listing-of-customers/filters?areaCode=${areaCode}&billCycle=${resolvedBc}`,
+            `/api/listing-of-customers/filters?areaCode=${areaCode}&billCycle=${resolvedBc}`,
             { headers: { Accept: "application/json" } }
           );
 
           if (fRes.ok) {
-            const fJson = await fRes.json();
-            console.log("[LOC] filters response:", JSON.stringify(fJson));
-            const fData = fJson?.data ?? fJson?.Data ?? null;
-            if (fData && !cancelled) {
-              const norm: FiltersData = {
-                billCycle:       fData.BillCycle       ?? fData.billCycle,
-                tariffs:         fData.Tariffs         ?? fData.tariffs         ?? [],
-                transformers:    fData.Transformers    ?? fData.transformers    ?? [],
-                phases:          fData.Phases          ?? fData.phases          ?? [],
-                connectionTypes: fData.ConnectionTypes ?? fData.connectionTypes ?? [],
-                readerCodes:     fData.ReaderCodes     ?? fData.readerCodes     ?? [],
-                dailyPacks:      fData.DailyPacks      ?? fData.dailyPacks      ?? [],
-                depots:          fData.Depots          ?? fData.depots          ?? [],
-              };
-              setFilters(norm);
+            let fJson;
+            try {
+              fJson = await fRes.json();
+            } catch (e) {
+              console.warn("[LOC] filters endpoint returned invalid JSON:", e);
+              // Continue without filters - UI will work with empty dropdowns
+            }
+            if (fJson) {
+              console.log("[LOC] filters response:", JSON.stringify(fJson));
+              const fData = fJson?.data ?? fJson?.Data ?? null;
+              if (fData && !cancelled) {
+                const norm: FiltersData = {
+                  billCycle:       fData.BillCycle       ?? fData.billCycle,
+                  tariffs:         fData.Tariffs         ?? fData.tariffs         ?? [],
+                  transformers:    fData.Transformers    ?? fData.transformers    ?? [],
+                  phases:          fData.Phases          ?? fData.phases          ?? [],
+                  connectionTypes: fData.ConnectionTypes ?? fData.connectionTypes ?? [],
+                  readerCodes:     fData.ReaderCodes     ?? fData.readerCodes     ?? [],
+                  dailyPacks:      fData.DailyPacks      ?? fData.dailyPacks      ?? [],
+                  depots:          fData.Depots          ?? fData.depots          ?? [],
+                };
+                setFilters(norm);
+              }
             }
           } else {
             console.warn(`[LOC] filters endpoint → ${fRes.status}, continuing without options`);
@@ -275,45 +302,72 @@ const ListingOfCustomers: React.FC = () => {
     if (!areaCode || !billCycle) return;
     setLoading(true);
     setReportError(null);
+
+    const payload: Record<string, unknown> = {
+      areaCode,
+      billCycle,
+      useTariff,
+      useTransformer: useTrans,
+      usePhase,
+      useConnectionType: useConn,
+      useReaderCode: useReader,
+      useDailyPack: usePack,
+      useDepot,
+      useBalance: useBal,
+      useLastPaymentDate: usePay,
+      useArrearsPosition: useArr,
+    };
+
+    if (useTariff && tariff) payload.tariff = tariff;
+    if (useTrans && trans) payload.transformer = trans;
+    if (usePhase && phase) payload.phase = phase;
+    if (useConn && conn) payload.connectionType = conn;
+    if (useReader && reader) payload.readerCode = reader;
+    if (usePack && pack) payload.dailyPackNo = pack;
+    if (useDepot && depot) payload.depot = depot;
+    if (useBal && balAmt) {
+      payload.balanceOperator = balOp;
+      payload.balanceAmount = balAmt;
+    }
+    if (usePay && payDate) {
+      payload.lastPaymentOperator = payOp;
+      payload.lastPaymentDate = payDate;
+    }
+    if (useArr && arrPos) {
+      payload.arrearsOperator = arrOp;
+      payload.arrearsPosition = arrPos;
+    }
+
     try {
-      const res = await fetch("misapi/api/listing-of-customers/report", {
+      const url = "/api/listing-of-customers/report";
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          areaCode,
-          billCycle,
-          useTariff,
-          tariff:              useTariff  ? tariff  : null,
-          useTransformer:      useTrans,
-          transformer:         useTrans   ? trans   : null,
-          usePhase,
-          phase:               usePhase   ? phase   : null,
-          useConnectionType:   useConn,
-          connectionType:      useConn    ? conn    : null,
-          useReaderCode:       useReader,
-          readerCode:          useReader  ? reader  : null,
-          useDailyPack:        usePack,
-          dailyPackNo:         usePack    ? pack    : null,
-          useDepot,
-          depot:               useDepot   ? depot   : null,
-          useBalance:          useBal,
-          balanceOperator:     useBal     ? balOp   : null,
-          balanceAmount:       useBal     ? balAmt  : null,
-          useLastPaymentDate:  usePay,
-          lastPaymentOperator: usePay     ? payOp   : null,
-          lastPaymentDate:     usePay     ? payDate : null,
-          useArrearsPosition:  useArr,
-          arrearsOperator:     useArr     ? arrOp   : null,
-          arrearsPosition:     useArr     ? arrPos  : null,
-        }),
+        body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+
+      const text = await res.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (e) {
+        console.warn("[LOC] report API returned non-JSON text:", text);
+      }
+
+      if (!res.ok) {
+        const errorMessage = data?.errorMessage || data?.Message || text || `${res.status} ${res.statusText}`;
+        throw new Error(errorMessage);
+      }
+
+      if (data?.data && Array.isArray(data.data)) {
         setReportData(data.data);
         setSelectedAreaName(areas.find(a => a.AreaCode === areaCode)?.AreaName ?? areaCode);
         setReportVisible(true);
+        if (data.data.length === 0) {
+          setReportError("No records found for the selected criteria.");
+        }
       } else {
-        setReportError(data.errorMessage || "No data found for the selected criteria.");
+        setReportError(data?.errorMessage || "Cannot get listing of customers report data.");
       }
     } catch (err: any) {
       setReportError(err.message || "Failed to generate report.");
@@ -400,65 +454,38 @@ const ListingOfCustomers: React.FC = () => {
           onChange={e => onChange(e.target.value)}
           disabled={disabled}
           placeholder={disabled ? "" : "type value…"}
-          className={[
-            "text-xs border rounded-sm px-1.5 py-[3px] focus:outline-none w-52",
-            disabled
-              ? "bg-[#3c3c50] border-[#555570] text-gray-500 cursor-not-allowed"
-              : "bg-white border-gray-400 text-gray-900",
-          ].join(" ")}
+          className="w-52 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
         />
       );
     }
     return (
-      <div className="relative inline-block">
-        <select
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          disabled={disabled}
-          className={[
-            "appearance-none text-xs border rounded-sm px-1.5 py-[3px] pr-5 focus:outline-none w-52",
-            disabled
-              ? "bg-[#3c3c50] border-[#555570] text-gray-500 cursor-not-allowed"
-              : "bg-white border-gray-400 text-gray-900",
-          ].join(" ")}
-        >
-          <option value=""></option>
-          {opts.map((o, idx) => (
-            <option key={`${o.Value}-${idx}`} value={o.Value}>{o.Label}</option>
-          ))}
-        </select>
-        <span className={[
-          "pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[9px]",
-          disabled ? "text-gray-600" : "text-gray-500",
-        ].join(" ")}>▼</span>
-      </div>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        disabled={disabled}
+        className="w-52 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+      >
+        <option value=""></option>
+        {opts.map((o, idx) => (
+          <option key={`${o.Value}-${idx}`} value={o.Value}>{o.Label}</option>
+        ))}
+      </select>
     );
   };
 
   const OpSel = ({
     val, set, on,
   }: { val: Operator; set: (v: Operator) => void; on: boolean }) => (
-    <div className="relative inline-block">
-      <select
-        value={val}
-        onChange={e => set(e.target.value as Operator)}
-        disabled={!on}
-        className={[
-          "appearance-none text-xs border rounded-sm px-1 py-[3px] pr-4 w-14 focus:outline-none",
-          on
-            ? "bg-white border-gray-400 text-gray-900"
-            : "bg-[#3c3c50] border-[#555570] text-gray-500 cursor-not-allowed",
-        ].join(" ")}
-      >
-        {(["=", ">", "<", ">=", "<="] as Operator[]).map(o => (
-          <option key={o} value={o}>{o}</option>
-        ))}
-      </select>
-      <span className={[
-        "pointer-events-none absolute right-0.5 top-1/2 -translate-y-1/2 text-[9px]",
-        on ? "text-gray-500" : "text-gray-600",
-      ].join(" ")}>▼</span>
-    </div>
+    <select
+      value={val}
+      onChange={e => set(e.target.value as Operator)}
+      disabled={!on}
+      className="w-14 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+    >
+      {(["=", ">", "<", ">=", "<="] as Operator[]).map(o => (
+        <option key={o} value={o}>{o}</option>
+      ))}
+    </select>
   );
 
   const Row = ({
@@ -467,22 +494,18 @@ const ListingOfCustomers: React.FC = () => {
     label: string; checked: boolean;
     onCheck: (v: boolean) => void; children: React.ReactNode; checkboxDisabled?: boolean;
   }) => (
-    <div
-      className="grid items-center"
-      style={{ gridTemplateColumns: "230px 1fr", padding: "4px 0", borderBottom: "1px solid #3a3a52" }}
-    >
-      <label className="flex items-center gap-2 cursor-pointer select-none"
-        style={{ opacity: checkboxDisabled ? 0.5 : 1 }}>
+    <div className="flex items-center gap-4 p-2 border-b border-gray-200">
+      <label className="flex items-center gap-2 cursor-pointer select-none flex-shrink-0 w-48">
         <input
           type="checkbox"
           checked={checked}
           onChange={e => onCheck(e.target.checked)}
           disabled={checkboxDisabled}
-          style={{ width: 13, height: 13, accentColor: "#7a9ccc", cursor: checkboxDisabled ? "not-allowed" : "pointer" }}
+          className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300 rounded"
         />
-        <span style={{ color: "#d0d0e0", fontSize: 13 }}>{label}</span>
+        <span className="text-xs text-gray-700">{label}</span>
       </label>
-      <div className="flex items-center gap-1.5">{children}</div>
+      <div className="flex items-center gap-2 flex-1">{children}</div>
     </div>
   );
 
@@ -490,64 +513,62 @@ const ListingOfCustomers: React.FC = () => {
   // Render
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-200 flex items-start justify-center p-8">
+    <div className="p-6 bg-white rounded-lg shadow-md">
 
       {/* ══════════════════════════ FORM ══════════════════════════════════════ */}
       {!reportVisible && (
-        <div style={{
-          background: "#2b2b3d",
-          border: "2px solid #4a4a6a",
-          borderRadius: 4,
-          padding: "16px 20px 20px",
-          width: 580,
-        }}>
-          <form onSubmit={handleSubmit}>
+        <>
+          <div className="mb-6">
+            <h2 className={`text-xl font-bold ${maroon}`}>
+              Listing of Customers
+            </h2>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
 
             {/* Select Area */}
-            <div
-              className="grid items-center"
-              style={{ gridTemplateColumns: "230px 1fr", paddingBottom: 8, marginBottom: 4 }}
-            >
-              <span style={{ color: "#d0d0e0", fontSize: 13 }}>Select Area</span>
-              <div className="relative inline-block">
-                {isLoadingAreas ? (
-                  <span style={{ color: "#aaa", fontSize: 12 }}>Loading…</span>
-                ) : areaError ? (
-                  <span style={{ color: "#f88", fontSize: 12 }}>{areaError}</span>
-                ) : (
-                  <>
-                    <select
-                      value={areaCode}
-                      onChange={e => { setAreaCode(e.target.value); setReportError(null); }}
-                      required
-                      className="appearance-none text-xs border rounded-sm px-1.5 py-[3px] pr-5 w-52 focus:outline-none bg-white border-gray-400 text-gray-900"
-                    >
-                      <option value="">Select Area</option>
-                      {areas.map(a => (
-                        <option key={a.AreaCode} value={a.AreaCode}>{a.AreaName}</option>
-                      ))}
-                    </select>
-                    <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-gray-500">▼</span>
-                  </>
-                )}
-              </div>
+            <div className="flex flex-col">
+              <label className={`text-xs font-medium mb-1 ${maroon}`}>
+                Select Area: <span className="text-red-600">*</span>
+              </label>
+              {isLoadingAreas ? (
+                <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                  Loading areas...
+                </div>
+              ) : areaError ? (
+                <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
+                  {areaError}
+                </div>
+              ) : (
+                <select
+                  value={areaCode}
+                  onChange={e => { setAreaCode(e.target.value); setReportError(null); }}
+                  required
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                >
+                  <option value="">Select Area</option>
+                  {areas.map(a => (
+                    <option key={a.AreaCode} value={a.AreaCode}>{a.AreaName}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Status messages below area */}
             {isLoadingFilters && (
-              <p style={{ color: "#7ab", fontSize: 11, marginBottom: 4, paddingLeft: 230 }}>
+              <div className="text-xs text-blue-600 mt-1">
                 Loading filter options…
-              </p>
+              </div>
             )}
             {filterError && !isLoadingFilters && (
-              <p style={{ color: "#f99", fontSize: 11, marginBottom: 4, paddingLeft: 230 }}>
+              <div className="text-xs text-red-600 mt-1">
                 {filterError}
-              </p>
+              </div>
             )}
             {ready && (
-              <p style={{ color: "#8c8", fontSize: 11, marginBottom: 4, paddingLeft: 230 }}>
+              <div className="text-xs text-green-600 mt-1">
                 Bill Cycle: {billCycle}
-              </p>
+              </div>
             )}
 
             {/* Filter rows */}
@@ -620,13 +641,7 @@ const ListingOfCustomers: React.FC = () => {
                   value={balAmt}
                   onChange={e => setBalAmt(e.target.value)}
                   disabled={!ready}
-                  style={{ width: 140 }}
-                  className={[
-                    "text-xs border rounded-sm px-1.5 py-[3px] focus:outline-none",
-                    ready
-                      ? "bg-white border-gray-400 text-gray-900"
-                      : "bg-[#3c3c50] border-[#555570] text-gray-500 cursor-not-allowed",
-                  ].join(" ")}
+                  className="w-32 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
                 />
               </Row>
 
@@ -641,12 +656,7 @@ const ListingOfCustomers: React.FC = () => {
                   value={payDate}
                   onChange={e => setPayDate(e.target.value)}
                   disabled={!ready}
-                  className={[
-                    "text-xs border rounded-sm px-1.5 py-[3px] focus:outline-none w-40",
-                    ready
-                      ? "bg-white border-gray-400 text-gray-900"
-                      : "bg-[#3c3c50] border-[#555570] text-gray-500 cursor-not-allowed",
-                  ].join(" ")}
+                  className="w-40 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
                 />
               </Row>
 
@@ -656,74 +666,50 @@ const ListingOfCustomers: React.FC = () => {
                 onCheck={v => { setUseArr(v); if (!v) { setArrPos("1"); setArrOp(">="); } }}
                 checkboxDisabled={arrPos === "1"}>
                 <OpSel val={arrOp} set={setArrOp} on={ready} />
-                <div className="relative inline-block">
-                  <select
-                    value={arrPos}
-                    onChange={e => setArrPos(e.target.value)}
-                    disabled={!ready}
-                    className={[
-                      "appearance-none text-xs border rounded-sm px-1.5 py-[3px] pr-4 w-14 focus:outline-none",
-                      ready
-                        ? "bg-white border-gray-400 text-gray-900"
-                        : "bg-[#3c3c50] border-[#555570] text-gray-500 cursor-not-allowed",
-                    ].join(" ")}
-                  >
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
-                      <option key={n} value={String(n)}>{n}</option>
-                    ))}
-                  </select>
-                  <span className={[
-                    "pointer-events-none absolute right-0.5 top-1/2 -translate-y-1/2 text-[9px]",
-                    ready ? "text-gray-500" : "text-gray-600",
-                  ].join(" ")}>▼</span>
-                </div>
+                <select
+                  value={arrPos}
+                  onChange={e => setArrPos(e.target.value)}
+                  disabled={!ready}
+                  className="w-14 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+                    <option key={n} value={String(n)}>{n}</option>
+                  ))}
+                </select>
               </Row>
 
             </div>{/* end filter rows */}
 
             {/* Submit error */}
             {reportError && (
-              <p style={{ color: "#f99", fontSize: 11, marginTop: 8, textAlign: "center" }}>
+              <div className="text-xs text-red-600 mt-4">
                 {reportError}
-              </p>
+              </div>
             )}
 
             {/* View Report button */}
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+            <div className="w-full mt-6 flex justify-end">
               <button
                 type="submit"
                 disabled={loading || !areaCode || !billCycle || isLoadingFilters}
-                style={{
-                  padding: "3px 18px",
-                  fontSize: 13,
-                  border: "1px solid #888",
-                  borderRadius: 2,
-                  cursor: loading || !areaCode || !billCycle || isLoadingFilters
-                    ? "not-allowed" : "pointer",
-                  background: loading || !areaCode || !billCycle || isLoadingFilters
-                    ? "#555" : "#d4d0c8",
-                  color: loading || !areaCode || !billCycle || isLoadingFilters
-                    ? "#999" : "#111",
-                }}
+                className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
+                  ${maroonGrad} text-white
+                  ${loading || !areaCode || !billCycle || isLoadingFilters ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"}`}
               >
                 {loading ? (
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <svg style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }}
-                      xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-                      <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10"
-                        stroke="currentColor" strokeWidth="4" />
-                      <path style={{ opacity: 0.75 }} fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Loading…
+                    Loading...
                   </span>
                 ) : "View Report"}
               </button>
             </div>
 
           </form>
-        </div>
+        </>
       )}
 
       {/* ══════════════════════════ REPORT ════════════════════════════════════ */}
@@ -810,13 +796,18 @@ const ListingOfCustomers: React.FC = () => {
                 </table>
               )}
               {reportData.length > 0 && (
-                <p className="text-xs text-gray-400 mt-2 text-right pr-2">
+                <p className="text-xs text-gray-500 mt-2 text-right px-2">
                   Total records: {reportData.length.toLocaleString()}
                 </p>
               )}
             </div>
           </div>
 
+          {reportError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {reportError}
+            </div>
+          )}
         </div>
       )}
     </div>

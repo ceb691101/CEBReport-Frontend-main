@@ -55,7 +55,7 @@ import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredCon
 import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
 import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
 import Arreasposition from "../mainTopics/general/Arreasposition";
-import ListingofCustomers from "../mainTopics/general/Listingofcustomers";
+import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
