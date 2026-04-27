@@ -54,6 +54,9 @@ import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersS
 import BillCalculation from "../mainTopics/general/BillCalculation";
 import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
 import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
+import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
+import Arreasposition from "../mainTopics/general/Arreasposition";
+import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -240,12 +243,12 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// General reports
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
 	"bill calculation": BillCalculation,
-	"listing of customers": ActiveCustomersSalesByTariff,
-	"list of government accounts": ActiveCustomersSalesByTariff,
+	"listing of customers": ListingofCustomers,
+	"list of government accounts": ListOfGovernmentAccounts,
 	"largest 100 customer details": ActiveCustomersSalesByTariff,
 	"sequence change accounts": ActiveCustomersSalesByTariff,
 	"retails journal": ActiveCustomersSalesByTariff,
-	"arrears position meter reader wise": ActiveCustomersSalesByTariff,
+	"arrears position meter reader wise": Arreasposition,
 	"list of customers enlisted in master invoices": ActiveCustomersSalesByTariff,
 	"disconnection list": ActiveCustomersSalesByTariff,
 	"shakthi led distribution summary": ActiveCustomersSalesByTariff,

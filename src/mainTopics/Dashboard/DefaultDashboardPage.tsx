@@ -56,7 +56,6 @@ interface MonthlySalesData {
   month: string;
   ordinary: number;
   bulk: number;
-  target: number;
 }
 
 interface SalesCollectionRecord {
@@ -491,6 +490,18 @@ const DefaultDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const activeDashboard = "default";
 
+  const [selectedDivision, setSelectedDivision] = useState("all");
+  const toRegion = (division: string) => {
+    const match = /^d(\d+)$/i.exec(division || "");
+    return match ? `R${match[1]}` : null;
+  };
+  const selectedRegion = toRegion(selectedDivision);
+  const withRegion = (url: string) => {
+    if (!selectedRegion) return url;
+    const joiner = url.includes("?") ? "&" : "?";
+    return `${url}${joiner}region=${encodeURIComponent(selectedRegion)}`;
+  };
+
   // ── UI state ──────────────────────────────────────────────────────────────
   const [isLoaded, setIsLoaded]               = useState(false);
   const [activeSolarPieChart, setActiveSolarPieChart] = useState<string | null>(null);
@@ -556,7 +567,8 @@ const DefaultDashboardPage: React.FC = () => {
     { id: "solarCustomers",      title: "Solar Customers",     default: true,  category: "solar"       },
     // { id: "zeroConsumption",     title: "Zero Consumption",    default: true,  category: "consumption" },
     { id: "kioskCollection",     title: "Kiosk Collection",    default: true,  category: "collection"  },
-    { id: "solarCapacity",       title: "Solar Capacity (kW)", default: false, category: "solar"       },
+    { id: "salesCollectionDistribution", title: "Sales & Collection Distribution", default: false, category: "collection" },
+    { id: "solarCapacity",       title: "Solar Generation Capacity (kW)", default: false, category: "solar"       },
   ].sort((a, b) => a.title.localeCompare(b.title));
 
   const toggleCardVisibility = (cardId: string) =>
@@ -610,7 +622,7 @@ const DefaultDashboardPage: React.FC = () => {
     const fetchOrdinaryCount = async () => {
       setCustomerCountsLoading(true); setCustomerCountsError(null);
       try {
-        const res  = await fetch(`/misapi/api/dashboard/ordinary-customers-summary?billCycle=0`, { headers: { Accept: "application/json" } });
+        const res  = await fetch(withRegion(`/api/dashboard/ordinary-customers-summary?billCycle=0`), { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, ordinary: json?.data?.TotalCount ?? 0 }));
@@ -619,13 +631,13 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setCustomerCountsLoading(false); }
     };
     fetchOrdinaryCount();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const fetchBulkCount = async () => {
       setBulkCountLoading(true); setBulkCountError(null);
       try {
-        const res  = await fetch("/misapi/api/dashboard/customers/active-count", { headers: { Accept: "application/json" } });
+        const res  = await fetch(withRegion("/api/dashboard/customers/active-count"), { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, bulk: json?.data?.activeCustomerCount ?? 0 }));
@@ -633,19 +645,19 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setBulkCountLoading(false); }
     };
     fetchBulkCount();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const fetchSolarCustomerData = async () => {
       setSolarLoading(true); setSolarError(null);
       try {
-        const maxRes = await fetch(`/misapi/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
+        const maxRes = await fetch(`/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
         if (!maxRes.ok) throw new Error(`Failed to fetch max bill cycle`);
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-1`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-2`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-3`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-4`), { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch one or more net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -662,17 +674,17 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setSolarLoading(false); }
     };
     fetchSolarCustomerData();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const fetchBulkSolarCustomerData = async () => {
       setBulkSolarLoading(true);
       try {
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-1`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-2`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-3`, { headers: { Accept: "application/json" } }),
-          fetch(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-4`, { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-1`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-2`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-3`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-4`), { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch bulk solar net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -686,7 +698,7 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setBulkSolarLoading(false); }
     };
     fetchBulkSolarCustomerData();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const fetchSalesCollection = async () => {
@@ -734,13 +746,13 @@ const DefaultDashboardPage: React.FC = () => {
 
         const [ordinaryRecords, bulkRecords] = await Promise.all([
           fetchSalesApiWithFallback(
-            "/misapi/api/dashboard/salesCollection/range/ordinary",
-            "/misapi/api/dashboard/salesCollection/range/ordinary",
+            withRegion("/api/dashboard/salesCollection/range/ordinary"),
+            withRegion("/api/dashboard/salesCollection/range/ordinary"),
             "Ordinary sales/collection"
           ),
           fetchSalesApiWithFallback(
-            "/misapi/api/dashboard/salesCollection/range/bulk",
-            "/misapi/api/dashboard/salesCollection/range/bulk",
+            withRegion("/api/dashboard/salesCollection/range/bulk"),
+            withRegion("/api/dashboard/salesCollection/range/bulk"),
             "Bulk sales/collection"
           ),
         ]);
@@ -753,7 +765,6 @@ const DefaultDashboardPage: React.FC = () => {
           month: date,
           ordinary: ordinaryByDate.get(date) ?? 0,
           bulk: bulkByDate.get(date) ?? 0,
-          target: 0,
         }));
 
         if (merged.length === 0) {
@@ -768,7 +779,7 @@ const DefaultDashboardPage: React.FC = () => {
       finally { setSalesCollectionLoading(false); }
     };
     fetchSalesCollection();
-  }, []);
+  }, [selectedRegion]);
 
   useEffect(() => {
     const normalizeRecords = (records: SolarGenerationCapacityApiRecord[] = []) =>
@@ -780,8 +791,8 @@ const DefaultDashboardPage: React.FC = () => {
 
     const fetchCapacityByEndpoint = async (endpoint: string, billCycle: string) => {
       const url = billCycle
-        ? `${endpoint}?billCycle=${encodeURIComponent(billCycle)}`
-        : endpoint;
+        ? withRegion(`${endpoint}?billCycle=${encodeURIComponent(billCycle)}`)
+        : withRegion(endpoint);
 
       const res = await fetch(url, { headers: { Accept: "application/json" } });
       if (!res.ok) {
@@ -806,8 +817,8 @@ const DefaultDashboardPage: React.FC = () => {
       setSolarCapacityError(null);
 
       try {
-        const ordinaryEndpoint = "/misapi/api/dashboard/solar-ordinary-customers/generation-capacity";
-        const bulkEndpoint = "/misapi/api/dashboard/solar-bulk-customers/generation-capacity";
+        const ordinaryEndpoint = "/api/dashboard/solar-ordinary-customers/generation-capacity";
+        const bulkEndpoint = "/api/dashboard/solar-bulk-customers/generation-capacity";
 
         const ordinaryData = await fetchCapacityByEndpoint(ordinaryEndpoint, selectedSolarBillCycle);
 
@@ -875,7 +886,7 @@ const DefaultDashboardPage: React.FC = () => {
     };
 
     fetchSolarCapacityGraph();
-  }, [selectedSolarBillCycle, solarCapacityInitialized]);
+  }, [selectedSolarBillCycle, solarCapacityInitialized, selectedRegion]);
 
   const loggedUserId = (user?.Userno || "").trim().toUpperCase();
   const kioskUserId = loggedUserId.startsWith("KIOS") ? loggedUserId : "KIOS00";
@@ -887,7 +898,7 @@ const DefaultDashboardPage: React.FC = () => {
 
       try {
         const res = await fetch(
-          `/misapi/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`,
+          withRegion(`/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`),
           { headers: { Accept: "application/json" } }
         );
 
@@ -903,6 +914,7 @@ const DefaultDashboardPage: React.FC = () => {
         }
 
         const records = json?.data?.records ?? [];
+        const trendRecords = records.slice(-7);
         const weeklyTotal = records.reduce(
           (sum, row) => sum + (Number(row.CollectionAmount) || 0),
           0
@@ -911,8 +923,8 @@ const DefaultDashboardPage: React.FC = () => {
         setKioskWeeklyTotal(weeklyTotal);
         setKioskDailyRecords(records);
         setKioskDateRange({
-          fromDate: json?.data?.fromDate ?? "",
-          toDate: json?.data?.toDate ?? "",
+          fromDate: trendRecords[0]?.TransDate ?? json?.data?.fromDate ?? "",
+          toDate: trendRecords[trendRecords.length - 1]?.TransDate ?? json?.data?.toDate ?? "",
         });
       } catch (err: any) {
         console.error("Error fetching kiosk collection data:", err);
@@ -924,14 +936,31 @@ const DefaultDashboardPage: React.FC = () => {
     };
 
     fetchKioskWeeklyCollection();
-  }, [kioskUserId]);
+  }, [kioskUserId, selectedRegion]);
 
   // ── Formatters ────────────────────────────────────────────────────────────
 
   const formatNumber   = (n: number) => new Intl.NumberFormat("en-US").format(n);
   const formatCurrency = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "LKR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
   const formatCompact  = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+  const formatCompactCurrency = (n: number) => `LKR ${formatCompact(n)}`;
   const formatKW       = (n: number) => `${formatCompact(n)} kW`;
+  const formatIsoDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const getLast7DaysRangeLabel = () => {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() - 1);
+
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 6);
+
+    return `${formatIsoDate(startDate)} to ${formatIsoDate(endDate)}`;
+  };
   const formatMonthDayLabel = (value: string) => {
     const months = [
       "January", "February", "March", "April", "May", "June",
@@ -987,7 +1016,10 @@ const DefaultDashboardPage: React.FC = () => {
   const C = 502.4;
   const createArcDasharray = (s: number, e: number) => { const arc = ((e - s) / 100) * C; return `${arc} ${C - arc}`; };
 
-  const totalSolarCapacityKw = solarCapacityChartData.reduce((sum, item) => sum + item.ordinaryCapacity + item.bulkCapacity, 0);
+  const ordinarySolarCapacityKw = solarCapacityChartData.reduce((sum, item) => sum + item.ordinaryCapacity, 0);
+  const bulkSolarCapacityKw = solarCapacityChartData.reduce((sum, item) => sum + item.bulkCapacity, 0);
+  const totalSolarCapacityKw = ordinarySolarCapacityKw + bulkSolarCapacityKw;
+  const solarCapacityWeekRange = getLast7DaysRangeLabel();
 
   //const additionalCardIds = ["solarCapacity"];
   //const hasAdditionalCards = additionalCardIds.some((id) => visibleCards.includes(id));
@@ -1000,6 +1032,9 @@ const DefaultDashboardPage: React.FC = () => {
   const animatedSolar       = useCountUp(totalSolarCustomers,          1400, !solarLoading && !bulkSolarLoading, kpiTrigger);
   const animatedZero        = useCountUp(customerCounts.zeroConsumption, 1400, true, kpiTrigger);
   const animatedKiosk       = useCountUp(kioskWeeklyTotal,             1400, !kioskLoading, kpiTrigger);
+  const animatedSalesCollectionTotal = useCountUp(totalOrdinarySales + totalBulkSales, 1400, !salesCollectionLoading, kpiTrigger);
+  const animatedSalesOrdinary = useCountUp(totalOrdinarySales, 1400, !salesCollectionLoading, kpiTrigger);
+  const animatedSalesBulk = useCountUp(totalBulkSales, 1400, !salesCollectionLoading, kpiTrigger);
   const animatedSolarCap    = useCountUp(totalSolarCapacityKw, 1400, !solarCapacityLoading, kpiTrigger);
 
   // Solar pie — animated counts for each net type (ordinary + bulk), replay on solarPieTrigger
@@ -1051,6 +1086,8 @@ const DefaultDashboardPage: React.FC = () => {
           <>
               <DashboardHeader
                 title="Dashboard"
+                selectedDivision={selectedDivision}
+                onDivisionChange={setSelectedDivision}
               />
 
               <div className="max-w-7xl mx-auto px-4 py-6">
@@ -1156,11 +1193,72 @@ const DefaultDashboardPage: React.FC = () => {
                         return (
                           <KpiCard
                             cardId={cardId}
-                            title="Solar Capacity"
-                            value={`${formatCompact(animatedSolarCap)} kW`}
-                            subtitle="Total installed"
+                            title="Solar Generation Capacity"
+                            value={
+                              solarCapacityLoading
+                                ? "Loading..."
+                                : solarCapacityError
+                                  ? "Unavailable"
+                                  : `${formatCompact(animatedSolarCap)} kW`
+                            }
+                            details={
+                              solarCapacityLoading || solarCapacityError
+                                ? undefined
+                                : (
+                                  <>
+                                    <span>Ordinary: {formatKW(ordinarySolarCapacityKw)}</span>
+                                    <span>Bulk: {formatKW(bulkSolarCapacityKw)}</span>
+                                  </>
+                                )
+                            }
+                            subtitle={
+                              solarCapacityError
+                                ? solarCapacityError
+                                : solarCapacityWeekRange
+                            }
                             icon={<Battery className="w-5 h-5 text-amber-600" />}
                             iconBgClass="bg-amber-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "salesCollectionDistribution") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Sales & Collection Distribution"
+                            value={
+                              salesCollectionLoading && salesLineData.length === 0
+                                ? "Loading..."
+                                : salesCollectionError && salesLineData.length === 0
+                                  ? "Unavailable"
+                                  : formatCompactCurrency(animatedSalesCollectionTotal)
+                            }
+                            details={
+                              salesCollectionLoading && salesLineData.length === 0
+                                ? undefined
+                                : (
+                                  <>
+                                    <span>Ordinary: {formatCompactCurrency(animatedSalesOrdinary)}</span>
+                                    <span>Bulk: {formatCompactCurrency(animatedSalesBulk)}</span>
+                                  </>
+                                )
+                            }
+                            subtitle={
+                              salesCollectionError && salesLineData.length === 0
+                                ? salesCollectionError
+                                : salesLineData.length > 0
+                                  ? `${salesLineData[0].month} to ${salesLineData[salesLineData.length - 1].month}`
+                                  : "Last 7 days"
+                            }
+                            icon={<PieChart className="w-5 h-5 text-violet-600" />}
+                            iconBgClass="bg-violet-100"
                             isDragging={isDragging}
                             isDragOver={isDragOver}
                             onDragStart={(e) => handleDragStart(e, cardId)}
