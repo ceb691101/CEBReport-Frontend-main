@@ -943,6 +943,7 @@ const DefaultDashboardPage: React.FC = () => {
   const formatNumber   = (n: number) => new Intl.NumberFormat("en-US").format(n);
   const formatCurrency = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "LKR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
   const formatCompact  = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+  const formatCompactCurrency = (n: number) => `LKR ${formatCompact(n)}`;
   const formatKW       = (n: number) => `${formatCompact(n)} kW`;
   const formatIsoDate = (date: Date) => {
     const year = date.getFullYear();
@@ -1237,15 +1238,15 @@ const DefaultDashboardPage: React.FC = () => {
                                 ? "Loading..."
                                 : salesCollectionError && salesLineData.length === 0
                                   ? "Unavailable"
-                                  : formatCurrency(animatedSalesCollectionTotal)
+                                  : formatCompactCurrency(animatedSalesCollectionTotal)
                             }
                             details={
                               salesCollectionLoading && salesLineData.length === 0
                                 ? undefined
                                 : (
                                   <>
-                                    <span>Ordinary: {formatCurrency(animatedSalesOrdinary)}</span>
-                                    <span>Bulk: {formatCurrency(animatedSalesBulk)}</span>
+                                    <span>Ordinary: {formatCompactCurrency(animatedSalesOrdinary)}</span>
+                                    <span>Bulk: {formatCompactCurrency(animatedSalesBulk)}</span>
                                   </>
                                 )
                             }
