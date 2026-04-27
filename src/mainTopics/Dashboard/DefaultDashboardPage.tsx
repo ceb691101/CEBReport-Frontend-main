@@ -28,6 +28,7 @@ import {
 import DashboardSelector from "../../components/mainTopics/Dashboard/DashboardSelector";
 import KpiCard from "../../components/mainTopics/Dashboard/KpiCard";
 import DashboardHeader from "../../components/mainTopics/Dashboard/DashboardHeader";
+import TopCustomersList, { TopCustomerItem } from "../../components/mainTopics/Dashboard/TopCustomersList";
 
 const SOLAR_ORDINARY_COLOR = "#0f4c81";
 const SOLAR_BULK_COLOR = "#f59e0b";
@@ -118,6 +119,30 @@ interface SolarCapacityComparisonRow {
   bulkCapacity: number;
   ordinaryCount: number;
   bulkCount: number;
+}
+
+interface TopCustomersApiRecord {
+  AccountNumber?: string;
+  Name?: string;
+  Kwh?: number | string;
+  TotalAmount?: number | string;
+  accountNumber?: string;
+  name?: string;
+  kwh?: number | string;
+  totalAmount?: number | string;
+}
+
+interface TopCustomersApiData {
+  BillCycle?: string;
+  Records?: TopCustomersApiRecord[];
+  billCycle?: string;
+  records?: TopCustomersApiRecord[];
+}
+
+interface TopCustomersApiResponse {
+  data: TopCustomersApiData | null;
+  errorMessage?: string | null;
+  errorDetails?: string;
 }
 
 // ─── useInView Hook ───────────────────────────────────────────────────────────
@@ -560,6 +585,10 @@ const DefaultDashboardPage: React.FC = () => {
   const [solarCapacityLoading, setSolarCapacityLoading] = useState<boolean>(true);
   const [solarCapacityError, setSolarCapacityError] = useState<string | null>(null);
   const [solarCapacityInitialized, setSolarCapacityInitialized] = useState(false);
+  const [topCustomers, setTopCustomers] = useState<TopCustomerItem[]>([]);
+  const [topCustomersLoading, setTopCustomersLoading] = useState(true);
+  const [topCustomersError, setTopCustomersError] = useState<string | null>(null);
+  const [topCustomersBillCycle, setTopCustomersBillCycle] = useState<string>("");
 
   // ── Dashboard card config ─────────────────────────────────────────────────
   const cardConfig = [
@@ -937,6 +966,58 @@ const DefaultDashboardPage: React.FC = () => {
 
     fetchKioskWeeklyCollection();
   }, [kioskUserId, selectedRegion]);
+
+  useEffect(() => {
+    const fetchTopCustomers = async () => {
+      setTopCustomersLoading(true);
+      setTopCustomersError(null);
+
+      try {
+        const res = await fetch("/api/dashboard/top-customers/list", {
+          headers: { Accept: "application/json" },
+        });
+
+        if (!res.ok) {
+          throw new Error(`Top customers fetch failed: ${res.status}`);
+        }
+
+        const json: TopCustomersApiResponse = await res.json();
+
+        if (json?.errorMessage) {
+          const details = json?.errorDetails ? ` (${json.errorDetails})` : "";
+          throw new Error(`${json.errorMessage}${details}`);
+        }
+
+        const records = json?.data?.Records ?? json?.data?.records ?? [];
+        const billCycle = String(json?.data?.BillCycle ?? json?.data?.billCycle ?? "");
+
+        const normalized: TopCustomerItem[] = records
+          .map((record) => ({
+            accountNumber: String(record.AccountNumber ?? record.accountNumber ?? "").trim(),
+            name: String(record.Name ?? record.name ?? "").trim(),
+            kwh: Number(record.Kwh ?? record.kwh ?? 0),
+          }))
+          .filter((record) => record.name && record.accountNumber)
+          .sort((a, b) => b.kwh - a.kwh)
+          .slice(0, 10)
+          .map((record, index) => ({
+            ...record,
+            rank: index + 1,
+          }));
+
+        setTopCustomers(normalized);
+        setTopCustomersBillCycle(billCycle);
+      } catch (err: any) {
+        console.error("Top customers fetch error:", err);
+        setTopCustomersError(err?.message || "Failed to load top customers.");
+        setTopCustomers([]);
+      } finally {
+        setTopCustomersLoading(false);
+      }
+    };
+
+    fetchTopCustomers();
+  }, []);
 
   // ── Formatters ────────────────────────────────────────────────────────────
 
@@ -1534,6 +1615,19 @@ const DefaultDashboardPage: React.FC = () => {
                     </div>
                   </Reveal>
 
+                </div>
+
+                {/* ── Top Customers ─────────────────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 auto-rows-fr">
+                  <Reveal delay={360} className="h-full">
+                    <TopCustomersList
+                      items={topCustomers}
+                      loading={topCustomersLoading}
+                      error={topCustomersError}
+                      billCycle={topCustomersBillCycle}
+                    />
+                  </Reveal>
+                  <div className="hidden lg:block" aria-hidden="true" />
                 </div>
               </div>
           </>
