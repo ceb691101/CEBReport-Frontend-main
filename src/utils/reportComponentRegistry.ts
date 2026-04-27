@@ -51,6 +51,7 @@ import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
+import BillCalculation from "../mainTopics/general/BillCalculation";
 import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
 import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
 import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
@@ -241,7 +242,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// General reports
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
-	"bill calculation": ActiveCustomersSalesByTariff,
+	"bill calculation": BillCalculation,
 	"listing of customers": ListingofCustomers,
 	"list of government accounts": ListOfGovernmentAccounts,
 	"largest 100 customer details": ActiveCustomersSalesByTariff,
