@@ -8,8 +8,8 @@ import {
   PieChart,
   Sun,
   Battery,
-  // Eye,
-  // EyeOff,
+  Eye,
+  EyeOff,
   X,
 } from "lucide-react";
 import {
@@ -567,7 +567,8 @@ const DefaultDashboardPage: React.FC = () => {
     { id: "solarCustomers",      title: "Solar Customers",     default: true,  category: "solar"       },
     // { id: "zeroConsumption",     title: "Zero Consumption",    default: true,  category: "consumption" },
     { id: "kioskCollection",     title: "Kiosk Collection",    default: true,  category: "collection"  },
-    { id: "solarCapacity",       title: "Solar Capacity (kW)", default: false, category: "solar"       },
+    { id: "salesCollectionDistribution", title: "Sales & Collection Distribution", default: false, category: "collection" },
+    { id: "solarCapacity",       title: "Solar Generation Capacity (kW)", default: false, category: "solar"       },
   ].sort((a, b) => a.title.localeCompare(b.title));
 
   const toggleCardVisibility = (cardId: string) =>
@@ -943,6 +944,22 @@ const DefaultDashboardPage: React.FC = () => {
   const formatCurrency = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "LKR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
   const formatCompact  = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
   const formatKW       = (n: number) => `${formatCompact(n)} kW`;
+  const formatIsoDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const getLast7DaysRangeLabel = () => {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() - 1);
+
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 6);
+
+    return `${formatIsoDate(startDate)} to ${formatIsoDate(endDate)}`;
+  };
   const formatMonthDayLabel = (value: string) => {
     const months = [
       "January", "February", "March", "April", "May", "June",
@@ -998,7 +1015,10 @@ const DefaultDashboardPage: React.FC = () => {
   const C = 502.4;
   const createArcDasharray = (s: number, e: number) => { const arc = ((e - s) / 100) * C; return `${arc} ${C - arc}`; };
 
-  const totalSolarCapacityKw = solarCapacityChartData.reduce((sum, item) => sum + item.ordinaryCapacity + item.bulkCapacity, 0);
+  const ordinarySolarCapacityKw = solarCapacityChartData.reduce((sum, item) => sum + item.ordinaryCapacity, 0);
+  const bulkSolarCapacityKw = solarCapacityChartData.reduce((sum, item) => sum + item.bulkCapacity, 0);
+  const totalSolarCapacityKw = ordinarySolarCapacityKw + bulkSolarCapacityKw;
+  const solarCapacityWeekRange = getLast7DaysRangeLabel();
 
   //const additionalCardIds = ["solarCapacity"];
   //const hasAdditionalCards = additionalCardIds.some((id) => visibleCards.includes(id));
@@ -1011,6 +1031,9 @@ const DefaultDashboardPage: React.FC = () => {
   const animatedSolar       = useCountUp(totalSolarCustomers,          1400, !solarLoading && !bulkSolarLoading, kpiTrigger);
   const animatedZero        = useCountUp(customerCounts.zeroConsumption, 1400, true, kpiTrigger);
   const animatedKiosk       = useCountUp(kioskWeeklyTotal,             1400, !kioskLoading, kpiTrigger);
+  const animatedSalesCollectionTotal = useCountUp(totalOrdinarySales + totalBulkSales, 1400, !salesCollectionLoading, kpiTrigger);
+  const animatedSalesOrdinary = useCountUp(totalOrdinarySales, 1400, !salesCollectionLoading, kpiTrigger);
+  const animatedSalesBulk = useCountUp(totalBulkSales, 1400, !salesCollectionLoading, kpiTrigger);
   const animatedSolarCap    = useCountUp(totalSolarCapacityKw, 1400, !solarCapacityLoading, kpiTrigger);
 
   // Solar pie — animated counts for each net type (ordinary + bulk), replay on solarPieTrigger
@@ -1169,11 +1192,72 @@ const DefaultDashboardPage: React.FC = () => {
                         return (
                           <KpiCard
                             cardId={cardId}
-                            title="Solar Capacity"
-                            value={`${formatCompact(animatedSolarCap)} kW`}
-                            subtitle="Total installed"
+                            title="Solar Generation Capacity"
+                            value={
+                              solarCapacityLoading
+                                ? "Loading..."
+                                : solarCapacityError
+                                  ? "Unavailable"
+                                  : `${formatCompact(animatedSolarCap)} kW`
+                            }
+                            details={
+                              solarCapacityLoading || solarCapacityError
+                                ? undefined
+                                : (
+                                  <>
+                                    <span>Ordinary: {formatKW(ordinarySolarCapacityKw)}</span>
+                                    <span>Bulk: {formatKW(bulkSolarCapacityKw)}</span>
+                                  </>
+                                )
+                            }
+                            subtitle={
+                              solarCapacityError
+                                ? solarCapacityError
+                                : solarCapacityWeekRange
+                            }
                             icon={<Battery className="w-5 h-5 text-amber-600" />}
                             iconBgClass="bg-amber-100"
+                            isDragging={isDragging}
+                            isDragOver={isDragOver}
+                            onDragStart={(e) => handleDragStart(e, cardId)}
+                            onDragEnter={() => handleDragEnter(cardId)}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                          />
+                        );
+                      }
+
+                      if (cardId === "salesCollectionDistribution") {
+                        return (
+                          <KpiCard
+                            cardId={cardId}
+                            title="Sales & Collection Distribution"
+                            value={
+                              salesCollectionLoading && salesLineData.length === 0
+                                ? "Loading..."
+                                : salesCollectionError && salesLineData.length === 0
+                                  ? "Unavailable"
+                                  : formatCurrency(animatedSalesCollectionTotal)
+                            }
+                            details={
+                              salesCollectionLoading && salesLineData.length === 0
+                                ? undefined
+                                : (
+                                  <>
+                                    <span>Ordinary: {formatCurrency(animatedSalesOrdinary)}</span>
+                                    <span>Bulk: {formatCurrency(animatedSalesBulk)}</span>
+                                  </>
+                                )
+                            }
+                            subtitle={
+                              salesCollectionError && salesLineData.length === 0
+                                ? salesCollectionError
+                                : salesLineData.length > 0
+                                  ? `${salesLineData[0].month} to ${salesLineData[salesLineData.length - 1].month}`
+                                  : "Last 7 days"
+                            }
+                            icon={<PieChart className="w-5 h-5 text-violet-600" />}
+                            iconBgClass="bg-violet-100"
                             isDragging={isDragging}
                             isDragOver={isDragOver}
                             onDragStart={(e) => handleDragStart(e, cardId)}
@@ -1189,12 +1273,12 @@ const DefaultDashboardPage: React.FC = () => {
                   </div>
 
                   {/* Customize button */}
-                  {/* <div className="flex justify-end mb-6">
+                  <div className="flex justify-end mb-6">
                     <button onClick={() => setShowMoreCards(!showMoreCards)}
                       className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                       {showMoreCards ? <><EyeOff className="w-4 h-4" /> Hide Cards</> : <><Eye className="w-4 h-4" /> Show More Cards</>}
                     </button>
-                  </div> */}
+                  </div>
 
                   {/* Card selection panel */}
                   {showMoreCards && (
