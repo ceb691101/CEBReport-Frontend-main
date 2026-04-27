@@ -125,7 +125,7 @@ const ListingOfCustomers: React.FC = () => {
   useEffect(() => {
     setIsLoadingAreas(true);
     setAreaError(null);
-    fetch("/api/bulk/areas", { headers: { Accept: "application/json" } })
+    fetch("/misapi/api/bulk/areas", { headers: { Accept: "application/json" } })
       .then(async r => {
         if (!r.ok) {
           throw new Error(`HTTP ${r.status}: ${r.statusText}`);
@@ -183,8 +183,8 @@ const ListingOfCustomers: React.FC = () => {
         let resolvedBc = "";
 
         for (const url of [
-          `/api/listing-of-customers/max-bill-cycle?areaCode=${areaCode}`,
-          `/api/areas-position/max-bill-cycle?areaCode=${areaCode}`,
+          `/misapi/api/listing-of-customers/max-bill-cycle?areaCode=${areaCode}`,
+          `/misapi/api/areas-position/max-bill-cycle?areaCode=${areaCode}`,
         ]) {
           try {
             const r = await fetch(url, { headers: { Accept: "application/json" } });
@@ -339,7 +339,7 @@ const ListingOfCustomers: React.FC = () => {
     }
 
     try {
-      const url = "/api/listing-of-customers/report";
+      const url = "/misapi/api/listing-of-customers/report";
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -704,7 +704,7 @@ const ListingOfCustomers: React.FC = () => {
                     </svg>
                     Loading...
                   </span>
-                ) : "View Report"}
+                ) : "Generate Report"}
               </button>
             </div>
 
