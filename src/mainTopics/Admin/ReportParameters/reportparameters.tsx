@@ -54,6 +54,7 @@ const ReportParameters = () => {
   const [isDeletingParamName, setIsDeletingParamName] = useState<string | null>(null);
   const [deleteTargetRow, setDeleteTargetRow] = useState<ParameterRow | null>(null);
   const [editingParamName, setEditingParamName] = useState<string | null>(null);
+  const [showPopulateConfirm, setShowPopulateConfirm] = useState(false);
 
   const [lastSaveResult, setLastSaveResult] = useState<LastSaveResult | null>(null);
   const [lastUpdatedRows, setLastUpdatedRows] = useState<number | null>(null);
@@ -279,11 +280,11 @@ const ReportParameters = () => {
   };
 
   const handlePopulateClick = async () => {
-    const confirmed = window.confirm("Populate all pending parameters to all reports?");
-    if (!confirmed) {
-      return;
-    }
+    setShowPopulateConfirm(true);
+  };
 
+  const confirmPopulate = async () => {
+    setShowPopulateConfirm(false);
     await handlePopulateParamList();
   };
 
@@ -663,6 +664,37 @@ const ReportParameters = () => {
                 disabled={Boolean(isDeletingParamName)}
               >
                 {isDeletingParamName ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPopulateConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/45 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-stone-900">Populate Parameters</h3>
+            <p className="mt-2 text-sm text-stone-600">
+              Are you sure you want to populate all pending parameters to all reports?
+            </p>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPopulateConfirm(false)}
+                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                disabled={isUpdatingList}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmPopulate}
+                className="rounded-lg bg-[#7A0000] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60 inline-flex items-center gap-2"
+                disabled={isUpdatingList}
+              >
+                <RefreshCw className={`h-4 w-4 ${isUpdatingList ? "animate-spin" : ""}`} />
+                {isUpdatingList ? "Populating..." : "Populate"}
               </button>
             </div>
           </div>
