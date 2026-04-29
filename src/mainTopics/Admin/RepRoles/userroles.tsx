@@ -408,18 +408,14 @@ const UserRoles = () => {
 		// Denormalize userType: backend stores "ADMIN" but form needs "ADMINISTRATOR"
 		const userTypeForForm = role.userType === "ADMIN" ? "ADMINISTRATOR" : role.userType;
 
-		const businessCompanyMatched = businessCompanyOptions.find(
-			(opt) => opt.toUpperCase() === role.motherCompany?.trim().toUpperCase()
-		);
-
 		setForm({
 			name: role.roleName,
 			epfNo: role.epfNo,
 			roleId: role.roleId,
 			userType: userTypeForForm,
-			businessCompany: businessCompanyMatched || initialForm.businessCompany,
+			businessCompany: role.motherCompany,
 			userGroup: role.userGroup || initialForm.userGroup,
-			motherCompany: role.company?.trim() || initialForm.motherCompany,
+			motherCompany: role.company,
 			costCentres: role.costCentres,
 		});
 

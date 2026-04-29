@@ -19,9 +19,9 @@ type AdminNavItem = {
 const adminNavItems: AdminNavItem[] = [
   {
     id: 0,
-    name: "Home",
+    name: "Dashboard",
     path: "/adminhome?section=home",
-    description: "Admin landing dashboard",
+    description: "Overview and live stats",
     icon: FaHome,
   },
   {

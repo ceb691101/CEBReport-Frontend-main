@@ -187,14 +187,14 @@ const ReportEntry = () => {
     const buildParamListValue = (reportId: string, allParaNames: string[], selectedParaNames: string[]) => {
         const uniqueParams = Array.from(new Set(allParaNames.map((item) => item.trim()).filter(Boolean)));
         if (uniqueParams.length === 0) {
-            return `<${reportId.trim()}>`;
+            return "";
         }
 
         const selectedSet = new Set(selectedParaNames.map((item) => item.trim().toUpperCase()).filter(Boolean));
         const tokenString = uniqueParams
             .map((item) => `${item}=${selectedSet.has(item.toUpperCase()) ? "1" : "0"}`)
             .join("&");
-        return `<${reportId.trim()}>&${tokenString}`;
+        return tokenString;
     };
 
     const extractParamsFromList = (paramListValue: string) => {

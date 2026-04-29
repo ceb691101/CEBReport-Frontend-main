@@ -113,6 +113,7 @@ export default defineConfig({
 				target: "http://smartceb.ceb:81",
 				changeOrigin: true,
 				secure: false,
+			},	
 			"/misreportsapi": {
 				target: "http://localhost:44381",
 				changeOrigin: true,

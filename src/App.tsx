@@ -11,7 +11,7 @@ import MaterialDetails from "./mainTopics/inventory/MaterialDetails";
 import ReportRoutes from "./routes/ReportRoutes";
 import CostCenterTrial from "./mainTopics/TrialBalance/CostCenterTrial";
 // import SelectCostCenterTrial from "./mainTopics/TrialBalance/SelectCostCeneterTrial";
-import Home from "./pages/Home";
+
 import AdminHome from "./pages/AdminHome";
 import Dashboard from "./pages/Dashboard.tsx";
 
@@ -30,14 +30,6 @@ function App() {
           }
         />
 
-        <Route
-          path="/home"
-          element={
-            <Layout>
-              <Home />
-            </Layout>
-          }
-        />
 				<Route
 					path="/home"
 					element={

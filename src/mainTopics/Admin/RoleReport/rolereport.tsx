@@ -45,9 +45,6 @@ const RoleReport = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("category");
   const [reportSearch, setReportSearch] = useState<string>("");
   const [roleSearch, setRoleSearch] = useState<string>("");
-  const [activeRoleTab, setActiveRoleTab] = useState<"user" | "admin">("user");
-  const [currentPage, setCurrentPage] = useState(1);
-  const rolesPerPage = 10;
 
   const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
@@ -235,68 +232,24 @@ const RoleReport = () => {
   );
 
   const filteredRoles = useMemo(() => {
-    let result = roles.filter(role => {
-      const type = normalizeKey(role.userType) === "ADMIN" ? "admin" : "user";
-      return type === activeRoleTab;
-    });
-
     const query = normalizeText(roleSearch).toUpperCase();
 
-    if (query) {
-      result = result.filter((role) => {
-        const haystack = [role.epfNo, role.roleId, role.roleName]
-          .map((item) => normalizeText(item).toUpperCase())
-          .join(" ");
-
-        return haystack.includes(query);
-      });
+    if (!query) {
+      return roles;
     }
 
-    return result;
-  }, [roles, roleSearch, activeRoleTab]);
+    return roles.filter((role) => {
+      const haystack = [role.epfNo, role.roleId, role.roleName]
+        .map((item) => normalizeText(item).toUpperCase())
+        .join(" ");
 
-  const totalPages = Math.max(1, Math.ceil(filteredRoles.length / rolesPerPage));
-  const paginatedRoles = filteredRoles.slice((currentPage - 1) * rolesPerPage, currentPage * rolesPerPage);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [roleSearch, activeRoleTab]);
-
-  const changePage = (page: number) => {
-    if (page < 1 || page > totalPages) {
-      return;
-    }
-    setCurrentPage(page);
-  };
+      return haystack.includes(query);
+    });
+  }, [roles, roleSearch]);
 
   useEffect(() => {
     setEnteredName(selectedRole?.roleName ?? "");
     setEnteredUserName(selectedRole?.roleId ?? "");
-
-    if (!selectedRole?.roleId) {
-      setSelectedCategories([]);
-      setSelectedReports([]);
-      return;
-    }
-
-    const loadAssignedReports = async () => {
-      try {
-        const response = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRole.roleId)}/reports`);
-        if (response.ok) {
-          const payload = await response.json();
-          const items = Array.isArray(payload?.data) ? payload.data : [];
-          const repIds = items.map((item: any) => item?.repId ?? item?.RepId ?? "").filter(Boolean);
-          const catCodes = items.map((item: any) => item?.catCode ?? item?.CatCode ?? "").filter(Boolean);
-          
-          setSelectedReports(repIds);
-          setSelectedCategories(Array.from(new Set(catCodes)) as string[]);
-        }
-      } catch (error) {
-        console.error("Failed to load assigned reports", error);
-      }
-    };
-
-    loadAssignedReports();
   }, [selectedRole]);
 
   const activeReports = useMemo(
@@ -617,30 +570,22 @@ const RoleReport = () => {
       <div className="mx-auto max-w-7xl space-y-5">
         <section className="grid gap-5 xl:grid-cols-[minmax(0,50%)_minmax(0,50%)] xl:items-stretch">
           <div className="flex h-full min-h-[78vh] w-full flex-col rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)] xl:order-2">
-            <div className="mb-4 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <h2 className="text-2xl font-semibold text-stone-900">Role Report Table</h2>
                 <button
                   type="button"
                   onClick={loadRoles}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 bg-white px-4 py-1.5 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
+                  className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 px-4 py-2 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
                 >
                   <RefreshCw className={`h-4 w-4 ${isRolesLoading ? "animate-spin" : ""}`} />
                   Refresh
                 </button>
               </div>
-
-              <div className="inline-flex rounded-full border border-stone-200 bg-stone-100 p-1">
-                <TabButton
-                  label="USER ROLES"
-                  active={activeRoleTab === "user"}
-                  onClick={() => setActiveRoleTab("user")}
-                />
-                <TabButton
-                  label="ADMIN ROLES"
-                  active={activeRoleTab === "admin"}
-                  onClick={() => setActiveRoleTab("admin")}
-                />
+              <div className="flex gap-2">
+                <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-semibold text-stone-600">
+                  {filteredRoles.length} shown, {roles.length} users
+                </span>
               </div>
             </div>
 
@@ -690,7 +635,7 @@ const RoleReport = () => {
                         </td>
                       </tr>
                     ) : (
-                      paginatedRoles.map((role) => {
+                      filteredRoles.map((role) => {
                         return (
                           <tr
                             key={role.roleId}
@@ -715,32 +660,6 @@ const RoleReport = () => {
               </div>
             </div>
 
-            {filteredRoles.length > 0 && (
-              <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-                <div className="text-stone-600">
-                  Page {currentPage} of {totalPages} ({filteredRoles.length} shown)
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => changePage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="rounded-md border border-stone-300 px-3 py-1.5 text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => changePage(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="rounded-md border border-stone-300 px-3 py-1.5 text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-
             <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600">
               Selected: <span className="font-semibold text-stone-800">{selectedRole?.roleName || "None"}</span>
               {selectedRole ? (
@@ -759,20 +678,20 @@ const RoleReport = () => {
           <div className="flex h-full min-h-[78vh] w-full flex-col space-y-5 xl:order-1">
             <div className="flex h-full flex-col rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)]">
               <div className="mb-4 flex items-center justify-between">
-                <div>
+                <div className="flex items-center gap-3">
                   <h2 className="text-2xl font-semibold text-stone-900">Role Report Form</h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loadCategories();
+                      loadReports();
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 px-4 py-2 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isCategoriesLoading || isReportsLoading ? "animate-spin" : ""}`} />
+                    Refresh
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    loadCategories();
-                    loadReports();
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#7A0000]/20 px-4 py-2 text-sm font-medium text-[#7A0000] transition hover:border-[#7A0000]/40 hover:bg-[#7A0000]/5"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isCategoriesLoading || isReportsLoading ? "animate-spin" : ""}`} />
-                  Refresh
-                </button>
               </div>
               <fieldset className="flex flex-1 flex-col rounded-2xl border border-stone-300 px-3 pb-4 pt-2">
                 <legend className="px-2 text-sm font-semibold text-stone-800"></legend>
@@ -1046,25 +965,5 @@ const ActionButton = ({
     </button>
   );
 };
-
-const TabButton = ({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-      active ? "bg-[#7A0000] text-white shadow" : "text-stone-600 hover:text-stone-900"
-    }`}
-  >
-    {label}
-  </button>
-);
 
 export default RoleReport;
