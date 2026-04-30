@@ -1045,19 +1045,8 @@ const DefaultDashboardPage: React.FC = () => {
   // Kiosk dates are now in dd-MM-yy format (consistent with BillCalculation)
   const formatKioskDateTick = (value: string) => String(value);  // Already formatted by backend as dd-MM-yy
 
-  // Format ISO date (YYYY-MM-DD) for sales chart labels
-  const formatSalesDateLabel = (isoDate: string) => {
-    const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
-    const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (match) {
-      const monthIndex = Number(match[2]) - 1;
-      return `${months[monthIndex]}-${match[3]}`;
-    }
-    return isoDate;
-  };
+  // Sales dates are now in dd-MM-yy format (consistent with BillCalculation)
+  const formatSalesDateLabel = (date: string) => String(date);  // Already formatted by backend as dd-MM-yy
 
   // ── Derived values ────────────────────────────────────────────────────────
 
