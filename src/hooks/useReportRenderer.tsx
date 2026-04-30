@@ -5,6 +5,7 @@ import {
 } from "../utils/reportComponentRegistry";
 import { normalizeReportName } from "../utils/reportNameMatch";
 import DynamicReportByRepId from "../components/shared/DynamicReportByRepId";
+import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
 
 /**
  * Hook to render a report component based on its name.
@@ -12,6 +13,11 @@ import DynamicReportByRepId from "../components/shared/DynamicReportByRepId";
  */
 export const useReportRenderer = () => {
 	return (subtopicName: string, repIdNo?: string): ReactNode => {
+		const repId = repIdNo?.trim() ?? "";
+		if (repId === "29") {
+			return <CcApplicationProgress />;
+		}
+
 		const normalized = normalizeReportName(subtopicName);
 		const withoutLeadingNumber = normalizeReportName(
 			subtopicName.replace(/^\d+(?:\s*[./-]\s*\d+)*\s*/, "")

@@ -24,6 +24,7 @@ import BillingFinanceReports from "../pages/BillingFinanceReports";
 import TransmissionBilling from "../pages/TransmissionBilling";
 import SolarReligiousPurpose from "../pages/SolarReligiousPurpose";
 import AdminHome from "../pages/AdminHome";
+import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
 
 const ReportRoutes = () => (
 	<>
@@ -184,6 +185,14 @@ const ReportRoutes = () => (
 				</Layout>
 			}
 		/>
+			<Route
+				path="/report/SolarJobs/CcApplicationProgress"
+				element={
+					<Layout>
+						<CcApplicationProgress />
+					</Layout>
+				}
+			/>
 
 		<Route
 			path="/report/PhysicalVerification"
