@@ -23,6 +23,7 @@ import PhysicalVerificationDetails from "../pages/PhysicalVerificationDetails";
 import BillingFinanceReports from "../pages/BillingFinanceReports";
 import TransmissionBilling from "../pages/TransmissionBilling";
 import SolarReligiousPurpose from "../pages/SolarReligiousPurpose";
+import AdminHome from "../pages/AdminHome";
 import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
 
 const ReportRoutes = () => (
@@ -224,6 +225,16 @@ const ReportRoutes = () => (
 			element={
 				<Layout>
 					<SolarReligiousPurpose />
+				</Layout>
+			}
+		/>
+
+		{/* Admin Routes */}
+		<Route
+			path="/adminhome"
+			element={
+				<Layout>
+					<AdminHome />
 				</Layout>
 			}
 		/>
