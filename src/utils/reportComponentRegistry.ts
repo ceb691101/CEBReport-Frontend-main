@@ -115,6 +115,7 @@ import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustom
 // Solar Jobs reports
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
 import SolarPendingJobsReport from "../mainTopics/SolarJobs/SolarPendingJobsReport";
+import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
 
 // Solar Religious Purpose reports
 import AreaWiseSRPApplicationPIV from "../mainTopics/SRP/AreaWiseSRPApplicationPIV";
@@ -333,6 +334,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
 	"solar retail rooftop pending jobs after piv2 paid": SolarPendingJobsReport,
+	"solar rooftop applications within the selected cost centre": CcApplicationProgress,
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,
