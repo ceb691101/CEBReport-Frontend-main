@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { 
-  BarChart3, Menu, X, Home, DollarSign, Users,
-  Briefcase, Sun, CreditCard, Target, Package
+  BarChart3, Menu, X, Home, DollarSign, 
+  // Users,
+  // Briefcase, Sun, CreditCard, Target, Package
 } from "lucide-react";
 
 interface DashboardSelectorProps {

@@ -51,8 +51,12 @@ import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
+import BillCalculation from "../mainTopics/general/BillCalculation";
 import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
 import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
+import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
+import Arreasposition from "../mainTopics/general/Arreasposition";
+import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -111,6 +115,7 @@ import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustom
 // Solar Jobs reports
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
 import SolarPendingJobsReport from "../mainTopics/SolarJobs/SolarPendingJobsReport";
+import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
 
 // Solar Religious Purpose reports
 import AreaWiseSRPApplicationPIV from "../mainTopics/SRP/AreaWiseSRPApplicationPIV";
@@ -238,13 +243,13 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// General reports
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
-	"bill calculation": ActiveCustomersSalesByTariff,
-	"listing of customers": ActiveCustomersSalesByTariff,
-	"list of government accounts": ActiveCustomersSalesByTariff,
+	"bill calculation": BillCalculation,
+	"listing of customers": ListingofCustomers,
+	"list of government accounts": ListOfGovernmentAccounts,
 	"largest 100 customer details": ActiveCustomersSalesByTariff,
 	"sequence change accounts": ActiveCustomersSalesByTariff,
 	"retails journal": ActiveCustomersSalesByTariff,
-	"arrears position meter reader wise": ActiveCustomersSalesByTariff,
+	"arrears position meter reader wise": Arreasposition,
 	"list of customers enlisted in master invoices": ActiveCustomersSalesByTariff,
 	"disconnection list": ActiveCustomersSalesByTariff,
 	"shakthi led distribution summary": ActiveCustomersSalesByTariff,
@@ -329,6 +334,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
 	"solar retail rooftop pending jobs after piv2 paid": SolarPendingJobsReport,
+	"solar rooftop applications within the selected cost centre": CcApplicationProgress,
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,

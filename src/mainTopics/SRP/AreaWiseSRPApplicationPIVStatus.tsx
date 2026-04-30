@@ -1,5 +1,5 @@
-// Area Wise SRP Application PIV (PIVI) To be Paid Report
-// File: AreaWiseSRPApplicationPIV.tsx
+// Area Wise SRP Application PIV Status Report
+// File: AreaWiseSRPApplicationPIVStatus.tsx
 
 import React, {useState, useRef, useCallback} from "react";
 import {useUser} from "../../contexts/UserContext";
@@ -8,13 +8,14 @@ import DateRangePicker from "../../components/utils/DateRangePicker";
 import ReusableCompanyList from "../../components/utils/ReusableCompanyList";
 import ReportViewer from "../../components/utils/ReportViewer";
 
-interface SRPApplicationPIVItem {
+interface SRPApplicationPIVStatusItem {
 	Dept_Id: string;
 	Id_No: string;
 	Application_No: string;
 	Name: string;
 	Address: string;
 	Submit_Date: Date | null;
+	Status: string;
 	Description: string;
 	Piv_No: string;
 	Paid_Date: Date | null;
@@ -64,7 +65,7 @@ const escapeHtml = (text: string | null | undefined): string => {
 	return div.innerHTML;
 };
 
-const AreaWiseSRPApplicationPIV: React.FC = () => {
+const AreaWiseSRPApplicationPIVStatus: React.FC = () => {
 	const {user} = useUser();
 	const epfNo = user?.Userno || "";
 	const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -72,7 +73,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 	const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 	const [fromDate, setFromDate] = useState("");
 	const [toDate, setToDate] = useState("");
-	const [reportData, setReportData] = useState<SRPApplicationPIVItem[]>([]);
+	const [reportData, setReportData] = useState<SRPApplicationPIVStatusItem[]>([]);
 	const [reportLoading, setReportLoading] = useState(false);
 	const [showReport, setShowReport] = useState(false);
 
@@ -95,14 +96,14 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 		setShowReport(true);
 
 		try {
-			const url = `/misapi/api/areawisesrpapplicationpiv/get?compId=${company.compId.trim()}&fromDate=${fromDate.replace(
+			const url = `/misapi/api/areawisesrpapplicationpivstatus/get?compId=${company.compId.trim()}&fromDate=${fromDate.replace(
 				/-/g,
 				""
 			)}&toDate=${toDate.replace(/-/g, "")}`;
 			const res = await fetch(url);
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const data = await res.json();
-			const items: SRPApplicationPIVItem[] = Array.isArray(data)
+			const items: SRPApplicationPIVStatusItem[] = Array.isArray(data)
 				? data
 				: data.data || [];
 			setReportData(items);
@@ -133,6 +134,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 			"Name",
 			"Address",
 			"Submit Date",
+			"Status",
 			"Description",
 			"PIV No",
 			"Paid Date",
@@ -146,7 +148,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 		];
 
 		const csvRows: string[] = [
-			`Area wise SRP Application fee (PIV I) to be paid  Details PIV I Generated date From ${fromDate}  To ${toDate}`,
+			`Area wise SRP Application fee (PIV I) Status Details PIV I Generated date From ${fromDate}  To ${toDate}`,
 			`AREA : ${selectedCompany.compId} / ${selectedCompany.CompName}`,
 			"",
 			headers.map(csvEscape).join(","),
@@ -161,6 +163,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 				item.Name || "",
 				item.Address || "",
 				formatDate(item.Submit_Date),
+				item.Status || "",
 				item.Description || "",
 				`="${item.Piv_No ?? ""}"`,
 				formatDate(item.Paid_Date),
@@ -176,7 +179,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 		});
 
 		const csvTotal = reportData.reduce((sum, item) => sum + (Number(item.Piv_Amount) || 0), 0);
-		const totalRow = [...Array(15).fill(""), "Total", csvTotal.toFixed(2)];
+		const totalRow = [...Array(16).fill(""), "Total", csvTotal.toFixed(2)];
 		csvRows.push(totalRow.map(csvEscape).join(","));
 
 		const csvContent = csvRows.join("\n");
@@ -186,7 +189,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
 		link.href = url;
-		link.download = `SRP_Application_PIV_${selectedCompany.compId}_${fromDate}_to_${toDate}.csv`;
+		link.download = `SRP_Application_PIV_Status_${selectedCompany.compId}_${fromDate}_to_${toDate}.csv`;
 		link.click();
 		URL.revokeObjectURL(url);
 	};
@@ -214,6 +217,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 			"140px", // Name
 			"140px", // Address
 			"80px",  // Submit Date
+			"80px",  // Status
 			"100px", // Description
 			"130px", // PIV No
 			"80px",  // Paid Date
@@ -240,6 +244,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
         <td>${escapeHtml(item.Name)}</td>
         <td>${escapeHtml(item.Address)}</td>
         <td>${formatDate(item.Submit_Date)}</td>
+        <td>${escapeHtml(item.Status)}</td>
         <td>${escapeHtml(item.Description)}</td>
         <td class="nowrap">${escapeHtml(item.Piv_No)}</td>
         <td>${formatDate(item.Paid_Date)}</td>
@@ -254,7 +259,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 		});
 
 		bodyHTML += `<tr class="total-row">
-        <td colspan="16" style="text-align:right;"><strong>Total</strong></td>
+        <td colspan="17" style="text-align:right;"><strong>Total</strong></td>
         <td class="numeric"><strong>${formatAmount(totalPivAmount)}</strong></td>
       </tr>`;
 
@@ -262,7 +267,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 <html>
 <head>
 <meta charset="utf-8">
-<title>Area Wise SRP Application PIV (PIVI) To be Paid Report</title>
+<title>Area Wise SRP Application PIV Status Report</title>
 <style>${tableStyle}
 body { font-family: Arial, sans-serif; margin: 10mm; print-color-adjust: exact; }
 h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; margin: 0 0 4px 0; }
@@ -280,8 +285,8 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 <table>
   <colgroup>${colGroupHTML}</colgroup>
   <thead>
-    <tr><td colspan="17" class="header-cell">
-      <h3>Area wise SRP Application fee (PIV I) to be paid &nbsp;&nbsp;Details PIV I Generated date &nbsp;From ${fromDate} &nbsp;&nbsp;To ${toDate}</h3>
+    <tr><td colspan="18" class="header-cell">
+      <h3>Area wise SRP Application fee (PIV I) Status &nbsp;&nbsp;Details PIV I Generated date &nbsp;From ${fromDate} &nbsp;&nbsp;To ${toDate}</h3>
       <div class="subtitle">
         <div class="subtitle-left"><strong>AREA :</strong> ${escapeHtml(selectedCompany.compId)} / ${escapeHtml(selectedCompany.CompName)}</div>
       </div>
@@ -294,6 +299,7 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
       <th>Name</th>
       <th>Address</th>
       <th>Submit Date</th>
+      <th>Status</th>
       <th>Description</th>
       <th>PIV No</th>
       <th>Paid Date</th>
@@ -323,7 +329,7 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 			<iframe ref={iframeRef} style={{display: "none"}} />
 
 			<h2 className={`text-xl font-bold mb-4 ${maroon}`}>
-				Area Wise SRP Application PIV (PIVI) To be Paid Report
+				Area Wise SRP Application PIV Status Report
 			</h2>
 
 			<div className="flex justify-end mb-4">
@@ -375,7 +381,7 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 
 			{showReport && (
 				<ReportViewer
-					title="Area Wise SRP Application PIV (PIVI) To be Paid Report"
+					title="Area Wise SRP Application PIV Status Report"
 					currency=""
 					subtitlebold2="Company:"
 					subtitlenormal2={`${selectedCompany?.compId} / ${selectedCompany?.CompName}`}
@@ -397,16 +403,17 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Name</th>
 								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Address</th>
 								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Submit Date</th>
+								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Status</th>
 								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Description</th>
 								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">PIV No</th>
 								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Paid Date</th>
-							<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Tariff Code</th>
-							<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Phase</th>
-							<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Existing Acc No</th>
-							<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Area</th>
-							<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Province</th>
-							<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Cost Center</th>
-							<th className="border border-gray-400 px-2 py-2 text-right whitespace-nowrap">PIV Amount</th>
+								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Tariff Code</th>
+								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Phase</th>
+								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Existing Acc No</th>
+								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Area</th>
+								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Province</th>
+								<th className="border border-gray-400 px-2 py-2 whitespace-nowrap">Cost Center</th>
+								<th className="border border-gray-400 px-2 py-2 text-right whitespace-nowrap">PIV Amount</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -422,16 +429,17 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 									<td className="border border-gray-300 px-2 py-2 whitespace-normal">{item.Name}</td>
 									<td className="border border-gray-300 px-2 py-2 whitespace-normal">{item.Address}</td>
 									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{formatDate(item.Submit_Date)}</td>
+									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Status}</td>
 									<td className="border border-gray-300 px-2 py-2 whitespace-normal">{item.Description}</td>
 									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Piv_No}</td>
 									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{formatDate(item.Paid_Date)}</td>
-								<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Tariff_Code}</td>
-								<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Phase}</td>
-								<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Existing_Acc_No}</td>
-								<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Area}</td>
-								<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Province}</td>
-								<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Cct_Name}</td>
-								<td className="border border-gray-300 px-2 py-2 text-right whitespace-nowrap">{formatAmount(item.Piv_Amount)}</td>
+									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Tariff_Code}</td>
+									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Phase}</td>
+									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Existing_Acc_No}</td>
+									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Area}</td>
+									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Province}</td>
+									<td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{item.Cct_Name}</td>
+									<td className="border border-gray-300 px-2 py-2 text-right whitespace-nowrap">{formatAmount(item.Piv_Amount)}</td>
 								</tr>
 							))}
 						</tbody>
@@ -442,4 +450,4 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 	);
 };
 
-export default AreaWiseSRPApplicationPIV;
+export default AreaWiseSRPApplicationPIVStatus;
