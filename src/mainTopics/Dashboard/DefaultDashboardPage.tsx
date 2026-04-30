@@ -1042,28 +1042,22 @@ const DefaultDashboardPage: React.FC = () => {
 
     return `${formatIsoDate(startDate)} to ${formatIsoDate(endDate)}`;
   };
-  const formatMonthDayLabel = (value: string) => {
+  // Kiosk dates are now in dd-MM-yy format (consistent with BillCalculation)
+  const formatKioskDateTick = (value: string) => String(value);  // Already formatted by backend as dd-MM-yy
+
+  // Format ISO date (YYYY-MM-DD) for sales chart labels
+  const formatSalesDateLabel = (isoDate: string) => {
     const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
-
-    const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (isoMatch) {
-      const monthIndex = Number(isoMatch[2]) - 1;
-      return `${months[monthIndex] || isoMatch[2]}-${isoMatch[3]}`;
+    const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const monthIndex = Number(match[2]) - 1;
+      return `${months[monthIndex]}-${match[3]}`;
     }
-
-    const monthDayMatch = value.match(/^(\d{2})-(\d{2})$/);
-    if (monthDayMatch) {
-      const monthIndex = Number(monthDayMatch[1]) - 1;
-      return `${months[monthIndex] || monthDayMatch[1]}-${monthDayMatch[2]}`;
-    }
-
-    return value;
+    return isoDate;
   };
-
-  const formatKioskDateTick = (value: string) => formatMonthDayLabel(value);
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -1436,7 +1430,7 @@ const DefaultDashboardPage: React.FC = () => {
                               />
                               <Tooltip
                                 formatter={(value: any) => formatCurrency(Number(value) || 0)}
-                                labelFormatter={(label: any) => formatMonthDayLabel(String(label))}
+                                labelFormatter={(label: any) => String(label)}
                                 labelStyle={{ fontWeight: 700 }}
                               />
                               <Line
@@ -1554,7 +1548,7 @@ const DefaultDashboardPage: React.FC = () => {
                           <div className="h-64 flex items-center justify-center text-red-400 text-sm">{salesCollectionError}</div>
                         ) : (
                           <div className="h-full flex flex-col">
-                            <DrawingLineChart data={salesLineData} formatCurrency={formatCurrency} formatCompact={formatCompact} formatDateLabel={formatMonthDayLabel} chartKey={salesChartKey} />
+                            <DrawingLineChart data={salesLineData} formatCurrency={formatCurrency} formatCompact={formatCompact} formatDateLabel={formatSalesDateLabel} chartKey={salesChartKey} />
                           </div>
                         )}
                       </div>
