@@ -108,7 +108,7 @@ const DivisionWiseSRPEstimationPIVPaid: React.FC = () => {
 
     try {
       const url =
-        `http://localhost:44381/api/divisionwise-srp-estimation/get` +
+        `/misapi/api/divisionwise-srp-estimation/get` +
         `?compId=${encodeURIComponent(company.compId.trim())}` +
         `&fromDate=${fromDate.replace(/-/g, "/")}` +
         `&toDate=${toDate.replace(/-/g, "/")}`;
