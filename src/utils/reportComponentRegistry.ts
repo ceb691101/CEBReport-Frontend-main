@@ -34,6 +34,7 @@ import CostCenterwisePivDetails from "../mainTopics/PIV/CostCenterwisePivDetails
 // Analysis reports
 import DebtorsAnalysis from "../mainTopics/Analysis/DebtorsAnalysis";
 import AgeAnalysis from "../mainTopics/Analysis/AgeAnalysis";
+import SolarAgeAnalysis from "../mainTopics/Analysis/SolarAgeAnalysis";
 
 // Billing & Payment reports
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
@@ -201,6 +202,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"debtors age analysis individual customers": AgeAnalysis,
 	"age analysis bulk": AgeAnalysis,
 	"consumption pattern analysis": AgeAnalysis,
+	"age analysis of solar power consumers": SolarAgeAnalysis,
 
 	// Billing & Payment reports
 	"customer information": CustomerDetails,
