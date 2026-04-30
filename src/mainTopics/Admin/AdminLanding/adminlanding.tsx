@@ -8,9 +8,6 @@ import {
   FilePlus2,
   GitBranch,
   ArrowRight,
-  TrendingUp,
-  Activity,
-  ChevronRight
 } from "lucide-react";
 import {
   Bar,
@@ -80,7 +77,6 @@ const quickActions = [
   },
 ];
 
-const chartPalette = ["#0f172a", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1"];
 
 const safeText = (value: unknown) => (value ?? "").toString().trim();
 
@@ -207,18 +203,7 @@ const AdminLanding = () => {
     return unique.size;
   }, [adminRoles, userRoles]);
 
-  const topReportRows = useMemo(() => {
-    const sorted = [...entries].sort((a, b) => {
-      const scoreA = (a.favorite > 0 ? 6 : 0) + (a.active > 0 ? 4 : 0) + (a.paramList ? 2 : 0);
-      const scoreB = (b.favorite > 0 ? 6 : 0) + (b.active > 0 ? 4 : 0) + (b.paramList ? 2 : 0);
-      return scoreB - scoreA || a.repName.localeCompare(b.repName);
-    });
-    
-    return sorted.slice(0, 6).map((report) => ({
-      name: report.repName || report.repId || "Report",
-      score: (report.favorite > 0 ? 6 : 0) + (report.active > 0 ? 4 : 0) + (report.paramList ? 2 : 0),
-    }));
-  }, [entries]);
+  
 
   const categoryReportData = useMemo(() => {
     const counts = categories.map((category) => {
