@@ -57,6 +57,7 @@ import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydep
 import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
 import Arreasposition from "../mainTopics/general/Arreasposition";
 import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
+import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -246,7 +247,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"bill calculation": BillCalculation,
 	"listing of customers": ListingofCustomers,
 	"list of government accounts": ListOfGovernmentAccounts,
-	"largest 100 customer details": ActiveCustomersSalesByTariff,
+	"largest 100 customer details": Largest100CustomerDetails,
 	"sequence change accounts": ActiveCustomersSalesByTariff,
 	"retails journal": ActiveCustomersSalesByTariff,
 	"arrears position meter reader wise": Arreasposition,
