@@ -286,21 +286,23 @@ const AdminLanding = () => {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {kpiCards.map((kpi) => {
-            const Icon = kpi.icon;
-            return (
-              <div key={kpi.label} className={`flex flex-col justify-between rounded-xl p-5 shadow-sm border ${kpi.bgColor} ${kpi.borderColor}`}>
-                <div className="flex items-start justify-between">
-                  <p className="text-sm font-medium text-slate-700">{kpi.label}</p>
-                  <Icon className={`h-5 w-5 ${kpi.iconColor}`} />
+        <div className="rounded-2xl bg-white/95 p-4 shadow-sm ring-1 ring-slate-200">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {kpiCards.map((kpi) => {
+              const Icon = kpi.icon;
+              return (
+                <div key={kpi.label} className={`flex flex-col justify-between rounded-xl p-5 shadow-sm border ${kpi.bgColor} ${kpi.borderColor}`}>
+                  <div className="flex items-start justify-between">
+                    <p className="text-sm font-medium text-slate-700">{kpi.label}</p>
+                    <Icon className={`h-5 w-5 ${kpi.iconColor}`} />
+                  </div>
+                  <div className="mt-4">
+                    <h2 className="text-3xl font-semibold tracking-tight text-slate-900">{kpi.value}</h2>
+                  </div>
                 </div>
-                <div className="mt-4">
-                  <h2 className="text-3xl font-semibold tracking-tight text-slate-900">{kpi.value}</h2>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* Charts */}
