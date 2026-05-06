@@ -776,12 +776,12 @@ const DefaultDashboardPage: React.FC = () => {
         const [ordinaryRecords, bulkRecords] = await Promise.all([
           fetchSalesApiWithFallback(
             withRegion("/api/dashboard/salesCollection/range/ordinary"),
-            withRegion("/api/dashboard/salesCollection/range/ordinary"),
+            withRegion("/misapi/api/dashboard/salesCollection/range/ordinary"),
             "Ordinary sales/collection"
           ),
           fetchSalesApiWithFallback(
             withRegion("/api/dashboard/salesCollection/range/bulk"),
-            withRegion("/api/dashboard/salesCollection/range/bulk"),
+            withRegion("/misapi/api/dashboard/salesCollection/range/bulk"),
             "Bulk sales/collection"
           ),
         ]);
@@ -1042,28 +1042,11 @@ const DefaultDashboardPage: React.FC = () => {
 
     return `${formatIsoDate(startDate)} to ${formatIsoDate(endDate)}`;
   };
-  const formatMonthDayLabel = (value: string) => {
-    const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
-    ];
+  // Kiosk dates are now in dd-MM-yy format (consistent with BillCalculation)
+  const formatKioskDateTick = (value: string) => String(value);  // Already formatted by backend as dd-MM-yy
 
-    const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (isoMatch) {
-      const monthIndex = Number(isoMatch[2]) - 1;
-      return `${months[monthIndex] || isoMatch[2]}-${isoMatch[3]}`;
-    }
-
-    const monthDayMatch = value.match(/^(\d{2})-(\d{2})$/);
-    if (monthDayMatch) {
-      const monthIndex = Number(monthDayMatch[1]) - 1;
-      return `${months[monthIndex] || monthDayMatch[1]}-${monthDayMatch[2]}`;
-    }
-
-    return value;
-  };
-
-  const formatKioskDateTick = (value: string) => formatMonthDayLabel(value);
+  // Sales dates are now in dd-MM-yy format (consistent with BillCalculation)
+  const formatSalesDateLabel = (date: string) => String(date);  // Already formatted by backend as dd-MM-yy
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -1436,7 +1419,7 @@ const DefaultDashboardPage: React.FC = () => {
                               />
                               <Tooltip
                                 formatter={(value: any) => formatCurrency(Number(value) || 0)}
-                                labelFormatter={(label: any) => formatMonthDayLabel(String(label))}
+                                labelFormatter={(label: any) => String(label)}
                                 labelStyle={{ fontWeight: 700 }}
                               />
                               <Line
@@ -1554,7 +1537,7 @@ const DefaultDashboardPage: React.FC = () => {
                           <div className="h-64 flex items-center justify-center text-red-400 text-sm">{salesCollectionError}</div>
                         ) : (
                           <div className="h-full flex flex-col">
-                            <DrawingLineChart data={salesLineData} formatCurrency={formatCurrency} formatCompact={formatCompact} formatDateLabel={formatMonthDayLabel} chartKey={salesChartKey} />
+                            <DrawingLineChart data={salesLineData} formatCurrency={formatCurrency} formatCompact={formatCompact} formatDateLabel={formatSalesDateLabel} chartKey={salesChartKey} />
                           </div>
                         )}
                       </div>
