@@ -651,7 +651,7 @@ const DefaultDashboardPage: React.FC = () => {
     const fetchOrdinaryCount = async () => {
       setCustomerCountsLoading(true); setCustomerCountsError(null);
       try {
-        const res  = await fetch(withRegion(`/api/dashboard/ordinary-customers-summary?billCycle=0`), { headers: { Accept: "application/json" } });
+        const res  = await fetch(withRegion(`/misapi/api/dashboard/ordinary-customers-summary?billCycle=0`), { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, ordinary: json?.data?.TotalCount ?? 0 }));
@@ -666,7 +666,7 @@ const DefaultDashboardPage: React.FC = () => {
     const fetchBulkCount = async () => {
       setBulkCountLoading(true); setBulkCountError(null);
       try {
-        const res  = await fetch(withRegion("/api/dashboard/customers/active-count"), { headers: { Accept: "application/json" } });
+        const res  = await fetch(withRegion("/misapi/api/dashboard/customers/active-count"), { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, bulk: json?.data?.activeCustomerCount ?? 0 }));
@@ -680,13 +680,13 @@ const DefaultDashboardPage: React.FC = () => {
     const fetchSolarCustomerData = async () => {
       setSolarLoading(true); setSolarError(null);
       try {
-        const maxRes = await fetch(`/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
+        const maxRes = await fetch(`/misapi/api/dashboard/solar-ordinary-customers/billcycle/max`, { headers: { Accept: "application/json" } });
         if (!maxRes.ok) throw new Error(`Failed to fetch max bill cycle`);
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-1`), { headers: { Accept: "application/json" } }),
-          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-2`), { headers: { Accept: "application/json" } }),
-          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-3`), { headers: { Accept: "application/json" } }),
-          fetch(withRegion(`/api/dashboard/solar-ordinary-customers/count/net-type-4`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-1`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-2`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-3`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/misapi/api/dashboard/solar-ordinary-customers/count/net-type-4`), { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch one or more net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -710,10 +710,10 @@ const DefaultDashboardPage: React.FC = () => {
       setBulkSolarLoading(true);
       try {
         const [r1, r2, r3, r4] = await Promise.all([
-          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-1`), { headers: { Accept: "application/json" } }),
-          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-2`), { headers: { Accept: "application/json" } }),
-          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-3`), { headers: { Accept: "application/json" } }),
-          fetch(withRegion(`/api/dashboard/solar-bulk-customers/count/net-type-4`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-1`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-2`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-3`), { headers: { Accept: "application/json" } }),
+          fetch(withRegion(`/misapi/api/dashboard/solar-bulk-customers/count/net-type-4`), { headers: { Accept: "application/json" } }),
         ]);
         if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) throw new Error("Failed to fetch bulk solar net-type counts");
         const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
@@ -776,12 +776,12 @@ const DefaultDashboardPage: React.FC = () => {
         const [ordinaryRecords, bulkRecords] = await Promise.all([
           fetchSalesApiWithFallback(
             withRegion("/api/dashboard/salesCollection/range/ordinary"),
-            withRegion("/api/dashboard/salesCollection/range/ordinary"),
+            withRegion("/misapi/api/dashboard/salesCollection/range/ordinary"),
             "Ordinary sales/collection"
           ),
           fetchSalesApiWithFallback(
             withRegion("/api/dashboard/salesCollection/range/bulk"),
-            withRegion("/api/dashboard/salesCollection/range/bulk"),
+            withRegion("/misapi/api/dashboard/salesCollection/range/bulk"),
             "Bulk sales/collection"
           ),
         ]);
@@ -846,8 +846,8 @@ const DefaultDashboardPage: React.FC = () => {
       setSolarCapacityError(null);
 
       try {
-        const ordinaryEndpoint = "/api/dashboard/solar-ordinary-customers/generation-capacity";
-        const bulkEndpoint = "/api/dashboard/solar-bulk-customers/generation-capacity";
+        const ordinaryEndpoint = "/misapi/api/dashboard/solar-ordinary-customers/generation-capacity";
+        const bulkEndpoint = "/misapi/api/dashboard/solar-bulk-customers/generation-capacity";
 
         const ordinaryData = await fetchCapacityByEndpoint(ordinaryEndpoint, selectedSolarBillCycle);
 
@@ -1042,28 +1042,11 @@ const DefaultDashboardPage: React.FC = () => {
 
     return `${formatIsoDate(startDate)} to ${formatIsoDate(endDate)}`;
   };
-  const formatMonthDayLabel = (value: string) => {
-    const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
-    ];
+  // Kiosk dates are now in dd-MM-yy format (consistent with BillCalculation)
+  const formatKioskDateTick = (value: string) => String(value);  // Already formatted by backend as dd-MM-yy
 
-    const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (isoMatch) {
-      const monthIndex = Number(isoMatch[2]) - 1;
-      return `${months[monthIndex] || isoMatch[2]}-${isoMatch[3]}`;
-    }
-
-    const monthDayMatch = value.match(/^(\d{2})-(\d{2})$/);
-    if (monthDayMatch) {
-      const monthIndex = Number(monthDayMatch[1]) - 1;
-      return `${months[monthIndex] || monthDayMatch[1]}-${monthDayMatch[2]}`;
-    }
-
-    return value;
-  };
-
-  const formatKioskDateTick = (value: string) => formatMonthDayLabel(value);
+  // Sales dates are now in dd-MM-yy format (consistent with BillCalculation)
+  const formatSalesDateLabel = (date: string) => String(date);  // Already formatted by backend as dd-MM-yy
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -1354,13 +1337,13 @@ const DefaultDashboardPage: React.FC = () => {
                     })}
                   </div>
 
-                  {/* Customize button */}
-                  <div className="flex justify-end mb-6">
+                 {/* Customize button */}
+                  {/* <div className="flex justify-end mb-6">
                     <button onClick={() => setShowMoreCards(!showMoreCards)}
                       className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                       {showMoreCards ? <><EyeOff className="w-4 h-4" /> Hide Cards</> : <><Eye className="w-4 h-4" /> Show More Cards</>}
                     </button>
-                  </div>
+                  </div> */}
 
                   {/* Card selection panel */}
                   {showMoreCards && (
@@ -1436,7 +1419,7 @@ const DefaultDashboardPage: React.FC = () => {
                               />
                               <Tooltip
                                 formatter={(value: any) => formatCurrency(Number(value) || 0)}
-                                labelFormatter={(label: any) => formatMonthDayLabel(String(label))}
+                                labelFormatter={(label: any) => String(label)}
                                 labelStyle={{ fontWeight: 700 }}
                               />
                               <Line
@@ -1554,7 +1537,7 @@ const DefaultDashboardPage: React.FC = () => {
                           <div className="h-64 flex items-center justify-center text-red-400 text-sm">{salesCollectionError}</div>
                         ) : (
                           <div className="h-full flex flex-col">
-                            <DrawingLineChart data={salesLineData} formatCurrency={formatCurrency} formatCompact={formatCompact} formatDateLabel={formatMonthDayLabel} chartKey={salesChartKey} />
+                            <DrawingLineChart data={salesLineData} formatCurrency={formatCurrency} formatCompact={formatCompact} formatDateLabel={formatSalesDateLabel} chartKey={salesChartKey} />
                           </div>
                         )}
                       </div>

@@ -221,7 +221,7 @@ const ListingOfCustomers: React.FC = () => {
         // inputs fall back to free-text when no options are available.
         try {
           const fRes = await fetch(
-            `/api/listing-of-customers/filters?areaCode=${areaCode}&billCycle=${resolvedBc}`,
+            `/misapi/api/listing-of-customers/filters?areaCode=${areaCode}&billCycle=${resolvedBc}`,
             { headers: { Accept: "application/json" } }
           );
 

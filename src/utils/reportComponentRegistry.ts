@@ -34,6 +34,7 @@ import CostCenterwisePivDetails from "../mainTopics/PIV/CostCenterwisePivDetails
 // Analysis reports
 import DebtorsAnalysis from "../mainTopics/Analysis/DebtorsAnalysis";
 import AgeAnalysis from "../mainTopics/Analysis/AgeAnalysis";
+import SolarAgeAnalysis from "../mainTopics/Analysis/SolarAgeAnalysis";
 
 // Billing & Payment reports
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
@@ -59,6 +60,7 @@ import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAcco
 import Arreasposition from "../mainTopics/general/Arreasposition";
 import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
 import LargestCus from "../mainTopics/general/LargestCus";
+import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -117,6 +119,7 @@ import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustom
 // Solar Jobs reports
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
 import SolarPendingJobsReport from "../mainTopics/SolarJobs/SolarPendingJobsReport";
+import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
 
 // Solar Religious Purpose reports
 import AreaWiseSRPApplicationPIV from "../mainTopics/SRP/AreaWiseSRPApplicationPIV";
@@ -207,6 +210,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"debtors age analysis individual customers": AgeAnalysis,
 	"age analysis bulk": AgeAnalysis,
 	"consumption pattern analysis": AgeAnalysis,
+	"age analysis of solar power consumers": SolarAgeAnalysis,
 
 	// Billing & Payment reports
 	"customer information": CustomerDetails,
@@ -249,7 +253,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"listing of customers": ListingofCustomers,
 	"list of government accounts": ListOfGovernmentAccounts,
 	"largest 50 customers details ordinary": LargestCus,
-	"largest 100 customer details": ActiveCustomersSalesByTariff,
+	"largest 100 customer details": Largest100CustomerDetails,
 	"sequence change accounts": ActiveCustomersSalesByTariff,
 	"retails journal": ActiveCustomersSalesByTariff,
 	"arrears position meter reader wise": Arreasposition,
@@ -337,6 +341,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
 	"solar retail rooftop pending jobs after piv2 paid": SolarPendingJobsReport,
+	"solar rooftop applications within the selected cost centre": CcApplicationProgress,
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,
