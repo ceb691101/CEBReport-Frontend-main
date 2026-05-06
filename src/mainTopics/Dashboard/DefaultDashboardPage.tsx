@@ -776,12 +776,12 @@ const DefaultDashboardPage: React.FC = () => {
         const [ordinaryRecords, bulkRecords] = await Promise.all([
           fetchSalesApiWithFallback(
             withRegion("/api/dashboard/salesCollection/range/ordinary"),
-            withRegion("/api/dashboard/salesCollection/range/ordinary"),
+            withRegion("/misapi/api/dashboard/salesCollection/range/ordinary"),
             "Ordinary sales/collection"
           ),
           fetchSalesApiWithFallback(
             withRegion("/api/dashboard/salesCollection/range/bulk"),
-            withRegion("/api/dashboard/salesCollection/range/bulk"),
+            withRegion("/misapi/api/dashboard/salesCollection/range/bulk"),
             "Bulk sales/collection"
           ),
         ]);
