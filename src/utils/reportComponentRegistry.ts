@@ -41,6 +41,7 @@ import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
 
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
+import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 
 // Consumption Analysis reports
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
@@ -58,6 +59,7 @@ import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydep
 import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
 import Arreasposition from "../mainTopics/general/Arreasposition";
 import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
+import LargestCus from "../mainTopics/general/LargestCus";
 import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
 
 // Income & Expenditure reports
@@ -226,6 +228,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"monthly revenue collection of different channels": DishonouredCheques,
 	"kiosk payment collection": DishonouredCheques,
 	"payment collection": DishonouredCheques,
+	"head office collection total": HeadOfficeCollectionTotal,
 	"suspense payment details": DishonouredCheques,
 	"finalized account details": DishonouredCheques,
 	"written off account details": DishonouredCheques,
@@ -249,6 +252,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"bill calculation": BillCalculation,
 	"listing of customers": ListingofCustomers,
 	"list of government accounts": ListOfGovernmentAccounts,
+	"largest 50 customers details ordinary": LargestCus,
 	"largest 100 customer details": Largest100CustomerDetails,
 	"sequence change accounts": ActiveCustomersSalesByTariff,
 	"retails journal": ActiveCustomersSalesByTariff,
