@@ -111,7 +111,7 @@ const TopCustomers: React.FC = () => {
 
     try {
       const response = await apiFetch<any>(
-        `/misapi/api/dashboard/top-customers/list?take=${takeSnapshot}`
+        `/api/dashboard/top-customers/list?take=${takeSnapshot}`
       );
 
       if (response.errorMessage) {
