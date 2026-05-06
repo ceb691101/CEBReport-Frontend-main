@@ -2,24 +2,10 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useMemo,
   useCallback,
 } from "react";
 import { FaFileDownload, FaPrint } from "react-icons/fa";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LabelList,
-} from "recharts";
+// charts removed per request
 
 // Interfaces
 interface Area {
@@ -85,14 +71,9 @@ const SolarAgeAnalysis: React.FC = () => {
   const [reportError, setReportError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
 
-  // Chart state
-  const [showChart, setShowChart] = useState(false);
-  const [chartType, setChartType] = useState<"bar" | "pie">("bar");
+  // chart removed
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(100);
-  const [totalRecords, setTotalRecords] = useState(0);
+  const [allCustomers, setAllCustomers] = useState<SolarCustomer[]>([]);
 
   // Age groups for Solar Customers (in years)
   const ageGroups = [
@@ -116,6 +97,7 @@ const SolarAgeAnalysis: React.FC = () => {
 
   // Summary data
   const [ageGroupSummary, setAgeGroupSummary] = useState<AgeGroupSummary[]>([]);
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState<string | null>(null);
 
   // Helper functions
   const generateBillCycleOptions = (
@@ -128,8 +110,12 @@ const SolarAgeAnalysis: React.FC = () => {
   };
 
   const getFormattedBillCycle = (): string => {
-    const cycleOption = billCycleOptions.find(c => c.code === formData.billCycle);
-    return cycleOption ? `${formData.billCycle} - ${cycleOption.display}` : formData.billCycle;
+    const cycleOption = billCycleOptions.find(
+      (c) => c.code === formData.billCycle
+    );
+    return cycleOption
+      ? `${formData.billCycle} - ${cycleOption.display}`
+      : formData.billCycle;
   };
 
   const fetchWithErrorHandling = async (url: string, timeout = 60000) => {
@@ -247,34 +233,7 @@ const SolarAgeAnalysis: React.FC = () => {
     []
   );
 
-  // Paginated data
-  const paginatedCustomers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return customers.slice(startIndex, endIndex);
-  }, [customers, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(customers.length / itemsPerPage);
-
-  // Chart data
-  const chartData = useMemo(() => {
-    return ageGroupSummary.map((item, index) => ({
-      name: item.ageGroup,
-      value: item.count,
-      color: [
-        "#1E3A8A",
-        "#10B981",
-        "#F59E0B",
-        "#6366F1",
-        "#3B82F6",
-        "#6B7280",
-        "#9CA3AF",
-        "#EC4899",
-        "#8B5CF6",
-        "#EF4444",
-      ][index % 10],
-    }));
-  }, [ageGroupSummary]);
+  // charts removed
 
   // Event handlers
   const handleInputChange = useCallback(
@@ -292,7 +251,7 @@ const SolarAgeAnalysis: React.FC = () => {
     setReportLoading(true);
     setReportError(null);
     setCustomers([]);
-    setCurrentPage(1);
+    setAllCustomers([]);
 
     try {
       const url = `/api/analysis/solar-age/view?areaCode=${formData.areaCode}&billCycle=${formData.billCycle}&ageBand=all`;
@@ -311,8 +270,8 @@ const SolarAgeAnalysis: React.FC = () => {
 
       const records = resultData.Records || [];
 
+      setAllCustomers(records);
       setCustomers(records);
-      setTotalRecords(records.length);
 
       if (resultData.AgeBandCounts && Object.keys(resultData.AgeBandCounts).length > 0) {
         const summary = ageGroups.map((group) => ({
@@ -347,6 +306,42 @@ const SolarAgeAnalysis: React.FC = () => {
         errorMessage += err.message || err.toString();
       }
 
+      setReportError(errorMessage);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const loadAgeGroupDetails = async (ageBand: string) => {
+    if (!formData.areaCode || !formData.billCycle) return;
+
+    setReportLoading(true);
+    setReportError(null);
+
+    try {
+      const url = `/api/analysis/solar-age/view?areaCode=${formData.areaCode}&billCycle=${formData.billCycle}&ageBand=${encodeURIComponent(ageBand)}`;
+      const data = await fetchWithErrorHandling(url, 120000);
+
+      if (data.errorMessage) {
+        throw new Error(data.errorMessage);
+      }
+
+      const resultData = (data.data || {}) as SolarAgeAnalysisApiResult;
+      if (resultData.ErrorMessage) {
+        throw new Error(resultData.ErrorMessage);
+      }
+
+      const records = resultData.Records || [];
+      setCustomers(records);
+      setSelectedAgeGroup(ageBand);
+    } catch (err: any) {
+      let errorMessage = "Error fetching report: ";
+      if (err.message.includes("timed out")) {
+        errorMessage +=
+          "The request timed out. Please try again or select a smaller area.";
+      } else {
+        errorMessage += err.message || err.toString();
+      }
       setReportError(errorMessage);
     } finally {
       setReportLoading(false);
@@ -428,7 +423,6 @@ const SolarAgeAnalysis: React.FC = () => {
               <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Address</th>
               <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Net Type</th>
               <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Initial Agreement Date</th>
-              <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Age (Years)</th>
             </tr>
           </thead>
           <tbody>`;
@@ -451,9 +445,6 @@ const SolarAgeAnalysis: React.FC = () => {
             }</td>
             <td style="border: 1px solid #ddd; padding: 2px 4px; font-size: 10px; vertical-align: top;">${
               customer.InitialAgreementDate
-            }</td>
-            <td style="border: 1px solid #ddd; padding: 2px 4px; text-align: center; font-size: 10px; vertical-align: top;">${
-              customer.AgeInYears?.toString() || "N/A"
             }</td>
           </tr>`;
       });
@@ -530,219 +521,16 @@ const SolarAgeAnalysis: React.FC = () => {
   };
 
   // UI helpers
-  const formatCurrency = (value: number): string => {
-    return value.toLocaleString("en-US", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    });
-  };
-
   const handleBack = () => {
     setShowReport(false);
     setCustomers([]);
+    setAllCustomers([]);
     setReportError(null);
-    setCurrentPage(1);
-    setTotalRecords(0);
-    setShowChart(false);
     setAgeGroupSummary([]);
+    setSelectedAgeGroup(null);
   };
 
-  const renderChart = () => {
-    if (!showChart || !chartData.length) {
-      return null;
-    }
-
-    return (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="font-medium text-gray-800">
-            Age Distribution Visualization
-          </h4>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setChartType("bar")}
-              className={`px-3 py-1 rounded text-sm ${
-                chartType === "bar"
-                  ? "bg-[#7A0000] text-white"
-                  : "bg-gray-200 hover:bg-gray-300"
-              }`}
-            >
-              Bar Chart
-            </button>
-            <button
-              onClick={() => setChartType("pie")}
-              className={`px-3 py-1 rounded text-sm ${
-                chartType === "pie"
-                  ? "bg-[#7A0000] text-white"
-                  : "bg-gray-200 hover:bg-gray-300"
-              }`}
-            >
-              Pie Chart
-            </button>
-          </div>
-        </div>
-
-        <div style={{ width: "100%", height: "400px" }}>
-          {chartType === "bar" ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis
-                  tick={{ fontSize: 11 }}
-                  tickFormatter={(value) => {
-                    if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-                    return value.toString();
-                  }}
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(0,0,0,0.05)" }}
-                  formatter={(value) => [formatCurrency(Number(value)), "Count"]}
-                  labelStyle={{ fontSize: "12px" }}
-                />
-                <Legend
-                  payload={chartData.map((item) => ({
-                    id: item.name,
-                    type: "square",
-                    value: item.name,
-                    color: item.color,
-                  }))}
-                />
-
-                <Bar
-                  dataKey="value"
-                  name="Customer Count"
-                  radius={[6, 6, 0, 0]}
-                  isAnimationActive={true}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`bar-cell-${index}`} fill={entry.color} />
-                  ))}
-                  <LabelList
-                    dataKey="value"
-                    position="top"
-                    formatter={(val: number) => formatCurrency(val)}
-                    style={{ fontSize: "10px", fill: "#333" }}
-                  />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={150}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(1)}%`
-                  }
-                  labelLine={false}
-                  fontSize={11}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value) => [
-                    formatCurrency(Number(value)),
-                    "Count",
-                  ]}
-                  labelStyle={{ fontSize: "12px" }}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-
-    const pageNumbers = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
-    }
-
-    return (
-      <div className="flex justify-center items-center gap-2 my-4">
-        <button
-          onClick={() => setCurrentPage(1)}
-          disabled={currentPage === 1}
-          className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50"
-        >
-          First
-        </button>
-        <button
-          onClick={() => setCurrentPage(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-
-        {pageNumbers.map((pageNum) => (
-          <button
-            key={pageNum}
-            onClick={() => setCurrentPage(pageNum)}
-            className={`px-2 py-1 text-xs rounded ${
-              currentPage === pageNum
-                ? "bg-[#7A0000] text-white"
-                : "bg-gray-200 hover:bg-gray-300"
-            }`}
-          >
-            {pageNum}
-          </button>
-        ))}
-
-        <button
-          onClick={() => setCurrentPage(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
-        <button
-          onClick={() => setCurrentPage(totalPages)}
-          disabled={currentPage === totalPages}
-          className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50"
-        >
-          Last
-        </button>
-
-        <span className="text-xs text-gray-600 ml-4">
-          Showing {(currentPage - 1) * itemsPerPage + 1}-
-          {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords}{" "}
-          records
-        </span>
-      </div>
-    );
-  };
+  // renderChart removed
 
   const renderForm = () => (
     <>
@@ -866,27 +654,122 @@ const SolarAgeAnalysis: React.FC = () => {
 
     return (
       <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded">
-        <h4 className={`${maroon} font-medium mb-3`}>
-          Age Distribution Summary
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          {ageGroupSummary.map((item, index) => (
-            <div
-              key={index}
-              className="bg-white border border-blue-200 rounded p-3"
-            >
-              <p className="text-xs font-medium text-gray-600 mb-1">
-                {item.ageGroup}
-              </p>
-              <p className={`${maroon} text-lg font-bold`}>
-                {item.count}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {item.percentage}%
-              </p>
-            </div>
-          ))}
+        <div className="space-y-1">
+          {ageGroupSummary.map((item, index) => {
+            const ageGroupValue = ageGroups[index]?.value || "";
+            const isSelected = selectedAgeGroup === ageGroupValue;
+            return (
+              <div
+                key={index}
+                className={`flex items-center justify-between gap-2 rounded border px-2 py-1.5 ${
+                  isSelected
+                    ? "border-[#7A0000] bg-red-50"
+                    : "border-gray-200 bg-white"
+                }`}
+              >
+                <div className="text-sm font-medium text-gray-800 leading-none">
+                  {item.ageGroup}
+                </div>
+                <button
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedAgeGroup(null);
+                      setCustomers(allCustomers);
+                      return;
+                    }
+                    void loadAgeGroupDetails(ageGroupValue);
+                  }}
+                  className={`px-2.5 py-1 text-xs rounded-md font-medium whitespace-nowrap ${isSelected ? "bg-[#7A0000] text-white" : "bg-white border border-gray-300 text-[#7A0000] hover:bg-[#7A0000] hover:text-white"}`}
+                >
+                  {isSelected ? "Viewing" : "View"}
+                </button>
+              </div>
+            );
+          })}
         </div>
+      </div>
+    );
+  };
+
+  const getFilteredCustomers = () => {
+    return customers;
+  };
+
+  const renderFilteredTable = () => {
+    if (!selectedAgeGroup) return null;
+
+    const filteredData = getFilteredCustomers();
+    const selectedLabel = ageGroups.find((g) => g.value === selectedAgeGroup)?.label || selectedAgeGroup;
+
+    return (
+      <div className="mt-8 p-4 bg-white border border-gray-300 rounded">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className={`text-lg font-semibold ${maroon}`}>
+            Customers: {selectedLabel}
+          </h3>
+          <button
+            onClick={() => setSelectedAgeGroup(null)}
+            className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white"
+          >
+            Clear Filter
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-600 mb-4">
+          Total: <span className="font-bold">{filteredData.length}</span> customers
+        </p>
+
+        {filteredData.length === 0 ? (
+          <p className="text-gray-500 text-sm">No customers found in this age group.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
+                    Account Number
+                  </th>
+                  <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
+                    Name
+                  </th>
+                  <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
+                    Address
+                  </th>
+                  <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
+                    Net Type
+                  </th>
+                  <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
+                    Initial Agreement Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredData.map((customer, index) => (
+                  <tr
+                    key={`${customer.AccountNumber}-${index}`}
+                    className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  >
+                    <td className="border border-gray-300 px-2 py-1">
+                      {customer.AccountNumber}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1">
+                      {customer.Name}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1">
+                      {customer.Address}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1">
+                      {customer.NetType}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1">
+                      {customer.InitialAgreementDate}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     );
   };
@@ -916,13 +799,7 @@ const SolarAgeAnalysis: React.FC = () => {
               <FaPrint className="w-3 h-3" /> PDF
             </button>
 
-            <button
-              onClick={() => setShowChart(!showChart)}
-              className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
-              disabled={!customers.length}
-            >
-              {showChart ? "Hide Chart" : "Show Chart"}
-            </button>
+            {/* chart removed */}
             <button
               onClick={handleBack}
               className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
@@ -981,64 +858,10 @@ const SolarAgeAnalysis: React.FC = () => {
             {/* Summary Section */}
             {renderSummary()}
 
-            {/* Chart Section */}
-            {renderChart()}
+            {/* Chart removed */}
 
-            {renderPagination()}
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
-                      Account Number
-                    </th>
-                    <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
-                      Name
-                    </th>
-                    <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
-                      Address
-                    </th>
-                    <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
-                      Net Type
-                    </th>
-                    <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
-                      Initial Agreement Date
-                    </th>
-                    <th className="border border-gray-300 px-2 py-1 text-center sticky top-0 bg-gray-100">
-                      Age (Years)
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedCustomers.map((customer, index) => (
-                    <tr
-                      key={`${customer.AccountNumber}-${index}`}
-                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                    >
-                      <td className="border border-gray-300 px-2 py-1">
-                        {customer.AccountNumber}
-                      </td>
-                      <td className="border border-gray-300 px-2 py-1">
-                        {customer.Name}
-                      </td>
-                      <td className="border border-gray-300 px-2 py-1">
-                        {customer.Address}
-                      </td>
-                      <td className="border border-gray-300 px-2 py-1">
-                        {customer.NetType}
-                      </td>
-                      <td className="border border-gray-300 px-2 py-1">
-                        {customer.InitialAgreementDate}
-                      </td>
-                      <td className="border border-gray-300 px-2 py-1 text-center">
-                        {customer.AgeInYears?.toString() || "N/A"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* Filtered Table Section */}
+            {renderFilteredTable()}
           </>
         )}
       </div>
