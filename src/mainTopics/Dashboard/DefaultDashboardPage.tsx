@@ -651,7 +651,7 @@ const DefaultDashboardPage: React.FC = () => {
     const fetchOrdinaryCount = async () => {
       setCustomerCountsLoading(true); setCustomerCountsError(null);
       try {
-        const res  = await fetch(withRegion(`/misapi/api/dashboard/ordinary-customers-summary?billCycle=0`), { headers: { Accept: "application/json" } });
+        const res  = await fetch(withRegion(`/api/dashboard/ordinary-customers-summary?billCycle=0`), { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, ordinary: json?.data?.TotalCount ?? 0 }));
@@ -1166,6 +1166,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "totalCustomers") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Total Customers"
                             value={customerCountsLoading && bulkCountLoading ? "Loading..." : formatNumber(animatedTotal)}
@@ -1190,6 +1191,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "solarCustomers") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Solar Customers"
                             value={solarLoading || bulkSolarLoading ? "Loading..." : formatNumber(animatedSolar)}
@@ -1214,6 +1216,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "zeroConsumption") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Zero Consumption"
                             value={formatNumber(animatedZero)}
@@ -1233,6 +1236,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "kioskCollection") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Kiosk Collection"
                             value={kioskLoading ? "Loading..." : formatCurrency(animatedKiosk)}
@@ -1256,6 +1260,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "solarCapacity") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Solar Generation Capacity"
                             value={
@@ -1295,6 +1300,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "salesCollectionDistribution") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Sales & Collection Distribution"
                             value={
@@ -1338,12 +1344,12 @@ const DefaultDashboardPage: React.FC = () => {
                   </div>
 
                  {/* Customize button */}
-                  {/* <div className="flex justify-end mb-6">
+                  <div className="flex justify-end mb-6">
                     <button onClick={() => setShowMoreCards(!showMoreCards)}
                       className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                       {showMoreCards ? <><EyeOff className="w-4 h-4" /> Hide Cards</> : <><Eye className="w-4 h-4" /> Show More Cards</>}
                     </button>
-                  </div> */}
+                  </div>
 
                   {/* Card selection panel */}
                   {showMoreCards && (

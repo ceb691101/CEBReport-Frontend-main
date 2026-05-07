@@ -5,7 +5,6 @@ import React, {
   useCallback,
 } from "react";
 import { FaFileDownload, FaPrint } from "react-icons/fa";
-// charts removed per request
 
 // Interfaces
 interface Area {
@@ -36,6 +35,7 @@ interface SolarCustomer {
   Address: string;
   NetType: string;
   InitialAgreementDate: string;
+  PanelCapacity?: string;
   AgeInYears?: number;
   AgeGroup?: string;
   ErrorMessage?: string | null;
@@ -69,7 +69,12 @@ const SolarAgeAnalysis: React.FC = () => {
   const [customers, setCustomers] = useState<SolarCustomer[]>([]);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [fullReportLoading, setFullReportLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [reportMode, setReportMode] = useState<"age" | "full" | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 30;
 
   // chart removed
 
@@ -233,7 +238,6 @@ const SolarAgeAnalysis: React.FC = () => {
     []
   );
 
-  // charts removed
 
   // Event handlers
   const handleInputChange = useCallback(
@@ -247,8 +251,8 @@ const SolarAgeAnalysis: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.areaCode || !formData.billCycle) return;
-
     setReportLoading(true);
+    setViewLoading(true);
     setReportError(null);
     setCustomers([]);
     setAllCustomers([]);
@@ -272,6 +276,8 @@ const SolarAgeAnalysis: React.FC = () => {
 
       setAllCustomers(records);
       setCustomers(records);
+      setReportMode("age");
+      setCurrentPage(1);
 
       if (resultData.AgeBandCounts && Object.keys(resultData.AgeBandCounts).length > 0) {
         const summary = ageGroups.map((group) => ({
@@ -308,14 +314,65 @@ const SolarAgeAnalysis: React.FC = () => {
 
       setReportError(errorMessage);
     } finally {
+      setViewLoading(false);
+      setReportLoading(false);
+    }
+  };
+
+  const loadFullReport = async () => {
+    if (!formData.areaCode || !formData.billCycle) return;
+    setReportLoading(true);
+    setFullReportLoading(true);
+    setReportError(null);
+    setCustomers([]);
+    setAllCustomers([]);
+    setSelectedAgeGroup(null);
+    setReportMode("full");
+    setCurrentPage(1);
+
+    try {
+      const url = `/api/analysis/solar-age/full-report?areaCode=${formData.areaCode}&billCycle=${formData.billCycle}`;
+      const data = await fetchWithErrorHandling(url, 120000);
+
+      if (data.errorMessage) {
+        throw new Error(data.errorMessage);
+      }
+
+      const resultData = (data.data || {}) as SolarAgeAnalysisApiResult;
+      if (resultData.ErrorMessage) {
+        throw new Error(resultData.ErrorMessage);
+      }
+
+      const records = resultData.Records || [];
+      setAllCustomers(records);
+      setCustomers(records);
+      setAgeGroupSummary(calculateAgeGroupSummary(records));
+      setShowReport(true);
+
+      setTimeout(() => {
+        if (reportContainerRef.current) {
+          reportContainerRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 100);
+    } catch (err: any) {
+      let errorMessage = "Error fetching report: ";
+      if (err.message.includes("timed out")) {
+        errorMessage +=
+          "The request timed out. Please try again or select a smaller area.";
+      } else {
+        errorMessage += err.message || err.toString();
+      }
+      setReportError(errorMessage);
+    } finally {
+      setFullReportLoading(false);
       setReportLoading(false);
     }
   };
 
   const loadAgeGroupDetails = async (ageBand: string) => {
     if (!formData.areaCode || !formData.billCycle) return;
-
     setReportLoading(true);
+    setViewLoading(true);
     setReportError(null);
 
     try {
@@ -334,6 +391,8 @@ const SolarAgeAnalysis: React.FC = () => {
       const records = resultData.Records || [];
       setCustomers(records);
       setSelectedAgeGroup(ageBand);
+      setReportMode("age");
+      setCurrentPage(1);
     } catch (err: any) {
       let errorMessage = "Error fetching report: ";
       if (err.message.includes("timed out")) {
@@ -344,6 +403,7 @@ const SolarAgeAnalysis: React.FC = () => {
       }
       setReportError(errorMessage);
     } finally {
+      setViewLoading(false);
       setReportLoading(false);
     }
   };
@@ -351,34 +411,57 @@ const SolarAgeAnalysis: React.FC = () => {
   const downloadAsCSV = useCallback(() => {
     if (!customers.length) return;
 
-    const headers = [
-      "Account Number",
-      "Name",
-      "Address",
-      "Net Type",
-      "Initial Agreement Date",
-      "Age (Years)",
-    ];
+    const isFullReport = reportMode === "full";
+    const headers = isFullReport
+      ? [
+          "Account Number",
+          "Name",
+          "Address",
+          "Type",
+          "Initial Agreement Date",
+          "Panel Capacity",
+        ]
+      : [
+          "Account Number",
+          "Name",
+          "Address",
+          "Net Type",
+          "Initial Agreement Date",
+          "Age (Years)",
+        ];
 
-    const rows = customers.map((customer) => [
-      customer.AccountNumber,
-      customer.Name,
-      customer.Address,
-      customer.NetType,
-      customer.InitialAgreementDate,
-      customer.AgeInYears?.toString() || "N/A",
-    ]);
+    const rows = customers.map((customer) =>
+      isFullReport
+        ? [
+            customer.AccountNumber,
+            customer.Name,
+            customer.Address,
+            customer.NetType,
+            customer.InitialAgreementDate,
+            customer.PanelCapacity || "",
+          ]
+        : [
+            customer.AccountNumber,
+            customer.Name,
+            customer.Address,
+            customer.NetType,
+            customer.InitialAgreementDate,
+            customer.AgeInYears?.toString() || "N/A",
+          ]
+    );
 
-    // Add summary section at the end
-    const summaryRows = [
-      [],
-      ["Age Group Summary"],
-      ...ageGroupSummary.map((item) => [
-        item.ageGroup,
-        item.count.toString(),
-        `${item.percentage}%`,
-      ]),
-    ];
+    const summaryRows =
+      isFullReport
+        ? []
+        : [
+            [],
+            ["Age Group Summary"],
+            ...ageGroupSummary.map((item) => [
+              item.ageGroup,
+              item.count.toString(),
+              `${item.percentage}%`,
+            ]),
+          ];
 
     const csvContent = [
       `"Solar Age Analysis Report"`,
@@ -412,6 +495,7 @@ const SolarAgeAnalysis: React.FC = () => {
     if (!customers.length) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
+    const isFullReport = reportMode === "full";
 
     const generateTableHTML = () => {
       let tableHTML = `
@@ -421,8 +505,9 @@ const SolarAgeAnalysis: React.FC = () => {
               <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Account Number</th>
               <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Name</th>
               <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Address</th>
-              <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Net Type</th>
+              <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">${isFullReport ? "Type" : "Net Type"}</th>
               <th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Initial Agreement Date</th>
+              ${isFullReport ? '<th style="border: 1px solid #ddd; padding: 2px 4px; text-align: left; font-size: 10px; vertical-align: top; font-weight: bold;">Panel Capacity</th>' : ''}
             </tr>
           </thead>
           <tbody>`;
@@ -446,6 +531,7 @@ const SolarAgeAnalysis: React.FC = () => {
             <td style="border: 1px solid #ddd; padding: 2px 4px; font-size: 10px; vertical-align: top;">${
               customer.InitialAgreementDate
             }</td>
+            ${isFullReport ? `<td style="border: 1px solid #ddd; padding: 2px 4px; font-size: 10px; vertical-align: top;">${customer.PanelCapacity || ""}</td>` : ''}
           </tr>`;
       });
 
@@ -528,9 +614,10 @@ const SolarAgeAnalysis: React.FC = () => {
     setReportError(null);
     setAgeGroupSummary([]);
     setSelectedAgeGroup(null);
+    setReportMode(null);
+    setCurrentPage(1);
   };
 
-  // renderChart removed
 
   const renderForm = () => (
     <>
@@ -593,18 +680,14 @@ const SolarAgeAnalysis: React.FC = () => {
         <div className="w-full mt-6 flex justify-end gap-3">
           <button
             type="submit"
-            disabled={reportLoading || !formData.areaCode || !formData.billCycle}
+            disabled={viewLoading || fullReportLoading || !formData.areaCode || !formData.billCycle}
             className={`
               px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
               ${maroonGrad} text-white
-              ${
-                reportLoading
-                  ? "opacity-70 cursor-not-allowed"
-                  : "hover:opacity-90"
-              }
+              ${viewLoading || fullReportLoading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"}
             `}
           >
-            {reportLoading ? (
+            {viewLoading ? (
               <span className="flex items-center">
                 <svg
                   className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -634,15 +717,32 @@ const SolarAgeAnalysis: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => {}}
-            title="Coming soon"
+            onClick={loadFullReport}
+            disabled={viewLoading || fullReportLoading || !formData.areaCode || !formData.billCycle}
             className={`
               px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
               ${maroonGrad} text-white
-              opacity-70 cursor-not-allowed
+              ${viewLoading || fullReportLoading || !formData.areaCode || !formData.billCycle
+                  ? "opacity-70 cursor-not-allowed"
+                  : "hover:opacity-90"}
             `}
           >
-            Full Report
+            {fullReportLoading ? (
+              <span className="flex items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading...
+              </span>
+            ) : (
+              "Full Report"
+            )}
           </button>
         </div>
       </form>
@@ -675,6 +775,7 @@ const SolarAgeAnalysis: React.FC = () => {
                     if (isSelected) {
                       setSelectedAgeGroup(null);
                       setCustomers(allCustomers);
+                      setCurrentPage(1);
                       return;
                     }
                     void loadAgeGroupDetails(ageGroupValue);
@@ -696,10 +797,20 @@ const SolarAgeAnalysis: React.FC = () => {
   };
 
   const renderFilteredTable = () => {
-    if (!selectedAgeGroup) return null;
+    if (!reportMode) return null;
 
     const filteredData = getFilteredCustomers();
-    const selectedLabel = ageGroups.find((g) => g.value === selectedAgeGroup)?.label || selectedAgeGroup;
+    const selectedLabel =
+      reportMode === "full"
+        ? "Full Report"
+        : ageGroups.find((g) => g.value === selectedAgeGroup)?.label || selectedAgeGroup;
+    const isFullReport = reportMode === "full";
+    const showDetailsTable = isFullReport || Boolean(selectedAgeGroup);
+    const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
+    const safePage = Math.min(currentPage, totalPages);
+    const startIndex = (safePage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedData = filteredData.slice(startIndex, endIndex);
 
     return (
       <div className="mt-8 p-4 bg-white border border-gray-300 rounded">
@@ -707,21 +818,27 @@ const SolarAgeAnalysis: React.FC = () => {
           <h3 className={`text-lg font-semibold ${maroon}`}>
             Customers: {selectedLabel}
           </h3>
-          <button
-            onClick={() => setSelectedAgeGroup(null)}
-            className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white"
-          >
-            Clear Filter
-          </button>
+          {reportMode === "age" && (
+            <button
+              onClick={() => {
+                setSelectedAgeGroup(null);
+                setCustomers(allCustomers);
+                setCurrentPage(1);
+              }}
+              className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white"
+            >
+              Clear Filter
+            </button>
+          )}
         </div>
 
         <p className="text-sm text-gray-600 mb-4">
           Total: <span className="font-bold">{filteredData.length}</span> customers
         </p>
 
-        {filteredData.length === 0 ? (
+        {showDetailsTable && filteredData.length === 0 ? (
           <p className="text-gray-500 text-sm">No customers found in this age group.</p>
-        ) : (
+        ) : showDetailsTable ? (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-xs">
               <thead>
@@ -736,15 +853,20 @@ const SolarAgeAnalysis: React.FC = () => {
                     Address
                   </th>
                   <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
-                    Net Type
+                    {isFullReport ? "Type" : "Net Type"}
                   </th>
                   <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
                     Initial Agreement Date
                   </th>
+                  {isFullReport && (
+                    <th className="border border-gray-300 px-2 py-1 text-left sticky top-0 bg-gray-100">
+                      Panel Capacity
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((customer, index) => (
+                {paginatedData.map((customer, index) => (
                   <tr
                     key={`${customer.AccountNumber}-${index}`}
                     className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
@@ -764,24 +886,58 @@ const SolarAgeAnalysis: React.FC = () => {
                     <td className="border border-gray-300 px-2 py-1">
                       {customer.InitialAgreementDate}
                     </td>
+                    {isFullReport && (
+                      <td className="border border-gray-300 px-2 py-1">
+                        {customer.PanelCapacity || ""}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            <div className="mt-3 flex items-center justify-between text-xs text-gray-700">
+              <span>
+                Showing {startIndex + 1}-{Math.min(endIndex, filteredData.length)} of {filteredData.length}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={safePage <= 1}
+                  className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {safePage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={safePage >= totalPages}
+                  className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
-        )}
+        ) : null}
       </div>
     );
   };
 
   const renderReportTable = () => {
     if (!customers.length && !reportLoading && !reportError) return null;
+    const isFullReport = reportMode === "full";
 
     return (
       <div className="mt-8" ref={printRef}>
         <div className="flex justify-between items-center mb-2">
           <h3 className={`text-lg font-semibold ${maroon}`}>
-            Solar Customers Age Analysis
+            {isFullReport ? "Solar Customers Full Report" : "Solar Customers Age Analysis"}
           </h3>
           <div className="flex gap-2 mt-2">
             <button
@@ -856,9 +1012,7 @@ const SolarAgeAnalysis: React.FC = () => {
         {!reportLoading && !reportError && customers.length > 0 && (
           <>
             {/* Summary Section */}
-            {renderSummary()}
-
-            {/* Chart removed */}
+            {!isFullReport && renderSummary()}
 
             {/* Filtered Table Section */}
             {renderFilteredTable()}
