@@ -70,6 +70,8 @@ const SolarAgeAnalysis: React.FC = () => {
   const [customers, setCustomers] = useState<SolarCustomer[]>([]);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [fullReportLoading, setFullReportLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportMode, setReportMode] = useState<"age" | "full" | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -251,8 +253,8 @@ const SolarAgeAnalysis: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.areaCode || !formData.billCycle) return;
-
     setReportLoading(true);
+    setViewLoading(true);
     setReportError(null);
     setCustomers([]);
     setAllCustomers([]);
@@ -314,14 +316,15 @@ const SolarAgeAnalysis: React.FC = () => {
 
       setReportError(errorMessage);
     } finally {
+      setViewLoading(false);
       setReportLoading(false);
     }
   };
 
   const loadFullReport = async () => {
     if (!formData.areaCode || !formData.billCycle) return;
-
     setReportLoading(true);
+    setFullReportLoading(true);
     setReportError(null);
     setCustomers([]);
     setAllCustomers([]);
@@ -363,14 +366,15 @@ const SolarAgeAnalysis: React.FC = () => {
       }
       setReportError(errorMessage);
     } finally {
+      setFullReportLoading(false);
       setReportLoading(false);
     }
   };
 
   const loadAgeGroupDetails = async (ageBand: string) => {
     if (!formData.areaCode || !formData.billCycle) return;
-
     setReportLoading(true);
+    setViewLoading(true);
     setReportError(null);
 
     try {
@@ -401,6 +405,7 @@ const SolarAgeAnalysis: React.FC = () => {
       }
       setReportError(errorMessage);
     } finally {
+      setViewLoading(false);
       setReportLoading(false);
     }
   };
@@ -678,18 +683,14 @@ const SolarAgeAnalysis: React.FC = () => {
         <div className="w-full mt-6 flex justify-end gap-3">
           <button
             type="submit"
-            disabled={reportLoading || !formData.areaCode || !formData.billCycle}
+            disabled={viewLoading || fullReportLoading || !formData.areaCode || !formData.billCycle}
             className={`
               px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
               ${maroonGrad} text-white
-              ${
-                reportLoading
-                  ? "opacity-70 cursor-not-allowed"
-                  : "hover:opacity-90"
-              }
+              ${viewLoading || fullReportLoading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"}
             `}
           >
-            {reportLoading ? (
+            {viewLoading ? (
               <span className="flex items-center">
                 <svg
                   className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -720,18 +721,31 @@ const SolarAgeAnalysis: React.FC = () => {
           <button
             type="button"
             onClick={loadFullReport}
-            disabled={reportLoading || !formData.areaCode || !formData.billCycle}
+            disabled={viewLoading || fullReportLoading || !formData.areaCode || !formData.billCycle}
             className={`
               px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
               ${maroonGrad} text-white
-              ${
-                reportLoading || !formData.areaCode || !formData.billCycle
+              ${viewLoading || fullReportLoading || !formData.areaCode || !formData.billCycle
                   ? "opacity-70 cursor-not-allowed"
-                  : "hover:opacity-90"
-              }
+                  : "hover:opacity-90"}
             `}
           >
-            Full Report
+            {fullReportLoading ? (
+              <span className="flex items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading...
+              </span>
+            ) : (
+              "Full Report"
+            )}
           </button>
         </div>
       </form>
