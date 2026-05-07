@@ -270,6 +270,43 @@ const RoleReport = () => {
     setEnteredUserName(selectedRole?.roleId ?? "");
   }, [selectedRole]);
 
+  useEffect(() => {
+    if (!selectedRoleId) {
+      setSelectedCategories([]);
+      setSelectedReports([]);
+      return;
+    }
+
+    const loadAssignedReportsForRole = async () => {
+      try {
+        const resp = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports`);
+        if (!resp.ok) {
+          throw new Error(`Failed to load assigned reports. (${resp.status})`);
+        }
+
+        const payload = await resp.json();
+        if (payload?.errorMessage) {
+          throw new Error(payload.errorMessage);
+        }
+
+        const items = Array.isArray(payload?.data) ? payload.data : [];
+        const repIds = items.map((it: any) => it?.RepId ?? it?.repId ?? "").filter(Boolean);
+        const catCodes = items.map((it: any) => it?.CatCode ?? it?.catCode ?? "").filter(Boolean);
+
+        setSelectedReports(Array.from(new Set(repIds)));
+        setSelectedCategories(Array.from(new Set(catCodes)));
+        setRoleReportMap((current) => ({ ...current, [selectedRoleId]: Array.from(new Set(repIds)) }));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to load assigned reports.";
+        toast.error(message);
+        setSelectedReports([]);
+        setSelectedCategories([]);
+      }
+    };
+
+    loadAssignedReportsForRole();
+  }, [selectedRoleId]);
+
     const sortedFilteredRoles = useMemo(() => {
       return [...filteredRoles].sort((left, right) => {
         const leftPinned = pinnedRoles.includes(getRoleKey(left));
