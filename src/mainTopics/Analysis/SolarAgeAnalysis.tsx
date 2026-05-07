@@ -5,7 +5,6 @@ import React, {
   useCallback,
 } from "react";
 import { FaFileDownload, FaPrint } from "react-icons/fa";
-// charts removed per request
 
 // Interfaces
 interface Area {
@@ -239,7 +238,6 @@ const SolarAgeAnalysis: React.FC = () => {
     []
   );
 
-  // charts removed
 
   // Event handlers
   const handleInputChange = useCallback(
@@ -620,7 +618,6 @@ const SolarAgeAnalysis: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // renderChart removed
 
   const renderForm = () => (
     <>
@@ -1016,8 +1013,6 @@ const SolarAgeAnalysis: React.FC = () => {
           <>
             {/* Summary Section */}
             {!isFullReport && renderSummary()}
-
-            {/* Chart removed */}
 
             {/* Filtered Table Section */}
             {renderFilteredTable()}
