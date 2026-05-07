@@ -1166,6 +1166,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "totalCustomers") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Total Customers"
                             value={customerCountsLoading && bulkCountLoading ? "Loading..." : formatNumber(animatedTotal)}
@@ -1190,6 +1191,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "solarCustomers") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Solar Customers"
                             value={solarLoading || bulkSolarLoading ? "Loading..." : formatNumber(animatedSolar)}
@@ -1214,6 +1216,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "zeroConsumption") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Zero Consumption"
                             value={formatNumber(animatedZero)}
@@ -1233,6 +1236,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "kioskCollection") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Kiosk Collection"
                             value={kioskLoading ? "Loading..." : formatCurrency(animatedKiosk)}
@@ -1256,6 +1260,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "solarCapacity") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Solar Generation Capacity"
                             value={
@@ -1295,6 +1300,7 @@ const DefaultDashboardPage: React.FC = () => {
                       if (cardId === "salesCollectionDistribution") {
                         return (
                           <KpiCard
+                            key={cardId}
                             cardId={cardId}
                             title="Sales & Collection Distribution"
                             value={
