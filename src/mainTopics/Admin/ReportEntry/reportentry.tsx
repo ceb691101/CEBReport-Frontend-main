@@ -184,7 +184,7 @@ const ReportEntry = () => {
         }
     };
 
-    const buildParamListValue = (allParaNames: string[], selectedParaNames: string[]) => {
+    const buildParamListValue = (reportId: string, allParaNames: string[], selectedParaNames: string[]) => {
         const uniqueParams = Array.from(new Set(allParaNames.map((item) => item.trim()).filter(Boolean)));
         if (uniqueParams.length === 0) {
             return "";
@@ -271,6 +271,7 @@ const ReportEntry = () => {
             }
 
             const paramList = buildParamListValue(
+                normalizedRepId,
                 parameters.map((item) => item.paraName),
                 selectedParameters
             );
@@ -330,6 +331,7 @@ const ReportEntry = () => {
 
         try {
             const paramList = buildParamListValue(
+                normalizeRepId(form.repId),
                 parameters.map((item) => item.paraName),
                 selectedParameters
             );
@@ -482,6 +484,11 @@ const ReportEntry = () => {
         return matchesSearch;
     });
 
+    const getCategoryLabel = (catCode: string) => {
+        const category = categories.find((item) => item.catCode === catCode);
+        return category?.catName || catCode;
+    };
+
     const normalizedSelectedCatCode = form.catCode.trim().toUpperCase();
     const categoryOptionValues = categories.map((c) => c.catCode);
     const categoryOptionLabels = categories.map((c) =>
@@ -602,6 +609,7 @@ const ReportEntry = () => {
                                     <p className="mt-1 break-all font-mono text-xs text-[#8B0000]">
                                         {form.repId.trim()
                                             ? buildParamListValue(
+                                                normalizeRepId(form.repId),
                                                 parameters.map((item) => item.paraName),
                                                 selectedParameters
                                             )
