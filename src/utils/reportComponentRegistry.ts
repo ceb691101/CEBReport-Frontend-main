@@ -34,12 +34,14 @@ import CostCenterwisePivDetails from "../mainTopics/PIV/CostCenterwisePivDetails
 // Analysis reports
 import DebtorsAnalysis from "../mainTopics/Analysis/DebtorsAnalysis";
 import AgeAnalysis from "../mainTopics/Analysis/AgeAnalysis";
+import SolarAgeAnalysis from "../mainTopics/Analysis/SolarAgeAnalysis";
 
 // Billing & Payment reports
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
 
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
+import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 
 // Consumption Analysis reports
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
@@ -51,8 +53,14 @@ import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
+import BillCalculation from "../mainTopics/general/BillCalculation";
 import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
 import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
+import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
+import Arreasposition from "../mainTopics/general/Arreasposition";
+import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
+import LargestCus from "../mainTopics/general/LargestCus";
+import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -107,10 +115,12 @@ import SolarPaymentBulk from "../mainTopics/SolarInformation/SolarPaymentBulk";
 import SolarConnectionDetailsRetail from "../mainTopics/SolarInformation/SolarConnectionDetailsRetail";
 import SolarConnectionDetailsBulk from "../mainTopics/SolarInformation/SolarConnectionDetailsBulk";
 import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustomerInformation";
+import RoofTopSolarInputData from "../mainTopics/SolarInformation/RoofTopSolarInputData";
 
 // Solar Jobs reports
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
 import SolarPendingJobsReport from "../mainTopics/SolarJobs/SolarPendingJobsReport";
+import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
 
 // Solar Religious Purpose reports
 import AreaWiseSRPApplicationPIV from "../mainTopics/SRP/AreaWiseSRPApplicationPIV";
@@ -201,6 +211,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"debtors age analysis individual customers": AgeAnalysis,
 	"age analysis bulk": AgeAnalysis,
 	"consumption pattern analysis": AgeAnalysis,
+	"age analysis of solar power consumers": SolarAgeAnalysis,
 
 	// Billing & Payment reports
 	"customer information": CustomerDetails,
@@ -218,6 +229,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"monthly revenue collection of different channels": DishonouredCheques,
 	"kiosk payment collection": DishonouredCheques,
 	"payment collection": DishonouredCheques,
+	"head office collection total": HeadOfficeCollectionTotal,
 	"suspense payment details": DishonouredCheques,
 	"finalized account details": DishonouredCheques,
 	"written off account details": DishonouredCheques,
@@ -238,13 +250,14 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// General reports
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
-	"bill calculation": ActiveCustomersSalesByTariff,
-	"listing of customers": ActiveCustomersSalesByTariff,
-	"list of government accounts": ActiveCustomersSalesByTariff,
-	"largest 100 customer details": ActiveCustomersSalesByTariff,
+	"bill calculation": BillCalculation,
+	"listing of customers": ListingofCustomers,
+	"list of government accounts": ListOfGovernmentAccounts,
+	"largest 50 customers details ordinary": LargestCus,
+	"largest 100 customer details": Largest100CustomerDetails,
 	"sequence change accounts": ActiveCustomersSalesByTariff,
 	"retails journal": ActiveCustomersSalesByTariff,
-	"arrears position meter reader wise": ActiveCustomersSalesByTariff,
+	"arrears position meter reader wise": Arreasposition,
 	"list of customers enlisted in master invoices": ActiveCustomersSalesByTariff,
 	"disconnection list": ActiveCustomersSalesByTariff,
 	"shakthi led distribution summary": ActiveCustomersSalesByTariff,
@@ -325,10 +338,12 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar connection details incl reading and usage retail": SolarConnectionDetailsRetail,
 	"solar connection details incl reading and usage bulk": SolarConnectionDetailsBulk,
 	"solar customer information": SolarCustomerInformation,
+	"rooftop solar input data portal for t and d loss calculation":RoofTopSolarInputData,
 
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
 	"solar retail rooftop pending jobs after piv2 paid": SolarPendingJobsReport,
+	"solar rooftop applications within the selected cost centre": CcApplicationProgress,
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,

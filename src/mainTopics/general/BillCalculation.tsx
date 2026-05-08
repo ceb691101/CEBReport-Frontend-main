@@ -195,7 +195,7 @@ const BillCalculation: React.FC = () => {
           csvInt(b.ProratedFrom),
           csvInt(b.ProratedTo),
           csvNum(b.Rate),
-          b.Charge > 0 ? csvNum(b.Charge) : "-",
+          b.Charge > 0 ? `"${b.UnitsInBlock} x ${b.Rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} = ${b.Charge.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}"` : "-",
         ].join(","));
       });
       rows.push(``);
@@ -352,7 +352,7 @@ const BillCalculation: React.FC = () => {
                     <td class="text-right">${block.ProratedFrom}</td>
                     <td class="text-left">- ${block.ProratedTo}</td>
                     <td class="text-right">${block.Rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td class="text-right">${block.Charge > 0 ? block.Charge.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-"}</td>
+                    <td class="text-right">${block.Charge > 0 ? `<span style="color:#6b7280">${block.UnitsInBlock} × ${block.Rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} = </span>${block.Charge.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-"}</td>
                   </tr>
                 `).join("")}
               </tbody>
@@ -459,7 +459,15 @@ const BillCalculation: React.FC = () => {
                 <td className="border border-gray-300 px-2 py-1 text-right w-16">{block.ProratedFrom}</td>
                 <td className="border border-gray-300 px-2 py-1 text-left w-20">- {block.ProratedTo}</td>
                 <td className="border border-gray-300 px-2 py-1 text-right">{formatNumber(block.Rate)}</td>
-                <td className="border border-gray-300 px-2 py-1 text-right">{block.Charge > 0 ? formatNumber(block.Charge) : "-"}</td>
+                {/* <td className="border border-gray-300 px-2 py-1 text-right">{block.Charge > 0 ? formatNumber(block.Charge) : "-"}</td> */}
+                <td className="border border-gray-300 px-2 py-1 text-right">
+                  {block.Charge > 0 ? (
+                    <span>
+                      <span className="text-gray-500">{block.UnitsInBlock} × {formatNumber(block.Rate)} = </span>
+                      {formatNumber(block.Charge)}
+                    </span>
+                  ) : "-"}
+                </td>
               </tr>
             ))}
           </tbody>
