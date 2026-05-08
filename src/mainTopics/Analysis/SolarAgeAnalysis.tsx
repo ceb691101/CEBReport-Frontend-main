@@ -179,7 +179,7 @@ const SolarAgeAnalysis: React.FC = () => {
       try {
         // Fetch areas
         const areaData = await fetchWithErrorHandling(
-          "/api/analysis/solar-age/areas"
+          "/misapi/api/analysis/solar-age/areas"
         );
         setAreas(areaData.data || []);
         if (areaData.data?.length > 0) {
@@ -264,7 +264,7 @@ const SolarAgeAnalysis: React.FC = () => {
     setAllCustomers([]);
 
     try {
-      const url = `/api/analysis/solar-age/view?areaCode=${formData.areaCode}&billCycle=${formData.billCycle}&ageBand=all`;
+      const url = `/misapi/api/analysis/solar-age/view?areaCode=${formData.areaCode}&billCycle=${formData.billCycle}&ageBand=all`;
 
       const data = await fetchWithErrorHandling(url, 120000);
 
@@ -337,7 +337,7 @@ const SolarAgeAnalysis: React.FC = () => {
     setCurrentPage(1);
 
     try {
-      const url = `/api/analysis/solar-age/full-report?areaCode=${formData.areaCode}&billCycle=${formData.billCycle}`;
+      const url = `/misapi/api/analysis/solar-age/full-report?areaCode=${formData.areaCode}&billCycle=${formData.billCycle}`;
       const data = await fetchWithErrorHandling(url, 120000);
 
       if (data.errorMessage) {
@@ -382,7 +382,7 @@ const SolarAgeAnalysis: React.FC = () => {
     setReportError(null);
 
     try {
-      const url = `/api/analysis/solar-age/view?areaCode=${formData.areaCode}&billCycle=${formData.billCycle}&ageBand=${encodeURIComponent(ageBand)}`;
+      const url = `/misapi/api/analysis/solar-age/view?areaCode=${formData.areaCode}&billCycle=${formData.billCycle}&ageBand=${encodeURIComponent(ageBand)}`;
       const data = await fetchWithErrorHandling(url, 120000);
 
       if (data.errorMessage) {
