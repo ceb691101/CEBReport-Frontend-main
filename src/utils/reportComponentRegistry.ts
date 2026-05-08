@@ -115,6 +115,7 @@ import SolarPaymentBulk from "../mainTopics/SolarInformation/SolarPaymentBulk";
 import SolarConnectionDetailsRetail from "../mainTopics/SolarInformation/SolarConnectionDetailsRetail";
 import SolarConnectionDetailsBulk from "../mainTopics/SolarInformation/SolarConnectionDetailsBulk";
 import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustomerInformation";
+import RoofTopSolarInputData from "../mainTopics/SolarInformation/RoofTopSolarInputData";
 
 // Solar Jobs reports
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
@@ -337,6 +338,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar connection details incl reading and usage retail": SolarConnectionDetailsRetail,
 	"solar connection details incl reading and usage bulk": SolarConnectionDetailsBulk,
 	"solar customer information": SolarCustomerInformation,
+	"rooftop solar input data portal for t and d loss calculation":RoofTopSolarInputData,
 
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
