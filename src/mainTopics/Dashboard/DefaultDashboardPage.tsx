@@ -651,7 +651,7 @@ const DefaultDashboardPage: React.FC = () => {
     const fetchOrdinaryCount = async () => {
       setCustomerCountsLoading(true); setCustomerCountsError(null);
       try {
-        const res  = await fetch(withRegion(`/api/dashboard/ordinary-customers-summary?billCycle=0`), { headers: { Accept: "application/json" } });
+        const res  = await fetch(withRegion(`/misapi/api/dashboard/ordinary-customers-summary?billCycle=0`), { headers: { Accept: "application/json" } });
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         const json = await res.json();
         setCustomerCounts((p) => ({ ...p, ordinary: json?.data?.TotalCount ?? 0 }));
@@ -973,7 +973,7 @@ const DefaultDashboardPage: React.FC = () => {
       setTopCustomersError(null);
 
       try {
-        const res = await fetch("/api/dashboard/top-customers/list", {
+        const res = await fetch("/misapi/api/dashboard/top-customers/list", {
           headers: { Accept: "application/json" },
         });
 
