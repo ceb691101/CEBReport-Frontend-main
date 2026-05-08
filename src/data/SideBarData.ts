@@ -66,9 +66,11 @@ export type SidebarResult = {
 
 const USER_ROLE_ENDPOINTS = [
   "/misreportsapi/api/userrole",
+  "http://localhost:44381/api/userrole",
 ];
 const ROLE_REPORTS_ENDPOINTS = [
   "/misreportsapi/api/reprolereports/get",
+  "http://localhost:44381/api/reprolereports/get",
 ];
 
 const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
