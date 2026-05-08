@@ -18,11 +18,6 @@ interface BillCycleOption {
   code: string;
 }
 
-interface BillCycleRecord {
-  BillCycle: string;
-  BillMnth: string;
-}
-
 interface AgeGroupSummary {
   ageGroup: string;
   count: number;
@@ -106,12 +101,20 @@ const SolarAgeAnalysis: React.FC = () => {
 
   // Helper functions
   const generateBillCycleOptions = (
-    billCycles: BillCycleRecord[]
+    billCycles: string[],
+    maxBillCycle: string
   ): BillCycleOption[] => {
-    return billCycles.map((cycle) => ({
-      display: cycle.BillMnth,
-      code: cycle.BillCycle,
-    }));
+    const maxCycle = parseInt(maxBillCycle || "0", 10);
+
+    return billCycles.map((cycle, index) => {
+      const numeric = maxCycle - index;
+      const match = /^\s*(\d+)\s*-\s*(.*)$/.exec(cycle);
+      const label = match ? match[2] : cycle;
+      return {
+        display: String(label),
+        code: String(numeric),
+      };
+    });
   };
 
   const getFormattedBillCycle = (): string => {
@@ -186,12 +189,15 @@ const SolarAgeAnalysis: React.FC = () => {
           }));
         }
 
-        // Fetch bill cycles for solar
+        // Fetch bill cycles from the shared bill cycle API
         const maxCycleData = await fetchWithErrorHandling(
-          `/api/analysis/solar-age/bill-cycles?areaCode=${areaData.data?.[0]?.AreaCode ?? ""}&take=20`
+          "/misapi/api/billcycle/max"
         );
         if (maxCycleData.data && maxCycleData.data.BillCycles?.length > 0) {
-          const options = generateBillCycleOptions(maxCycleData.data.BillCycles);
+          const options = generateBillCycleOptions(
+            maxCycleData.data.BillCycles,
+            maxCycleData.data.MaxBillCycle
+          );
           setBillCycleOptions(options);
           setFormData((prev) => ({ ...prev, billCycle: options[0].code }));
         } else {
