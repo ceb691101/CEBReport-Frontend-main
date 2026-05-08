@@ -927,7 +927,7 @@ const DefaultDashboardPage: React.FC = () => {
 
       try {
         const res = await fetch(
-          withRegion(`/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`),
+          withRegion(`/misapi/api/dashboard/kiosk-collection?userId=${encodeURIComponent(kioskUserId)}`),
           { headers: { Accept: "application/json" } }
         );
 
