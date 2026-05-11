@@ -1,4 +1,5 @@
 import UserNavBar from "./components/layout/UserNavBar";
+import AdminNavBar from "./components/layout/AdminNavBar";
 import Sidebar from "./components/layout/Sidebar";
 import AdminSidebar from "./components/layout/AdminSidebar";
 import { useState } from "react";
@@ -8,7 +9,7 @@ import { useLocation } from "react-router-dom";
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith("/admin");
+  const isAdminRoute = location.pathname.startsWith("/admin") || location.pathname === "/adminhome";
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -18,7 +19,7 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen flex flex-col">
       {/* Fixed Top Bar */}
       <div className="fixed top-0 left-0 w-full z-50">
-        <UserNavBar />
+        {isAdminRoute ? <AdminNavBar /> : <UserNavBar />}
       </div>
 
 
