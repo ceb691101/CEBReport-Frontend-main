@@ -77,7 +77,7 @@ const SolarAgeAnalysis: React.FC = () => {
 
   // Age groups for Solar Customers (in years)
   const ageGroups = [
-    { value: "0-1", label: "Age < 1 year" },
+    { value: "0-1", label: "Age <= 1 year" },
     { value: "1-2", label: "1 < Age <= 2" },
     { value: "2-3", label: "2 < Age <= 3" },
     { value: "3-4", label: "3 < Age <= 4" },
