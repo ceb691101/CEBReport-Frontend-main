@@ -128,6 +128,8 @@ import AreaWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPAp
 import DivisionWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPApplicationPIVPaidReport";
 import AreaWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPEstimationPIVPaidReport";
 import DivisionWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPEstimationPIVPaidReport";
+import AreaWiseSRPApplicationPIVStatus from "../mainTopics/SRP/AreaWiseSRPApplicationPIVStatus";
+import AreaWiseSRPEstimationPIV from "../mainTopics/SRP/AreaWiseSRPEstimationPIV";
 
 // Trial Balance reports
 import CostCenterTrial from "../mainTopics/TrialBalance/CostCenterTrial";
@@ -346,11 +348,13 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar rooftop applications within the selected cost centre": CcApplicationProgress,
 
 	// Solar Religious Purpose reports
-	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,
+	"area wise srp application fee (piv i) to be paid": AreaWiseSRPApplicationPIV,
 	"area wise srp application piv pivi paid report": AreaWiseSRPApplicationPIVPaidReport,
 	"division wise srp application piv pivi to be paid report": DivisionWiseSRPApplicationPIVPaidReport,
 	"area wise srp estimation piv pivii paid report": AreaWiseSRPEstimationPIVPaidReport,
 	"division wise srp estimation piv pivii paid report": DivisionWiseSRPEstimationPIVPaidReport,
+	"Area wise SRP Application All PIVs (PIVI)": AreaWiseSRPApplicationPIVStatus,
+	"Area wise SRP Estimation PIV (PIVII) To be Paid Report": AreaWiseSRPEstimationPIV,
 
 	// Trial Balance reports
 	"cost center trial balance end of month year": CostCenterTrial,

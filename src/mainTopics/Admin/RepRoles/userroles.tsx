@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { RefreshCw, Search } from "lucide-react";
+import { Pin, PinOff, RefreshCw, Search } from "lucide-react";
 
 type RoleType = "admin" | "user";
 
@@ -34,7 +34,10 @@ type MotherCompanyOption = {
 
 type CostCentreOption = {
 	costCentreId: string;
+	departmentName: string;
+	lvlNo: number;
 	costCentreName: string;
+	costCentreDisplay: string;
 };
 
 type UserGroupOption = {
@@ -48,6 +51,7 @@ const roleTypeOptions: Array<{ label: string; value: string; tab: RoleType }> = 
 	{ label: "ADMINISTRATOR", value: "ADMINISTRATOR", tab: "admin" },
 ];
 const rolesPerPage = 10;
+const pinnedStorageKey = "user-role-pins";
 
 const initialForm: CreateRoleForm = {
 	name: "",
@@ -73,6 +77,8 @@ const normalizeText = (value: unknown): string =>
 
 const normalizeKey = (value: unknown): string =>
 	normalizeText(value).toUpperCase();
+
+const getRoleKey = (role: Pick<RoleRecord, "epfNo">): string => normalizeKey(role.epfNo);
 
 const actionButtonPrimaryClass =
 	"rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60";
@@ -102,6 +108,21 @@ const UserRoles = () => {
 	const [form, setForm] = useState<CreateRoleForm>(initialForm);
 	const [isAddingCostCentresToRole, setIsAddingCostCentresToRole] = useState(false);
 	const [tableSearch, setTableSearch] = useState("");
+	const [pinnedRoles, setPinnedRoles] = useState<string[]>(() => {
+		try {
+			const stored = localStorage.getItem(pinnedStorageKey);
+			if (!stored) {
+				return [];
+			}
+
+			const nextPinned = JSON.parse(stored);
+			return Array.isArray(nextPinned)
+				? nextPinned.map((value) => normalizeKey(value)).filter(Boolean)
+				: [];
+		} catch {
+			return [];
+		}
+	});
 
 	const loadMotherCompanies = async () => {
 		setIsCompaniesLoading(true);
@@ -140,6 +161,7 @@ const UserRoles = () => {
 	const loadCostCentres = async (companyId: string) => {
 		if (!companyId) {
 			setCostCentres([]);
+			setIsCostCentresLoading(false);
 			return;
 		}
 
@@ -162,8 +184,11 @@ const UserRoles = () => {
 
 			const nextCostCentres: CostCentreOption[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-					costCentreId: item?.CostCentreId ?? "",
-					costCentreName: item?.CostCentreName ?? "",
+					costCentreId: item?.costCentre ?? item?.CostCentreId ?? item?.DepartmentId ?? "",
+					departmentName: item?.departmentName ?? item?.DepartmentName ?? item?.CostCentreName ?? "",
+					lvlNo: Number(item?.lvlNo ?? item?.LvlNo ?? 0),
+					costCentreName: item?.costCentreName ?? item?.CostCentreName ?? item?.DepartmentName ?? "",
+					costCentreDisplay: item?.costCentreDisplay ?? item?.CostCentreDisplay ?? "",
 				}))
 				: [];
 
@@ -296,6 +321,14 @@ const UserRoles = () => {
 		loadCostCentres(form.motherCompany);
 	}, [form.motherCompany]);
 
+	useEffect(() => {
+		try {
+			localStorage.setItem(pinnedStorageKey, JSON.stringify(pinnedRoles));
+		} catch {
+			// Ignore storage failures and keep the feature session-only.
+		}
+	}, [pinnedRoles]);
+
 	const handleFieldChange = (field: keyof CreateRoleForm, value: string) => {
 		const normalizedValue =
 			field === "roleId" || field === "userType"
@@ -341,6 +374,16 @@ const UserRoles = () => {
 			...current,
 			costCentres: [],
 		}));
+	};
+
+	const togglePinnedRole = (role: RoleRecord) => {
+		const roleKey = getRoleKey(role);
+
+		setPinnedRoles((current) =>
+			current.includes(roleKey)
+				? current.filter((value) => value !== roleKey)
+				: [...current, roleKey]
+		);
 	};
 
 	const handleAddCostCentresToSelectedRole = async () => {
@@ -538,8 +581,18 @@ const UserRoles = () => {
 
 		return haystack.includes(query);
 	});
+	const sortedRoles = [...filteredRoles].sort((left, right) => {
+		const leftPinned = pinnedRoles.includes(getRoleKey(left));
+		const rightPinned = pinnedRoles.includes(getRoleKey(right));
+
+		if (leftPinned !== rightPinned) {
+			return leftPinned ? -1 : 1;
+		}
+
+		return left.roleName.localeCompare(right.roleName) || left.epfNo.localeCompare(right.epfNo);
+	});
 	const totalPages = Math.max(1, Math.ceil(filteredRoles.length / rolesPerPage));
-	const paginatedRoles = filteredRoles.slice(
+	const paginatedRoles = sortedRoles.slice(
 		(currentPage - 1) * rolesPerPage,
 		currentPage * rolesPerPage
 	);
@@ -631,7 +684,7 @@ const UserRoles = () => {
 
 							<div>
 								<div className="mb-2 flex items-center justify-between gap-3">
-									<span className="text-sm font-medium text-stone-700">Cost Center</span>
+									<span className="text-sm font-medium text-stone-700">Department / Cost Center</span>
 									<button
 										type="button"
 										onClick={handleAddCostCentresToSelectedRole}
@@ -643,14 +696,45 @@ const UserRoles = () => {
 										<span className="text-sm">{isAddingCostCentresToRole ? "Adding..." : "Add cost centers"}</span>
 									</button>
 								</div>
+
+								{/* User's Assigned Cost Centers */}
+								{form.costCentres.length > 0 && (
+									<div className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-3">
+										<div className="mb-2 text-xs font-semibold text-green-800 uppercase tracking-wide">
+											✓ User's Assigned Cost Centers
+										</div>
+										<ul className="space-y-2">
+											{costCentres
+												.filter((item) => form.costCentres.includes(item.costCentreId))
+												.map((item) => (
+													<li key={item.costCentreId} className="flex items-center gap-2 text-sm text-green-900">
+														<input
+															type="checkbox"
+															checked={true}
+															onChange={() => handleCostCentreToggle(item.costCentreId)}
+															className="h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-600"
+														/>
+														<span className="font-medium">
+															{item.costCentreId} - {item.departmentName || item.costCentreName}
+														</span>
+													</li>
+												))}
+										</ul>
+									</div>
+								)}
+
+								{/* Available Departments */}
 								<div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+									<div className="mb-2 text-xs font-semibold text-stone-700 uppercase tracking-wide">
+										Available Departments
+									</div>
 									{isCostCentresLoading ? (
 										<div className="text-sm text-stone-500">Loading cost centres...</div>
 									) : costCentres.length === 0 ? (
 										<div className="text-sm text-stone-500">
 											{form.motherCompany
-												? "No cost centres found for the selected company."
-												: "Select a company to load cost centres."}
+												? "No departments or cost centres found for the selected company."
+												: "Select a company to load departments and cost centres."}
 										</div>
 									) : (
 										<>
@@ -661,19 +745,21 @@ const UserRoles = () => {
 												<button type="button" onClick={clearCostCentreSelection} className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs text-stone-700 hover:bg-stone-100">reset</button>
 											</div>
 											<ul className="space-y-2">
-												{costCentres.map((item) => (
-													<li key={item.costCentreId} className="flex items-center gap-2 text-sm text-stone-800">
-														<input
-															type="checkbox"
-															checked={form.costCentres.includes(item.costCentreId)}
-															onChange={() => handleCostCentreToggle(item.costCentreId)}
-															className="h-4 w-4 rounded border-stone-400 text-[#7A0000] focus:ring-[#7A0000]"
-														/>
-														<span>
-															{item.costCentreId} : {item.costCentreName}
-														</span>
-													</li>
-												))}
+												{costCentres
+													.filter((item) => !form.costCentres.includes(item.costCentreId))
+													.map((item) => (
+														<li key={item.costCentreId} className="flex items-center gap-2 text-sm text-stone-800">
+															<input
+																type="checkbox"
+																checked={false}
+																onChange={() => handleCostCentreToggle(item.costCentreId)}
+																className="h-4 w-4 rounded border-stone-400 text-[#7A0000] focus:ring-[#7A0000]"
+															/>
+															<span>
+																{item.costCentreId} - {item.departmentName || item.costCentreName}
+															</span>
+														</li>
+													))}
 											</ul>
 										</>
 									)}
@@ -719,6 +805,7 @@ const UserRoles = () => {
 						<div className="flex flex-wrap items-center justify-between gap-4">
 							<div>
 								<h2 className="text-2xl font-semibold text-stone-900">User Role Table</h2>
+								<p className="mt-1 text-sm text-stone-500">Pinned users stay at the top of the list on this browser.</p>
 							</div>
 
 							<div className="inline-flex rounded-full border border-stone-200 bg-stone-100 p-1">
@@ -766,24 +853,26 @@ const UserRoles = () => {
 											<th className="px-4 py-3">Role Name</th>
 											<th className="px-4 py-3">Company</th>
 											<th className="px-4 py-3">User Type</th>
+											<th className="px-4 py-3"></th>
 										</tr>
 									</thead>
 									<tbody className="divide-y divide-stone-100 bg-white">
 										{isLoading ? (
 											<tr>
-												<td colSpan={5} className="px-4 py-10 text-center text-stone-500">
+												<td colSpan={6} className="px-4 py-10 text-center text-stone-500">
 													Loading roles...
 												</td>
 											</tr>
 										) : filteredRoles.length === 0 ? (
 											<tr>
-												<td colSpan={5} className="px-4 py-10 text-center text-stone-500">
+												<td colSpan={6} className="px-4 py-10 text-center text-stone-500">
 													No matching roles found.
 												</td>
 											</tr>
 										) : (
 											paginatedRoles.map((role) => {
-											const isSelected = normalizeKey(selectedEpfNo) === normalizeKey(role.epfNo);
+												const isSelected = normalizeKey(selectedEpfNo) === normalizeKey(role.epfNo);
+												const isPinned = pinnedRoles.includes(getRoleKey(role));
 												return (
 													<tr
 														key={`${role.epfNo}-${role.roleId}`}
@@ -796,6 +885,19 @@ const UserRoles = () => {
 														<td className="px-4 py-3">{role.roleName || "-"}</td>
 														<td className="px-4 py-3">{role.company || "-"}</td>
 														<td className="px-4 py-3">{role.userType || "-"}</td>
+														<td className="px-4 py-3">
+															<button
+																type="button"
+																onClick={(event) => {
+																	event.stopPropagation();
+																	togglePinnedRole(role);
+																}}
+																aria-label={isPinned ? `Unpin ${role.roleName || role.epfNo}` : `Pin ${role.roleName || role.epfNo}`}
+																className={`inline-flex items-center justify-center h-8 w-8 rounded-full border transition ${isPinned ? "border-[#7A0000]/30 bg-[#7A0000]/10 text-[#7A0000]" : "border-stone-300 bg-white text-stone-600 hover:border-[#7A0000]/25 hover:text-[#7A0000]"}`}
+															>
+																{isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+															</button>
+														</td>
 													</tr>
 												);
 											})
@@ -808,7 +910,7 @@ const UserRoles = () => {
 						{filteredRoles.length > 0 && (
 							<div className="mt-4 flex items-center justify-between gap-3 text-sm">
 								<div className="text-stone-600">
-									Page {currentPage} of {totalPages} ({filteredRoles.length} shown)
+										Page {currentPage} of {totalPages} ({filteredRoles.length} shown, {pinnedRoles.length} pinned)
 								</div>
 								<div className="flex items-center gap-2">
 									<button
