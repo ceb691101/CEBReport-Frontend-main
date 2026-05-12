@@ -805,8 +805,7 @@ const UserRoles = () => {
 						<div className="flex flex-wrap items-center justify-between gap-4">
 							<div>
 								<h2 className="text-2xl font-semibold text-stone-900">User Role Table</h2>
-								<p className="mt-1 text-sm text-stone-500">Pinned users stay at the top of the list on this browser.</p>
-							</div>
+								</div>
 
 							<div className="inline-flex rounded-full border border-stone-200 bg-stone-100 p-1">
 								<TabButton
