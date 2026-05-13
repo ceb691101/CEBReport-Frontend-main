@@ -78,6 +78,12 @@ const normalizeText = (value: unknown): string =>
 const normalizeKey = (value: unknown): string =>
 	normalizeText(value).toUpperCase();
 
+const splitDelimitedValues = (value: unknown): string[] =>
+	normalizeText(value)
+		.split(/[;,]/)
+		.map((item) => item.trim())
+		.filter(Boolean);
+
 const getRoleKey = (role: Pick<RoleRecord, "epfNo">): string => normalizeKey(role.epfNo);
 
 const actionButtonPrimaryClass =
@@ -106,6 +112,7 @@ const UserRoles = () => {
 	const [userGroups, setUserGroups] = useState<UserGroupOption[]>([]);
 	const [isUserGroupsLoading, setIsUserGroupsLoading] = useState(false);
 	const [form, setForm] = useState<CreateRoleForm>(initialForm);
+	const [assignedCompanies, setAssignedCompanies] = useState<string[]>([]);
 	const [isAddingCostCentresToRole, setIsAddingCostCentresToRole] = useState(false);
 	const [tableSearch, setTableSearch] = useState("");
 	const [pinnedRoles, setPinnedRoles] = useState<string[]>(() => {
@@ -340,6 +347,7 @@ const UserRoles = () => {
 
 	const handleReset = () => {
 		setForm(initialForm);
+		setAssignedCompanies([]);
 		setCostCentres([]);
 		setSelectedEpfNo(null);
 	};
@@ -392,8 +400,24 @@ const UserRoles = () => {
 			return;
 		}
 
-		if (form.costCentres.length === 0) {
-			toast.warning("Please select at least one cost centre.");
+		if (!form.motherCompany.trim()) {
+			toast.warning("Please select a company first.");
+			return;
+		}
+
+		const selectedCostCentresForCompany = costCentres
+			.map((item) => item.costCentreId)
+			.filter((costCentreId) => form.costCentres.includes(costCentreId));
+
+		const requestedCostCentres = selectedCostCentresForCompany.filter(
+			(costCentreId) =>
+				!selectedRole.costCentres.some(
+					(existingCostCentre) => normalizeKey(existingCostCentre) === normalizeKey(costCentreId)
+				)
+		);
+
+		if (requestedCostCentres.length === 0) {
+			toast.warning("Please select at least one new cost centre for the selected company.");
 			return;
 		}
 
@@ -408,7 +432,7 @@ const UserRoles = () => {
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
-						costCentres: form.costCentres,
+						costCentres: requestedCostCentres,
 					}),
 				}
 			);
@@ -420,6 +444,10 @@ const UserRoles = () => {
 			}
 
 			toast.success(payload?.data?.message ?? "Cost centres added successfully.");
+			setForm((current) => ({
+				...current,
+				costCentres: Array.from(new Set([...current.costCentres, ...requestedCostCentres])),
+			}));
 			await loadRoles(activeTab);
 			setSelectedEpfNo(selectedRole.epfNo);
 		} catch (error) {
@@ -447,6 +475,9 @@ const UserRoles = () => {
 
 	const handleRoleSelect = (role: RoleRecord) => {
 		setSelectedEpfNo(role.epfNo);
+		const roleCompanies = splitDelimitedValues(role.company);
+		const primaryCompany = roleCompanies[0] ?? normalizeText(role.company);
+		setAssignedCompanies(roleCompanies.length > 0 ? roleCompanies : primaryCompany ? [primaryCompany] : []);
 
 		// Denormalize userType: backend stores "ADMIN" but form needs "ADMINISTRATOR"
 		const userTypeForForm = role.userType === "ADMIN" ? "ADMINISTRATOR" : role.userType;
@@ -458,13 +489,13 @@ const UserRoles = () => {
 			userType: userTypeForForm,
 			businessCompany: role.motherCompany,
 			userGroup: role.userGroup || initialForm.userGroup,
-			motherCompany: role.company,
+			motherCompany: primaryCompany,
 			costCentres: role.costCentres,
 		});
 
 		// Explicitly load cost centres for the selected company
-		if (role.company) {
-			loadCostCentres(role.company);
+		if (primaryCompany) {
+			loadCostCentres(primaryCompany);
 		}
 
 		setActiveTab(userTypeForForm.trim().toUpperCase().startsWith("USER") ? "user" : "admin");
@@ -568,6 +599,9 @@ const UserRoles = () => {
 	};
 
 	const selectedRole = roles.find((role) => normalizeKey(role.epfNo) === normalizeKey(selectedEpfNo)) ?? null;
+	const assignedCostCentres = Array.from(
+		new Set(form.costCentres.map((value) => normalizeText(value)).filter(Boolean))
+	);
 	const filteredRoles = roles.filter((role) => {
 		const query = normalizeKey(tableSearch);
 
@@ -674,12 +708,40 @@ const UserRoles = () => {
 									value={form.motherCompany}
 									onChange={(value) => {
 										handleFieldChange("motherCompany", value);
-										clearCostCentreSelection();
+										setAssignedCompanies((current) => {
+											const normalized = normalizeKey(value);
+											if (!normalized) {
+												return current;
+											}
+
+											if (current.some((item) => normalizeKey(item) === normalized)) {
+												return current;
+											}
+
+											return [...current, value];
+										});
 									}}
 									options={motherCompanies.map((company) => `${company.companyId} - ${company.companyName}`)}
 									optionValues={motherCompanies.map((company) => company.companyId)}
 									placeholder={isCompaniesLoading ? "Loading companies..." : "Select company"}
 								/>
+								{assignedCompanies.length > 0 && (
+									<div className="rounded-xl border border-stone-200 bg-stone-50 p-2.5">
+										<div className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-600">
+											Assigned Companies
+										</div>
+										<div className="flex flex-wrap gap-2">
+											{assignedCompanies.map((companyId) => (
+												<span
+													key={companyId}
+													className="rounded-full border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700"
+												>
+													{companyId}
+												</span>
+											))}
+										</div>
+									</div>
+								)}
 							</div>
 
 							<div>
@@ -698,27 +760,34 @@ const UserRoles = () => {
 								</div>
 
 								{/* User's Assigned Cost Centers */}
-								{form.costCentres.length > 0 && (
+								{assignedCostCentres.length > 0 && (
 									<div className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-3">
 										<div className="mb-2 text-xs font-semibold text-green-800 uppercase tracking-wide">
-											✓ User's Assigned Cost Centers
+											User's Assigned Cost Centers
 										</div>
 										<ul className="space-y-2">
-											{costCentres
-												.filter((item) => form.costCentres.includes(item.costCentreId))
-												.map((item) => (
-													<li key={item.costCentreId} className="flex items-center gap-2 text-sm text-green-900">
+											{assignedCostCentres.map((assignedCostCentreId) => {
+												const matchedCostCentre = costCentres.find(
+													(item) => normalizeKey(item.costCentreId) === normalizeKey(assignedCostCentreId)
+												);
+
+												return (
+													<li key={assignedCostCentreId} className="flex items-center gap-2 text-sm text-green-900">
 														<input
 															type="checkbox"
 															checked={true}
-															onChange={() => handleCostCentreToggle(item.costCentreId)}
+															onChange={() => handleCostCentreToggle(assignedCostCentreId)}
 															className="h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-600"
 														/>
 														<span className="font-medium">
-															{item.costCentreId} - {item.departmentName || item.costCentreName}
+															{assignedCostCentreId}
+															{matchedCostCentre
+																? ` - ${matchedCostCentre.departmentName || matchedCostCentre.costCentreName}`
+																: ""}
 														</span>
 													</li>
-												))}
+												);
+											})}
 										</ul>
 									</div>
 								)}
