@@ -348,13 +348,14 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar rooftop applications within the selected cost centre": CcApplicationProgress,
 
 	// Solar Religious Purpose reports
-	"area wise srp application fee (piv i) to be paid": AreaWiseSRPApplicationPIV,
+	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,
+	"area wise srp application fee piv i to be paid": AreaWiseSRPApplicationPIV,
 	"area wise srp application piv pivi paid report": AreaWiseSRPApplicationPIVPaidReport,
 	"division wise srp application piv pivi to be paid report": DivisionWiseSRPApplicationPIVPaidReport,
 	"area wise srp estimation piv pivii paid report": AreaWiseSRPEstimationPIVPaidReport,
 	"division wise srp estimation piv pivii paid report": DivisionWiseSRPEstimationPIVPaidReport,
-	"Area wise SRP Application All PIVs (PIVI)": AreaWiseSRPApplicationPIVStatus,
-	"Area wise SRP Estimation PIV (PIVII) To be Paid Report": AreaWiseSRPEstimationPIV,
+	"area wise srp application all pivs pivi": AreaWiseSRPApplicationPIVStatus,
+	"area wise srp estimation piv pivii to be paid report": AreaWiseSRPEstimationPIV,
 
 	// Trial Balance reports
 	"cost center trial balance end of month year": CostCenterTrial,
