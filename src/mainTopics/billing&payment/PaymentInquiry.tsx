@@ -332,11 +332,11 @@ const PaymentInquiry: React.FC = () => {
       <div className="grid grid-cols-1 gap-4 mb-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
         {/* Individual Payments Section */}
         <div className="border border-gray-100 rounded-lg p-4 bg-white shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-800 mb-3">Individual Payments.....</h3>
+          <h3 className="text-xs font-semibold text-gray-800 mb-3">Individual Payments</h3>
 
-          <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 mb-3">
             {/* Account Number */}
-            <div className="flex flex-col">
+            <div className="flex flex-col w-full sm:w-[32%]">
               <label className="text-xs text-gray-600 flex items-center gap-1.5 mb-1">
                 <MdPermIdentity className={maroon} size={16} />
                 Account No
@@ -351,7 +351,7 @@ const PaymentInquiry: React.FC = () => {
             </div>
 
             {/* From Date */}
-            <div className="flex flex-col">
+            <div className="flex flex-col w-full sm:w-[32%]">
               <label className="text-xs text-gray-600 flex items-center gap-1.5 mb-1">
                 <MdDateRange className={maroon} size={16} />
                 From
@@ -364,26 +364,29 @@ const PaymentInquiry: React.FC = () => {
               />
             </div>
 
-            {/* Buttons */}
-            <div className="pt-2 space-y-2">
-              <button
-                onClick={() => handlePaymentInquiry("full")}
-                disabled={loading}
-                className={`w-full ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
-              >
-                {loading ? "Loading..." : "View Full Report"}
-              </button>
-              <button
-                onClick={() => handlePaymentInquiry("paymentsOnly")}
-                disabled={loading}
-                className="w-full bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center"
-              >
-                {loading ? "Loading..." : "View payments only"}
-              </button>
-              <p className="text-xs text-yellow-600">
-                this option may be a little faster than above
-              </p>
-            </div>
+            {/* View Full Report Button */}
+            <button
+              onClick={() => handlePaymentInquiry("full")}
+              disabled={loading}
+              className={`w-full sm:w-[32%] ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
+            >
+              {loading ? "Loading..." : "View Full Report"}
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* View payments only Button */}
+            <button
+              onClick={() => handlePaymentInquiry("paymentsOnly")}
+              disabled={loading}
+              className="w-full sm:w-[32%] bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center"
+            >
+              {loading ? "Loading..." : "View payments only"}
+            </button>
+
+            <p className="text-xs text-yellow-600">
+              this option may be a little faster than above
+            </p>
 
             <div className="text-xs">
               <a href="#" className="text-blue-600 hover:text-blue-800 underline">
@@ -395,11 +398,12 @@ const PaymentInquiry: React.FC = () => {
 
         {/* POS Counter Collection Section */}
         <div className="border border-gray-100 rounded-lg p-4 bg-white shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-800 mb-3">POS Counter Collection Breakup.....</h3>
+          <h3 className="text-xs font-semibold text-gray-800 mb-3">POS Counter Collection Breakup</h3>
 
-          <div className="space-y-3">
+          {/* Row 1: Province | Area | Counter */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 mb-3">
             {/* Province */}
-            <div className="flex flex-col">
+            <div className="flex flex-col w-full sm:w-[32%]">
               <label className="text-xs text-gray-600 mb-1">Province</label>
               <select
                 value={province}
@@ -415,7 +419,7 @@ const PaymentInquiry: React.FC = () => {
             </div>
 
             {/* Area */}
-            <div className="flex flex-col">
+            <div className="flex flex-col w-full sm:w-[32%]">
               <label className="text-xs text-gray-600 mb-1">Area</label>
               <select
                 value={area}
@@ -431,7 +435,7 @@ const PaymentInquiry: React.FC = () => {
             </div>
 
             {/* Counter */}
-            <div className="flex flex-col">
+            <div className="flex flex-col w-full sm:w-[32%]">
               <label className="text-xs text-gray-600 mb-1">Counter</label>
               <select
                 value={counter}
@@ -445,9 +449,12 @@ const PaymentInquiry: React.FC = () => {
                 ))}
               </select>
             </div>
+          </div>
 
+          {/* Row 2: Bill Type | Pay Mode | Date */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 mb-3">
             {/* Bill Type */}
-            <div className="flex flex-col">
+            <div className="flex flex-col w-full sm:w-[32%]">
               <label className="text-xs text-gray-600 mb-1">Bill Type</label>
               <select
                 value={billType}
@@ -463,7 +470,7 @@ const PaymentInquiry: React.FC = () => {
             </div>
 
             {/* Pay Mode */}
-            <div className="flex flex-col">
+            <div className="flex flex-col w-full sm:w-[32%]">
               <label className="text-xs text-gray-600 mb-1">Pay Mode</label>
               <select
                 value={payMode}
@@ -479,7 +486,7 @@ const PaymentInquiry: React.FC = () => {
             </div>
 
             {/* Date */}
-            <div className="flex flex-col">
+            <div className="flex flex-col w-full sm:w-[32%]">
               <label className="text-xs text-gray-600 mb-1">Date</label>
               <input
                 type="date"
@@ -488,19 +495,22 @@ const PaymentInquiry: React.FC = () => {
                 className="rounded-md bg-gray-50 h-8 px-3 text-xs border border-gray-200 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
               />
             </div>
+          </div>
+
+          {/* Row 3: View Report Button and Info */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <p className="text-xs text-yellow-600">
+              this option provides facility to access provincial server and extract information about payments
+            </p>
 
             {/* View Report Button */}
             <button
               onClick={handlePOSInquiry}
               disabled={loading}
-              className={`w-full ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center mt-2`}
+              className={`w-full sm:w-[32%] ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
             >
-              {loading ? "Loading..." : "View Report"}
+              {loading ? "Loading..." : "Generate Report"}
             </button>
-
-            <p className="text-xs text-yellow-600">
-              this option provides facility to access provincial server and extract information about payments
-            </p>
           </div>
         </div>
       </div>
