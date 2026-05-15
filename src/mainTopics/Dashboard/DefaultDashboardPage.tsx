@@ -743,47 +743,43 @@ const DefaultDashboardPage: React.FC = () => {
             .filter((rec) => rec.Date);
         };
 
-        const fetchSalesApiWithFallback = async (
-          primaryUrl: string,
-          fallbackUrl: string,
-          sourceLabel: string
-        ): Promise<SalesCollectionRecord[]> => {
-          const read = async (url: string): Promise<SalesCollectionRecord[]> => {
-            const res = await fetch(url, { headers: { Accept: "application/json" } });
-            if (!res.ok) throw new Error(`${sourceLabel} fetch failed: ${res.status}`);
+        const [ordinaryRecords, bulkRecords] = await Promise.all([
+          (async () => {
+            const res = await fetch(withRegion("/misapi/api/dashboard/salesCollection/range/ordinary"), {
+              headers: { Accept: "application/json" },
+            });
+            if (!res.ok) throw new Error(`Ordinary sales/collection fetch failed: ${res.status}`);
 
             const json: SalesCollectionApiResponse = await res.json();
             if (json?.errorMessage) {
               const details = json?.errorDetails ? ` (${json.errorDetails})` : "";
-              throw new Error(`${sourceLabel} API error: ${json.errorMessage}${details}`);
+              throw new Error(`Ordinary sales/collection API error: ${json.errorMessage}${details}`);
             }
 
             if (!json?.data?.records || !Array.isArray(json.data.records)) {
-              throw new Error(`${sourceLabel} API returned an invalid response format.`);
+              throw new Error("Ordinary sales/collection API returned an invalid response format.");
             }
 
             return normalizeSalesRecords(json.data.records);
-          };
+          })(),
+          (async () => {
+            const res = await fetch(withRegion("/misapi/api/dashboard/salesCollection/range/bulk"), {
+              headers: { Accept: "application/json" },
+            });
+            if (!res.ok) throw new Error(`Bulk sales/collection fetch failed: ${res.status}`);
 
-          try {
-            return await read(primaryUrl);
-          } catch (primaryError) {
-            console.warn(`Primary endpoint failed for ${sourceLabel}. Retrying fallback endpoint...`, primaryError);
-            return await read(fallbackUrl);
-          }
-        };
+            const json: SalesCollectionApiResponse = await res.json();
+            if (json?.errorMessage) {
+              const details = json?.errorDetails ? ` (${json.errorDetails})` : "";
+              throw new Error(`Bulk sales/collection API error: ${json.errorMessage}${details}`);
+            }
 
-        const [ordinaryRecords, bulkRecords] = await Promise.all([
-          fetchSalesApiWithFallback(
-            withRegion("/api/dashboard/salesCollection/range/ordinary"),
-            withRegion("/misapi/api/dashboard/salesCollection/range/ordinary"),
-            "Ordinary sales/collection"
-          ),
-          fetchSalesApiWithFallback(
-            withRegion("/api/dashboard/salesCollection/range/bulk"),
-            withRegion("/misapi/api/dashboard/salesCollection/range/bulk"),
-            "Bulk sales/collection"
-          ),
+            if (!json?.data?.records || !Array.isArray(json.data.records)) {
+              throw new Error("Bulk sales/collection API returned an invalid response format.");
+            }
+
+            return normalizeSalesRecords(json.data.records);
+          })(),
         ]);
 
         const ordinaryByDate = new Map(ordinaryRecords.map((rec) => [rec.Date, Number(rec.Amount) || 0]));
