@@ -350,7 +350,7 @@ const PHVEntryForm: React.FC = () => {
               return [];
             }
             try {
-              const res = await fetch(`/misapi/api/incomeexpenditure/departments/${epfNo}`);
+                const res = await fetch(`/pivapi/api/incomeexpenditure/departments/${epfNo}`);
               if (!res.ok) throw new Error(`HTTP ${res.status}`);
               const json = await res.json();
               const raw = Array.isArray(json) ? json : json.data || [];

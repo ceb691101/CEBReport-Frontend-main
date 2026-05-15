@@ -105,7 +105,7 @@ const yearOptions = Array.from(
       setLoading(true);
       try {
         const res = await fetch(
-          `/misapi/api/incomeexpenditure/departments/${encodeURIComponent(epfNo)}`,
+          `/pivapi/api/incomeexpenditure/departments/${encodeURIComponent(epfNo)}`,
           {
             method: "GET",
             headers: { "Content-Type": "application/json", Accept: "application/json" },

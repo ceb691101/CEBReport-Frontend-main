@@ -266,7 +266,7 @@ h2 { text-align: center; color: #7A0000; margin-bottom: 5px; }
             }
             try {
               const res = await fetch(
-                `/misapi/api/incomeexpenditure/departments/${epfNo}`
+              `/pivapi/api/incomeexpenditure/departments/${encodeURIComponent(epfNo)}`                
               );
               if (!res.ok) throw new Error(`HTTP ${res.status}`);
               const json = await res.json();
