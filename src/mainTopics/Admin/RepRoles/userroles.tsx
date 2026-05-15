@@ -78,13 +78,17 @@ const normalizeText = (value: unknown): string =>
 const normalizeKey = (value: unknown): string =>
 	normalizeText(value).toUpperCase();
 
+const normalizeRoleKey = (epfNo: unknown, userType: unknown): string =>
+	`${normalizeKey(epfNo)}|${normalizeKey(userType)}`;
+
 const splitDelimitedValues = (value: unknown): string[] =>
 	normalizeText(value)
 		.split(/[;,]/)
 		.map((item) => item.trim())
 		.filter(Boolean);
 
-const getRoleKey = (role: Pick<RoleRecord, "epfNo">): string => normalizeKey(role.epfNo);
+const getRoleKey = (role: Pick<RoleRecord, "epfNo" | "userType">): string =>
+	normalizeRoleKey(role.epfNo, role.userType);
 
 const actionButtonPrimaryClass =
 	"rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60";
@@ -101,7 +105,7 @@ const actionButtonLightClass =
 const UserRoles = () => {
 	const [activeTab, setActiveTab] = useState<RoleType>("user");
 	const [roles, setRoles] = useState<RoleRecord[]>([]);
-	const [selectedEpfNo, setSelectedEpfNo] = useState<string | null>(null);
+	const [selectedRoleKey, setSelectedRoleKey] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isCompaniesLoading, setIsCompaniesLoading] = useState(false);
@@ -266,8 +270,8 @@ const UserRoles = () => {
 
 			setRoles(nextRoles);
 			setCurrentPage(1);
-			setSelectedEpfNo((current) =>
-				current && nextRoles.some((role: RoleRecord) => normalizeKey(role.epfNo) === normalizeKey(current))
+			setSelectedRoleKey((current) =>
+				current && nextRoles.some((role: RoleRecord) => getRoleKey(role) === current)
 					? current
 					: null
 			);
@@ -276,7 +280,7 @@ const UserRoles = () => {
 				error instanceof Error ? error.message : "Failed to load roles.";
 			toast.error(message);
 			setRoles([]);
-			setSelectedEpfNo(null);
+			setSelectedRoleKey(null);
 		} finally {
 			setIsLoading(false);
 		}
@@ -349,7 +353,7 @@ const UserRoles = () => {
 		setForm(initialForm);
 		setAssignedCompanies([]);
 		setCostCentres([]);
-		setSelectedEpfNo(null);
+		setSelectedRoleKey(null);
 	};
 
 	const handleCostCentreToggle = (costCentreId: string) => {
@@ -425,7 +429,7 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/costcentres`,
+				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}/costcentres`,
 				{
 					method: "POST",
 					headers: {
@@ -449,7 +453,7 @@ const UserRoles = () => {
 				costCentres: Array.from(new Set([...current.costCentres, ...requestedCostCentres])),
 			}));
 			await loadRoles(activeTab);
-			setSelectedEpfNo(selectedRole.epfNo);
+			setSelectedRoleKey(getRoleKey(selectedRole));
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : "Failed to add cost centres.";
@@ -474,7 +478,7 @@ const UserRoles = () => {
 	});
 
 	const handleRoleSelect = (role: RoleRecord) => {
-		setSelectedEpfNo(role.epfNo);
+		setSelectedRoleKey(getRoleKey(role));
 		const roleCompanies = splitDelimitedValues(role.company);
 		const primaryCompany = roleCompanies[0] ?? normalizeText(role.company);
 		setAssignedCompanies(roleCompanies.length > 0 ? roleCompanies : primaryCompany ? [primaryCompany] : []);
@@ -543,11 +547,14 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}`,
+				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
 				{
 					method: "PUT",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify(buildRolePayload(selectedRole.epfNo)),
+					body: JSON.stringify({
+						...buildRolePayload(selectedRole.epfNo),
+						originalUserType: selectedRole.userType,
+					}),
 				}
 			);
 			const payload = await response.json();
@@ -558,7 +565,7 @@ const UserRoles = () => {
 
 			toast.success(payload?.data?.message ?? "Role updated successfully.");
 			await loadRoles(activeTab);
-			setSelectedEpfNo(form.epfNo.trim());
+			setSelectedRoleKey(normalizeRoleKey(form.epfNo, form.userType === "ADMINISTRATOR" ? "ADMIN" : form.userType));
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : "Failed to update role.";
@@ -577,7 +584,7 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}`,
+				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
 				{ method: "DELETE" }
 			);
 			const payload = await response.json();
@@ -598,7 +605,9 @@ const UserRoles = () => {
 		}
 	};
 
-	const selectedRole = roles.find((role) => normalizeKey(role.epfNo) === normalizeKey(selectedEpfNo)) ?? null;
+	const selectedRole = selectedRoleKey
+		? roles.find((role) => getRoleKey(role) === selectedRoleKey) ?? null
+		: null;
 	const assignedCostCentres = Array.from(
 		new Set(form.costCentres.map((value) => normalizeText(value)).filter(Boolean))
 	);
@@ -623,7 +632,7 @@ const UserRoles = () => {
 			return leftPinned ? -1 : 1;
 		}
 
-		return left.roleName.localeCompare(right.roleName) || left.epfNo.localeCompare(right.epfNo);
+		return left.roleName.localeCompare(right.roleName) || left.epfNo.localeCompare(right.epfNo) || left.userType.localeCompare(right.userType);
 	});
 	const totalPages = Math.max(1, Math.ceil(filteredRoles.length / rolesPerPage));
 	const paginatedRoles = sortedRoles.slice(
@@ -939,11 +948,11 @@ const UserRoles = () => {
 											</tr>
 										) : (
 											paginatedRoles.map((role) => {
-												const isSelected = normalizeKey(selectedEpfNo) === normalizeKey(role.epfNo);
+												const isSelected = selectedRoleKey ? getRoleKey(role) === selectedRoleKey : false;
 												const isPinned = pinnedRoles.includes(getRoleKey(role));
 												return (
 													<tr
-														key={`${role.epfNo}-${role.roleId}`}
+														key={`${role.epfNo}-${role.userType}-${role.roleId}`}
 														onClick={() => handleRoleSelect(role)}
 														className={`cursor-pointer transition ${isSelected ? "bg-[#7A0000]/8" : "hover:bg-stone-50"
 															}`}
