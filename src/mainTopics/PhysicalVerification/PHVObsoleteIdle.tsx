@@ -88,7 +88,7 @@ const PHVObsoleteIdleWHwise: React.FC = () => {
       setLoading(true);
       try {
         const res = await fetch(
-          `/misapi/api/incomeexpenditure/departments/${encodeURIComponent(epfNo)}`,
+          `/pivapi/api/incomeexpenditure/departments/${encodeURIComponent(epfNo)}`,
           {
             method: "GET",
             headers: {
