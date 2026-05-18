@@ -21,6 +21,14 @@ interface POSCollectionRecord {
   [key: string]: any;
 }
 
+interface LatestUpdateTimeRecord {
+  agent: string;
+  center: string;
+  lastUpdate: string;
+  agentName: string;
+  centerName: string;
+}
+
 interface PaymentInquiryResult {
   accountNumber: string;
   customerName: string;
@@ -65,6 +73,11 @@ const PaymentInquiry: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [paymentResult, setPaymentResult] = useState<PaymentInquiryResult | null>(null);
   const [posResult, setPosResult] = useState<POSCollectionResult | null>(null);
+  const [latestUpdateTimes, setLatestUpdateTimes] = useState<LatestUpdateTimeRecord[] | null>(null);
+  const [latestUpdateError, setLatestUpdateError] = useState<string | null>(null);
+  const [latestUpdateLoading, setLatestUpdateLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [activeTab, setActiveTab] = useState<"individual" | "pos" | null>(null);
 
   // Print refs
@@ -240,6 +253,67 @@ const PaymentInquiry: React.FC = () => {
     }
   };
 
+  const handlePreviewLatestUpdateTimes = async () => {
+    setLatestUpdateLoading(true);
+    setLatestUpdateError(null);
+    setLatestUpdateTimes(null);
+
+    try {
+      const response = await fetch("/api/customerdetails/latest-update-times", {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.errorMessage || "Failed to load latest update times");
+      }
+
+      if (payload?.errorMessage) {
+        throw new Error(payload.errorMessage);
+      }
+
+      // backend returns { data: LatestUpdateTimeResponse, errorMessage }
+      // LatestUpdateTimeResponse has `Records` (PascalCase) on the server model
+      const raw = payload?.data || null;
+
+      let records: any[] = [];
+
+      if (!raw) {
+        records = [];
+      } else if (Array.isArray(raw)) {
+        records = raw;
+      } else if (Array.isArray(raw.records)) {
+        records = raw.records;
+      } else if (Array.isArray(raw.Records)) {
+        records = raw.Records;
+      } else if (Array.isArray(payload?.records)) {
+        records = payload.records;
+      } else if (Array.isArray(payload?.Records)) {
+        records = payload.Records;
+      }
+
+      // Normalize property names to the frontend record shape
+      const mapped = records.map((r: any) => ({
+        agent: r.agent ?? r.Agent ?? "",
+        center: r.center ?? r.Center ?? "",
+        lastUpdate: r.lastUpdate ?? r.LastUpdate ?? "",
+        agentName: r.agentName ?? r.AgentName ?? "",
+        centerName: r.centerName ?? r.CenterName ?? "",
+      }));
+
+      setLatestUpdateTimes(mapped);
+      setCurrentPage(1);
+    } catch (err: any) {
+      setLatestUpdateError(err.message || "Failed to load latest update times");
+    } finally {
+      setLatestUpdateLoading(false);
+    }
+  };
+
   const handlePaymentPrint = () => {
     if (paymentPrintRef.current) {
       const printWindow = window.open('', '_blank');
@@ -389,12 +463,134 @@ const PaymentInquiry: React.FC = () => {
             </p>
 
             <div className="text-xs">
-              <a href="#" className="text-blue-600 hover:text-blue-800 underline">
+              <button
+                type="button"
+                onClick={handlePreviewLatestUpdateTimes}
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
                 Preview latest update times of servers
-              </a>
+              </button>
             </div>
           </div>
         </div>
+
+        {latestUpdateError && (
+          <div className="mt-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
+            <p className="text-xs text-red-600">{latestUpdateError}</p>
+          </div>
+        )}
+
+        {latestUpdateTimes && (
+          <div className="mt-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className={`text-sm font-bold ${maroon}`}>Latest Update Times of Servers</h2>
+              {latestUpdateLoading && <span className="text-xs text-gray-500">Loading...</span>}
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-xs border border-gray-200">
+                <thead className="bg-[#800000] text-white">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-semibold">Agent</th>
+                    <th className="px-3 py-2 text-left font-semibold">Center</th>
+                    <th className="px-3 py-2 text-left font-semibold">Last Update</th>
+                    <th className="px-3 py-2 text-left font-semibold">Agent Name</th>
+                    <th className="px-3 py-2 text-left font-semibold">Center Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {latestUpdateTimes.length > 0 ? (
+                    (() => {
+                      const total = latestUpdateTimes.length;
+                      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                      const safePage = Math.min(Math.max(1, currentPage), totalPages);
+                      const start = (safePage - 1) * pageSize;
+                      const end = Math.min(start + pageSize, total);
+                      const pageRecords = latestUpdateTimes.slice(start, end);
+
+                      return (
+                        <>
+                          {pageRecords.map((record, idx) => (
+                            <tr key={`${record.agent}-${record.center}-${start + idx}`} className={(start + idx) % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                              <td className="px-3 py-2 border-t border-gray-200">{record.agent}</td>
+                              <td className="px-3 py-2 border-t border-gray-200">{record.center}</td>
+                              <td className="px-3 py-2 border-t border-gray-200">{record.lastUpdate}</td>
+                              <td className="px-3 py-2 border-t border-gray-200">{record.agentName}</td>
+                              <td className="px-3 py-2 border-t border-gray-200">{record.centerName}</td>
+                            </tr>
+                          ))}
+                        </>
+                      );
+                    })()
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-3 text-center text-gray-500 border-t border-gray-200">
+                        No update times found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {latestUpdateTimes.length > 0 && (
+              <div className="mt-3 flex items-center justify-between">
+                <div className="text-xs text-gray-600">
+                  Showing {Math.min((currentPage - 1) * pageSize + 1, latestUpdateTimes.length)} - {Math.min(currentPage * pageSize, latestUpdateTimes.length)} of {latestUpdateTimes.length}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                    className="text-xs p-1 border border-gray-200 rounded bg-white"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-2 py-1 text-xs border rounded disabled:opacity-50"
+                    >
+                      Prev
+                    </button>
+
+                    {/* Page numbers */}
+                    {(() => {
+                      const total = latestUpdateTimes.length;
+                      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                      const pages: number[] = [];
+                      for (let i = 1; i <= totalPages; i += 1) pages.push(i);
+                      return pages.map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`px-2 py-1 text-xs border rounded ${p === currentPage ? 'bg-[#800000] text-white' : 'bg-white'}`}
+                        >
+                          {p}
+                        </button>
+                      ));
+                    })()}
+
+                    <button
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                      disabled={currentPage * pageSize >= latestUpdateTimes.length}
+                      className="px-2 py-1 text-xs border rounded disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* POS Counter Collection Section */}
         <div className="border border-gray-100 rounded-lg p-4 bg-white shadow-sm">

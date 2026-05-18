@@ -38,7 +38,7 @@ import SolarAgeAnalysis from "../mainTopics/Analysis/SolarAgeAnalysis";
 
 // Billing & Payment reports
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
-import PaymentInquiry from "../mainTopics/billing&payment/PaymentInquiry";
+import PaymentInquiry from "../mainTopics/CustomerDetails/PaymentInquiry";
 
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
