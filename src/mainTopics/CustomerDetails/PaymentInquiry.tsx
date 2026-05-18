@@ -410,7 +410,7 @@ const PaymentInquiry: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 mb-3">
             {/* Account Number */}
-            <div className="flex flex-col w-full sm:w-[32%]">
+            <div className="flex flex-col w-full sm:w-[24%]">
               <label className="text-xs text-gray-600 flex items-center gap-1.5 mb-1">
                 <MdPermIdentity className={maroon} size={16} />
                 Account No
@@ -425,7 +425,7 @@ const PaymentInquiry: React.FC = () => {
             </div>
 
             {/* From Date */}
-            <div className="flex flex-col w-full sm:w-[32%]">
+            <div className="flex flex-col w-full sm:w-[24%]">
               <label className="text-xs text-gray-600 flex items-center gap-1.5 mb-1">
                 <MdDateRange className={maroon} size={16} />
                 From
@@ -442,155 +442,160 @@ const PaymentInquiry: React.FC = () => {
             <button
               onClick={() => handlePaymentInquiry("full")}
               disabled={loading}
-              className={`w-full sm:w-[32%] ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
+              className={`w-full sm:w-[24%] ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
             >
               {loading ? "Loading..." : "View Full Report"}
             </button>
-          </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            {/* View payments only Button */}
+            {/* View payments only Button (moved inline) */}
             <button
               onClick={() => handlePaymentInquiry("paymentsOnly")}
               disabled={loading}
-              className="w-full sm:w-[32%] bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center"
+              className={`w-full sm:w-[24%] ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
             >
               {loading ? "Loading..." : "View payments only"}
             </button>
-
-            <p className="text-xs text-yellow-600">
-              this option may be a little faster than above
-            </p>
-
-            <div className="text-xs">
-              <button
-                type="button"
-                onClick={handlePreviewLatestUpdateTimes}
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                Preview latest update times of servers
-              </button>
-            </div>
           </div>
         </div>
 
-        {latestUpdateError && (
-          <div className="mt-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
-            <p className="text-xs text-red-600">{latestUpdateError}</p>
+        <div className="border border-gray-100 rounded-lg p-4 bg-white shadow-sm">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h3 className="text-xs font-semibold text-gray-800">Latest Update Times of Servers</h3>
+            <button
+              type="button"
+              onClick={handlePreviewLatestUpdateTimes}
+              className="px-3 py-1.5 bg-gray-600 hover:bg-gray-700 rounded-md text-xs font-medium text-white transition-colors"
+            >
+              Preview latest update times of servers
+            </button>
           </div>
-        )}
 
-        {latestUpdateTimes && (
-          <div className="mt-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className={`text-sm font-bold ${maroon}`}>Latest Update Times of Servers</h2>
-              {latestUpdateLoading && <span className="text-xs text-gray-500">Loading...</span>}
+          {latestUpdateError && (
+            <div className="mb-3 p-3 rounded-lg border border-red-100 bg-red-50">
+              <p className="text-xs text-red-600">{latestUpdateError}</p>
             </div>
+          )}
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-xs border border-gray-200">
-                <thead className="bg-[#800000] text-white">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-semibold">Agent</th>
-                    <th className="px-3 py-2 text-left font-semibold">Center</th>
-                    <th className="px-3 py-2 text-left font-semibold">Last Update</th>
-                    <th className="px-3 py-2 text-left font-semibold">Agent Name</th>
-                    <th className="px-3 py-2 text-left font-semibold">Center Name</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {latestUpdateTimes.length > 0 ? (
-                    (() => {
-                      const total = latestUpdateTimes.length;
-                      const totalPages = Math.max(1, Math.ceil(total / pageSize));
-                      const safePage = Math.min(Math.max(1, currentPage), totalPages);
-                      const start = (safePage - 1) * pageSize;
-                      const end = Math.min(start + pageSize, total);
-                      const pageRecords = latestUpdateTimes.slice(start, end);
-
-                      return (
-                        <>
-                          {pageRecords.map((record, idx) => (
-                            <tr key={`${record.agent}-${record.center}-${start + idx}`} className={(start + idx) % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                              <td className="px-3 py-2 border-t border-gray-200">{record.agent}</td>
-                              <td className="px-3 py-2 border-t border-gray-200">{record.center}</td>
-                              <td className="px-3 py-2 border-t border-gray-200">{record.lastUpdate}</td>
-                              <td className="px-3 py-2 border-t border-gray-200">{record.agentName}</td>
-                              <td className="px-3 py-2 border-t border-gray-200">{record.centerName}</td>
-                            </tr>
-                          ))}
-                        </>
-                      );
-                    })()
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-3 py-3 text-center text-gray-500 border-t border-gray-200">
-                        No update times found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination Controls */}
-            {latestUpdateTimes.length > 0 && (
-              <div className="mt-3 flex items-center justify-between">
-                <div className="text-xs text-gray-600">
-                  Showing {Math.min((currentPage - 1) * pageSize + 1, latestUpdateTimes.length)} - {Math.min(currentPage * pageSize, latestUpdateTimes.length)} of {latestUpdateTimes.length}
-                </div>
-
+          {latestUpdateTimes && (
+            <>
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <select
-                    value={pageSize}
-                    onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                    className="text-xs p-1 border border-gray-200 rounded bg-white"
+                  <button
+                    type="button"
+                    onClick={() => setLatestUpdateTimes(null)}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
                   >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="px-2 py-1 text-xs border rounded disabled:opacity-50"
-                    >
-                      Prev
-                    </button>
-
-                    {/* Page numbers */}
-                    {(() => {
-                      const total = latestUpdateTimes.length;
-                      const totalPages = Math.max(1, Math.ceil(total / pageSize));
-                      const pages: number[] = [];
-                      for (let i = 1; i <= totalPages; i += 1) pages.push(i);
-                      return pages.map((p) => (
-                        <button
-                          key={p}
-                          onClick={() => setCurrentPage(p)}
-                          className={`px-2 py-1 text-xs border rounded ${p === currentPage ? 'bg-[#800000] text-white' : 'bg-white'}`}
-                        >
-                          {p}
-                        </button>
-                      ));
-                    })()}
-
-                    <button
-                      onClick={() => setCurrentPage((p) => p + 1)}
-                      disabled={currentPage * pageSize >= latestUpdateTimes.length}
-                      className="px-2 py-1 text-xs border rounded disabled:opacity-50"
-                    >
-                      Next
-                    </button>
-                  </div>
+                    Back
+                  </button>
+                  {latestUpdateLoading && <span className="text-xs text-gray-500">Loading...</span>}
                 </div>
               </div>
-            )}
-          </div>
-        )}
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-xs border border-gray-200">
+                  <thead className="bg-[#800000] text-white">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold">Agent</th>
+                      <th className="px-3 py-2 text-left font-semibold">Center</th>
+                      <th className="px-3 py-2 text-left font-semibold">Last Update</th>
+                      <th className="px-3 py-2 text-left font-semibold">Agent Name</th>
+                      <th className="px-3 py-2 text-left font-semibold">Center Name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {latestUpdateTimes.length > 0 ? (
+                      (() => {
+                        const total = latestUpdateTimes.length;
+                        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                        const safePage = Math.min(Math.max(1, currentPage), totalPages);
+                        const start = (safePage - 1) * pageSize;
+                        const end = Math.min(start + pageSize, total);
+                        const pageRecords = latestUpdateTimes.slice(start, end);
+
+                        return (
+                          <>
+                            {pageRecords.map((record, idx) => (
+                              <tr key={`${record.agent}-${record.center}-${start + idx}`} className={(start + idx) % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                                <td className="px-3 py-2 border-t border-gray-200">{record.agent}</td>
+                                <td className="px-3 py-2 border-t border-gray-200">{record.center}</td>
+                                <td className="px-3 py-2 border-t border-gray-200">{record.lastUpdate}</td>
+                                <td className="px-3 py-2 border-t border-gray-200">{record.agentName}</td>
+                                <td className="px-3 py-2 border-t border-gray-200">{record.centerName}</td>
+                              </tr>
+                            ))}
+                          </>
+                        );
+                      })()
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-3 py-3 text-center text-gray-500 border-t border-gray-200">
+                          No update times found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {latestUpdateTimes.length > 0 && (
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="text-xs text-gray-600">
+                    Showing {Math.min((currentPage - 1) * pageSize + 1, latestUpdateTimes.length)} - {Math.min(currentPage * pageSize, latestUpdateTimes.length)} of {latestUpdateTimes.length}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={pageSize}
+                      onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                      className="text-xs p-1 border border-gray-200 rounded bg-white"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-2 py-1 text-xs border rounded disabled:opacity-50"
+                      >
+                        Prev
+                      </button>
+
+                      {/* Page numbers */}
+                      {(() => {
+                        const total = latestUpdateTimes.length;
+                        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                        const pages: number[] = [];
+                        for (let i = 1; i <= totalPages; i += 1) pages.push(i);
+                        return pages.map((p) => (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            className={`px-2 py-1 text-xs border rounded ${p === currentPage ? 'bg-[#800000] text-white' : 'bg-white'}`}
+                          >
+                            {p}
+                          </button>
+                        ));
+                      })()}
+
+                      <button
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                        disabled={currentPage * pageSize >= latestUpdateTimes.length}
+                        className="px-2 py-1 text-xs border rounded disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
         {/* POS Counter Collection Section */}
         <div className="border border-gray-100 rounded-lg p-4 bg-white shadow-sm">
