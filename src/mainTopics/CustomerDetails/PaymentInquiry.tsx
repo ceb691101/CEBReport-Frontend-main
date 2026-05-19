@@ -124,11 +124,13 @@ const PaymentInquiry: React.FC = () => {
       const payload = {
         acctNo,
         fromDate,
-        inquiryType: type,
       };
 
-      // Mock API call - replace with actual endpoint
-      const response = await fetch("/CEBINFO_API_2025/api/paymentinquiry", {
+      const endpoint = type === "full"
+        ? "/api/customerdetails/payment-full-report"
+        : "/api/customerdetails/payment-payments-only";
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -137,41 +139,37 @@ const PaymentInquiry: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        // Mock response for demonstration
-        const mockData: PaymentInquiryResult = {
-          accountNumber: acctNo,
-          customerName: "Sample Customer",
-          fromDate,
-          toDate: new Date().toISOString().split("T")[0],
-          totalAmount: 15500.00,
-          paymentRecords: [
-            {
-              id: "1",
-              date: fromDate,
-              amount: 5000,
-              paymentMode: "Cash",
-              reference: "REF001",
-              status: "Completed",
-            },
-            {
-              id: "2",
-              date: new Date(new Date(fromDate).getTime() + 86400000).toISOString().split("T")[0],
-              amount: 10500,
-              paymentMode: "Cheque",
-              reference: "CHK123456",
-              status: "Completed",
-            },
-          ],
-          errorMessage: null,
-        };
-        setPaymentResult(mockData);
-        setActiveTab("individual");
-      } else {
-        const data: PaymentInquiryResult = await response.json();
-        setPaymentResult(data);
-        setActiveTab("individual");
+      const payload_response = await response.json();
+
+      if (!response.ok || payload_response?.errorMessage) {
+        throw new Error(payload_response?.errorMessage || "Failed to fetch payment inquiry");
       }
+
+      const backendData = payload_response?.data;
+
+      if (!backendData) {
+        throw new Error("No data returned from server");
+      }
+
+      const mappedResult: PaymentInquiryResult = {
+        accountNumber: backendData.accountNumber || acctNo,
+        customerName: backendData.customerName || "",
+        fromDate: backendData.fromDate || fromDate,
+        toDate: backendData.toDate || new Date().toISOString().split("T")[0],
+        totalAmount: backendData.totalAmount || 0,
+        paymentRecords: (backendData.paymentRecords || []).map((record: any, idx: number) => ({
+          id: String(idx + 1),
+          date: record.transDate || "",
+          amount: parseFloat(record.transAmt) || 0,
+          paymentMode: record.codeDescription || record.payMode || "",
+          reference: record.chequeMoneyOrderNo || record.stubNo || "",
+          status: "Completed",
+        })),
+        errorMessage: null,
+      };
+
+      setPaymentResult(mappedResult);
+      setActiveTab("individual");
     } catch (err: any) {
       setError(err.message || "Failed to fetch payment inquiry");
     } finally {
