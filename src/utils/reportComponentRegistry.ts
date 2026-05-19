@@ -75,6 +75,7 @@ import AverageConsumptions from "../mainTopics/inventory/AverageConsumptions";
 import AverageConsumptionSelected from "../mainTopics/inventory/AverageConsumptionSelected";
 import QtyOnHandAllRegion from "../mainTopics/inventory/QtyOnHandAllRegions";
 import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
+import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuantityOnHand";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -281,6 +282,10 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise quantity on hand": CostCenterQuantityHnad,
 	"average consumptions all material codes": AverageConsumptions,
 	"average consumptions selected maerial codes": AverageConsumptionSelected,
+	// Province / Provincial quantity on hand variants
+	"province wise quantity on hand": ProvinceWiseQuantityOnHand,
+	"province wise quantity on hand provincial stores only": ProvinceWiseQuantityOnHand,
+	"province wise quantity on hand (provincial stores only)": ProvinceWiseQuantityOnHand,
 	"provincial quantity on hand cross tab": ProvincialQtyHand,
 	"quantity on hand all region material active online": QtyOnHandAllRegion,
 
@@ -313,14 +318,28 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"physical verification shortage surplus wh wise av 1 b": PHVShortageSurplusWHwise,
 	"6 1 physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
 	"physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
+	// PHV abbreviation variants for obsolete/idle (non-BOS)
+	"phv obsolete idle grade code av 7a": PHVObsoleteIdle,
+	"phv obsolete idle grade code av 7 a": PHVObsoleteIdle,
 	"6 2 physical verification damage av 7b": PHVDamage,
 	"physical verification damage av 7b": PHVDamage,
+	// Common 'PHV' abbreviation variants so lookup works when UI shows 'PHV'
+	"phv damage av 7b": PHVDamage,
+	"phv damage av 7 b": PHVDamage,
 	"7 physical verification non moving wh wise bos av 6 bos": PHVNonMovingWHwiseBOS,
 	"physical verification non moving wh wise bos av 6 bos": PHVNonMovingWHwiseBOS,
 	"8 physical verification obsolete idle bos av 7a bos": PHVObsoleteIdleBOS,
 	"physical verification obsolete idle bos av 7a bos": PHVObsoleteIdleBOS,
+	// PHV abbreviation variants for obsolete/idle BOS
+	"phv obsolete idle bos av 7a bos": PHVObsoleteIdleBOS,
+	"phv obsolete idle bos av 7 b bos": PHVObsoleteIdleBOS,
+	"phv obsolete idle bos": PHVObsoleteIdleBOS,
 	"9 physical verification damage bos av 7b bos": PHVDamageBOS,
 	"physical verification damage bos av 7b bos": PHVDamageBOS,
+	// Add common abbreviated variants for PHV Damage BOS (UI may show 'PHV')
+	"phv damage bos av 7b bos": PHVDamageBOS,
+	"phv damage bos av 7 b bos": PHVDamageBOS,
+	"phv damage bos": PHVDamageBOS,
 	"10 last document no selected year": LastDocNo,
 	"last document no selected year": LastDocNo,
 
