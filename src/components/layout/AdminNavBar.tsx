@@ -3,11 +3,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { useState, useRef, useEffect } from "react";
 import { useLogged } from "../../contexts/UserLoggedStateContext";
-// import CEBlogo from "../../assets/CEBLOGO.png";
 
-const UserNavBar = () => {
+const AdminNavBar = () => {
   const navigate = useNavigate();
-  const { user } = useUser(); // make sure logout is defined in your context
+  const { user } = useUser();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const { logout } = useLogged();
@@ -43,7 +42,7 @@ const UserNavBar = () => {
   }, []);
 
   const handleProfileClick = () => {
-    navigate("/user");
+    navigate("/adminprofile");
     setIsOpen(false);
   };
 
@@ -61,29 +60,16 @@ const UserNavBar = () => {
       {/* Left Side - Logo & Branding */}
       <div className="absolute left-4 sm:left-6 top-1/2 transform -translate-y-1/2">
         <Link
-          to="/dashboard"
+          to="/adminhome"
           className="flex items-center group transition-all duration-300 hover:scale-105"
-          aria-label="Go to Dashboard"
+          aria-label="Go to Admin Dashboard"
         >
-          {/* <div className="relative">
-            <div className="w-12 sm:w-14 md:w-16 transition-all duration-300 flex items-center group-hover:scale-110">
-              <img
-                src={CEBlogo}
-                alt="CEB Logo"
-                className="w-full h-auto object-contain max-h-12"
-              />
-            </div>
-          </div> */}
-
           <div className="ml-3 sm:ml-4 flex items-center gap-2">
             <div className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide">
               REPORTING System
             </div>
-            {/* <div className="text-xs sm:text-sm md:text-base font-semibold text-white/80">
-    Version 1.1
-  </div> */}
             <div className="text-[11px] px-2 py-0.5 rounded-full bg-white/20 text-white">
-              v1.3
+              v1.2
             </div>
           </div>
         </Link>
@@ -126,7 +112,7 @@ const UserNavBar = () => {
                 </div>
                 <div>
                   <div className="font-semibold text-gray-900 text-sm">{user.Name}</div>
-                  <div className="text-xs text-gray-500">System Management</div>
+                  <div className="text-xs text-gray-500">Administrator</div>
                 </div>
               </div>
             </div>
@@ -157,7 +143,7 @@ const UserNavBar = () => {
 
             <div className="p-3 bg-gray-50 border-t border-gray-100">
               <div className="text-xs text-gray-500 text-center">
-                Reporting System Portal v1.3
+                Reporting System Portal v1.2
               </div>
             </div>
           </div>
@@ -167,4 +153,4 @@ const UserNavBar = () => {
   );
 };
 
-export default UserNavBar;
+export default AdminNavBar;

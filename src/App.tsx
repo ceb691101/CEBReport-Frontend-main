@@ -31,6 +31,15 @@ function App() {
         />
 
 				<Route
+					path="/adminprofile"
+					element={
+						<Layout>
+							<UserDetails />
+						</Layout>
+					}
+				/>
+
+				<Route
 					path="/home"
 					element={
 						<Layout>

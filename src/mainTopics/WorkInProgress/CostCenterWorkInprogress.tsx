@@ -110,7 +110,7 @@ const CostCenterWorkInprogress = ({
 			setLoading(true);
 			try {
 				const res = await fetch(
-					`/misapi/api/incomeexpenditure/departments/${epfNo}`
+              `/pivapi/api/incomeexpenditure/departments/${encodeURIComponent(epfNo)}`                
 				);
 				if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 

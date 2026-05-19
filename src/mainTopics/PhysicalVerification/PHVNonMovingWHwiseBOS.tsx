@@ -105,7 +105,8 @@ const PHVNonMovingWHwiseBOS: React.FC = () => {
       setLoading(true);
       try {
         const res = await fetch(
-          `/misapi/api/incomeexpenditure/departments/${encodeURIComponent(epfNo)}`,
+          `/pivapi/api/incomeexpenditure/departments/${encodeURIComponent(epfNo)}`,
+          
           { method: "GET", headers: { "Content-Type": "application/json", Accept: "application/json" }, credentials: "include" }
         );
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);

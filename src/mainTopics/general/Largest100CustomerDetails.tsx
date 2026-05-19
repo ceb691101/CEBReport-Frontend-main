@@ -341,10 +341,6 @@ const TopCustomers: React.FC = () => {
               <h2 className={`text-xl font-bold ${maroon}`}>
                 Largest Customers – Consumption Wise
               </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Bill Cycle: <strong>{resolvedBillCycle}</strong>
-                {" "}| Showing: <strong>{reportData.length}</strong> customers
-              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">

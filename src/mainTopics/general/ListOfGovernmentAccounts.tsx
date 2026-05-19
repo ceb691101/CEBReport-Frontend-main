@@ -149,7 +149,7 @@ const ListOfGovernmentAccounts: React.FC = () => {
       setLoadingAreas(true);
       setAreaError("");
       try {
-        const response = await apiFetch<any[]>(`/misapi/api/shared/areas`);
+        const response = await apiFetch<any[]>(`/misapi/api/ordinary/areas`);
         if (response.errorMessage) {
           setAreaError(response.errorMessage);
         } else if (response.data && Array.isArray(response.data)) {

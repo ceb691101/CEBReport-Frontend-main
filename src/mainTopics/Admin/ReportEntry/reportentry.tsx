@@ -87,6 +87,18 @@ const ReportEntry = () => {
     const [mode, setMode] = useState<"add" | "edit">("add");
     const [deleteTargetEntry, setDeleteTargetEntry] = useState<ReportEntryRecord | null>(null);
 
+    const loadNextId = async () => {
+        try {
+            const response = await fetch("/roleadminapi/api/reportentry/nextid");
+            const payload = await response.json();
+            if (payload?.data) {
+                setForm((prev) => ({ ...prev, repIdNo: payload.data }));
+            }
+        } catch (error) {
+            console.error("Failed to load next ID:", error);
+        }
+    };
+
     const loadCategories = async () => {
         setIsLoading(true);
 
@@ -239,16 +251,23 @@ const ReportEntry = () => {
         }
 
         if (normalizedRepIdNo > 0) {
-            const duplicateEntry = entries.some(
-                (entry) =>
-                    Number(entry.repIdNo) === normalizedRepIdNo &&
-                    normalizeRepId(entry.repId) === normalizedRepId
+            const duplicateIdNo = entries.some(
+                (entry) => Number(entry.repIdNo) === normalizedRepIdNo
             );
 
-            if (duplicateEntry) {
-                toast.error("Same Report ID NO and Report ID already exists.");
+            if (duplicateIdNo) {
+                toast.error("Report ID NO already exists.");
                 return;
             }
+        }
+
+        const duplicateRepId = entries.some(
+            (entry) => normalizeRepId(entry.repId) === normalizedRepId
+        );
+
+        if (duplicateRepId) {
+            toast.error("Report ID already exists.");
+            return;
         }
 
         setIsSubmitting(true);
@@ -457,12 +476,14 @@ const ReportEntry = () => {
         setActiveCategoryFilter("");
         setSearchQuery("");
         loadReportEntries("");
+        loadNextId();
     };
 
     useEffect(() => {
         loadCategories();
         loadReportEntries();
         loadParameters();
+        loadNextId();
     }, []);
 
     const handleCategoryFilterClick = (catCode: string) => {
@@ -473,6 +494,7 @@ const ReportEntry = () => {
         setForm({ ...initialForm, catCode });
         setSelectedParameters([]);
         loadReportEntries(catCode);
+        loadNextId();
     };
 
     const filteredEntries = entries.filter((entry) => {
@@ -540,6 +562,7 @@ const ReportEntry = () => {
                                         }}
                                         placeholder="Enter report id no"
                                         type="number"
+                                        disabled={mode === "edit"}
                                     />
                                     <Input
                                         label="Report ID"

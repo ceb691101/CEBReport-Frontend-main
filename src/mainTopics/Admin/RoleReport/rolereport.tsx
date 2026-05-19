@@ -6,6 +6,7 @@ import {
   CircleChevronRight,
   Search,
 } from "lucide-react";
+import { Pin, PinOff } from "lucide-react";
 
 type ViewMode = "category" | "name";
 
@@ -41,12 +42,25 @@ const normalizeText = (value: unknown): string =>
 const normalizeKey = (value: unknown): string =>
   normalizeText(value).toUpperCase();
 
+const pinnedStorageKey = "role-report-pins";
+
+const getRoleKey = (role: Pick<RoleRecord, "roleId">): string =>
+  normalizeKey(role.roleId);
+
 const RoleReport = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("category");
   const [reportSearch, setReportSearch] = useState<string>("");
   const [roleSearch, setRoleSearch] = useState<string>("");
 
   const [roles, setRoles] = useState<RoleRecord[]>([]);
+    const [pinnedRoles, setPinnedRoles] = useState<string[]>(() => {
+      try {
+        const stored = localStorage.getItem(pinnedStorageKey);
+        return stored ? JSON.parse(stored) : [];
+      } catch {
+        return [];
+      }
+    });
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
   const [reports, setReports] = useState<ReportRecord[]>([]);
 
@@ -64,6 +78,10 @@ const RoleReport = () => {
   const [isReportsLoading, setIsReportsLoading] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+    useEffect(() => {
+      localStorage.setItem(pinnedStorageKey, JSON.stringify(pinnedRoles));
+    }, [pinnedRoles]);
 
   const fetchRoleData = async (type: "USER" | "ADMIN") => {
     const endpointCandidates = [
@@ -245,12 +263,67 @@ const RoleReport = () => {
 
       return haystack.includes(query);
     });
-  }, [roles, roleSearch]);
+    }, [roles, roleSearch, pinnedRoles]);
 
   useEffect(() => {
     setEnteredName(selectedRole?.roleName ?? "");
     setEnteredUserName(selectedRole?.roleId ?? "");
   }, [selectedRole]);
+
+  useEffect(() => {
+    if (!selectedRoleId) {
+      setSelectedCategories([]);
+      setSelectedReports([]);
+      return;
+    }
+
+    const loadAssignedReportsForRole = async () => {
+      try {
+        const resp = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports`);
+        if (!resp.ok) {
+          throw new Error(`Failed to load assigned reports. (${resp.status})`);
+        }
+
+        const payload = await resp.json();
+        if (payload?.errorMessage) {
+          throw new Error(payload.errorMessage);
+        }
+
+        const items = Array.isArray(payload?.data) ? payload.data : [];
+        const repIds = items.map((it: any) => it?.RepId ?? it?.repId ?? "").filter(Boolean);
+        const catCodes = items.map((it: any) => it?.CatCode ?? it?.catCode ?? "").filter(Boolean);
+
+        setSelectedReports(Array.from(new Set(repIds)));
+        setSelectedCategories(Array.from(new Set(catCodes)));
+        setRoleReportMap((current) => ({ ...current, [selectedRoleId]: Array.from(new Set(repIds)) }));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to load assigned reports.";
+        toast.error(message);
+        setSelectedReports([]);
+        setSelectedCategories([]);
+      }
+    };
+
+    loadAssignedReportsForRole();
+  }, [selectedRoleId]);
+
+    const sortedFilteredRoles = useMemo(() => {
+      return [...filteredRoles].sort((left, right) => {
+        const leftPinned = pinnedRoles.includes(getRoleKey(left));
+        const rightPinned = pinnedRoles.includes(getRoleKey(right));
+        if (leftPinned === rightPinned) return 0;
+        return leftPinned ? -1 : 1;
+      });
+    }, [filteredRoles, pinnedRoles]);
+
+    const togglePinnedRole = (role: RoleRecord) => {
+      const key = getRoleKey(role);
+      setPinnedRoles((current) =>
+        current.includes(key)
+          ? current.filter((k) => k !== key)
+          : [...current, key]
+      );
+    };
 
   const activeReports = useMemo(
     () => reports.filter((report) => report.active === 1),
@@ -619,23 +692,24 @@ const RoleReport = () => {
                       <th className="px-3 py-2">User Name</th>
                       <th className="px-3 py-2">User Type</th>
                       <th className="px-3 py-2">Company Name</th>
+                        <th className="px-3 py-2"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {isRolesLoading ? (
                       <tr>
-                        <td colSpan={5} className="px-3 py-8 text-center text-stone-500">
+                          <td colSpan={6} className="px-3 py-8 text-center text-stone-500">
                           Loading report users...
                         </td>
                       </tr>
                     ) : filteredRoles.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-3 py-8 text-center text-stone-500">
+                          <td colSpan={6} className="px-3 py-8 text-center text-stone-500">
                           No users found.
                         </td>
                       </tr>
-                    ) : (
-                      filteredRoles.map((role) => {
+                      ) : (
+                        sortedFilteredRoles.map((role) => {
                         return (
                           <tr
                             key={role.roleId}
@@ -651,6 +725,19 @@ const RoleReport = () => {
                             <td className="px-3 py-2 text-stone-700">{role.roleId || "-"}</td>
                             <td className="px-3 py-2 text-stone-700">{normalizeKey(role.userType) === "ADMIN" ? "ADMIN" : "USER"}</td>
                             <td className="px-3 py-2 text-stone-600">{role.company || "-"}</td>
+                              <td className="px-3 py-2">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    togglePinnedRole(role);
+                                  }}
+                                  aria-label={pinnedRoles.includes(getRoleKey(role)) ? `Unpin ${role.roleName || role.roleId}` : `Pin ${role.roleName || role.roleId}`}
+                                  className={`inline-flex items-center justify-center h-8 w-8 rounded-full border transition ${pinnedRoles.includes(getRoleKey(role)) ? "border-[#7A0000]/30 bg-[#7A0000]/10 text-[#7A0000]" : "border-stone-300 bg-white text-stone-600 hover:border-[#7A0000]/25 hover:text-[#7A0000]"}`}
+                                >
+                                  {pinnedRoles.includes(getRoleKey(role)) ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                                </button>
+                              </td>
                           </tr>
                         );
                       })

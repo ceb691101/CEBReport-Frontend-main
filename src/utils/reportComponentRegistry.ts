@@ -42,6 +42,7 @@ import PaymentInquiry from "../mainTopics/CustomerDetails/PaymentInquiry";
 
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
+import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 
 // Consumption Analysis reports
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
@@ -59,6 +60,7 @@ import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydep
 import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
 import Arreasposition from "../mainTopics/general/Arreasposition";
 import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
+import LargestCus from "../mainTopics/general/LargestCus";
 import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
 
 // Income & Expenditure reports
@@ -114,6 +116,7 @@ import SolarPaymentBulk from "../mainTopics/SolarInformation/SolarPaymentBulk";
 import SolarConnectionDetailsRetail from "../mainTopics/SolarInformation/SolarConnectionDetailsRetail";
 import SolarConnectionDetailsBulk from "../mainTopics/SolarInformation/SolarConnectionDetailsBulk";
 import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustomerInformation";
+import RoofTopSolarInputData from "../mainTopics/SolarInformation/RoofTopSolarInputData";
 
 // Solar Jobs reports
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
@@ -126,6 +129,8 @@ import AreaWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPAp
 import DivisionWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPApplicationPIVPaidReport";
 import AreaWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPEstimationPIVPaidReport";
 import DivisionWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPEstimationPIVPaidReport";
+import AreaWiseSRPApplicationPIVStatus from "../mainTopics/SRP/AreaWiseSRPApplicationPIVStatus";
+import AreaWiseSRPEstimationPIV from "../mainTopics/SRP/AreaWiseSRPEstimationPIV";
 
 // Trial Balance reports
 import CostCenterTrial from "../mainTopics/TrialBalance/CostCenterTrial";
@@ -227,6 +232,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"monthly revenue collection of different channels": DishonouredCheques,
 	"kiosk payment collection": DishonouredCheques,
 	"payment collection": DishonouredCheques,
+	"head office collection total": HeadOfficeCollectionTotal,
 	"suspense payment details": DishonouredCheques,
 	"finalized account details": DishonouredCheques,
 	"written off account details": DishonouredCheques,
@@ -250,6 +256,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"bill calculation": BillCalculation,
 	"listing of customers": ListingofCustomers,
 	"list of government accounts": ListOfGovernmentAccounts,
+	"largest 50 customers details ordinary": LargestCus,
 	"largest 100 customer details": Largest100CustomerDetails,
 	"sequence change accounts": ActiveCustomersSalesByTariff,
 	"retails journal": ActiveCustomersSalesByTariff,
@@ -334,6 +341,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar connection details incl reading and usage retail": SolarConnectionDetailsRetail,
 	"solar connection details incl reading and usage bulk": SolarConnectionDetailsBulk,
 	"solar customer information": SolarCustomerInformation,
+	"rooftop solar input data portal for t and d loss calculation":RoofTopSolarInputData,
 
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
@@ -342,10 +350,13 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,
+	"area wise srp application fee piv i to be paid": AreaWiseSRPApplicationPIV,
 	"area wise srp application piv pivi paid report": AreaWiseSRPApplicationPIVPaidReport,
 	"division wise srp application piv pivi to be paid report": DivisionWiseSRPApplicationPIVPaidReport,
 	"area wise srp estimation piv pivii paid report": AreaWiseSRPEstimationPIVPaidReport,
 	"division wise srp estimation piv pivii paid report": DivisionWiseSRPEstimationPIVPaidReport,
+	"area wise srp application all pivs pivi": AreaWiseSRPApplicationPIVStatus,
+	"area wise srp estimation piv pivii to be paid report": AreaWiseSRPEstimationPIV,
 
 	// Trial Balance reports
 	"cost center trial balance end of month year": CostCenterTrial,

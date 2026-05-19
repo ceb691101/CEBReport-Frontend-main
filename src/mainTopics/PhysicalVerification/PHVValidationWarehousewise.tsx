@@ -97,7 +97,7 @@ const PHVValidationWarehousewise: React.FC = () => {
       setLoading(true);
       try {
         const res = await fetch(
-          `/misapi/api/incomeexpenditure/departments/${encodeURIComponent(
+          `/pivapi/api/incomeexpenditure/departments/${encodeURIComponent(
             epfNo
           )}`,
           {
