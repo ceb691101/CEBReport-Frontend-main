@@ -3,11 +3,15 @@ import { MdPermIdentity, MdDateRange, MdFileDownload, MdPrint } from "react-icon
 
 interface PaymentRecord {
   id: string;
-  date: string;
+  paymentDate: string;
   amount: number;
+  center: string;
+  counter: string;
+  counterName: string;
   paymentMode: string;
-  reference: string;
-  status: string;
+  chequeNo: string;
+  stubNo: string;
+  user: string;
   [key: string]: any;
 }
 
@@ -31,7 +35,12 @@ interface LatestUpdateTimeRecord {
 
 interface PaymentInquiryResult {
   accountNumber: string;
+  areaName: string;
   customerName: string;
+  customerType: string;
+  address1: string;
+  address2: string;
+  address3: string;
   fromDate: string;
   toDate: string;
   totalAmount: number;
@@ -53,8 +62,9 @@ interface POSCollectionResult {
 }
 
 const PaymentInquiry: React.FC = () => {
-  const maroon = "text-[#800000]";
-  const maroonBg = "bg-[#800000]";
+  const maroon = "text-[#7A0000]";
+  const maroonBg = "bg-[#7A0000]";
+  const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
   // Form State - Individual Payments
   const [acctNo, setAcctNo] = useState("");
@@ -111,7 +121,7 @@ const PaymentInquiry: React.FC = () => {
   const billTypes = ["All", "Type A", "Type B", "Type C"];
   const payModes = ["All", "Cash", "Cheque", "Online"];
 
-  const handlePaymentInquiry = async (type: "full" | "paymentsOnly") => {
+  const handlePaymentInquiry = async () => {
     setLoading(true);
     setError(null);
     setPaymentResult(null);
@@ -126,11 +136,7 @@ const PaymentInquiry: React.FC = () => {
         fromDate,
       };
 
-      const endpoint = type === "full"
-        ? "/api/customerdetails/payment-full-report"
-        : "/api/customerdetails/payment-payments-only";
-
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/customerdetails/payment-full-report", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -151,19 +157,71 @@ const PaymentInquiry: React.FC = () => {
         throw new Error("No data returned from server");
       }
 
+      const paymentRecords =
+        backendData.paymentRecords ||
+        backendData.PaymentRecords ||
+        backendData.records ||
+        backendData.Records ||
+        [];
+
+      // helper to read multiple possible key formats (camelCase, PascalCase, snake_case)
+      const getVal = (r: any, ...names: string[]) => {
+        for (const n of names) {
+          if (r == null) continue;
+          if (r[n] !== undefined && r[n] !== null) return r[n];
+          const pascal = n.charAt(0).toUpperCase() + n.slice(1);
+          if (r[pascal] !== undefined && r[pascal] !== null) return r[pascal];
+          const snake = n.replace(/([A-Z])/g, "_$1").toLowerCase();
+          if (r[snake] !== undefined && r[snake] !== null) return r[snake];
+        }
+        return undefined;
+      };
+
+      // helper to clean counter name by removing leading numbers and separators
+      const cleanCounterName = (name: string) => {
+        if (!name) return '';
+        return name.replace(/^\d+[\s\-]*/, '').trim();
+      };
+
       const mappedResult: PaymentInquiryResult = {
-        accountNumber: backendData.accountNumber || acctNo,
-        customerName: backendData.customerName || "",
-        fromDate: backendData.fromDate || fromDate,
-        toDate: backendData.toDate || new Date().toISOString().split("T")[0],
-        totalAmount: backendData.totalAmount || 0,
-        paymentRecords: (backendData.paymentRecords || []).map((record: any, idx: number) => ({
+        accountNumber: backendData.accountNumber || backendData.AccountNumber || acctNo,
+        areaName: backendData.areaName || backendData.AreaName || "",
+        customerName: backendData.customerName || backendData.CustomerName || "",
+        customerType: backendData.customerType || backendData.CustomerType || "",
+        address1: backendData.address1 || backendData.Address1 || "",
+        address2: backendData.address2 || backendData.Address2 || "",
+        address3: backendData.address3 || backendData.Address3 || "",
+        fromDate: backendData.fromDate || backendData.FromDate || fromDate,
+        toDate: backendData.toDate || backendData.ToDate || new Date().toISOString().split("T")[0],
+        totalAmount: Number(backendData.totalAmount ?? backendData.TotalAmount ?? 0),
+        paymentRecords: paymentRecords.map((record: any, idx: number) => ({
           id: String(idx + 1),
-          date: record.transDate || "",
-          amount: parseFloat(record.transAmt) || 0,
-          paymentMode: record.codeDescription || record.payMode || "",
-          reference: record.chequeMoneyOrderNo || record.stubNo || "",
-          status: "Completed",
+          // core fields
+          paymentDate: String(getVal(record, 'transDate', 'TransDate', 'trans_date') ?? ''),
+          amount: Number(getVal(record, 'transAmt', 'TransAmt', 'trans_amt') ?? getVal(record, 'amount', 'Amount') ?? 0) || 0,
+          center: String(getVal(record, 'center', 'Center') ?? ''),
+          centerName: String(getVal(record, 'centerName', 'CenterName') ?? ''),
+          centerDisplay: (() => {
+            const centerValue = String(getVal(record, 'center', 'Center') ?? '');
+            const centerDescValue = String(getVal(record, 'centerDescription', 'CenterDescription', 'centerType', 'CenterType', 'centerCategory', 'CenterCategory') ?? '');
+            const centerNameValue = String(getVal(record, 'centerName', 'CenterName') ?? '');
+            const parts = [centerValue, centerDescValue, centerNameValue].filter(p => p && p.trim());
+            return parts.join(' - ');
+          })(),
+          counter: String(getVal(record, 'countNo', 'CountNo', 'count_no') ?? ''),
+          counterName: cleanCounterName(String(getVal(record, 'counterName', 'CounterName') ?? '')),
+          // payment mode / description
+          paymentMode: String(getVal(record, 'codeDescription', 'CodeDescription', 'payMode', 'PayMode', 'pay_mode') ?? ''),
+          // cheque / stub
+          chequeNo: String(getVal(record, 'chequeMoneyOrderNo', 'ChequeMoneyOrderNo', 'cheque_money_order_no') ?? ''),
+          stubNo: String(getVal(record, 'stubNo', 'StubNo') ?? ''),
+          // user / agent
+          user: String(getVal(record, 'usrLot', 'UsrLot', 'usr_lot') ?? ''),
+          agent: String(getVal(record, 'agent', 'Agent') ?? ''),
+          agentName: String(getVal(record, 'agentName', 'AgentName') ?? ''),
+          transTime: String(getVal(record, 'transTime', 'TransTime', 'trans_time') ?? ''),
+          transType: String(getVal(record, 'transType', 'TransType', 'trans_type') ?? ''),
+          rawRecord: record,
         })),
         errorMessage: null,
       };
@@ -340,16 +398,17 @@ const PaymentInquiry: React.FC = () => {
     const rows: string[] = [];
     rows.push("Payment Inquiry Report");
     rows.push(`Account Number,${paymentResult.accountNumber}`);
+    rows.push(`Area Name,${paymentResult.areaName || ""}`);
     rows.push(`Customer Name,${paymentResult.customerName}`);
+    rows.push(`Customer Type,${paymentResult.customerType || ""}`);
+    rows.push(`Address,${[paymentResult.address1, paymentResult.address2, paymentResult.address3].filter(Boolean).join(" | ")}`);
     rows.push(`From Date,${paymentResult.fromDate}`);
-    rows.push(`To Date,${paymentResult.toDate}`);
-    rows.push(`Total Amount,"${paymentResult.totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}"`);
     rows.push("");
-    rows.push("Date,Amount,Payment Mode,Reference,Status");
+    rows.push("Payment Date,Amount,Center,Counter,Counter Name,Pay Mode,Cheque No,Stub No,User");
     
     paymentResult.paymentRecords.forEach((record) => {
       rows.push(
-        `${record.date},"${record.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}",${record.paymentMode},${record.reference},${record.status}`
+        `${record.paymentDate},"${record.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}",${record.centerDisplay || record.center},${record.counter},${record.counterName},${record.paymentMode},${record.chequeNo || ""},${record.stubNo || ""},${record.user || ""}`
       );
     });
 
@@ -392,7 +451,7 @@ const PaymentInquiry: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-[2000px] mx-auto p-2 sm:p-2 md:p-1">
+    <div className="max-w-7xl mx-auto p-4 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
       {/* Error Alert */}
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -403,13 +462,13 @@ const PaymentInquiry: React.FC = () => {
       {/* Form Section */}
       <div className="grid grid-cols-1 gap-4 mb-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
         {/* Individual Payments Section */}
-        <div className="border border-gray-100 rounded-lg p-4 bg-white shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-800 mb-3">Individual Payments</h3>
+        <div className="border border-gray-200 rounded-xl p-4 bg-white shadow">
+          <h3 className={`text-xl font-bold mb-4 ${maroon}`}>Individual Payments</h3>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 mb-3">
             {/* Account Number */}
             <div className="flex flex-col w-full sm:w-[24%]">
-              <label className="text-xs text-gray-600 flex items-center gap-1.5 mb-1">
+              <label className={`${maroon} text-xs font-medium flex items-center gap-1.5 mb-1`}>
                 <MdPermIdentity className={maroon} size={16} />
                 Account No
               </label>
@@ -418,13 +477,13 @@ const PaymentInquiry: React.FC = () => {
                 value={acctNo}
                 onChange={(e) => setAcctNo(e.target.value)}
                 placeholder="e.g., 5390001419"
-                className="rounded-md bg-gray-50 h-8 px-3 text-xs border border-gray-200 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               />
             </div>
 
             {/* From Date */}
             <div className="flex flex-col w-full sm:w-[24%]">
-              <label className="text-xs text-gray-600 flex items-center gap-1.5 mb-1">
+              <label className={`${maroon} text-xs font-medium flex items-center gap-1.5 mb-1`}>
                 <MdDateRange className={maroon} size={16} />
                 From
               </label>
@@ -432,26 +491,17 @@ const PaymentInquiry: React.FC = () => {
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="rounded-md bg-gray-50 h-8 px-3 text-xs border border-gray-200 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               />
             </div>
 
             {/* View Full Report Button */}
             <button
-              onClick={() => handlePaymentInquiry("full")}
+              onClick={handlePaymentInquiry}
               disabled={loading}
-              className={`w-full sm:w-[24%] ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
+              className={`w-full sm:w-[24%] px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow ${maroonGrad} text-white flex items-center justify-center ${loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"}`}
             >
               {loading ? "Loading..." : "View Full Report"}
-            </button>
-
-            {/* View payments only Button (moved inline) */}
-            <button
-              onClick={() => handlePaymentInquiry("paymentsOnly")}
-              disabled={loading}
-              className={`w-full sm:w-[24%] ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
-            >
-              {loading ? "Loading..." : "View payments only"}
             </button>
           </div>
         </div>
@@ -491,7 +541,7 @@ const PaymentInquiry: React.FC = () => {
 
               <div className="overflow-x-auto">
                 <table className="min-w-full text-xs border border-gray-200">
-                  <thead className="bg-[#800000] text-white">
+                  <thead className="bg-[#7A0000] text-white">
                     <tr>
                       <th className="px-3 py-2 text-left font-semibold">Agent</th>
                       <th className="px-3 py-2 text-left font-semibold">Center</th>
@@ -573,7 +623,7 @@ const PaymentInquiry: React.FC = () => {
                           <button
                             key={p}
                             onClick={() => setCurrentPage(p)}
-                            className={`px-2 py-1 text-xs border rounded ${p === currentPage ? 'bg-[#800000] text-white' : 'bg-white'}`}
+                            className={`px-2 py-1 text-xs border rounded ${p === currentPage ? 'bg-[#7A0000] text-white' : 'bg-white'}`}
                           >
                             {p}
                           </button>
@@ -607,7 +657,7 @@ const PaymentInquiry: React.FC = () => {
               <select
                 value={province}
                 onChange={(e) => setProvince(e.target.value)}
-                className="rounded-md bg-gray-50 h-8 px-3 text-xs border border-gray-200 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               >
                 {provinces.map((prov) => (
                   <option key={prov.id} value={prov.id}>
@@ -623,7 +673,7 @@ const PaymentInquiry: React.FC = () => {
               <select
                 value={area}
                 onChange={(e) => setArea(e.target.value)}
-                className="rounded-md bg-gray-50 h-8 px-3 text-xs border border-gray-200 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               >
                 {areas.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -639,7 +689,7 @@ const PaymentInquiry: React.FC = () => {
               <select
                 value={counter}
                 onChange={(e) => setCounter(e.target.value)}
-                className="rounded-md bg-gray-50 h-8 px-3 text-xs border border-gray-200 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               >
                 {counters.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -658,7 +708,7 @@ const PaymentInquiry: React.FC = () => {
               <select
                 value={billType}
                 onChange={(e) => setBillType(e.target.value)}
-                className="rounded-md bg-gray-50 h-8 px-3 text-xs border border-gray-200 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               >
                 {billTypes.map((type) => (
                   <option key={type} value={type}>
@@ -674,7 +724,7 @@ const PaymentInquiry: React.FC = () => {
               <select
                 value={payMode}
                 onChange={(e) => setPayMode(e.target.value)}
-                className="rounded-md bg-gray-50 h-8 px-3 text-xs border border-gray-200 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               >
                 {payModes.map((mode) => (
                   <option key={mode} value={mode}>
@@ -691,7 +741,7 @@ const PaymentInquiry: React.FC = () => {
                 type="date"
                 value={posDate}
                 onChange={(e) => setPosDate(e.target.value)}
-                className="rounded-md bg-gray-50 h-8 px-3 text-xs border border-gray-200 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               />
             </div>
           </div>
@@ -706,7 +756,7 @@ const PaymentInquiry: React.FC = () => {
             <button
               onClick={handlePOSInquiry}
               disabled={loading}
-              className={`w-full sm:w-[32%] ${maroonBg} hover:bg-[#800000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
+              className={`w-full sm:w-[32%] ${maroonBg} hover:bg-[#7A0000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
             >
               {loading ? "Loading..." : "Generate Report"}
             </button>
@@ -716,26 +766,14 @@ const PaymentInquiry: React.FC = () => {
 
       {/* Results Section - Payment Inquiry */}
       {activeTab === "individual" && paymentResult && (
-        <div ref={paymentPrintRef} className="mt-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
+        <div ref={paymentPrintRef} className="mt-4 p-4 rounded-xl shadow border border-gray-200 w-full bg-white">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className={`text-sm font-bold ${maroon} mb-2`}>Payment Inquiry Report</h2>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div>
-                  <p className="text-gray-600">Account Number</p>
-                  <p className="font-semibold">{paymentResult.accountNumber}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Customer Name</p>
-                  <p className="font-semibold">{paymentResult.customerName}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">From Date</p>
-                  <p className="font-semibold">{paymentResult.fromDate}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">To Date</p>
-                  <p className="font-semibold">{paymentResult.toDate}</p>
+              <h2 className={`text-xl font-bold ${maroon} mb-2`}>Payment Inquiry Report</h2>
+              {/* Legacy-style header: Account & Area on one line, customer name/address highlighted below */}
+              <div className="w-full text-sm mb-2">
+                <div className="text-sm text-[#7A0000] font-semibold whitespace-pre-line">
+                  {`Account No: ${paymentResult.accountNumber} Area : ${paymentResult.areaName || "-"} ${paymentResult.customerName} ${[paymentResult.address1, paymentResult.address2, paymentResult.address3].filter(Boolean).join(", ") || "-"}`}
                 </div>
               </div>
             </div>
@@ -743,66 +781,69 @@ const PaymentInquiry: React.FC = () => {
             <div className="flex gap-2">
               <button
                 onClick={handlePaymentPrint}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
               >
                 <MdPrint size={16} />
                 Print
               </button>
               <button
                 onClick={downloadPaymentCSV}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 rounded-md text-xs font-medium text-blue-700 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
               >
                 <MdFileDownload size={16} />
                 Download
               </button>
+              <button
+                onClick={() => setActiveTab(null)}
+                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
+              >
+                Back to Form
+              </button>
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-600">Total Payment Amount</p>
-            <p className={`text-lg font-bold ${maroon}`}>
-              {paymentResult.totalAmount.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-          </div>
+          {/* Summary removed per request */}
 
           {/* Payment Records Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className={`${maroonBg} text-white`}>
-                  <th className="p-2 text-left font-semibold">Date</th>
+                  <th className="p-2 text-left font-semibold">Payment Date</th>
                   <th className="p-2 text-right font-semibold">Amount</th>
-                  <th className="p-2 text-left font-semibold">Payment Mode</th>
-                  <th className="p-2 text-left font-semibold">Reference</th>
-                  <th className="p-2 text-left font-semibold">Status</th>
+                  <th className="p-2 text-left font-semibold">Center</th>
+                  <th className="p-2 text-left font-semibold">Counter</th>
+                  <th className="p-2 text-left font-semibold">Counter Name</th>
+                  <th className="p-2 text-left font-semibold">Pay Mode</th>
+                  <th className="p-2 text-left font-semibold">Cheque No</th>
+                  <th className="p-2 text-left font-semibold">Stub No</th>
+                  <th className="p-2 text-left font-semibold">User</th>
                 </tr>
               </thead>
               <tbody>
                 {paymentResult.paymentRecords.map((record, idx) => (
                   <tr key={record.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td className="p-2 border-b border-gray-100">{record.date}</td>
+                    <td className="p-2 border-b border-gray-100">{record.paymentDate}</td>
                     <td className="p-2 text-right font-semibold border-b border-gray-100">
                       {record.amount.toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
                     </td>
+                    <td className="p-2 border-b border-gray-100 whitespace-pre-line">{record.centerDisplay || record.center}</td>
+                    <td className="p-2 border-b border-gray-100">{record.counter}</td>
+                    <td className="p-2 border-b border-gray-100">{record.counterName}</td>
                     <td className="p-2 border-b border-gray-100">{record.paymentMode}</td>
-                    <td className="p-2 border-b border-gray-100">{record.reference}</td>
-                    <td className="p-2 border-b border-gray-100">
-                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
-                        {record.status}
-                      </span>
-                    </td>
+                    <td className="p-2 border-b border-gray-100">{record.chequeNo || "-"}</td>
+                    <td className="p-2 border-b border-gray-100">{record.stubNo || "-"}</td>
+                    <td className="p-2 border-b border-gray-100">{record.user || "-"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {/* Timestamp similar to legacy page */}
+          <div className="mt-3 text-xs text-gray-600">{new Date().toLocaleString()}</div>
         </div>
       )}
 
@@ -842,6 +883,12 @@ const PaymentInquiry: React.FC = () => {
               >
                 <MdFileDownload size={16} />
                 Download
+              </button>
+              <button
+                onClick={() => setActiveTab(null)}
+                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
+              >
+                Back to Form
               </button>
             </div>
           </div>
