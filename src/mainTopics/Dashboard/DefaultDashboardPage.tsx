@@ -16,8 +16,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -1038,9 +1036,6 @@ const DefaultDashboardPage: React.FC = () => {
 
     return `${formatIsoDate(startDate)} to ${formatIsoDate(endDate)}`;
   };
-  // Kiosk dates are now in dd-MM-yy format (consistent with BillCalculation)
-  const formatKioskDateTick = (value: string) => String(value);  // Already formatted by backend as dd-MM-yy
-
   // Sales dates are now in dd-MM-yy format (consistent with BillCalculation)
   const formatSalesDateLabel = (date: string) => String(date);  // Already formatted by backend as dd-MM-yy
 
@@ -1052,6 +1047,12 @@ const DefaultDashboardPage: React.FC = () => {
   const salesLineData = monthlySalesData
     .map((item) => ({ month: item.month, ordinary: item.ordinary, bulk: item.bulk, total: item.ordinary + item.bulk }))
     .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+
+  const kioskTrendData = kioskDailyRecords.slice(-7);
+  const kioskPeakDailyCollection = kioskTrendData.reduce(
+    (max, row) => Math.max(max, Number(row.CollectionAmount) || 0),
+    0
+  );
 
   const salesCollectionDateRange = salesLineData.length
     ? `(${salesLineData[0].month} to ${salesLineData[salesLineData.length - 1].month})`
@@ -1404,40 +1405,32 @@ const DefaultDashboardPage: React.FC = () => {
                         ) : kioskDailyRecords.length === 0 ? (
                           <div className="h-64 flex items-center justify-center text-gray-400 text-sm">No kiosk collection data for this week.</div>
                         ) : (
-                          <ResponsiveContainer key={`kiosk-trend-${kioskTrendTrigger}`} width="100%" height="100%">
-                            <LineChart data={kioskDailyRecords.slice(-7)} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-                              <XAxis
-                                dataKey="TransDate"
-                                tick={{ fontSize: 12, fill: "#374151", fontWeight: 700 }}
-                                tickFormatter={(date) => formatKioskDateTick(String(date))}
-                                interval={0}
-                                minTickGap={0}
-                              />
-                              <YAxis
-                                tick={{ fontSize: 11, fontWeight: 600, fill: "#374151" }}
-                                tickFormatter={(v) => formatCompact(Number(v) || 0)}
-                                width={44}
-                              />
-                              <Tooltip
-                                formatter={(value: any) => formatCurrency(Number(value) || 0)}
-                                labelFormatter={(label: any) => String(label)}
-                                labelStyle={{ fontWeight: 700 }}
-                              />
-                              <Line
-                                type="monotone"
-                                dataKey="CollectionAmount"
-                                name="Collection Amount"
-                                stroke="var(--ceb-maroon)"
-                                strokeWidth={2.5}
-                                dot={{ fill: "var(--ceb-maroon)", r: 5 }}
-                                activeDot={{ r: 7 }}
-                                isAnimationActive={kioskTrendInView}
-                                animationDuration={900}
-                                animationEasing="ease-out"
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
+                          <div key={`kiosk-trend-${kioskTrendTrigger}`} className="h-64 overflow-y-auto pr-1 space-y-2">
+                            {kioskTrendData.map((item, index) => {
+                              const amount = Number(item.CollectionAmount) || 0;
+                              const widthPercent = kioskPeakDailyCollection > 0
+                                ? Math.max((amount / kioskPeakDailyCollection) * 100, 8)
+                                : 0;
+
+                              return (
+                                <div key={`${item.TransDate}-${index}`} className="flex items-center justify-between gap-3 text-xs">
+                                  <span className="min-w-[72px] font-medium text-gray-500">{String(item.TransDate)}</span>
+                                  <div className="flex-1 h-2 rounded-full bg-orange-100 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-[color:var(--ceb-maroon)] transition-all duration-700 ease-out"
+                                      style={{
+                                        width: `${kioskTrendInView ? widthPercent : 0}%`,
+                                        transitionDelay: `${index * 70}ms`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="min-w-[88px] text-right font-semibold text-gray-800">
+                                    {formatCompactCurrency(amount)}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
                     </div>
