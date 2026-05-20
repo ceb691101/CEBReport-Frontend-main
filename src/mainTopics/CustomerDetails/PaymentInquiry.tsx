@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { MdPermIdentity, MdDateRange, MdFileDownload, MdPrint } from "react-icons/md";
 
 interface PaymentRecord {
@@ -74,8 +74,8 @@ const PaymentInquiry: React.FC = () => {
   const [province, setProvince] = useState("");
   const [area, setArea] = useState("");
   const [counter, setCounter] = useState("");
-  const [billType, setBillType] = useState("All");
-  const [payMode, setPayMode] = useState("All");
+  const [billType, setBillType] = useState("*");
+  const [payMode, setPayMode] = useState("*");
   const [posDate, setPosDate] = useState("");
 
   // Result State
@@ -93,33 +93,191 @@ const PaymentInquiry: React.FC = () => {
   // Print refs
   const paymentPrintRef = useRef<HTMLDivElement>(null);
   const posPrintRef = useRef<HTMLDivElement>(null);
+  const latestUpdateTimesPrintRef = useRef<HTMLDivElement>(null);
 
-  // Mock data for dropdowns
-  const provinces = [
+  // Dynamic data for dropdowns (loaded from API)
+  const [provinces, setProvinces] = useState<{ id: string; label: string }[]>([
     { id: "", label: "Select Province" },
-    { id: "WN", label: "Western Province North" },
-    { id: "WS", label: "Western Province South" },
-    { id: "CC", label: "Colombo City" },
-    { id: "NP", label: "Northern Province" },
-    { id: "CP", label: "Central Province" },
-  ];
-
-  const areas = [
+  ]);
+  const [areas, setAreas] = useState<{ id: string; label: string }[]>([
     { id: "", label: "Select Area" },
-    { id: "A1", label: "Area 1" },
-    { id: "A2", label: "Area 2" },
-    { id: "A3", label: "Area 3" },
-  ];
-
-  const counters = [
+  ]);
+  const [counters, setCounters] = useState<{ id: string; label: string }[]>([
     { id: "", label: "Select Counter" },
-    { id: "C1", label: "Counter 1" },
-    { id: "C2", label: "Counter 2" },
-    { id: "C3", label: "Counter 3" },
-  ];
+  ]);
 
-  const billTypes = ["All", "Type A", "Type B", "Type C"];
-  const payModes = ["All", "Cash", "Cheque", "Online"];
+  // Fetch provinces on component mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const response = await fetch("/api/customerdetails/pos-provinces");
+        if (!response.ok) {
+          throw new Error("Failed to fetch provinces");
+        }
+        const result = await response.json();
+        const provs = result.data?.provinces || result.data?.Provinces;
+        if (Array.isArray(provs)) {
+          const mapped = provs.map((p: any) => ({
+            id: p.provCode || p.ProvCode,
+            label: p.provName || p.ProvName,
+          }));
+          setProvinces([{ id: "", label: "Select Province" }, ...mapped]);
+        }
+      } catch (error) {
+        console.error("Error fetching provinces:", error);
+      }
+    };
+    fetchProvinces();
+  }, []);
+
+  // Fetch areas and counters when province changes
+  useEffect(() => {
+    if (!province) {
+      setAreas([{ id: "", label: "Select Area" }]);
+      setCounters([{ id: "", label: "Select Counter" }]);
+      setArea("");
+      setCounter("");
+      return;
+    }
+
+    const fetchAreasAndCounters = async () => {
+      // Clear current selection and lists
+      setArea("");
+      setCounter("");
+
+      try {
+        const response = await fetch(
+          `/api/customerdetails/pos-areas?provCode=${encodeURIComponent(province)}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch areas");
+        }
+        const result = await response.json();
+        const list = result.data?.areas || result.data?.Areas;
+        if (Array.isArray(list)) {
+          const mapped = list.map((a: any) => ({
+            id: a.areaCode || a.AreaCode,
+            label: a.areaName || a.AreaName,
+          }));
+          setAreas([{ id: "", label: "Select Area" }, ...mapped]);
+        } else {
+          setAreas([{ id: "", label: "Select Area" }]);
+        }
+      } catch (error) {
+        console.error("Error fetching areas:", error);
+        setAreas([{ id: "", label: "Select Area" }]);
+      }
+
+      try {
+        const response = await fetch(
+          `/api/customerdetails/pos-counters?provCode=${encodeURIComponent(province)}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch counters");
+        }
+        const result = await response.json();
+        const list = result.data?.counters || result.data?.Counters;
+        if (Array.isArray(list)) {
+          const mapped = list.map((c: any) => ({
+            id: c.counterNo || c.CounterNo,
+            label: c.counterName || c.CounterName,
+          }));
+          setCounters([{ id: "", label: "Select Counter" }, ...mapped]);
+        } else {
+          setCounters([{ id: "", label: "Select Counter" }]);
+        }
+      } catch (error) {
+        console.error("Error fetching counters:", error);
+        setCounters([{ id: "", label: "Select Counter" }]);
+      }
+    };
+
+    fetchAreasAndCounters();
+  }, [province]);
+
+  // Dynamic data for Bill Type and Pay Mode (loaded from API)
+  const [billTypes, setBillTypes] = useState<{ id: string; label: string }[]>([
+    { id: "*", label: "All" },
+  ]);
+  const [payModes, setPayModes] = useState<{ id: string; label: string }[]>([
+    { id: "*", label: "All" },
+  ]);
+
+  // Fetch bill types on component mount
+  useEffect(() => {
+    const fetchBillTypes = async () => {
+      try {
+        const response = await fetch("/api/customerdetails/pos-bill-types");
+        if (!response.ok) {
+          throw new Error("Failed to fetch bill types");
+        }
+        const result = await response.json();
+        const types = result.data?.billTypes || result.data?.BillTypes;
+        if (Array.isArray(types)) {
+          const mapped = types.map((t: any) => ({
+            id: t.billType || t.BillType,
+            label: t.billType || t.BillType,
+          }));
+          setBillTypes([{ id: "*", label: "All" }, ...mapped]);
+        }
+      } catch (error) {
+        console.error("Error fetching bill types:", error);
+      }
+    };
+    fetchBillTypes();
+  }, []);
+
+  // Fetch pay modes on component mount
+  // useEffect(() => {
+  //   const fetchPayModes = async () => {
+  //     try {
+  //       const response = await fetch("/api/customerdetails/pos-pay-modes");
+  //       if (!response.ok) {
+  //         throw new Error("Failed to fetch pay modes");
+  //       }
+  //       const result = await response.json();
+  //       const modes = result.data?.payModes || result.data?.PayModes;
+  //       if (Array.isArray(modes)) {
+  //         const mapped = modes.map((m: any) => ({
+  //           id: m.payMode || m.PayMode,
+  //           label: m.codeDescription || m.CodeDescription || m.payMode || m.PayMode,
+  //         }));
+  //         setPayModes([{ id: "*", label: "All" }, ...mapped]);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching pay modes:", error);
+  //     }
+  //   };
+  //   fetchPayModes();
+  // }, []);
+
+  // Fetch pay modes on component mount
+useEffect(() => {
+  const fetchPayModes = async () => {
+    try {
+      const response = await fetch("/api/customerdetails/pos-pay-modes");
+      if (!response.ok) throw new Error("Failed to fetch pay modes");
+
+      const result = await response.json();
+      const modes = result.data?.payModes || result.data?.PayModes;
+
+      const allowedCodes = ["C", "Q", "D", "R"]; // Cash, Cheque, Bank Draft, Credit Card
+
+      if (Array.isArray(modes)) {
+        const mapped = modes
+          .filter((m: any) => allowedCodes.includes(m.payMode || m.PayMode))
+          .map((m: any) => ({
+            id: m.payMode || m.PayMode,
+            label: m.codeDescription || m.CodeDescription,
+          }));
+        setPayModes([{ id: "*", label: "All" }, ...mapped]);
+      }
+    } catch (error) {
+      console.error("Error fetching pay modes:", error);
+    }
+  };
+  fetchPayModes();
+}, []);
 
   const handlePaymentInquiry = async () => {
     setLoading(true);
@@ -246,16 +404,15 @@ const PaymentInquiry: React.FC = () => {
       if (!posDate) throw new Error("Please select Date");
 
       const payload = {
-        province,
-        area,
-        counter,
-        billType,
-        payMode,
-        date: posDate,
+        TransDate: posDate,
+        ProvCode: province || "*",
+        AreaCode: area || "*",
+        CounterNo: counter || "*",
+        PayMode: payMode || "*",
+        PayType: billType || "*",
       };
 
-      // Mock API call - replace with actual endpoint
-      const response = await fetch("/CEBINFO_API_2025/api/poscollection", {
+      const response = await fetch("/api/customerdetails/pos-collection-breakup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -264,44 +421,42 @@ const PaymentInquiry: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        // Mock response for demonstration
-        const mockData: POSCollectionResult = {
-          province,
-          area,
-          counter,
-          billType,
-          payMode,
-          date: posDate,
-          totalAmount: 125750.50,
-          totalTransactions: 48,
-          collectionRecords: [
-            {
-              id: "1",
-              date: posDate,
-              counter: counter || "All",
-              billType: billType,
-              amount: 5250.50,
-              payMode: payMode,
-            },
-            {
-              id: "2",
-              date: posDate,
-              counter: counter || "All",
-              billType: billType,
-              amount: 12500.00,
-              payMode: payMode,
-            },
-          ],
-          errorMessage: null,
-        };
-        setPosResult(mockData);
-        setActiveTab("pos");
-      } else {
-        const data: POSCollectionResult = await response.json();
-        setPosResult(data);
-        setActiveTab("pos");
+      const payload_response = await response.json();
+
+      if (!response.ok || payload_response?.errorMessage) {
+        throw new Error(payload_response?.errorMessage || "Failed to fetch POS collection breakup");
       }
+
+      const backendData = payload_response?.data;
+
+      if (!backendData) {
+        throw new Error("No data returned from server");
+      }
+
+      const records = backendData.records || backendData.Records || [];
+
+      const mappedResult: POSCollectionResult = {
+        province: backendData.province || backendData.Province || province,
+        area: backendData.area || backendData.Area || area,
+        counter: backendData.counter || backendData.Counter || counter,
+        billType: billType,
+        payMode: payMode,
+        date: backendData.transDate || backendData.TransDate || posDate,
+        totalAmount: Number(backendData.totalAmount ?? backendData.TotalAmount ?? 0),
+        totalTransactions: Number(backendData.recordCount ?? backendData.RecordCount ?? records.length),
+        collectionRecords: records.map((record: any, idx: number) => ({
+          id: String(idx + 1),
+          date: backendData.transDate || backendData.TransDate || posDate,
+          counter: record.counterName || record.CounterName || record.counterNo || record.CounterNo || "All",
+          billType: record.transType || record.TransType || "0",
+          amount: Number(record.transAmount || record.TransAmount || 0),
+          payMode: record.payModeDescription || record.PayModeDescription || record.payMode || record.PayMode || "",
+        })),
+        errorMessage: null,
+      };
+
+      setPosResult(mappedResult);
+      setActiveTab("pos");
     } catch (err: any) {
       setError(err.message || "Failed to fetch POS collection data");
     } finally {
@@ -390,6 +545,40 @@ const PaymentInquiry: React.FC = () => {
         printWindow.print();
       }
     }
+  };
+
+  const handleLatestUpdateTimesPrint = () => {
+    if (latestUpdateTimesPrintRef.current) {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(latestUpdateTimesPrintRef.current.innerHTML);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    }
+  };
+
+  const downloadLatestUpdateTimesCSV = () => {
+    if (!latestUpdateTimes?.length) return;
+
+    const rows: string[] = [];
+    rows.push("Latest Update Times of Servers Report");
+    rows.push("");
+    rows.push("Agent,Center,Last Update,Agent Name,Center Name");
+    
+    latestUpdateTimes.forEach((record) => {
+      rows.push(
+        `${record.agent},${record.center},"${record.lastUpdate}",${record.agentName || ""},${record.centerName || ""}`
+      );
+    });
+
+    const csv = rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Server_Latest_Update_Times.csv`;
+    a.click();
   };
 
   const downloadPaymentCSV = () => {
@@ -504,11 +693,92 @@ const PaymentInquiry: React.FC = () => {
               {loading ? "Loading..." : "View Full Report"}
             </button>
           </div>
+
+          {/* Results Section - Payment Inquiry */}
+          {activeTab === "individual" && paymentResult && (
+            <div ref={paymentPrintRef} className="mt-4 p-4 rounded-xl shadow border border-gray-200 w-full bg-white">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className={`text-xl font-bold ${maroon} mb-2`}>Payment Inquiry Report</h2>
+                  {/* Legacy-style header: Account & Area on one line, customer name/address highlighted below */}
+                  <div className="w-full text-sm mb-2">
+                    <div className="text-sm text-[#7A0000] font-semibold whitespace-pre-line">
+                      {`Account No: ${paymentResult.accountNumber} Area : ${paymentResult.areaName || "-"} ${paymentResult.customerName} ${[paymentResult.address1, paymentResult.address2, paymentResult.address3].filter(Boolean).join(", ") || "-"}`}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePaymentPrint}
+                    className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
+                  >
+                    <MdPrint size={16} />
+                    Print
+                  </button>
+                  <button
+                    onClick={downloadPaymentCSV}
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+                  >
+                    <MdFileDownload size={16} />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => setActiveTab(null)}
+                    className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
+                  >
+                    Back to Form
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment Records Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className={`${maroonBg} text-white`}>
+                      <th className="p-2 text-left font-semibold">Payment Date</th>
+                      <th className="p-2 text-right font-semibold">Amount</th>
+                      <th className="p-2 text-left font-semibold">Center</th>
+                      <th className="p-2 text-left font-semibold">Counter</th>
+                      <th className="p-2 text-left font-semibold">Counter Name</th>
+                      <th className="p-2 text-left font-semibold">Pay Mode</th>
+                      <th className="p-2 text-left font-semibold">Cheque No</th>
+                      <th className="p-2 text-left font-semibold">Stub No</th>
+                      <th className="p-2 text-left font-semibold">User</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paymentResult.paymentRecords.map((record, idx) => (
+                      <tr key={record.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                        <td className="p-2 border-b border-gray-100">{record.paymentDate}</td>
+                        <td className="p-2 text-right font-semibold border-b border-gray-100">
+                          {record.amount.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td className="p-2 border-b border-gray-100 whitespace-pre-line">{record.centerDisplay || record.center}</td>
+                        <td className="p-2 border-b border-gray-100">{record.counter}</td>
+                        <td className="p-2 border-b border-gray-100">{record.counterName}</td>
+                        <td className="p-2 border-b border-gray-100">{record.paymentMode}</td>
+                        <td className="p-2 border-b border-gray-100">{record.chequeNo || "-"}</td>
+                        <td className="p-2 border-b border-gray-100">{record.stubNo || "-"}</td>
+                        <td className="p-2 border-b border-gray-100">{record.user || "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Timestamp similar to legacy page */}
+              <div className="mt-3 text-xs text-gray-600">{new Date().toLocaleString()}</div>
+            </div>
+          )}
         </div>
 
         <div className="border border-gray-100 rounded-lg p-4 bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <h3 className="text-xs font-semibold text-gray-800">Latest Update Times of Servers</h3>
+          <div className="flex flex-col items-start gap-3 mb-3">
+            <h3 className={`text-xl font-bold ${maroon}`}>Latest Update Times of Servers</h3>
             <button
               type="button"
               onClick={handlePreviewLatestUpdateTimes}
@@ -526,20 +796,37 @@ const PaymentInquiry: React.FC = () => {
 
           {latestUpdateTimes && (
             <>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setLatestUpdateTimes(null)}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
-                  >
-                    Back
-                  </button>
+              <div className="flex justify-between items-center mb-4">
+                <div>
                   {latestUpdateLoading && <span className="text-xs text-gray-500">Loading...</span>}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleLatestUpdateTimesPrint}
+                    className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
+                  >
+                    <MdPrint size={16} />
+                    Print
+                  </button>
+                  <button
+                    onClick={downloadLatestUpdateTimesCSV}
+                    className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+                  >
+                    <MdFileDownload size={16} />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => setLatestUpdateTimes(null)}
+                    className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
+                  >
+                    Back to Form
+                  </button>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div ref={latestUpdateTimesPrintRef} className="w-full bg-white p-2">
+                <h2 className={`text-xl font-bold ${maroon} mb-4`}>Latest Update Times of Servers</h2>
+                <div className="overflow-x-auto">
                 <table className="min-w-full text-xs border border-gray-200">
                   <thead className="bg-[#7A0000] text-white">
                     <tr>
@@ -584,6 +871,9 @@ const PaymentInquiry: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              {/* Timestamp similar to legacy page */}
+              <div className="mt-3 text-xs text-gray-600 mb-2">{new Date().toLocaleString()}</div>
+            </div>
 
               {/* Pagination Controls */}
               {latestUpdateTimes.length > 0 && (
@@ -711,8 +1001,8 @@ const PaymentInquiry: React.FC = () => {
                 className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               >
                 {billTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                  <option key={type.id} value={type.id}>
+                    {type.label}
                   </option>
                 ))}
               </select>
@@ -727,8 +1017,8 @@ const PaymentInquiry: React.FC = () => {
                 className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               >
                 {payModes.map((mode) => (
-                  <option key={mode} value={mode}>
-                    {mode}
+                  <option key={mode.id} value={mode.id}>
+                    {mode.label}
                   </option>
                 ))}
               </select>
@@ -763,89 +1053,6 @@ const PaymentInquiry: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Results Section - Payment Inquiry */}
-      {activeTab === "individual" && paymentResult && (
-        <div ref={paymentPrintRef} className="mt-4 p-4 rounded-xl shadow border border-gray-200 w-full bg-white">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h2 className={`text-xl font-bold ${maroon} mb-2`}>Payment Inquiry Report</h2>
-              {/* Legacy-style header: Account & Area on one line, customer name/address highlighted below */}
-              <div className="w-full text-sm mb-2">
-                <div className="text-sm text-[#7A0000] font-semibold whitespace-pre-line">
-                  {`Account No: ${paymentResult.accountNumber} Area : ${paymentResult.areaName || "-"} ${paymentResult.customerName} ${[paymentResult.address1, paymentResult.address2, paymentResult.address3].filter(Boolean).join(", ") || "-"}`}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={handlePaymentPrint}
-                className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
-              >
-                <MdPrint size={16} />
-                Print
-              </button>
-              <button
-                onClick={downloadPaymentCSV}
-                className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-              >
-                <MdFileDownload size={16} />
-                Download
-              </button>
-              <button
-                onClick={() => setActiveTab(null)}
-                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
-              >
-                Back to Form
-              </button>
-            </div>
-          </div>
-
-          {/* Summary removed per request */}
-
-          {/* Payment Records Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className={`${maroonBg} text-white`}>
-                  <th className="p-2 text-left font-semibold">Payment Date</th>
-                  <th className="p-2 text-right font-semibold">Amount</th>
-                  <th className="p-2 text-left font-semibold">Center</th>
-                  <th className="p-2 text-left font-semibold">Counter</th>
-                  <th className="p-2 text-left font-semibold">Counter Name</th>
-                  <th className="p-2 text-left font-semibold">Pay Mode</th>
-                  <th className="p-2 text-left font-semibold">Cheque No</th>
-                  <th className="p-2 text-left font-semibold">Stub No</th>
-                  <th className="p-2 text-left font-semibold">User</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paymentResult.paymentRecords.map((record, idx) => (
-                  <tr key={record.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td className="p-2 border-b border-gray-100">{record.paymentDate}</td>
-                    <td className="p-2 text-right font-semibold border-b border-gray-100">
-                      {record.amount.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="p-2 border-b border-gray-100 whitespace-pre-line">{record.centerDisplay || record.center}</td>
-                    <td className="p-2 border-b border-gray-100">{record.counter}</td>
-                    <td className="p-2 border-b border-gray-100">{record.counterName}</td>
-                    <td className="p-2 border-b border-gray-100">{record.paymentMode}</td>
-                    <td className="p-2 border-b border-gray-100">{record.chequeNo || "-"}</td>
-                    <td className="p-2 border-b border-gray-100">{record.stubNo || "-"}</td>
-                    <td className="p-2 border-b border-gray-100">{record.user || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {/* Timestamp similar to legacy page */}
-          <div className="mt-3 text-xs text-gray-600">{new Date().toLocaleString()}</div>
-        </div>
-      )}
 
       {/* Results Section - POS Collection */}
       {activeTab === "pos" && posResult && (
