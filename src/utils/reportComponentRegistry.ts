@@ -75,6 +75,7 @@ import AverageConsumptions from "../mainTopics/inventory/AverageConsumptions";
 import AverageConsumptionSelected from "../mainTopics/inventory/AverageConsumptionSelected";
 import QtyOnHandAllRegion from "../mainTopics/inventory/QtyOnHandAllRegions";
 import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
+import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuantityOnHand";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -283,6 +284,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"average consumptions selected maerial codes": AverageConsumptionSelected,
 	"provincial quantity on hand cross tab": ProvincialQtyHand,
 	"quantity on hand all region material active online": QtyOnHandAllRegion,
+	"province wise quantity on hand": ProvinceWiseQuantityOnHand,
 
 	// JobCard reports
 	"job card details": JobCardInfo,
