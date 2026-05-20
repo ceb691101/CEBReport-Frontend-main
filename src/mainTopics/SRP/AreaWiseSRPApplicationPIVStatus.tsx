@@ -349,16 +349,15 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 							return [];
 						}
 						try {
-							const res = await fetch(
-								`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/50`
-							);
+							const url = `/pivapi/api/incomeexpenditure/departments/${encodeURIComponent(epfNo.trim())}`;
+							const res = await fetch(url);
 							if (!res.ok) throw new Error(`HTTP ${res.status}`);
 							const txt = await res.text();
 							const parsed = JSON.parse(txt);
 							const raw = Array.isArray(parsed) ? parsed : parsed.data || [];
 							return raw.map((c: any) => ({
-								id: c.CompId,
-								name: c.CompName,
+								id: c.CompId || c.compId || c.DeptId || c.deptId || "",
+								name: c.CompName || c.compName || c.DeptName || c.deptName || "",
 							}));
 						} catch (e: any) {
 							toast.error(e.message || "Failed to load companies");
