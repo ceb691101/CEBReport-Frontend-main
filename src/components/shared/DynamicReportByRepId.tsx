@@ -12,8 +12,8 @@ const endpointCandidates = (repIdNo: string) => [
   `/misapi/api/reports/${encodeURIComponent(repIdNo)}`,
   `/misapi/api/reportdata/${encodeURIComponent(repIdNo)}`,
   `/misapi/api/report/get?repIdNo=${encodeURIComponent(repIdNo)}`,
-  `/misreportsapi/api/report/${encodeURIComponent(repIdNo)}`,
-  `/misreportsapi/api/report/get?repIdNo=${encodeURIComponent(repIdNo)}`,
+  `/misapi/api/report/${encodeURIComponent(repIdNo)}`,
+  `/misapi/api/report/get?repIdNo=${encodeURIComponent(repIdNo)}`,
 ];
 
 const toRows = (value: ApiResponse): Array<Record<string, unknown>> => {
