@@ -65,8 +65,8 @@ const initialForm: CreateRoleForm = {
 };
 
 const endpointMap: Record<RoleType, string[]> = {
-	admin: ["/roleadminapi/api/roleinfo/ADMIN", "/roleadminapi/api/roleinfo/admin"],
-	user: ["/roleadminapi/api/roleinfo/USER", "/roleadminapi/api/roleinfo/user"],
+	admin: ["/misapi/api/roleinfo/ADMIN", "/misapi/api/roleinfo/admin"],
+	user: ["/misapi/api/roleinfo/USER", "/misapi/api/roleinfo/user"],
 };
 
 const fieldBaseClass =
@@ -141,7 +141,7 @@ const UserRoles = () => {
 		setIsCompaniesLoading(true);
 
 		try {
-			const response = await fetch("/roleadminapi/api/roleinfo/companies");
+			const response = await fetch("/misapi/api/roleinfo/companies");
 
 			if (!response.ok) {
 				throw new Error(`Failed to load companies. (${response.status})`);
@@ -182,7 +182,7 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/roleadminapi/api/roleinfo/companies/${encodeURIComponent(companyId)}/costcentres`
+				`/misapi/api/roleinfo/companies/${encodeURIComponent(companyId)}/costcentres`
 			);
 
 			if (!response.ok) {
@@ -292,7 +292,7 @@ const UserRoles = () => {
 		setIsUserGroupsLoading(true);
 
 		try {
-			const response = await fetch("/roleadminapi/api/roleinfo/usergroups");
+			const response = await fetch("/misapi/api/roleinfo/usergroups");
 
 			if (!response.ok) {
 				throw new Error(`Failed to load user groups. (${response.status})`);
@@ -331,7 +331,7 @@ const UserRoles = () => {
 		
 		// Preload all cost centres to match names for assigned cost centres 
 		// that might belong to other companies than the primary one.
-		fetch("/roleadminapi/api/roleinfo/companies/ALL/costcentres")
+		fetch("/misapi/api/roleinfo/companies/ALL/costcentres")
 			.then((res) => res.json())
 			.then((payload) => {
 				if (Array.isArray(payload?.data)) {
@@ -450,7 +450,7 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}/costcentres`,
+				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}/costcentres`,
 				{
 					method: "POST",
 					headers: {
@@ -531,7 +531,7 @@ const UserRoles = () => {
 		setIsSubmitting(true);
 
 		try {
-			const response = await fetch("/roleadminapi/api/roleinfo", {
+			const response = await fetch("/misapi/api/roleinfo", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(buildRolePayload()),
@@ -568,7 +568,7 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
+				`/miaapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
 				{
 					method: "PUT",
 					headers: { "Content-Type": "application/json" },
@@ -605,7 +605,7 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/roleadminapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
+				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
 				{ method: "DELETE" }
 			);
 			const payload = await response.json();
