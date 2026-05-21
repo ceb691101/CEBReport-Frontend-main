@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { MdPermIdentity, MdDateRange } from "react-icons/md";
 
 type PaymentInquiryFormProps = {
@@ -18,13 +18,13 @@ type PaymentInquiryFormProps = {
 };
 
 type ProvinceOption = {
-  id: string;
-  name: string;
+  provCode: string;
+  provName: string;
 };
 
 type AreaOption = {
-  id: string;
-  name: string;
+  areaCode: string;
+  areaName: string;
 };
 
 const PaymentInquiryForm = ({ onSubmit, onPosSubmit }: PaymentInquiryFormProps) => {
@@ -41,21 +41,78 @@ const PaymentInquiryForm = ({ onSubmit, onPosSubmit }: PaymentInquiryFormProps) 
   const [payMode, setPayMode] = useState("All");
   const [posDate, setPosDate] = useState("");
 
-  // Mock data for dropdowns
-  const provinces: ProvinceOption[] = [
-    { id: "1", name: "Select Province" },
-    { id: "2", name: "Western" },
-    { id: "3", name: "Central" },
-    { id: "4", name: "Southern" },
-    { id: "5", name: "Northern" },
-  ];
+  // API data state
+  const [provinces, setProvinces] = useState<ProvinceOption[]>([]);
+  const [areas, setAreas] = useState<AreaOption[]>([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(true);
+  const [loadingAreas, setLoadingAreas] = useState(false);
+  const [errorProvinces, setErrorProvinces] = useState<string | null>(null);
+  const [errorAreas, setErrorAreas] = useState<string | null>(null);
 
-  const areas: AreaOption[] = [
-    { id: "1", name: "Select Area" },
-    { id: "2", name: "Area 1" },
-    { id: "3", name: "Area 2" },
-    { id: "4", name: "Area 3" },
-  ];
+  // Fetch provinces on component mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      setLoadingProvinces(true);
+      setErrorProvinces(null);
+      try {
+        const response = await fetch("/api/customerdetails/pos-provinces");
+        if (!response.ok) {
+          throw new Error("Failed to fetch provinces");
+        }
+        const result = await response.json();
+        if (result.data && Array.isArray(result.data.provinces)) {
+          setProvinces(result.data.provinces);
+        } else {
+          setErrorProvinces("Invalid data format received");
+        }
+      } catch (error) {
+        setErrorProvinces(
+          error instanceof Error ? error.message : "Failed to load provinces"
+        );
+        console.error("Error fetching provinces:", error);
+      } finally {
+        setLoadingProvinces(false);
+      }
+    };
+
+    fetchProvinces();
+  }, []);
+
+  // Fetch areas when province changes
+  useEffect(() => {
+    if (!province) {
+      setAreas([]);
+      return;
+    }
+
+    const fetchAreas = async () => {
+      setLoadingAreas(true);
+      setErrorAreas(null);
+      try {
+        const response = await fetch(
+          `/api/customerdetails/pos-areas?provCode=${encodeURIComponent(province)}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch areas");
+        }
+        const result = await response.json();
+        if (result.data && Array.isArray(result.data.areas)) {
+          setAreas(result.data.areas);
+        } else {
+          setErrorAreas("Invalid data format received");
+        }
+      } catch (error) {
+        setErrorAreas(
+          error instanceof Error ? error.message : "Failed to load areas"
+        );
+        console.error("Error fetching areas:", error);
+      } finally {
+        setLoadingAreas(false);
+      }
+    };
+
+    fetchAreas();
+  }, [province]);
 
   const counters = [
     "Select Counter",
@@ -177,17 +234,28 @@ const PaymentInquiryForm = ({ onSubmit, onPosSubmit }: PaymentInquiryFormProps) 
               <label className="text-sm font-medium text-gray-700 mb-1">
                 Province
               </label>
-              <select
-                value={province}
-                onChange={(e) => setProvince(e.target.value)}
-                className="rounded-md bg-white h-9 px-3 text-sm border border-gray-300 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
-              >
-                {provinces.map((prov) => (
-                  <option key={prov.id} value={prov.id}>
-                    {prov.name}
-                  </option>
-                ))}
-              </select>
+              {loadingProvinces ? (
+                <div className="rounded-md bg-gray-100 h-9 px-3 text-sm border border-gray-300 flex items-center text-gray-500">
+                  Loading provinces...
+                </div>
+              ) : errorProvinces ? (
+                <div className="rounded-md bg-red-50 h-9 px-3 text-sm border border-red-300 flex items-center text-red-600">
+                  {errorProvinces}
+                </div>
+              ) : (
+                <select
+                  value={province}
+                  onChange={(e) => setProvince(e.target.value)}
+                  className="rounded-md bg-white h-9 px-3 text-sm border border-gray-300 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                >
+                  <option value="">Select Province</option>
+                  {provinces.map((prov) => (
+                    <option key={prov.provCode} value={prov.provCode}>
+                      {prov.provName}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Area */}
@@ -195,17 +263,32 @@ const PaymentInquiryForm = ({ onSubmit, onPosSubmit }: PaymentInquiryFormProps) 
               <label className="text-sm font-medium text-gray-700 mb-1">
                 Area
               </label>
-              <select
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-                className="rounded-md bg-white h-9 px-3 text-sm border border-gray-300 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
-              >
-                {areas.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+              {!province ? (
+                <div className="rounded-md bg-gray-100 h-9 px-3 text-sm border border-gray-300 flex items-center text-gray-500">
+                  Select province first
+                </div>
+              ) : loadingAreas ? (
+                <div className="rounded-md bg-gray-100 h-9 px-3 text-sm border border-gray-300 flex items-center text-gray-500">
+                  Loading areas...
+                </div>
+              ) : errorAreas ? (
+                <div className="rounded-md bg-red-50 h-9 px-3 text-sm border border-red-300 flex items-center text-red-600">
+                  {errorAreas}
+                </div>
+              ) : (
+                <select
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  className="rounded-md bg-white h-9 px-3 text-sm border border-gray-300 focus:border-[#800000] focus:ring-1 focus:ring-[#800000] outline-none transition-colors"
+                >
+                  <option value="">Select Area</option>
+                  {areas.map((a) => (
+                    <option key={a.areaCode} value={a.areaCode}>
+                      {a.areaName}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Counter */}
