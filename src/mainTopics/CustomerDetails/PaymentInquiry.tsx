@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MdPermIdentity, MdDateRange, MdFileDownload, MdPrint } from "react-icons/md";
+import { MdPermIdentity, MdDateRange } from "react-icons/md";
+import { FaFileDownload, FaPrint } from "react-icons/fa";
 
 interface PaymentRecord {
   id: string;
@@ -225,6 +226,8 @@ const PaymentInquiry: React.FC = () => {
   // Dynamic data for Bill Type and Pay Mode (loaded from API)
   const [billTypes, setBillTypes] = useState<{ id: string; label: string }[]>([
     { id: "*", label: "All" },
+    { id: "Bill", label: "Bill" },
+    { id: "PIV", label: "PIV" },
   ]);
   const [payModes, setPayModes] = useState<{ id: string; label: string }[]>([
     { id: "*", label: "All" },
@@ -577,36 +580,267 @@ useEffect(() => {
   };
 
   const handlePaymentPrint = () => {
-    if (paymentPrintRef.current) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(paymentPrintRef.current.innerHTML);
-        printWindow.document.close();
-        printWindow.print();
-      }
-    }
+    if (!paymentResult || !paymentPrintRef.current) return;
+
+    const printWindow = window.open("", "_blank", "width=1200,height=800");
+    if (!printWindow) return;
+
+    const tableEl = paymentPrintRef.current.querySelector("table");
+    const tableHTML = tableEl ? tableEl.outerHTML : paymentPrintRef.current.innerHTML;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payment Inquiry Report</title>
+          <style>
+            body { font-family: Arial; font-size: 10px; margin: 10mm; }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 11px;
+            }
+            th, td {
+              padding: 5px 8px;
+              border: 1px solid #d1d5db;
+              line-height: 1.25;
+              height: 24px;
+            }
+            th {
+              background-color: #f0f0f0;
+              font-weight: bold;
+              text-align: left;
+            }
+            .text-left { text-align: left; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .bold { font-weight: bold; }
+            .header {
+              font-weight: bold;
+              margin-bottom: 5px;
+              color: #7A0000;
+              font-size: 12px;
+            }
+            .subheader {
+              margin-bottom: 12px;
+              font-size: 11px;
+            }
+            .footer {
+              margin-top: 10px;
+              font-size: 9px;
+              color: #666;
+            }
+            tbody tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">PAYMENT INQUIRY REPORT</div>
+          <div class="subheader">
+            Account No: <span class="bold">${paymentResult.accountNumber}</span> &nbsp;&nbsp;&nbsp;&nbsp; Area : <span class="bold">${paymentResult.areaName || "-"}</span><br>
+            Customer Name: <span class="bold">${paymentResult.customerName}</span><br>
+            Address: <span class="bold">${[paymentResult.address1, paymentResult.address2, paymentResult.address3].filter(Boolean).join(", ") || "-"}</span><br>
+            From Date: <span class="bold">${paymentResult.fromDate}</span>
+          </div>
+          ${tableHTML}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   const handlePosPrint = () => {
-    if (posPrintRef.current) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(posPrintRef.current.innerHTML);
-        printWindow.document.close();
-        printWindow.print();
-      }
-    }
+    if (!posResult || !posPrintRef.current) return;
+
+    const printWindow = window.open("", "_blank", "width=1200,height=800");
+    if (!printWindow) return;
+
+    const tableEl = posPrintRef.current.querySelector("table");
+    const tableHTML = tableEl ? tableEl.outerHTML : posPrintRef.current.innerHTML;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payment Collection Report</title>
+          <style>
+            body { font-family: Arial; font-size: 10px; margin: 10mm; }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 11px;
+            }
+            th, td {
+              padding: 5px 8px;
+              border: 1px solid #d1d5db;
+              line-height: 1.25;
+              height: 24px;
+            }
+            th {
+              background-color: #f0f0f0;
+              font-weight: bold;
+              text-align: left;
+            }
+            .text-left { text-align: left; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .bold { font-weight: bold; }
+            .header {
+              font-weight: bold;
+              margin-bottom: 5px;
+              color: #7A0000;
+              font-size: 12px;
+            }
+            .subheader {
+              margin-bottom: 12px;
+              font-size: 11px;
+            }
+            .footer {
+              margin-top: 10px;
+              font-size: 9px;
+              color: #666;
+            }
+            tbody tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            tfoot tr {
+              font-weight: bold;
+              background-color: #f0f0f0;
+            }
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">PAYMENT COLLECTION REPORT</div>
+          <div class="subheader">
+            Payment Collection on <span class="bold">${formatDateDMY(posResult.date)}</span><br>
+            Area: <span class="bold">${getAreaLabel()}</span> &nbsp;&nbsp;&nbsp;&nbsp; Counter: <span class="bold">${getCounterLabel()}</span><br>
+            Bill Type: <span class="bold">${posResult.billType === "*" ? "All" : posResult.billType}</span> &nbsp;&nbsp;&nbsp;&nbsp; Pay Mode: <span class="bold">${posResult.payMode === "*" ? "All" : posResult.payMode}</span>
+          </div>
+          ${tableHTML}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   const handleLatestUpdateTimesPrint = () => {
-    if (latestUpdateTimesPrintRef.current) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(latestUpdateTimesPrintRef.current.innerHTML);
-        printWindow.document.close();
-        printWindow.print();
-      }
-    }
+    if (!latestUpdateTimesPrintRef.current) return;
+
+    const printWindow = window.open("", "_blank", "width=1200,height=800");
+    if (!printWindow) return;
+
+    const tableEl = latestUpdateTimesPrintRef.current.querySelector("table");
+    const tableHTML = tableEl ? tableEl.outerHTML : latestUpdateTimesPrintRef.current.innerHTML;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Latest Update Times of Servers</title>
+          <style>
+            body { font-family: Arial; font-size: 10px; margin: 10mm; }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 11px;
+            }
+            th, td {
+              padding: 5px 8px;
+              border: 1px solid #d1d5db;
+              line-height: 1.25;
+              height: 24px;
+            }
+            th {
+              background-color: #f0f0f0;
+              font-weight: bold;
+              text-align: left;
+            }
+            .text-left { text-align: left; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .bold { font-weight: bold; }
+            .header {
+              font-weight: bold;
+              margin-bottom: 5px;
+              color: #7A0000;
+              font-size: 12px;
+            }
+            .subheader {
+              margin-bottom: 12px;
+              font-size: 11px;
+            }
+            .footer {
+              margin-top: 10px;
+              font-size: 9px;
+              color: #666;
+            }
+            tbody tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">LATEST UPDATE TIMES OF SERVERS</div>
+          <div class="subheader">
+            Generated on: <span class="bold">${new Date().toLocaleString()}</span>
+          </div>
+          ${tableHTML}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   const downloadLatestUpdateTimesCSV = () => {
@@ -721,9 +955,9 @@ useEffect(() => {
         <div className="border border-gray-200 rounded-xl p-4 bg-white shadow">
           <h3 className={`text-xl font-bold mb-4 ${maroon}`}>Individual Payments</h3>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             {/* Account Number */}
-            <div className="flex flex-col w-full sm:w-[24%]">
+            <div className="flex flex-col">
               <label className={`${maroon} text-xs font-medium flex items-center gap-1.5 mb-1`}>
                 <MdPermIdentity className={maroon} size={16} />
                 Account No
@@ -738,7 +972,7 @@ useEffect(() => {
             </div>
 
             {/* From Date */}
-            <div className="flex flex-col w-full sm:w-[24%]">
+            <div className="flex flex-col">
               <label className={`${maroon} text-xs font-medium flex items-center gap-1.5 mb-1`}>
                 <MdDateRange className={maroon} size={16} />
                 From
@@ -750,14 +984,45 @@ useEffect(() => {
                 className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               />
             </div>
+          </div>
 
-            {/* View Full Report Button */}
+          {/* Button */}
+          <div className="w-full mt-6 flex justify-end">
             <button
               onClick={handlePaymentInquiry}
               disabled={loading}
-              className={`w-full sm:w-[24%] px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow ${maroonGrad} text-white flex items-center justify-center ${loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"}`}
+              className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
+            ${maroonGrad} text-white ${
+                loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"
+              }`}
             >
-              {loading ? "Loading..." : "View Full Report"}
+              {loading ? (
+                <span className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Loading...
+                </span>
+              ) : (
+                "Generate Report"
+              )}
             </button>
           </div>
 
@@ -777,18 +1042,16 @@ useEffect(() => {
 
                 <div className="flex gap-2">
                   <button
+                    onClick={downloadPaymentCSV}
+                    className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+                  >
+                    <FaFileDownload className="w-3 h-3" /> CSV
+                  </button>
+                  <button
                     onClick={handlePaymentPrint}
                     className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
                   >
-                    <MdPrint size={16} />
-                    Print
-                  </button>
-                  <button
-                    onClick={downloadPaymentCSV}
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-                  >
-                    <MdFileDownload size={16} />
-                    Download
+                    <FaPrint className="w-3 h-3" /> PDF
                   </button>
                   <button
                     onClick={() => setActiveTab(null)}
@@ -869,18 +1132,16 @@ useEffect(() => {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={handleLatestUpdateTimesPrint}
-                    className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
-                  >
-                    <MdPrint size={16} />
-                    Print
-                  </button>
-                  <button
                     onClick={downloadLatestUpdateTimesCSV}
                     className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
                   >
-                    <MdFileDownload size={16} />
-                    Download
+                    <FaFileDownload className="w-3 h-3" /> CSV
+                  </button>
+                  <button
+                    onClick={handleLatestUpdateTimesPrint}
+                    className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
+                  >
+                    <FaPrint className="w-3 h-3" /> PDF
                   </button>
                   <button
                     onClick={() => setLatestUpdateTimes(null)}
@@ -1139,18 +1400,16 @@ useEffect(() => {
 
             <div className="flex gap-2 print:hidden">
               <button
-                onClick={handlePosPrint}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
+                onClick={downloadPosCSV}
+                className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
               >
-                <MdPrint size={16} />
-                Print
+                <FaFileDownload className="w-3 h-3" /> CSV
               </button>
               <button
-                onClick={downloadPosCSV}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 rounded-md text-xs font-medium text-blue-700 transition-colors"
+                onClick={handlePosPrint}
+                className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
               >
-                <MdFileDownload size={16} />
-                Download
+                <FaPrint className="w-3 h-3" /> PDF
               </button>
               <button
                 onClick={() => setActiveTab(null)}
