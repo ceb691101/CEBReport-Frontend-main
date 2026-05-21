@@ -10,18 +10,11 @@ import AreaWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPAp
 import DivisionWiseSRPApplicationPIVPaidReport from "../mainTopics/SRP/DivisionWiseSRPApplicationPIVPaidReport";
 import AreaWiseSRPEstimationPIVPaidReport from "../mainTopics/SRP/AreaWiseSRPEstimationPIVPaidReport";
 
-type Subtopic = {
-  id: number;
-  name: string;
-};
-import { useReportRenderer } from "../hooks/useReportRenderer";
-
 const SolarReligiousPurpose = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics([
     "Solar Religious Purpose (SRP)",
   ]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
-  const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -74,7 +67,7 @@ const SolarReligiousPurpose = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
+          {renderSubtopicContent(subtopic.name)}
         </SubtopicCard>
       ))}
       <Outlet />
