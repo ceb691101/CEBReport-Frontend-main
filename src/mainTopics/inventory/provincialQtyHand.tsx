@@ -119,9 +119,9 @@ const ProvincialQtyHand: React.FC = () => {
 
   const paginatedProvinces = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  // ── Fetch company list (same API as ProvinceWisePIVStampDuty) ──
+  // ── Fetch province list ──
   useEffect(() => {
-    const fetchCompanies = async () => {
+    const fetchProvinces = async () => {
       if (!epfNo) {
         setError("No EPF number available. Please login again.");
         setLoading(false);
@@ -129,7 +129,7 @@ const ProvincialQtyHand: React.FC = () => {
       }
       setLoading(true);
       try {
-        const res = await fetch(`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/60`);
+        const res = await fetch(`/misapi/api/materialcommittedstock/provinces`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
@@ -142,22 +142,22 @@ const ProvincialQtyHand: React.FC = () => {
         else if (parsed.data && Array.isArray(parsed.data)) rawData = parsed.data;
         else if (parsed.result && Array.isArray(parsed.result)) rawData = parsed.result;
 
-        const companies: Province[] = rawData
+        const provinces: Province[] = rawData
           .map((c: any) => ({
-            ProvinceId: (c.CompId ?? c.compId ?? "").toString().trim(),
-            ProvinceName: (c.CompName ?? c.compName ?? "").toString().trim(),
+            ProvinceId: (c.CompId ?? c.compId ?? c.COMP_ID ?? "").toString().trim(),
+            ProvinceName: (c.CompNm ?? c.CompName ?? c.compNm ?? c.compName ?? c.COMP_NM ?? "").toString().trim(),
           }))
           .filter((c) => c.ProvinceId !== "");
 
-        setData(companies);
-        setFiltered(companies);
+        setData(provinces);
+        setFiltered(provinces);
       } catch (e: any) {
         setError(e.message);
       } finally {
         setLoading(false);
       }
     };
-    fetchCompanies();
+    fetchProvinces();
   }, [epfNo]);
 
   // ── Filter companies ──
@@ -178,7 +178,7 @@ const ProvincialQtyHand: React.FC = () => {
     setReportError(null);
     try {
       const matParam = materialSelectionType === "specific" && materialCode.trim() ? materialCode.trim() : "";
-      const url = `http://localhost:44381/api/province-qty-onhand-crosstab/list?compId=${encodeURIComponent(selectedProvince.ProvinceId)}&matcode=${encodeURIComponent(matParam)}`;
+      const url = `/misapi/api/province-qty-onhand-crosstab/list?compId=${encodeURIComponent(selectedProvince.ProvinceId)}&matcode=${encodeURIComponent(matParam)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const parsed = await res.json();

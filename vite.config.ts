@@ -22,11 +22,6 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 			},
-			"/misapi": {
-				target: "http://10.128.1.126",
-				changeOrigin: true,
-				secure: false,
-			},
 			"/api": {
 				target: "http://10.128.1.126",
 				changeOrigin: true,
@@ -114,11 +109,11 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 			},	
-			"/misreportsapi": {
+			"/misapi": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
 				secure: false,
-				rewrite: (path) => path.replace(/^\/misreportsapi/, ""),
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
 			"/pivapi": {
 				target: "http://localhost:44381",
