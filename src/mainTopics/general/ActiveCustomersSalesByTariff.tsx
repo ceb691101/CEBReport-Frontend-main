@@ -598,30 +598,30 @@ const ActiveCustomersSalesByTariff: React.FC = () => {
         });
 
         // ── Grand Total (always at bottom) ───────────────────────────────────
-        if (rtype === "entireceb") {
-            const grandTariffs: Record<string, number> = {};
-            activeTariffs.forEach(col => {
-                grandTariffs[col] = pivotedData.reduce((s, r) => s + (r.tariffs[col] ?? 0), 0);
-            });
-            const grandTotal = pivotedData.reduce((s, r) => s + r.total, 0);
+        // if (rtype === "entireceb") {
+        //     const grandTariffs: Record<string, number> = {};
+        //     activeTariffs.forEach(col => {
+        //         grandTariffs[col] = pivotedData.reduce((s, r) => s + (r.tariffs[col] ?? 0), 0);
+        //     });
+        //     const grandTotal = pivotedData.reduce((s, r) => s + r.total, 0);
 
-            tableRows.push(
-                <tr key="grand-total" className="bg-gray-200 font-bold">
-                    <td className="border border-gray-300 px-2 py-1.5 text-xs font-bold"
-                        colSpan={locationHeaders.length + 1}>
-                        Total
-                    </td>
-                    {activeTariffs.map(col => (
-                        <td key={col} className="border border-gray-300 px-2 py-1.5 text-right text-xs">
-                            {grandTariffs[col] ? formatNum(grandTariffs[col]) : ""}
-                        </td>
-                    ))}
-                    <td className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">
-                        {formatNum(grandTotal)}
-                    </td>
-                </tr>
-            );
-        }
+        //     tableRows.push(
+        //         <tr key="grand-total" className="bg-gray-200 font-bold">
+        //             <td className="border border-gray-300 px-2 py-1.5 text-xs font-bold"
+        //                 colSpan={locationHeaders.length + 1}>
+        //                 Total
+        //             </td>
+        //             {activeTariffs.map(col => (
+        //                 <td key={col} className="border border-gray-300 px-2 py-1.5 text-right text-xs">
+        //                     {grandTariffs[col] ? formatNum(grandTariffs[col]) : ""}
+        //                 </td>
+        //             ))}
+        //             <td className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">
+        //                 {formatNum(grandTotal)}
+        //             </td>
+        //         </tr>
+        //     );
+        // }
 
         return (
             <table className="min-w-full text-xs border-collapse">
