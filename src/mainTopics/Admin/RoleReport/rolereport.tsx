@@ -85,8 +85,8 @@ const RoleReport = () => {
 
   const fetchRoleData = async (type: "USER" | "ADMIN") => {
     const endpointCandidates = [
-      `/roleadminapi/api/roleinfo/${type}`,
-      `/roleadminapi/api/roleinfo/${type.toLowerCase()}`,
+      `/misapi/api/roleinfo/${type}`,
+      `/misapi/api/roleinfo/${type.toLowerCase()}`,
     ];
 
     let payload: any = null;
@@ -168,7 +168,7 @@ const RoleReport = () => {
     setIsCategoriesLoading(true);
 
     try {
-      const response = await fetch("/roleadminapi/api/reportcategory");
+      const response = await fetch("/misapi/api/reportcategory");
 
       if (!response.ok) {
         throw new Error(`Failed to load categories. (${response.status})`);
@@ -201,7 +201,7 @@ const RoleReport = () => {
     setIsReportsLoading(true);
 
     try {
-      const response = await fetch("/roleadminapi/api/reportentry");
+      const response = await fetch("/misapi/api/reportentry");
 
       if (!response.ok) {
         throw new Error(`Failed to load reports. (${response.status})`);
@@ -279,7 +279,7 @@ const RoleReport = () => {
 
     const loadAssignedReportsForRole = async () => {
       try {
-        const resp = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports`);
+        const resp = await fetch(`/misapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports`);
         if (!resp.ok) {
           throw new Error(`Failed to load assigned reports. (${resp.status})`);
         }
@@ -502,7 +502,7 @@ const RoleReport = () => {
 
       // Replace: delete existing then insert
       if (mode === "replace") {
-        const deleteAllResp = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports`, {
+        const deleteAllResp = await fetch(`/misapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports`, {
           method: "DELETE",
         });
         const deleteAllPayload = await deleteAllResp.json();
@@ -510,7 +510,7 @@ const RoleReport = () => {
           throw new Error(deleteAllPayload.errorDetails ? `${deleteAllPayload.errorMessage} Details: ${deleteAllPayload.errorDetails}` : deleteAllPayload.errorMessage);
         }
 
-        const resp = await fetch(`/roleadminapi/api/role-report/save-userrolereps`, {
+        const resp = await fetch(`/misapi/api/role-report/save-userrolereps`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ RoleId: selectedRoleId, Reports: reportsPayload }),
@@ -528,7 +528,7 @@ const RoleReport = () => {
 
       // Add: save new reports (backend avoids duplicates)
       if (mode === "add") {
-        const resp = await fetch(`/roleadminapi/api/role-report/save-userrolereps`, {
+        const resp = await fetch(`/misapi/api/role-report/save-userrolereps`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ RoleId: selectedRoleId, Reports: reportsPayload }),
@@ -555,7 +555,7 @@ const RoleReport = () => {
 
         if (viewMode === "category" && selectedCategories.length > 0) {
           for (const catCode of selectedCategories) {
-            const resp = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports/category/${encodeURIComponent(catCode)}`, {
+            const resp = await fetch(`/misapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports/category/${encodeURIComponent(catCode)}`, {
               method: "DELETE",
             });
 
@@ -568,7 +568,7 @@ const RoleReport = () => {
           }
         } else {
           for (const repId of targetRepIdsForAction) {
-            const resp = await fetch(`/roleadminapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports/${encodeURIComponent(repId)}`, {
+            const resp = await fetch(`/misapi/api/role-report/user/${encodeURIComponent(selectedRoleId)}/reports/${encodeURIComponent(repId)}`, {
               method: "DELETE",
             });
 

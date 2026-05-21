@@ -115,7 +115,7 @@ const ReportParameters = () => {
     setIsLoadingParams(true);
 
     try {
-      const response = await fetch("/roleadminapi/api/reppara/GET_REPORTPARAMS");
+      const response = await fetch("/misapi/api/reppara/GET_REPORTPARAMS");
       const payload = await response.json();
 
       if (payload?.errorMessage) {
@@ -158,7 +158,7 @@ const ReportParameters = () => {
     setLastSaveResult(null);
 
     try {
-      const response = await fetch("/roleadminapi/api/reppara/save-reportparams", {
+      const response = await fetch("/misapi/api/reppara/save-reportparams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -239,7 +239,7 @@ const ReportParameters = () => {
     setLastUpdatedRows(null);
 
     try {
-      const response = await fetch("/roleadminapi/api/reppara/populate", {
+      const response = await fetch("/misapi/api/reppara/populate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -360,7 +360,7 @@ const ReportParameters = () => {
     setIsDeletingParamName(paraName);
 
     try {
-      const response = await fetch("/roleadminapi/api/reppara/delete-reportparams", {
+      const response = await fetch("/misapi/api/reppara/delete-reportparams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
