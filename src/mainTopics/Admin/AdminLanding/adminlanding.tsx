@@ -109,11 +109,11 @@ const AdminLanding = () => {
       setIsLoading(true);
 
       const requests = [
-        { key: "adminRoles", url: "/roleadminapi/api/roleinfo/admin" },
-        { key: "userRoles", url: "/roleadminapi/api/roleinfo/user" },
-        { key: "categories", url: "/roleadminapi/api/reportcategory" },
-        { key: "entries", url: "/roleadminapi/api/reportentry" },
-        { key: "parameters", url: "/roleadminapi/api/reppara/GET_REPORTPARAMS" },
+        { key: "adminRoles", url: "/misapi/api/roleinfo/admin" },
+        { key: "userRoles", url: "/misapi/api/roleinfo/user" },
+        { key: "categories", url: "/misapi/api/reportcategory" },
+        { key: "entries", url: "/misapi/api/reportentry" },
+        { key: "parameters", url: "/misapi/api/reppara/GET_REPORTPARAMS" },
       ] as const;
 
       const settled = await Promise.allSettled(requests.map((request) => fetchList(request.url)));

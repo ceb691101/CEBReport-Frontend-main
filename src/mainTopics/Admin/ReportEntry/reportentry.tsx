@@ -89,7 +89,7 @@ const ReportEntry = () => {
 
     const loadNextId = async () => {
         try {
-            const response = await fetch("/roleadminapi/api/reportentry/nextid");
+            const response = await fetch("/misapi/api/reportentry/nextid");
             const payload = await response.json();
             if (payload?.data) {
                 setForm((prev) => ({ ...prev, repIdNo: payload.data }));
@@ -103,7 +103,7 @@ const ReportEntry = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch("/roleadminapi/api/reportcategory");
+            const response = await fetch("/misapi/api/reportcategory");
             const payload = await response.json();
 
             if (payload?.errorMessage) {
@@ -135,8 +135,8 @@ const ReportEntry = () => {
         try {
             let normalizedCategory = (categoryCode ?? activeCategoryFilter).trim().toUpperCase();
             const endpoint = normalizedCategory
-                ? `/roleadminapi/api/reportentry?catcode=${encodeURIComponent(normalizedCategory)}`
-                : "/roleadminapi/api/reportentry";
+                ? `/misapi/api/reportentry?catcode=${encodeURIComponent(normalizedCategory)}`
+                : "/misapi/api/reportentry";
             const response = await fetch(endpoint);
             const payload = await response.json();
 
@@ -170,7 +170,7 @@ const ReportEntry = () => {
         setIsParametersLoading(true);
 
         try {
-            const response = await fetch("/roleadminapi/api/reppara/GET_POPEDREPPARAMS");
+            const response = await fetch("/misapi/api/reppara/GET_POPEDREPPARAMS");
             const payload = await response.json();
 
             if (payload?.errorMessage) {
@@ -196,7 +196,7 @@ const ReportEntry = () => {
         }
     };
 
-    const buildParamListValue = (reportId: string, allParaNames: string[], selectedParaNames: string[]) => {
+    const buildParamListValue = (allParaNames: string[], selectedParaNames: string[]) => {
         const uniqueParams = Array.from(new Set(allParaNames.map((item) => item.trim()).filter(Boolean)));
         if (uniqueParams.length === 0) {
             return "";
@@ -276,7 +276,7 @@ const ReportEntry = () => {
             // Fetch next ID if repIdNo is not set
             let nextRepIdNo = form.repIdNo;
             if (nextRepIdNo === 0) {
-                const nextIdResponse = await fetch("/roleadminapi/api/reportentry/nextid");
+                const nextIdResponse = await fetch("/misapi/api/reportentry/nextid");
                 const nextIdPayload = await nextIdResponse.json();
 
                 if (nextIdPayload?.errorMessage) {
@@ -290,12 +290,11 @@ const ReportEntry = () => {
             }
 
             const paramList = buildParamListValue(
-                normalizedRepId,
                 parameters.map((item) => item.paraName),
                 selectedParameters
             );
 
-            const response = await fetch("/roleadminapi/api/reportentry", {
+            const response = await fetch("/misapi/api/reportentry", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -350,13 +349,12 @@ const ReportEntry = () => {
 
         try {
             const paramList = buildParamListValue(
-                normalizeRepId(form.repId),
                 parameters.map((item) => item.paraName),
                 selectedParameters
             );
 
             const response = await fetch(
-                `/roleadminapi/api/reportentry/${selectedRepIdNo}/${encodeURIComponent(selectedCatCode)}`,
+                `/misapi/api/reportentry/${selectedRepIdNo}/${encodeURIComponent(selectedCatCode)}`,
                 {
                     method: "PUT",
                     headers: {
@@ -422,7 +420,7 @@ const ReportEntry = () => {
 
         try {
             const response = await fetch(
-                `/roleadminapi/api/reportentry/${deleteTargetEntry.repIdNo}/${encodeURIComponent(deleteTargetEntry.catCode)}`,
+                `/misapi/api/reportentry/${deleteTargetEntry.repIdNo}/${encodeURIComponent(deleteTargetEntry.catCode)}`,
                 {
                     method: "DELETE",
                 }
@@ -505,11 +503,6 @@ const ReportEntry = () => {
             entry.repName.toUpperCase().includes(searchQuery.toUpperCase());
         return matchesSearch;
     });
-
-    const getCategoryLabel = (catCode: string) => {
-        const category = categories.find((item) => item.catCode === catCode);
-        return category?.catName || catCode;
-    };
 
     const normalizedSelectedCatCode = form.catCode.trim().toUpperCase();
     const categoryOptionValues = categories.map((c) => c.catCode);
@@ -632,7 +625,6 @@ const ReportEntry = () => {
                                     <p className="mt-1 break-all font-mono text-xs text-[#8B0000]">
                                         {form.repId.trim()
                                             ? buildParamListValue(
-                                                normalizeRepId(form.repId),
                                                 parameters.map((item) => item.paraName),
                                                 selectedParameters
                                             )

@@ -70,7 +70,7 @@ const LoginCard = () => {
         // Only allow admin login if checking DB confirms they are an admin
         if (isAdmin) {
           try {
-            const adminCheck = await fetch("/roleadminapi/api/roleinfo/admin");
+            const adminCheck = await fetch("/misapi/api/roleinfo/admin");
             if (adminCheck.ok) {
               const adminPayload = await adminCheck.json();
               const isAdminInDb = Array.isArray(adminPayload?.data) && adminPayload.data.some((a: any) => 
