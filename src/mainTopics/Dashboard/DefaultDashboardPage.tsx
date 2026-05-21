@@ -967,7 +967,7 @@ const DefaultDashboardPage: React.FC = () => {
       setTopCustomersError(null);
 
       try {
-        const res = await fetch(withRegion("/api/dashboard/top-customers/list"), {
+        const res = await fetch(withRegion("/misapi/api/dashboard/top-customers/list"), {
           headers: { Accept: "application/json" },
         });
 
