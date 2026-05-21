@@ -89,7 +89,7 @@ const ReportEntry = () => {
 
     const loadNextId = async () => {
         try {
-            const response = await fetch("/roleadminapi/api/reportentry/nextid");
+            const response = await fetch("/misapi/api/reportentry/nextid");
             const payload = await response.json();
             if (payload?.data) {
                 setForm((prev) => ({ ...prev, repIdNo: payload.data }));
@@ -103,7 +103,7 @@ const ReportEntry = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch("/roleadminapi/api/reportcategory");
+            const response = await fetch("/misapi/api/reportcategory");
             const payload = await response.json();
 
             if (payload?.errorMessage) {
@@ -135,8 +135,8 @@ const ReportEntry = () => {
         try {
             let normalizedCategory = (categoryCode ?? activeCategoryFilter).trim().toUpperCase();
             const endpoint = normalizedCategory
-                ? `/roleadminapi/api/reportentry?catcode=${encodeURIComponent(normalizedCategory)}`
-                : "/roleadminapi/api/reportentry";
+                ? `/misapi/api/reportentry?catcode=${encodeURIComponent(normalizedCategory)}`
+                : "/misapi/api/reportentry";
             const response = await fetch(endpoint);
             const payload = await response.json();
 
@@ -170,7 +170,7 @@ const ReportEntry = () => {
         setIsParametersLoading(true);
 
         try {
-            const response = await fetch("/roleadminapi/api/reppara/GET_POPEDREPPARAMS");
+            const response = await fetch("/misapi/api/reppara/GET_POPEDREPPARAMS");
             const payload = await response.json();
 
             if (payload?.errorMessage) {
@@ -276,7 +276,7 @@ const ReportEntry = () => {
             // Fetch next ID if repIdNo is not set
             let nextRepIdNo = form.repIdNo;
             if (nextRepIdNo === 0) {
-                const nextIdResponse = await fetch("/roleadminapi/api/reportentry/nextid");
+                const nextIdResponse = await fetch("/misapi/api/reportentry/nextid");
                 const nextIdPayload = await nextIdResponse.json();
 
                 if (nextIdPayload?.errorMessage) {
@@ -295,7 +295,7 @@ const ReportEntry = () => {
                 selectedParameters
             );
 
-            const response = await fetch("/roleadminapi/api/reportentry", {
+            const response = await fetch("/misapi/api/reportentry", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -356,7 +356,7 @@ const ReportEntry = () => {
             );
 
             const response = await fetch(
-                `/roleadminapi/api/reportentry/${selectedRepIdNo}/${encodeURIComponent(selectedCatCode)}`,
+                `/misapi/api/reportentry/${selectedRepIdNo}/${encodeURIComponent(selectedCatCode)}`,
                 {
                     method: "PUT",
                     headers: {
@@ -422,7 +422,7 @@ const ReportEntry = () => {
 
         try {
             const response = await fetch(
-                `/roleadminapi/api/reportentry/${deleteTargetEntry.repIdNo}/${encodeURIComponent(deleteTargetEntry.catCode)}`,
+                `/misapi/api/reportentry/${deleteTargetEntry.repIdNo}/${encodeURIComponent(deleteTargetEntry.catCode)}`,
                 {
                     method: "DELETE",
                 }

@@ -2,8 +2,6 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { RefreshCw, Search } from "lucide-react";
 
-// Single record coming from backend
-// Backend: GET /roleadminapi/api/reportcategory -> data: [{ CatCode, CatName }]
 type CategoryRecord = {
   catCode: string;
   catName: string;
@@ -71,7 +69,7 @@ const ReportCategory = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/roleadminapi/api/reportcategory");
+      const response = await fetch("/misapi/api/reportcategory");
       const payload = await response.json();
 
       if (payload?.errorMessage) {
@@ -110,7 +108,7 @@ const ReportCategory = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/roleadminapi/api/reportcategory", {
+      const response = await fetch("/misapi/api/reportcategory", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -154,7 +152,7 @@ const ReportCategory = () => {
 
     try {
       const response = await fetch(
-        `/roleadminapi/api/reportcategory/${encodeURIComponent(normalizedCatCode)}`,
+        `/misapi/api/reportcategory/${encodeURIComponent(normalizedCatCode)}`,
         {
           method: "PUT",
           headers: {
@@ -211,7 +209,7 @@ const ReportCategory = () => {
 
     try {
       const response = await fetch(
-        `/roleadminapi/api/reportcategory/${encodeURIComponent(selectedCatCode)}`,
+        `/misapi/api/reportcategory/${encodeURIComponent(selectedCatCode)}`,
         {
           method: "DELETE",
         }
