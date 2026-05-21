@@ -522,7 +522,7 @@ useEffect(() => {
     setLatestUpdateTimes(null);
 
     try {
-      const response = await fetch("/api/customerdetails/latest-update-times", {
+      const response = await fetch("/misapi/api/customerdetails/latest-update-times", {
         method: "GET",
         headers: {
           Accept: "application/json",
