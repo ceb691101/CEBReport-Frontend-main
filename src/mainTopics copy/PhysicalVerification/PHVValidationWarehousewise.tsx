@@ -179,9 +179,7 @@ const PHVValidationWarehousewise: React.FC = () => {
 
       setLoading(true);
       try {
-        const url = `/misapi/api/inventoryaverageconsumption/warehouses/${encodeURIComponent(
-          epfNo
-        )}?costCenterId=${encodeURIComponent(
+        const url = `pivapi/api/inventoryaverageconsumption/warehouses/epfNo/${encodeURIComponent(epfNo)}?costCenterId=${encodeURIComponent(
           selectedDept.DeptId
         )}&t=${Date.now()}`;
         console.log("Fetching warehouses from:", url);
@@ -191,7 +189,7 @@ const PHVValidationWarehousewise: React.FC = () => {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Accept: "application/json",
+            Accept: "application/json, text/xml, application/xml, */*",
           },
           credentials: "include",
         });
@@ -203,20 +201,54 @@ const PHVValidationWarehousewise: React.FC = () => {
           );
         }
 
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          throw new Error(
-            `Expected JSON but got ${contentType}. Response: ${text.substring(
-              0,
-              100
-            )}`
-          );
-        }
+        const contentType = response.headers.get("content-type") || "";
+        const text = await response.text();
+        console.log("Raw Warehouse API Response (text):", text);
 
-        const result = await response.json();
-        console.log("Raw Warehouse API Response:", result);
-        const rawData = parseApiResponse(result);
+        // Support JSON and XML responses. Some backend endpoints return XML.
+        let rawData: any[] = [];
+        try {
+          if (contentType.includes("application/json") || text.trim().startsWith("{") || text.trim().startsWith("[")) {
+            const parsed = JSON.parse(text);
+            rawData = parseApiResponse(parsed);
+          } else if (contentType.includes("xml") || text.trim().startsWith("<")) {
+            // Parse XML and extract <Warehouse> nodes. Some responses use default namespaces
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(text, "application/xml");
+            const wareNodes = Array.from(xml.getElementsByTagName("Warehouse"));
+
+            if (wareNodes.length > 0) {
+              rawData = wareNodes.map((wn) => {
+                const codeEl = wn.getElementsByTagName("WarehouseCode")[0];
+                const costEl = wn.getElementsByTagName("CostCenterId")[0] || wn.getElementsByTagName("CostCenter")?.[0];
+                return {
+                  WarehouseCode: codeEl?.textContent?.trim() ?? "",
+                  CostCenterId: costEl?.textContent?.trim() ?? "",
+                };
+              });
+            } else {
+              // Fallback: extract WarehouseCode values via regex when namespaces prevent DOM lookup
+              const codes: string[] = [];
+              const re = /<\s*WarehouseCode[^>]*>([^<]+)<\s*\/\s*WarehouseCode\s*>/gi;
+              let m: RegExpExecArray | null;
+              while ((m = re.exec(text)) !== null) {
+                codes.push(m[1].trim());
+              }
+              rawData = codes.map((c) => ({ WarehouseCode: c, CostCenterId: "" }));
+            }
+          } else {
+            // Last resort: try JSON parse
+            try {
+              const parsed = JSON.parse(text);
+              rawData = parseApiResponse(parsed);
+            } catch (e) {
+              rawData = [];
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse warehouse response:", e);
+          rawData = [];
+        }
         const warehousesData: Warehouse[] = rawData.map(
           (item: any) => ({
             WarehouseCode: item.WarehouseCode?.toString().trim() || "",
