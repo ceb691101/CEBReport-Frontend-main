@@ -289,7 +289,6 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"province wise quantity on hand (provincial stores only)": ProvinceWiseQuantityOnHand,
 	"provincial quantity on hand cross tab": ProvincialQtyHand,
 	"quantity on hand all region material active online": QtyOnHandAllRegion,
-	"province wise quantity on hand": ProvinceWiseQuantityOnHand,
 
 	// JobCard reports
 	"job card details": JobCardInfo,
