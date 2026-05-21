@@ -114,8 +114,6 @@ const PaymentInquiry: React.FC = () => {
   const [latestUpdateTimes, setLatestUpdateTimes] = useState<LatestUpdateTimeRecord[] | null>(null);
   const [latestUpdateError, setLatestUpdateError] = useState<string | null>(null);
   const [latestUpdateLoading, setLatestUpdateLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(10);
   const [activeTab, setActiveTab] = useState<"individual" | "pos" | null>(null);
 
   // Print refs
@@ -571,7 +569,6 @@ useEffect(() => {
       }));
 
       setLatestUpdateTimes(mapped);
-      setCurrentPage(1);
     } catch (err: any) {
       setLatestUpdateError(err.message || "Failed to load latest update times");
     } finally {
@@ -1128,7 +1125,13 @@ useEffect(() => {
             <>
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  {latestUpdateLoading && <span className="text-xs text-gray-500">Loading...</span>}
+                  {latestUpdateLoading ? (
+                    <span className="text-xs text-gray-500">Loading...</span>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      Showing all {latestUpdateTimes.length} rows
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1153,10 +1156,9 @@ useEffect(() => {
               </div>
 
               <div ref={latestUpdateTimesPrintRef} className="w-full bg-white p-2">
-                <h2 className={`text-xl font-bold ${maroon} mb-4`}>Latest Update Times of Servers</h2>
-                <div className="overflow-x-auto">
-                <table className="min-w-full text-xs border border-gray-200">
-                  <thead className="bg-[#7A0000] text-white">
+                <div className="max-h-[70vh] overflow-auto pb-6">
+                <table className="min-w-full text-xs border border-gray-200 mb-2">
+                  <thead className="bg-[#7A0000] text-white font-semibold">
                     <tr>
                       <th className="px-3 py-2 text-left font-semibold">Agent</th>
                       <th className="px-3 py-2 text-left font-semibold">Center</th>
@@ -1167,28 +1169,15 @@ useEffect(() => {
                   </thead>
                   <tbody>
                     {latestUpdateTimes.length > 0 ? (
-                      (() => {
-                        const total = latestUpdateTimes.length;
-                        const totalPages = Math.max(1, Math.ceil(total / pageSize));
-                        const safePage = Math.min(Math.max(1, currentPage), totalPages);
-                        const start = (safePage - 1) * pageSize;
-                        const end = Math.min(start + pageSize, total);
-                        const pageRecords = latestUpdateTimes.slice(start, end);
-
-                        return (
-                          <>
-                            {pageRecords.map((record, idx) => (
-                              <tr key={`${record.agent}-${record.center}-${start + idx}`} className={(start + idx) % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                                <td className="px-3 py-2 border-t border-gray-200">{record.agent}</td>
-                                <td className="px-3 py-2 border-t border-gray-200">{record.center}</td>
-                                <td className="px-3 py-2 border-t border-gray-200">{record.lastUpdate}</td>
-                                <td className="px-3 py-2 border-t border-gray-200">{record.agentName}</td>
-                                <td className="px-3 py-2 border-t border-gray-200">{record.centerName}</td>
-                              </tr>
-                            ))}
-                          </>
-                        );
-                      })()
+                      latestUpdateTimes.map((record, idx) => (
+                        <tr key={`${record.agent}-${record.center}-${idx}`} className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                          <td className="px-3 py-2 border-t border-gray-200">{record.agent}</td>
+                          <td className="px-3 py-2 border-t border-gray-200">{record.center}</td>
+                          <td className="px-3 py-2 border-t border-gray-200">{record.lastUpdate}</td>
+                          <td className="px-3 py-2 border-t border-gray-200">{record.agentName}</td>
+                          <td className="px-3 py-2 border-t border-gray-200">{record.centerName}</td>
+                        </tr>
+                      ))
                     ) : (
                       <tr>
                         <td colSpan={5} className="px-3 py-3 text-center text-gray-500 border-t border-gray-200">
@@ -1202,63 +1191,6 @@ useEffect(() => {
               {/* Timestamp similar to legacy page */}
               <div className="mt-3 text-xs text-gray-600 mb-2">{new Date().toLocaleString()}</div>
             </div>
-
-              {/* Pagination Controls */}
-              {latestUpdateTimes.length > 0 && (
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="text-xs text-gray-600">
-                    Showing {Math.min((currentPage - 1) * pageSize + 1, latestUpdateTimes.length)} - {Math.min(currentPage * pageSize, latestUpdateTimes.length)} of {latestUpdateTimes.length}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={pageSize}
-                      onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                      className="text-xs p-1 border border-gray-200 rounded bg-white"
-                    >
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                    </select>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="px-2 py-1 text-xs border rounded disabled:opacity-50"
-                      >
-                        Prev
-                      </button>
-
-                      {/* Page numbers */}
-                      {(() => {
-                        const total = latestUpdateTimes.length;
-                        const totalPages = Math.max(1, Math.ceil(total / pageSize));
-                        const pages: number[] = [];
-                        for (let i = 1; i <= totalPages; i += 1) pages.push(i);
-                        return pages.map((p) => (
-                          <button
-                            key={p}
-                            onClick={() => setCurrentPage(p)}
-                            className={`px-2 py-1 text-xs border rounded ${p === currentPage ? 'bg-[#7A0000] text-white' : 'bg-white'}`}
-                          >
-                            {p}
-                          </button>
-                        ));
-                      })()}
-
-                      <button
-                        onClick={() => setCurrentPage((p) => p + 1)}
-                        disabled={currentPage * pageSize >= latestUpdateTimes.length}
-                        className="px-2 py-1 text-xs border rounded disabled:opacity-50"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>
@@ -1364,19 +1296,50 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Row 3: View Report Button and Info */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Info Text */}
+          <div className="mt-3">
             <p className="text-xs text-yellow-600">
               this option provides facility to access provincial server and extract information about payments
             </p>
+          </div>
 
-            {/* View Report Button */}
+          {/* Button */}
+          <div className="w-full mt-6 flex justify-end">
             <button
               onClick={handlePOSInquiry}
               disabled={loading}
-              className={`w-full sm:w-[32%] ${maroonBg} hover:bg-[#7A0000]/90 disabled:opacity-50 text-white font-medium py-2 px-3 rounded-md transition-colors text-xs h-8 flex items-center justify-center`}
+              className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
+            ${maroonGrad} text-white ${
+                loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"
+              }`}
             >
-              {loading ? "Loading..." : "Generate Report"}
+              {loading ? (
+                <span className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Loading...
+                </span>
+              ) : (
+                "Generate Report"
+              )}
             </button>
           </div>
         </div>
