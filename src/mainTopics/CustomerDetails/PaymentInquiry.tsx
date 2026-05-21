@@ -61,6 +61,33 @@ interface POSCollectionResult {
   errorMessage: string | null;
 }
 
+const formatDateDMY = (dateStr: string) => {
+  if (!dateStr) return "";
+  // Check if YYYY-MM-DD
+  if (dateStr.includes("-")) {
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return `${parts[0]}/${parts[1]}/${parts[2]}`;
+    }
+  }
+  // Check if MM/DD/YYYY
+  if (dateStr.includes("/")) {
+    const parts = dateStr.split("/");
+    if (parts.length === 3) {
+      if (parts[0].length <= 2 && parts[1].length <= 2 && parts[2].length === 4) {
+        return `${parts[1].padStart(2, '0')}/${parts[0].padStart(2, '0')}/${parts[2]}`;
+      }
+      if (parts[0].length === 4) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+    }
+  }
+  return dateStr;
+};
+
 const PaymentInquiry: React.FC = () => {
   const maroon = "text-[#7A0000]";
   const maroonBg = "bg-[#7A0000]";
@@ -444,14 +471,38 @@ useEffect(() => {
         date: backendData.transDate || backendData.TransDate || posDate,
         totalAmount: Number(backendData.totalAmount ?? backendData.TotalAmount ?? 0),
         totalTransactions: Number(backendData.recordCount ?? backendData.RecordCount ?? records.length),
-        collectionRecords: records.map((record: any, idx: number) => ({
-          id: String(idx + 1),
-          date: backendData.transDate || backendData.TransDate || posDate,
-          counter: record.counterName || record.CounterName || record.counterNo || record.CounterNo || "All",
-          billType: record.transType || record.TransType || "0",
-          amount: Number(record.transAmount || record.TransAmount || 0),
-          payMode: record.payModeDescription || record.PayModeDescription || record.payMode || record.PayMode || "",
-        })),
+        collectionRecords: records.map((record: any, idx: number) => {
+          const amt = Number(record.transAmount || record.TransAmount || record.trans_amt || record.Trans_Amt || 0) || 0;
+          const payModeCode = String(record.payMode || record.PayMode || record.pay_mode || "");
+          let cash = 0,
+            cheque = 0,
+            bankDraft = 0,
+            creditCard = 0;
+
+          if (payModeCode === "C") cash = amt;
+          else if (payModeCode === "Q") cheque = amt;
+          else if (payModeCode === "D") bankDraft = amt;
+          else if (payModeCode === "R") creditCard = amt;
+
+          return {
+            id: String(idx + 1),
+            date: backendData.transDate || backendData.TransDate || posDate,
+            accountNo: record.acc_no || record.accNo || record.AccountNo || record.accountNo || "",
+            pivNo: record.piv_no || record.pivNo || record.PIVNo || record.PIV_No || "",
+            counterNo: record.count_no || record.countNo || record.CountNo || record.counterNo || record.CounterNo || "",
+            counterName: record.counterName || record.CounterName || record.counter || record.Counter || "",
+            stubNo: record.stub_no || record.stubNo || record.StubNo || "",
+            payMode: payModeCode,
+            payModeDescription: record.payModeDescription || record.PayModeDescription || record.codeDescription || record.CodeDescription || "",
+            transAmount: amt,
+            cash,
+            cheque,
+            bankDraft,
+            creditCard,
+            billType: record.transType || record.TransType || record.trans_type || "0",
+            areaCode: record.area_code || record.areaCode || record.AreaCode || "",
+          };
+        }),
         errorMessage: null,
       };
 
@@ -622,11 +673,13 @@ useEffect(() => {
     rows.push(`Total Amount,"${posResult.totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}"`);
     rows.push(`Total Transactions,${posResult.totalTransactions}`);
     rows.push("");
-    rows.push("Date,Counter,Bill Type,Amount,Pay Mode");
-    
+    rows.push("AccountNo/PIVNo,Counter,StubNo,Cash,Cheque,BankDraft,CreditCard");
+
     posResult.collectionRecords.forEach((record) => {
+      const acc = (record.accountNo || "") + (record.pivNo ? `/${record.pivNo}` : "");
+      const counter = record.counterNo || record.counter || record.counterName || "";
       rows.push(
-        `${record.date},${record.counter},${record.billType},"${record.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}",${record.payMode}`
+        `${acc},${counter},${record.stubNo || ""},"${(record.cash || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}","${(record.cheque || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}","${(record.bankDraft || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}","${(record.creditCard || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}"`
       );
     });
 
@@ -639,6 +692,20 @@ useEffect(() => {
     a.click();
   };
 
+  const getAreaLabel = () => {
+    if (!posResult) return "";
+    if (posResult.area === "*") return "*";
+    const found = areas.find((a) => a.id === posResult.area);
+    return found ? found.label : posResult.area;
+  };
+
+  const getCounterLabel = () => {
+    if (!posResult) return "";
+    if (posResult.counter === "*") return "*";
+    const found = counters.find((c) => c.id === posResult.counter);
+    return found ? found.label : posResult.counter;
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-4 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
       {/* Error Alert */}
@@ -649,7 +716,7 @@ useEffect(() => {
       )}
 
       {/* Form Section */}
-      <div className="grid grid-cols-1 gap-4 mb-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
+      <div className="grid grid-cols-1 gap-4 mb-4 w-full">
         {/* Individual Payments Section */}
         <div className="border border-gray-200 rounded-xl p-4 bg-white shadow">
           <h3 className={`text-xl font-bold mb-4 ${maroon}`}>Individual Payments</h3>
@@ -937,7 +1004,7 @@ useEffect(() => {
 
         {/* POS Counter Collection Section */}
         <div className="border border-gray-100 rounded-lg p-4 bg-white shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-800 mb-3">POS Counter Collection Breakup</h3>
+          <h3 className={`text-xl font-bold ${maroon} mb-3`}>POS Counter Collection Breakup</h3>
 
           {/* Row 1: Province | Area | Counter */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 mb-3">
@@ -1059,24 +1126,18 @@ useEffect(() => {
         <div ref={posPrintRef} className="mt-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className={`text-sm font-bold ${maroon} mb-2`}>POS Collection Report</h2>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div>
-                  <p className="text-gray-600">Province</p>
-                  <p className="font-semibold">{posResult.province}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Date</p>
-                  <p className="font-semibold">{posResult.date}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Total Transactions</p>
-                  <p className="font-semibold">{posResult.totalTransactions}</p>
-                </div>
-              </div>
+              <h2 className={`text-base font-bold ${maroon}`}>
+                Payment Collection on {formatDateDMY(posResult.date)}
+              </h2>
+              <p className="text-xs font-semibold text-gray-700 mt-1 whitespace-pre">
+                {`Area : ${getAreaLabel()}       Counter : ${getCounterLabel()}`}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Showing all {posResult.collectionRecords.length} rows
+              </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 print:hidden">
               <button
                 onClick={handlePosPrint}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
@@ -1100,45 +1161,56 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-600">Total Collection Amount</p>
-            <p className={`text-lg font-bold ${maroon}`}>
-              {posResult.totalAmount.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-          </div>
-
           {/* Collection Records Table */}
-          <div className="overflow-x-auto">
+          <div className="max-h-[70vh] overflow-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className={`${maroonBg} text-white`}>
-                  <th className="p-2 text-left font-semibold">Date</th>
+                  <th className="p-2 text-left font-semibold">Account No/PIV No</th>
                   <th className="p-2 text-left font-semibold">Counter</th>
-                  <th className="p-2 text-left font-semibold">Bill Type</th>
-                  <th className="p-2 text-right font-semibold">Amount</th>
-                  <th className="p-2 text-left font-semibold">Pay Mode</th>
+                  <th className="p-2 text-left font-semibold">Stub No.</th>
+                  <th className="p-2 text-right font-semibold">Cash</th>
+                  <th className="p-2 text-right font-semibold">Cheque</th>
+                  <th className="p-2 text-right font-semibold">Bank Draft</th>
+                  <th className="p-2 text-right font-semibold">Credit Card</th>
                 </tr>
               </thead>
               <tbody>
                 {posResult.collectionRecords.map((record, idx) => (
                   <tr key={record.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td className="p-2 border-b border-gray-100">{record.date}</td>
-                    <td className="p-2 border-b border-gray-100">{record.counter}</td>
-                    <td className="p-2 border-b border-gray-100">{record.billType}</td>
-                    <td className="p-2 text-right font-semibold border-b border-gray-100">
-                      {record.amount.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="p-2 border-b border-gray-100">{record.payMode}</td>
+                    <td className="p-2 border-b border-gray-100">{(record.accountNo || "") + (record.pivNo ? ` / ${record.pivNo}` : "")}</td>
+                    <td className="p-2 border-b border-gray-100">{record.counterNo || record.counter || record.counterName}</td>
+                    <td className="p-2 border-b border-gray-100">{record.stubNo || ""}</td>
+                    <td className="p-2 text-right font-semibold border-b border-gray-100">{(record.cash || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="p-2 text-right font-semibold border-b border-gray-100">{(record.cheque || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="p-2 text-right font-semibold border-b border-gray-100">{(record.bankDraft || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="p-2 text-right font-semibold border-b border-gray-100">{(record.creditCard || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="bg-gray-100 font-bold border-t border-gray-300">
+                  <td className="p-2 text-left" colSpan={3}>Total</td>
+                  <td className="p-2 text-right text-gray-900">
+                    {posResult.collectionRecords.reduce((sum, r) => sum + (r.cash || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td className="p-2 text-right text-gray-900">
+                    {posResult.collectionRecords.reduce((sum, r) => sum + (r.cheque || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td className="p-2 text-right text-gray-900">
+                    {posResult.collectionRecords.reduce((sum, r) => sum + (r.bankDraft || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td className="p-2 text-right text-gray-900">
+                    {posResult.collectionRecords.reduce((sum, r) => sum + (r.creditCard || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                <tr className="bg-gray-50 font-bold border-t border-gray-200">
+                  <td className="p-2 text-left text-sm" colSpan={3}>Grand Total Collection Amount</td>
+                  <td className="p-2 text-right text-sm" colSpan={4}>
+                    {posResult.totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
