@@ -42,6 +42,7 @@ import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
 import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
+import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 
 // Consumption Analysis reports
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
@@ -235,7 +236,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"suspense payment details": DishonouredCheques,
 	"finalized account details": DishonouredCheques,
 	"written off account details": DishonouredCheques,
-	"receivable position": DishonouredCheques,
+	"receivable position": ReceivablePosition,
 	"unload loan information": DishonouredCheques,
 	"dishonoured cheques": DishonouredCheques,
 
