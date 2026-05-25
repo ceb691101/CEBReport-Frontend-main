@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useUser } from "../../contexts/UserContext";
 import { useLogged } from "../../contexts/UserLoggedStateContext";
 import {
+  AD_LOGIN_API_URL,
   CBRS_API_BASE,
   MIS_API_BASE,
   SMART_API_BASE,
@@ -43,32 +44,54 @@ const LoginCard = () => {
       } else {
         // AD Login
         try {
-          const response = await fetch(
-            buildApiUrl(SMART_API_BASE, "/SMART_API/api/UserManagement/ValidateADLoginCEBINFO"),
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ ad_user_name: username, ad_password: password }),
-            }
-          );
+          const adLoginUrl =
+            AD_LOGIN_API_URL ||
+            buildApiUrl(SMART_API_BASE, "/SMART_API/api/UserManagement/ValidateADLoginCEBINFO");
+
+          const response = await fetch(adLoginUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ ad_user_name: username, ad_password: password }),
+          });
           
           if (response.ok) {
-            const adRes = await response.json();
+            let adRes: any = null;
+            try {
+              adRes = await response.json();
+            } catch {
+              adRes = null;
+            }
+
             console.log("AD Login raw response:", adRes);
-            if (adRes?.isSuccess) {
+            const isSuccess =
+              adRes?.isSuccess === true ||
+              adRes?.IsSuccess === true ||
+              adRes?.success === true ||
+              String(adRes?.isSuccess).toLowerCase() === "true";
+
+            if (isSuccess) {
               setLogged({ Logged: true, Errormsg: "" });
               isLoginSuccess = true;
             } else {
               isLoginSuccess = false;
               console.error("AD Validation failed in response body:", adRes);
+              const message =
+                adRes?.message ||
+                adRes?.Message ||
+                adRes?.error ||
+                adRes?.Error ||
+                "AD login rejected by server";
+              toast.error(message);
             }
           } else {
             console.error("AD Validation request failed with status:", response.status);
+            toast.error(`AD login request failed (${response.status})`);
           }
         } catch (adError) {
           console.error("Error during AD Validation API call:", adError);
+          toast.error("AD login service is not reachable. Check deployed API URL/CORS settings.");
         }
       }
 
