@@ -26,7 +26,4 @@ export const buildApiUrl = (base: string, path: string) => {
   const normalizedBase = normalizeBaseUrl(base);
   return normalizedBase ? `${normalizedBase}${path}` : path;
 };
-export const API_BASE = normalizeBaseUrl(
-  import.meta.env.VITE_API_BASE ?? import.meta.env.VITE_API_BASE_URL
-);
 
