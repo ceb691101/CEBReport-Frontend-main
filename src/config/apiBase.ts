@@ -1,7 +1,6 @@
 // Central API base for the frontend.
 // - In dev, prefer using relative URLs (Vite proxy handles forwarding).
-// - In prod, set a service-specific base when an endpoint lives on a different origin.
-// - VITE_API_BASE remains a fallback for apps that share one backend origin.
+// - In prod, set VITE_API_BASE (preferred) or VITE_API_BASE_URL if the API is on a different origin.
 
 function normalizeBaseUrl(raw: unknown): string {
   const v = typeof raw === "string" ? raw.trim() : "";
@@ -27,4 +26,7 @@ export const buildApiUrl = (base: string, path: string) => {
   const normalizedBase = normalizeBaseUrl(base);
   return normalizedBase ? `${normalizedBase}${path}` : path;
 };
+export const API_BASE = normalizeBaseUrl(
+  import.meta.env.VITE_API_BASE ?? import.meta.env.VITE_API_BASE_URL
+);
 

@@ -3,13 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useUser } from "../../contexts/UserContext";
 import { useLogged } from "../../contexts/UserLoggedStateContext";
-import {
-  AD_LOGIN_API_URL,
-  CBRS_API_BASE,
-  MIS_API_BASE,
-  SMART_API_BASE,
-  buildApiUrl,
-} from "../../config/apiBase";
 import { postJSON } from "../../helpers/LoginHelper";
 import InputField from "../shared/InputField";
 import ceb from "../../assets/CEBLOGO.png";
@@ -34,7 +27,7 @@ const LoginCard = () => {
       const currentLoginType = selectedLoginType ?? loginType;
 
       if (currentLoginType === "HR") {
-        const IsLogged = await postJSON(buildApiUrl(CBRS_API_BASE, "/CBRSAPI/CBRSUPERUserLogin"), {
+        const IsLogged = await postJSON("/CBRSAPI/CBRSUPERUserLogin", {
           Username: username,
           Password: password,
         });
@@ -44,17 +37,16 @@ const LoginCard = () => {
       } else {
         // AD Login
         try {
-          const adLoginUrl =
-            AD_LOGIN_API_URL ||
-            buildApiUrl(SMART_API_BASE, "/SMART_API/api/UserManagement/ValidateADLoginCEBINFO");
-
-          const response = await fetch(adLoginUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ ad_user_name: username, ad_password: password }),
-          });
+          const response = await fetch(
+            "/SMART_API/api/UserManagement/ValidateADLoginCEBINFO",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ ad_user_name: username, ad_password: password }),
+            }
+          );
           
           if (response.ok) {
             let adRes: any = null;
@@ -99,7 +91,7 @@ const LoginCard = () => {
         // Only allow admin login if checking DB confirms they are an admin
         if (isAdmin) {
           try {
-            const adminCheck = await fetch(buildApiUrl(MIS_API_BASE, "/misapi/api/roleinfo/admin"));
+            const adminCheck = await fetch("/misapi/api/roleinfo/admin");
             if (adminCheck.ok) {
               const adminPayload = await adminCheck.json();
               const isAdminInDb = Array.isArray(adminPayload?.data) && adminPayload.data.some((a: any) => 
@@ -130,7 +122,7 @@ const LoginCard = () => {
           navigate("/home");
         }
 
-        const userData = await postJSON(buildApiUrl(CBRS_API_BASE, "/CBRSAPI/CBRSEPFNOLogin"), {
+        const userData = await postJSON("/CBRSAPI/CBRSEPFNOLogin", {
           Username: username,
           Password: password,
         });
