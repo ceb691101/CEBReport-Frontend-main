@@ -37,6 +37,11 @@ const SOLAR_NET_TYPE_COLORS = [
   "#f8dda4   ",
 ];
 
+// CEB customer-details theme (used in Customer Information / Billing form)
+const CEB_MAROON_VAR = "var(--ceb-maroon)"; // defined in index.css
+const CEB_MAROON_TEXT = `text-[${CEB_MAROON_VAR}]`;
+const CEB_MAROON_BG = `bg-[${CEB_MAROON_VAR}]/10`;
+
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
 interface CustomerCounts {
@@ -1173,8 +1178,8 @@ const DefaultDashboardPage: React.FC = () => {
                                 <span>Bulk: {bulkCountLoading ? "..." : formatNumber(animatedBulk)}</span>
                               </>
                             }
-                            icon={<Users className="w-5 h-5 text-blue-600" />}
-                            iconBgClass="bg-blue-100"
+                            icon={<Users className={`w-5 h-5 ${CEB_MAROON_TEXT}`} />}
+                            iconBgClass={CEB_MAROON_BG}
                             isDragging={isDragging}
                             isDragOver={isDragOver}
                             onDragStart={(e) => handleDragStart(e, cardId)}
@@ -1198,8 +1203,8 @@ const DefaultDashboardPage: React.FC = () => {
                                 <span>Bulk: {bulkSolarLoading ? "..." : formatNumber(animatedBulkSolarTotal)}</span>
                               </>
                             }
-                            icon={<Sun className="w-5 h-5 text-yellow-600" />}
-                            iconBgClass="bg-yellow-100"
+                            icon={<Sun className={`w-5 h-5 ${CEB_MAROON_TEXT}`} />}
+                            iconBgClass={CEB_MAROON_BG}
                             isDragging={isDragging}
                             isDragOver={isDragOver}
                             onDragStart={(e) => handleDragStart(e, cardId)}
@@ -1218,8 +1223,8 @@ const DefaultDashboardPage: React.FC = () => {
                             title="Zero Consumption"
                             value={formatNumber(animatedZero)}
                             subtitle="Last 3 months"
-                            icon={<Zap className="w-5 h-5 text-red-600" />}
-                            iconBgClass="bg-red-100"
+                            icon={<Zap className={`w-5 h-5 ${CEB_MAROON_TEXT}`} />}
+                            iconBgClass={CEB_MAROON_BG}
                             isDragging={isDragging}
                             isDragOver={isDragOver}
                             onDragStart={(e) => handleDragStart(e, cardId)}
@@ -1242,8 +1247,8 @@ const DefaultDashboardPage: React.FC = () => {
                                 ? kioskError
                                 : `${kioskDateRange.fromDate || "-"} to ${kioskDateRange.toDate || "-"}`
                             }
-                            icon={<DollarSign className="w-5 h-5 text-green-600" />}
-                            iconBgClass="bg-green-100"
+                            icon={<DollarSign className={`w-5 h-5 ${CEB_MAROON_TEXT}`} />}
+                            iconBgClass={CEB_MAROON_BG}
                             isDragging={isDragging}
                             isDragOver={isDragOver}
                             onDragStart={(e) => handleDragStart(e, cardId)}
@@ -1282,8 +1287,8 @@ const DefaultDashboardPage: React.FC = () => {
                                 ? solarCapacityError
                                 : solarCapacityWeekRange
                             }
-                            icon={<Battery className="w-5 h-5 text-amber-600" />}
-                            iconBgClass="bg-amber-100"
+                            icon={<Battery className={`w-5 h-5 ${CEB_MAROON_TEXT}`} />}
+                            iconBgClass={CEB_MAROON_BG}
                             isDragging={isDragging}
                             isDragOver={isDragOver}
                             onDragStart={(e) => handleDragStart(e, cardId)}
@@ -1405,7 +1410,11 @@ const DefaultDashboardPage: React.FC = () => {
                         ) : kioskDailyRecords.length === 0 ? (
                           <div className="h-64 flex items-center justify-center text-gray-400 text-sm">No kiosk collection data for this week.</div>
                         ) : (
-                          <div key={`kiosk-trend-${kioskTrendTrigger}`} className="h-64 overflow-y-auto pr-1 space-y-2">
+                          <div
+                            key={`kiosk-trend-${kioskTrendTrigger}`}
+                            className="h-full min-h-[28rem] grid gap-3 pr-1"
+                            style={{ gridTemplateRows: `repeat(${Math.max(kioskTrendData.length, 1)}, minmax(0, 1fr))` }}
+                          >
                             {kioskTrendData.map((item, index) => {
                               const amount = Number(item.CollectionAmount) || 0;
                               const widthPercent = kioskPeakDailyCollection > 0
@@ -1413,9 +1422,9 @@ const DefaultDashboardPage: React.FC = () => {
                                 : 0;
 
                               return (
-                                <div key={`${item.TransDate}-${index}`} className="flex items-center justify-between gap-3 text-xs">
+                                <div key={`${item.TransDate}-${index}`} className="flex items-center justify-between gap-3 text-xs min-h-0">
                                   <span className="min-w-[72px] font-medium text-gray-500">{String(item.TransDate)}</span>
-                                  <div className="flex-1 h-2 rounded-full bg-orange-100 overflow-hidden">
+                                  <div className="flex-1 h-3 rounded-full bg-orange-100 overflow-hidden">
                                     <div
                                       className="h-full rounded-full bg-[color:var(--ceb-maroon)] transition-all duration-700 ease-out"
                                       style={{
@@ -1425,7 +1434,7 @@ const DefaultDashboardPage: React.FC = () => {
                                     />
                                   </div>
                                   <span className="min-w-[88px] text-right font-semibold text-gray-800">
-                                    {formatCompactCurrency(amount)}
+                                    {formatCurrency(amount)}
                                   </span>
                                 </div>
                               );
