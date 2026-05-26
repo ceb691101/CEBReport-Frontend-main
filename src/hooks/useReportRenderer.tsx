@@ -14,7 +14,7 @@ import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress
 export const useReportRenderer = () => {
 	return (subtopicName: string, repIdNo?: string): ReactNode => {
 		const repId = repIdNo?.trim() ?? "";
-		if (repId === "29") {
+		if (repId === "14") {
 			return <CcApplicationProgress />;
 		}
 

@@ -347,6 +347,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"area wise solar sent to billing details": SolarBillingReport,
 	"solar retail rooftop pending jobs after piv2 paid": SolarPendingJobsReport,
 	"solar rooftop applications within the selected cost centre": CcApplicationProgress,
+	"c/c solar application progress": CcApplicationProgress,
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,
