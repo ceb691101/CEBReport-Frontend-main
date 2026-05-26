@@ -1025,6 +1025,34 @@ const DefaultDashboardPage: React.FC = () => {
   const formatCompact  = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
   const formatCompactCurrency = (n: number) => `LKR ${formatCompact(n)}`;
   const formatKW       = (n: number) => `${formatCompact(n)} kW`;
+  const formatSolarBillCycle = (billCycle: string) => {
+    const cycleNumber = Number(String(billCycle).trim());
+
+    if (!Number.isFinite(cycleNumber)) {
+      return billCycle;
+    }
+
+    const monthIndex = (cycleNumber - 100) % 12;
+    let year = 97 + Math.floor((cycleNumber - 100) / 12);
+    let resolvedMonth = monthIndex;
+
+    if (monthIndex === 0) {
+      year -= 1;
+      resolvedMonth = 12;
+    }
+
+    const monthNames = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+
+    const monthName = monthNames[resolvedMonth - 1];
+    if (!monthName) {
+      return billCycle;
+    }
+
+    return `${monthName} ${String(year % 100).padStart(2, "0")}`;
+  };
   const formatIsoDate = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -1086,6 +1114,7 @@ const DefaultDashboardPage: React.FC = () => {
   const bulkSolarCapacityKw = solarCapacityChartData.reduce((sum, item) => sum + item.bulkCapacity, 0);
   const totalSolarCapacityKw = ordinarySolarCapacityKw + bulkSolarCapacityKw;
   const solarCapacityWeekRange = getLast7DaysRangeLabel();
+  const selectedSolarBillCycleLabel = selectedSolarBillCycle ? formatSolarBillCycle(selectedSolarBillCycle) : "";
 
   //const additionalCardIds = ["solarCapacity"];
   //const hasAdditionalCards = additionalCardIds.some((id) => visibleCards.includes(id));
@@ -1568,7 +1597,7 @@ const DefaultDashboardPage: React.FC = () => {
                           <h3 className="font-semibold text-gray-900">Solar Generation Capacity</h3>
                           <p className="text-xs text-gray-500 mt-1">
                             Capacity (kW) 
-                            {selectedSolarBillCycle ? ` - Bill Cycle ${selectedSolarBillCycle}` : ""}
+                            {selectedSolarBillCycleLabel ? ` - ${selectedSolarBillCycleLabel}` : ""}
                           </p>
                         </div>
                         <span className="text-[color:var(--ceb-navy)] text-xs font-semibold tracking-wide">GRAPH</span>
@@ -1584,7 +1613,7 @@ const DefaultDashboardPage: React.FC = () => {
                         >
                           {availableSolarBillCycles.map((cycle) => (
                             <option key={cycle} value={cycle}>
-                              {cycle}
+                              {formatSolarBillCycle(cycle)}
                             </option>
                           ))}
                         </select>
