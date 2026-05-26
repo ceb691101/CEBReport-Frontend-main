@@ -50,14 +50,14 @@ return str;
 };
 
 const buildApiUrl = (fromDate: string, toDate: string, costctr: string) => {
-        const base = API_BASE || "/misreportsapi";
-        const normalizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
+        // Use relative path matching the IIS virtual directory `/misapi` for production.
+        // Vite proxy handles `/misapi` locally.
         const params = new URLSearchParams({
                 fromDate,
                 toDate,
                 costctr,
         });
-        return `${normalizedBase}/api/solarjobs/ccapplication/list?${params.toString()}`;
+        return `/misapi/api/solarjobs/ccapplication/list?${params.toString()}`;
 };
 
 const columns = [
