@@ -484,19 +484,30 @@ const UserRoles = () => {
 		}
 	};
 
-	const buildRolePayload = (originalEpfNo?: string) => ({
-		originalEpfNo: originalEpfNo?.trim() ?? "",
-		epfNo: form.epfNo.trim(),
-		roleId: form.roleId.trim().toUpperCase(),
-		roleName: form.name.trim(),
-		userType: form.userType.trim().toUpperCase(),
-		company: assignedCompanies.join(","),
-		motherCompany: form.businessCompany.trim(),
-		userGroup: form.userGroup.trim(),
-		costCentre: form.costCentres[0] ?? "",
-		costCentres: form.costCentres,
-		lvlNo: 1,
-	});
+	const buildRolePayload = (originalEpfNo?: string) => {
+		const roleNameTrim = form.name.trim();
+		const userTypeUpper = form.userType.trim().toUpperCase();
+
+		const payload: any = {
+			originalEpfNo: originalEpfNo?.trim() ?? "",
+			epfNo: form.epfNo.trim(),
+			roleId: form.roleId.trim().toUpperCase(),
+			userType: userTypeUpper,
+			company: assignedCompanies.join(","),
+			motherCompany: form.businessCompany.trim(),
+			userGroup: form.userGroup.trim(),
+			costCentre: form.costCentres[0] ?? "",
+			costCentres: form.costCentres,
+			lvlNo: 1,
+		};
+
+		// Omit roleName when blank so backend can accept empty names
+		if (roleNameTrim) {
+			payload.roleName = roleNameTrim;
+		}
+
+		return payload;
+	};
 
 	const handleRoleSelect = (role: RoleRecord) => {
 		setSelectedRoleKey(getRoleKey(role));
@@ -696,7 +707,11 @@ const UserRoles = () => {
 
 						<div className="mt-6 space-y-6">
 							<div className="grid gap-4">
-								<Input label="Name" value={form.name} onChange={(value) => handleFieldChange("name", value)} />
+								<Input
+									label="Name (optional)"
+									value={form.name}
+									onChange={(value) => handleFieldChange("name", value)}
+								/>
 								<Input label="Role ID" value={form.roleId} onChange={(value) => handleFieldChange("roleId", value)} />
 								<Input label="EPF Number" value={form.epfNo} onChange={(value) => handleFieldChange("epfNo", value)} />
 							</div>
