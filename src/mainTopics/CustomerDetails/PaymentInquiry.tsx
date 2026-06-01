@@ -130,7 +130,10 @@ const PaymentInquiry: React.FC = () => {
     { id: "", label: "Select Area" },
   ]);
   const [counters, setCounters] = useState<{ id: string; label: string }[]>([
+    /* Original text:
     { id: "", label: "Select Counter" },
+    */
+    { id: "", label: "All Counters" },
   ]);
 
   // Fetch provinces on component mount
@@ -161,7 +164,10 @@ const PaymentInquiry: React.FC = () => {
   useEffect(() => {
     if (!province) {
       setAreas([{ id: "", label: "Select Area" }]);
+      /* Original text:
       setCounters([{ id: "", label: "Select Counter" }]);
+      */
+      setCounters([{ id: "", label: "All Counters" }]);
       setArea("");
       setCounter("");
       return;
@@ -209,13 +215,22 @@ const PaymentInquiry: React.FC = () => {
             id: c.counterNo || c.CounterNo,
             label: c.counterName || c.CounterName,
           }));
+          /* Original text:
           setCounters([{ id: "", label: "Select Counter" }, ...mapped]);
+          */
+          setCounters([{ id: "", label: "All Counters" }, ...mapped]);
         } else {
+          /* Original text:
           setCounters([{ id: "", label: "Select Counter" }]);
+          */
+          setCounters([{ id: "", label: "All Counters" }]);
         }
       } catch (error) {
         console.error("Error fetching counters:", error);
+        /* Original text:
         setCounters([{ id: "", label: "Select Counter" }]);
+        */
+        setCounters([{ id: "", label: "All Counters" }]);
       }
     };
 
