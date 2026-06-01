@@ -190,16 +190,61 @@ const SolarAgeAnalysis: React.FC = () => {
         }
 
         // Fetch bill cycles from the shared bill cycle API
+        // Original implementation (kept commented for reference):
+        // const maxCycleData = await fetchWithErrorHandling(
+        //   "/misapi/api/billcycle/max"
+        // );
+        // if (maxCycleData.data && maxCycleData.data.BillCycles?.length > 0) {
+        //   const options = generateBillCycleOptions(
+        //     maxCycleData.data.BillCycles,
+        //     maxCycleData.data.MaxBillCycle
+        //   );
+        //   setBillCycleOptions(options);
+        //   setFormData((prev) => ({ ...prev, billCycle: options[0].code }));
+        // } else {
+        //   setBillCycleOptions([]);
+        //   setFormData((prev) => ({ ...prev, billCycle: "" }));
+        // }
+
+        // New robust handler: tolerate different response shapes from the billcycle API.
+        // billcycle api from billcyclecontroller
         const maxCycleData = await fetchWithErrorHandling(
           "/misapi/api/billcycle/max"
         );
-        if (maxCycleData.data && maxCycleData.data.BillCycles?.length > 0) {
-          const options = generateBillCycleOptions(
-            maxCycleData.data.BillCycles,
-            maxCycleData.data.MaxBillCycle
-          );
+
+        // Try several common locations/shapes for the bill cycle list and max cycle
+        const raw = maxCycleData?.data ?? maxCycleData;
+
+        // Possible shapes:
+        // { BillCycles: string[], MaxBillCycle: string }
+        // { billCycles: string[], MaxBillCycle: string }
+        // { BillCycleList: string[], MaxBillCycle: string }
+        // ["202301 - Jan 2023", ...]
+        // { Items: [{ Code, Display }], MaxBillCycle: '...'}
+
+        let billCycles: string[] = [];
+        let maxBillCycle = "";
+
+        if (Array.isArray(raw)) {
+          // response is directly an array
+          billCycles = raw.map((r: any) => (typeof r === "string" ? r : String(r)));
+        } else if (raw) {
+          if (Array.isArray(raw.BillCycles)) billCycles = raw.BillCycles;
+          else if (Array.isArray(raw.billCycles)) billCycles = raw.billCycles;
+          else if (Array.isArray(raw.BillCycleList)) billCycles = raw.BillCycleList;
+          else if (Array.isArray(raw.Items)) {
+            // Items might be objects with Display or Label
+            billCycles = raw.Items.map((it: any) => it.Display ?? it.Label ?? it.Name ?? it);
+          }
+
+          // Max cycle may be in different fields
+          maxBillCycle = raw.MaxBillCycle ?? raw.maxBillCycle ?? raw.MaxCycle ?? "";
+        }
+
+        if (billCycles && billCycles.length > 0) {
+          const options = generateBillCycleOptions(billCycles, String(maxBillCycle || "0"));
           setBillCycleOptions(options);
-          setFormData((prev) => ({ ...prev, billCycle: options[0].code }));
+          setFormData((prev) => ({ ...prev, billCycle: options[0]?.code ?? "" }));
         } else {
           setBillCycleOptions([]);
           setFormData((prev) => ({ ...prev, billCycle: "" }));
