@@ -25,6 +25,7 @@ import TransmissionBilling from "../pages/TransmissionBilling";
 import SolarReligiousPurpose from "../pages/SolarReligiousPurpose";
 import AdminHome from "../pages/AdminHome";
 import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
+import PHVObsoleteIdleFIFO from "../mainTopics/fifo/PHVObsoleteIdleFIFO";
 
 const ReportRoutes = () => (
 	<>
@@ -199,6 +200,14 @@ const ReportRoutes = () => (
 			element={
 				<Layout>
 					<PhysicalVerificationDetails />
+				</Layout>
+			}
+		/>
+		<Route
+			path="/report/PhysicalVerification/FIFO"
+			element={
+				<Layout>
+					<PHVObsoleteIdleFIFO />
 				</Layout>
 			}
 		/>

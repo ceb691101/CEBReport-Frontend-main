@@ -108,6 +108,7 @@ export const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
   "Billing Finance Reports": { icon: FaFileInvoiceDollar, path: "/report/billing-finance-reports" },
   "Transmission Billing": { icon: MdPower, path: "/report/transmission-billing" },
   "Solar Religious Purpose (SRP)": { icon: GiSolarPower, path: "/report/SRP" },
+  "Physical Verification - Fifo": { icon: TbReportAnalytics, path: "/report/PhysicalVerification/FIFO" },
 };
 
 const normalizeCategoryKey = (value: string): string =>

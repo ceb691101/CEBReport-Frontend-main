@@ -14,9 +14,12 @@ import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress
 export const useReportRenderer = () => {
 	return (subtopicName: string, repIdNo?: string): ReactNode => {
 		const repId = repIdNo?.trim() ?? "";
-		if (repId === "14") {
-			return <CcApplicationProgress />;
-		}
+		// Some reports are known to use fixed repId numbers in the backend
+		// that don't always match registry lookups. Render the component
+		// directly for those repIds to avoid the generic fallback page.
+		if (repId === "29" || repId === "14") {
+				return <CcApplicationProgress />;
+			}
 
 		const normalized = normalizeReportName(subtopicName);
 		const withoutLeadingNumber = normalizeReportName(

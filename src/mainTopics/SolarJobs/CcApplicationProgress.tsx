@@ -50,8 +50,8 @@ return str;
 };
 
 const buildApiUrl = (fromDate: string, toDate: string, costctr: string) => {
-        // Use relative path matching the IIS virtual directory `/misapi` for production.
-        // Vite proxy handles `/misapi` locally.
+        const base = API_BASE || "/misapi";
+        const normalizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
         const params = new URLSearchParams({
                 fromDate,
                 toDate,
