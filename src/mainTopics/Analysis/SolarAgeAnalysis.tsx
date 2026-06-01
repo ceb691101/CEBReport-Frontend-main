@@ -756,13 +756,26 @@ const SolarAgeAnalysis: React.FC = () => {
               required
             >
               {areas.map((area) => (
-                <option
-                  key={area.AreaCode}
-                  value={area.AreaCode}
-                  className="text-xs py-1"
-                >
-                  {area.AreaName} ({area.AreaCode})
-                </option>
+                <React.Fragment key={area.AreaCode}>
+                  {/* Original display (kept commented):
+                  <option
+                    key={area.AreaCode}
+                    value={area.AreaCode}
+                    className="text-xs py-1"
+                  >
+                    {area.AreaName} ({area.AreaCode})
+                  </option>
+                  */}
+
+                  {/* New display: areaCode - areaName */}
+                  <option
+                    key={area.AreaCode}
+                    value={area.AreaCode}
+                    className="text-xs py-1"
+                  >
+                    {area.AreaCode} - {area.AreaName}
+                  </option>
+                </React.Fragment>
               ))}
             </select>
           </div>
