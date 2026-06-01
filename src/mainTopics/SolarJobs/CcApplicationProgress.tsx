@@ -50,7 +50,7 @@ return str;
 };
 
 const buildApiUrl = (fromDate: string, toDate: string, costctr: string) => {
-        const base = API_BASE || "/misreportsapi";
+        const base = API_BASE || "/misapi";
         const normalizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
         const params = new URLSearchParams({
                 fromDate,

@@ -98,6 +98,7 @@ import AnnualVerificationWHwiseSignature from "../mainTopics/PhysicalVerificatio
 import PHVSlowNonMovingWHwise from "../mainTopics/PhysicalVerification/PHVSlowNonMovingWHwise";
 import PHVShortageSurplusWHwise from "../mainTopics/PhysicalVerification/PHVShortageSurplusWHwise";
 import PHVObsoleteIdle from "../mainTopics/PhysicalVerification/PHVObsoleteIdle";
+import PHVObsoleteIdleFIFO from "../mainTopics/fifo/PHVObsoleteIdleFIFO";
 import PHVDamage from "../mainTopics/PhysicalVerification/PHVDamage";
 import PHVNonMovingWHwiseBOS from "../mainTopics/PhysicalVerification/PHVNonMovingWHwiseBOS";
 import PHVObsoleteIdleBOS from "../mainTopics/PhysicalVerification/PHVObsoleteIdleBOS";
@@ -319,6 +320,17 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"physical verification shortage surplus wh wise av 1 b": PHVShortageSurplusWHwise,
 	"6 1 physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
 	"physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
+	"fifo obsolete idle": PHVObsoleteIdleFIFO,
+	"phv obsolete idle fifo": PHVObsoleteIdleFIFO,
+	"physical verification fifo obsolete idle": PHVObsoleteIdleFIFO,
+	// Additional aliases to match backend/report-catalog variations
+	"fifo phv obsolete idle": PHVObsoleteIdleFIFO,
+	"phv fifo obsolete idle": PHVObsoleteIdleFIFO,
+	"phv obsolete fifo": PHVObsoleteIdleFIFO,
+	"phv obsolete idle - fifo": PHVObsoleteIdleFIFO,
+	"phv obsolete idle (fifo)": PHVObsoleteIdleFIFO,
+	"phv obsolete idle fifo report": PHVObsoleteIdleFIFO,
+	"fifo obsolete idle phv": PHVObsoleteIdleFIFO,
 	// PHV abbreviation variants for obsolete/idle (non-BOS)
 	"phv obsolete idle grade code av 7a": PHVObsoleteIdle,
 	"phv obsolete idle grade code av 7 a": PHVObsoleteIdle,
