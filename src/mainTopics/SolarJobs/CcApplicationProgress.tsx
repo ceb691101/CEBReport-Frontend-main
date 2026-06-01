@@ -57,7 +57,7 @@ const buildApiUrl = (fromDate: string, toDate: string, costctr: string) => {
                 toDate,
                 costctr,
         });
-        return `${normalizedBase}/api/solarjobs/ccapplication/list?${params.toString()}`;
+        return `/misapi/api/solarjobs/ccapplication/list?${params.toString()}`;
 };
 
 const columns = [

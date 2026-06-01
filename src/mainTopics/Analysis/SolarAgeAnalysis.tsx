@@ -418,6 +418,20 @@ const SolarAgeAnalysis: React.FC = () => {
     if (!customers.length) return;
 
     const isFullReport = reportMode === "full";
+
+     // Escape a cell value for CSV.
+    // Long numeric-only strings (e.g. account numbers) are wrapped with ="..."
+    // so Excel / WPS Office renders the full number instead of scientific notation.
+    // This also maximises the visible column width because the cell content is
+    // treated as text and the full value is always displayed.
+    const escapeCell = (value: string): string => {
+      if (/^\d{7,}$/.test(value)) {
+        // ="5488000000" forces text interpretation and preserves all digits
+        return `"=""${value}"""`;
+      }
+      return `"${value.replace(/"/g, '""')}"`;
+    };
+
     const headers = isFullReport
       ? [
           "Account Number",
@@ -456,46 +470,97 @@ const SolarAgeAnalysis: React.FC = () => {
           ]
     );
 
-    const summaryRows =
-      isFullReport
-        ? []
-        : [
-            [],
-            ["Age Group Summary"],
-            ...ageGroupSummary.map((item) => [
-              item.ageGroup,
-              item.count.toString(),
-              `${item.percentage}%`,
-            ]),
-          ];
+    // const summaryRows =
+    //   isFullReport
+    //     ? []
+    //     : [
+    //         [],
+    //         ["Age Group Summary"],
+    //         ...ageGroupSummary.map((item) => [
+    //           item.ageGroup,
+    //           item.count.toString(),
+    //           `${item.percentage}%`,
+    //         ]),
+    //       ];
+    const summaryRows: string[][] = isFullReport
+      ? []
+      : [
+          [],
+          ["Age Group Summary", "Count", "Percentage"],
+          ...ageGroupSummary.map((item) => [
+            item.ageGroup,
+            item.count.toString(),
+            `${item.percentage}%`,
+          ]),
+        ];
 
-    const csvContent = [
+    // const csvContent = [
+    //   `"Solar Age Analysis Report"`,
+    //   `"Bill Cycle: ${getFormattedBillCycle()}"`,
+    //   `"Area: ${
+    //     areas.find((a) => a.AreaCode === formData.areaCode)?.AreaName
+    //   } (${formData.areaCode})"`,
+    //   `"Total Customers: ${customers.length}"`,
+    //   "",
+    //   headers.map((h) => `"${h}"`).join(","),
+    //   ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    //   ...summaryRows.map((row) =>
+    //     row.map((cell) => `"${cell}"`).join(",")
+    //   ),
+    // ].join("\n");
+
+        const areaName =
+      areas.find((a) => a.AreaCode === formData.areaCode)?.AreaName || "";
+ 
+    const lines: string[] = [
       `"Solar Age Analysis Report"`,
       `"Bill Cycle: ${getFormattedBillCycle()}"`,
-      `"Area: ${
-        areas.find((a) => a.AreaCode === formData.areaCode)?.AreaName
-      } (${formData.areaCode})"`,
+      `"Area: ${areaName} (${formData.areaCode})"`,
       `"Total Customers: ${customers.length}"`,
       "",
       headers.map((h) => `"${h}"`).join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
-      ...summaryRows.map((row) =>
-        row.map((cell) => `"${cell}"`).join(",")
+      ...rows.map((row) =>
+        row.map((cell) => escapeCell(String(cell ?? ""))).join(",")
       ),
-    ].join("\n");
+      ...summaryRows.map((row) =>
+        row.length === 0
+          ? ""
+          : row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")
+      ),
+    ];
 
+
+  //   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  //   const url = URL.createObjectURL(blob);
+  //   const link = document.createElement("a");
+  //   link.href = url;
+  //   link.download = `SolarAgeAnalysis_Cycle${
+  //     formData.billCycle
+  //   }_Area${formData.areaCode}_${new Date().toISOString().slice(0, 10)}.csv`;
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+  //   URL.revokeObjectURL(url);
+  // }, [customers, formData, billCycleOptions, areas, ageGroupSummary]);
+
+  // UTF-8 BOM ensures Excel / WPS Office opens the file with the correct
+    // encoding so special characters (e.g. Sinhala names) are not garbled.
+    const BOM = "\uFEFF";
+    const csvContent = BOM + lines.join("\r\n");
+ 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `SolarAgeAnalysis_Cycle${
-      formData.billCycle
-    }_Area${formData.areaCode}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `SolarAgeAnalysis_Cycle${formData.billCycle}_Area${
+      formData.areaCode
+    }_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [customers, formData, billCycleOptions, areas, ageGroupSummary]);
+  }, [customers, reportMode, formData, billCycleOptions, areas, ageGroupSummary]);
+ 
 
   const printPDF = () => {
     if (!customers.length) return;
@@ -806,10 +871,6 @@ const SolarAgeAnalysis: React.FC = () => {
     if (!reportMode) return null;
 
     const filteredData = getFilteredCustomers();
-    const selectedLabel =
-      reportMode === "full"
-        ? "Full Report"
-        : ageGroups.find((g) => g.value === selectedAgeGroup)?.label || selectedAgeGroup;
     const isFullReport = reportMode === "full";
     const showDetailsTable = isFullReport || Boolean(selectedAgeGroup);
     const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
@@ -820,28 +881,21 @@ const SolarAgeAnalysis: React.FC = () => {
 
     return (
       <div className="mt-8 p-4 bg-white border border-gray-300 rounded">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className={`text-lg font-semibold ${maroon}`}>
-            Customers: {selectedLabel}
-          </h3>
-          {reportMode === "age" && (
+        {/* Clear Filter button when viewing an age-filtered view */}
+        {reportMode === "age" && selectedAgeGroup && (
+          <div className="w-full flex justify-end mb-3">
             <button
               onClick={() => {
                 setSelectedAgeGroup(null);
                 setCustomers(allCustomers);
                 setCurrentPage(1);
               }}
-              className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white"
+              className="px-3 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white"
             >
               Clear Filter
             </button>
-          )}
-        </div>
-
-        <p className="text-sm text-gray-600 mb-4">
-          Total: <span className="font-bold">{filteredData.length}</span> customers
-        </p>
-
+          </div>
+        )}
         {showDetailsTable && filteredData.length === 0 ? (
           <p className="text-gray-500 text-sm">No customers found in this age group.</p>
         ) : showDetailsTable ? (
@@ -943,7 +997,7 @@ const SolarAgeAnalysis: React.FC = () => {
       <div className="mt-8" ref={printRef}>
         <div className="flex justify-between items-center mb-2">
           <h3 className={`text-lg font-semibold ${maroon}`}>
-            {isFullReport ? "Solar Customers Full Report" : "Solar Customers Age Analysis"}
+            {isFullReport ? "Solar Customers Full Report" : "Age Analysis of Solar Power Consumers"}
           </h3>
           <div className="flex gap-2 mt-2">
             <button

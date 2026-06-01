@@ -107,7 +107,8 @@ const PaymentInquiry: React.FC = () => {
   const [posDate, setPosDate] = useState("");
 
   // Result State
-  const [loading, setLoading] = useState(false);
+  const [individualLoading, setIndividualLoading] = useState(false);
+  const [posLoading, setPosLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentResult, setPaymentResult] = useState<PaymentInquiryResult | null>(null);
   const [posResult, setPosResult] = useState<POSCollectionResult | null>(null);
@@ -136,7 +137,7 @@ const PaymentInquiry: React.FC = () => {
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
-        const response = await fetch("/api/customerdetails/pos-provinces");
+        const response = await fetch("/misapi/api/customerdetails/pos-provinces");
         if (!response.ok) {
           throw new Error("Failed to fetch provinces");
         }
@@ -173,7 +174,7 @@ const PaymentInquiry: React.FC = () => {
 
       try {
         const response = await fetch(
-          `/api/customerdetails/pos-areas?provCode=${encodeURIComponent(province)}`
+          `/misapi/api/customerdetails/pos-areas?provCode=${encodeURIComponent(province)}`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch areas");
@@ -196,7 +197,7 @@ const PaymentInquiry: React.FC = () => {
 
       try {
         const response = await fetch(
-          `/api/customerdetails/pos-counters?provCode=${encodeURIComponent(province)}`
+          `/misapi/api/customerdetails/pos-counters?provCode=${encodeURIComponent(province)}`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch counters");
@@ -235,7 +236,7 @@ const PaymentInquiry: React.FC = () => {
   useEffect(() => {
     const fetchBillTypes = async () => {
       try {
-        const response = await fetch("/api/customerdetails/pos-bill-types");
+        const response = await fetch("/misapi/api/customerdetails/pos-bill-types");
         if (!response.ok) {
           throw new Error("Failed to fetch bill types");
         }
@@ -283,7 +284,7 @@ const PaymentInquiry: React.FC = () => {
 useEffect(() => {
   const fetchPayModes = async () => {
     try {
-      const response = await fetch("/api/customerdetails/pos-pay-modes");
+      const response = await fetch("/misapi/api/customerdetails/pos-pay-modes");
       if (!response.ok) throw new Error("Failed to fetch pay modes");
 
       const result = await response.json();
@@ -308,7 +309,7 @@ useEffect(() => {
 }, []);
 
   const handlePaymentInquiry = async () => {
-    setLoading(true);
+    setIndividualLoading(true);
     setError(null);
     setPaymentResult(null);
     setActiveTab(null);
@@ -322,7 +323,7 @@ useEffect(() => {
         fromDate,
       };
 
-      const response = await fetch("/api/customerdetails/payment-full-report", {
+      const response = await fetch("/misapi/api/customerdetails/payment-full-report", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -389,9 +390,9 @@ useEffect(() => {
           centerName: String(getVal(record, 'centerName', 'CenterName') ?? ''),
           centerDisplay: (() => {
             const centerValue = String(getVal(record, 'center', 'Center') ?? '');
-            const centerDescValue = String(getVal(record, 'centerDescription', 'CenterDescription', 'centerType', 'CenterType', 'centerCategory', 'CenterCategory') ?? '');
+            const agentNameValue = String(getVal(record, 'agentName', 'AgentName') ?? '');
             const centerNameValue = String(getVal(record, 'centerName', 'CenterName') ?? '');
-            const parts = [centerValue, centerDescValue, centerNameValue].filter(p => p && p.trim());
+            const parts = [centerValue, agentNameValue, centerNameValue].filter((p) => p && p.trim());
             return parts.join(' - ');
           })(),
           counter: String(getVal(record, 'countNo', 'CountNo', 'count_no') ?? ''),
@@ -417,12 +418,12 @@ useEffect(() => {
     } catch (err: any) {
       setError(err.message || "Failed to fetch payment inquiry");
     } finally {
-      setLoading(false);
+      setIndividualLoading(false);
     }
   };
 
   const handlePOSInquiry = async () => {
-    setLoading(true);
+    setPosLoading(true);
     setError(null);
     setPosResult(null);
     setActiveTab(null);
@@ -440,7 +441,7 @@ useEffect(() => {
         PayType: billType || "*",
       };
 
-      const response = await fetch("/api/customerdetails/pos-collection-breakup", {
+      const response = await fetch("/misapi/api/customerdetails/pos-collection-breakup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -512,7 +513,7 @@ useEffect(() => {
     } catch (err: any) {
       setError(err.message || "Failed to fetch POS collection data");
     } finally {
-      setLoading(false);
+      setPosLoading(false);
     }
   };
 
@@ -522,7 +523,7 @@ useEffect(() => {
     setLatestUpdateTimes(null);
 
     try {
-      const response = await fetch("/api/customerdetails/latest-update-times", {
+      const response = await fetch("/misapi/api/customerdetails/latest-update-times", {
         method: "GET",
         headers: {
           Accept: "application/json",
@@ -721,6 +722,10 @@ useEffect(() => {
               font-weight: bold;
               background-color: #f0f0f0;
             }
+            /* Keep totals only once at the end of the table in print output */
+            tfoot {
+              display: table-row-group;
+            }
             @page {
               margin-bottom: 18mm;
               @bottom-left {
@@ -743,7 +748,7 @@ useEffect(() => {
           <div class="subheader">
             Payment Collection on <span class="bold">${formatDateDMY(posResult.date)}</span><br>
             Area: <span class="bold">${getAreaLabel()}</span> &nbsp;&nbsp;&nbsp;&nbsp; Counter: <span class="bold">${getCounterLabel()}</span><br>
-            Bill Type: <span class="bold">${posResult.billType === "*" ? "All" : posResult.billType}</span> &nbsp;&nbsp;&nbsp;&nbsp; Pay Mode: <span class="bold">${posResult.payMode === "*" ? "All" : posResult.payMode}</span>
+            Bill Type: <span class="bold">${posResult.billType === "*" ? "All" : posResult.billType}</span> &nbsp;&nbsp;&nbsp;&nbsp; Pay Mode: <span class="bold">${getPayModeLabel()}</span>
           </div>
           ${tableHTML}
         </body>
@@ -937,6 +942,13 @@ useEffect(() => {
     return found ? found.label : posResult.counter;
   };
 
+  const getPayModeLabel = () => {
+    if (!posResult) return "";
+    if (posResult.payMode === "*") return "All";
+    const found = payModes.find((mode) => mode.id === posResult.payMode);
+    return found ? found.label : posResult.payMode;
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-4 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
       {/* Error Alert */}
@@ -987,13 +999,13 @@ useEffect(() => {
           <div className="w-full mt-6 flex justify-end">
             <button
               onClick={handlePaymentInquiry}
-              disabled={loading}
+              disabled={individualLoading}
               className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
             ${maroonGrad} text-white ${
-                loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"
+                individualLoading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"
               }`}
             >
-              {loading ? (
+              {individualLoading ? (
                 <span className="flex items-center">
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -1307,13 +1319,13 @@ useEffect(() => {
           <div className="w-full mt-6 flex justify-end">
             <button
               onClick={handlePOSInquiry}
-              disabled={loading}
+              disabled={posLoading}
               className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
             ${maroonGrad} text-white ${
-                loading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"
+                posLoading ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"
               }`}
             >
-              {loading ? (
+              {posLoading ? (
                 <span className="flex items-center">
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -1424,12 +1436,6 @@ useEffect(() => {
                   </td>
                   <td className="p-2 text-right text-gray-900">
                     {posResult.collectionRecords.reduce((sum, r) => sum + (r.creditCard || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                </tr>
-                <tr className="bg-gray-50 font-bold border-t border-gray-200">
-                  <td className="p-2 text-left text-sm" colSpan={3}>Grand Total Collection Amount</td>
-                  <td className="p-2 text-right text-sm" colSpan={4}>
-                    {posResult.totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                 </tr>
               </tfoot>
