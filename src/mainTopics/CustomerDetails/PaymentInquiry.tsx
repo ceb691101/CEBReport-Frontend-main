@@ -137,7 +137,7 @@ const PaymentInquiry: React.FC = () => {
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
-        const response = await fetch("/api/customerdetails/pos-provinces");
+        const response = await fetch("/misapi/api/customerdetails/pos-provinces");
         if (!response.ok) {
           throw new Error("Failed to fetch provinces");
         }
@@ -174,7 +174,7 @@ const PaymentInquiry: React.FC = () => {
 
       try {
         const response = await fetch(
-          `/api/customerdetails/pos-areas?provCode=${encodeURIComponent(province)}`
+          `/misapi/api/customerdetails/pos-areas?provCode=${encodeURIComponent(province)}`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch areas");
@@ -197,7 +197,7 @@ const PaymentInquiry: React.FC = () => {
 
       try {
         const response = await fetch(
-          `/api/customerdetails/pos-counters?provCode=${encodeURIComponent(province)}`
+          `/misapi/api/customerdetails/pos-counters?provCode=${encodeURIComponent(province)}`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch counters");
@@ -236,7 +236,7 @@ const PaymentInquiry: React.FC = () => {
   useEffect(() => {
     const fetchBillTypes = async () => {
       try {
-        const response = await fetch("/api/customerdetails/pos-bill-types");
+        const response = await fetch("/misapi/api/customerdetails/pos-bill-types");
         if (!response.ok) {
           throw new Error("Failed to fetch bill types");
         }
@@ -284,7 +284,7 @@ const PaymentInquiry: React.FC = () => {
 useEffect(() => {
   const fetchPayModes = async () => {
     try {
-      const response = await fetch("/api/customerdetails/pos-pay-modes");
+      const response = await fetch("/misapi/api/customerdetails/pos-pay-modes");
       if (!response.ok) throw new Error("Failed to fetch pay modes");
 
       const result = await response.json();
@@ -323,7 +323,7 @@ useEffect(() => {
         fromDate,
       };
 
-      const response = await fetch("/api/customerdetails/payment-full-report", {
+      const response = await fetch("/misapi/api/customerdetails/payment-full-report", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -441,7 +441,7 @@ useEffect(() => {
         PayType: billType || "*",
       };
 
-      const response = await fetch("/api/customerdetails/pos-collection-breakup", {
+      const response = await fetch("/misapi/api/customerdetails/pos-collection-breakup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
