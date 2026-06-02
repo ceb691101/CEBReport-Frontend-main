@@ -27,14 +27,6 @@ interface FIFOItem {
   CostCentreName?: string;
 }
 
-const formatNumber = (num: number | null | undefined): string => {
-  if (num == null) return "0.00";
-  return num.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-};
-
 const parseApiResponse = (response: any): any[] => {
   if (Array.isArray(response)) return response;
   if (response.data && Array.isArray(response.data)) return response.data;
@@ -46,7 +38,7 @@ const parseApiResponse = (response: any): any[] => {
   return [];
 };
 
-const PHVObsoleteIdleFIFO: React.FC = () => {
+const PHVDamageFIFO: React.FC = () => {
   const { user } = useUser();
   const epfNo = user?.Userno || "";
 
@@ -230,7 +222,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
 
     try {
       const res = await fetch(
-        `/misapi/api/phv-obsolete-idle-fifo/list?deptId=${encodeURIComponent(selectedDept.DeptId)}&warehouseCode=${encodeURIComponent(selectedWarehouse)}`
+        `/misapi/api/phv-damage-fifo/list?deptId=${encodeURIComponent(selectedDept.DeptId)}&warehouseCode=${encodeURIComponent(selectedWarehouse)}&repYear=${encodeURIComponent(selectedYear.toString())}`
       );
 
       if (!res.ok) {
@@ -272,7 +264,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
       download: download ? "true" : "false",
     });
 
-    return `/misapi/api/phv-obsolete-idle-fifo/pdf?${params.toString()}`;
+    return `/misapi/api/phv-damage-fifo/pdf?${params.toString()}`;
   };
 
   const requestJasperPdf = async (download: boolean) => {
@@ -315,7 +307,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
       link.href = blobUrl;
 
       if (download) {
-        link.download = `PHV_Obsolete_Idle_FIFO_${selectedDeptId}_${selectedWarehouse}_${selectedYearValue}_${selectedMonthValue.toString().padStart(2, "0")}.pdf`;
+        link.download = `PHV_Damage_FIFO_${selectedDeptId}_${selectedWarehouse}_${selectedYearValue}_${selectedMonthValue.toString().padStart(2, "0")}.pdf`;
       } else {
         link.target = "_blank";
         link.rel = "noopener noreferrer";
@@ -355,7 +347,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
       repMonth: selectedMonth.toString(),
     });
 
-    const url = `/misapi/api/phv-obsolete-idle-fifo/csv?${params.toString()}`;
+    const url = `/misapi/api/phv-damage-fifo/csv?${params.toString()}`;
     const selectedDeptId = selectedDept.DeptId;
     const selectedMonthValue = selectedMonth;
     const selectedYearValue = selectedYear;
@@ -382,7 +374,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `PHV_Obsolete_Idle_FIFO_${selectedDeptId}_${selectedWarehouse}_${selectedYearValue}_${selectedMonthValue.toString().padStart(2, "0")}.csv`;
+      link.download = `PHV_Damage_FIFO_${selectedDeptId}_${selectedWarehouse}_${selectedYearValue}_${selectedMonthValue.toString().padStart(2, "0")}.csv`;
 
       document.body.appendChild(link);
       link.click();
@@ -399,7 +391,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
   return (
     <div className="max-w-[95%] mx-auto p-2 md:p-4 bg-white rounded-xl shadow border border-gray-200 text-sm md:text-base font-sans">
       <h2 className={`text-lg md:text-xl font-bold mb-4 ${maroon}`}>
-        PHV Obsolete / Idle FIFO Report
+        PHV Damage FIFO Report
       </h2>
 
       <div className="flex flex-col md:flex-row flex-wrap gap-2 md:gap-3 mb-4 justify-end items-end">
@@ -571,7 +563,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
 
       {showReport && selectedDept && (
         <ReportViewer
-          title={`STATEMENT OF OBSOLETE AND IDLE MATERIALS IN STOCKS - ${selectedYear}`}
+          title={`STATEMENT OF DAMAGED MATERIALS IN STOCKS - ${selectedYear}`}
           subtitlebold2="Cost Centre:"
           subtitlenormal2={`${selectedDept.DeptId} - ${selectedDept.DeptName}`}
           subtitlebold3="Warehouse:"
@@ -591,4 +583,4 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
   );
 };
 
-export default PHVObsoleteIdleFIFO;
+export default PHVDamageFIFO;

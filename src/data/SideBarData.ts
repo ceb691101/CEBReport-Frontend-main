@@ -472,7 +472,7 @@ export const loadRoleBasedSidebarData = async (epfNo: string): Promise<SidebarRe
 
     const reports = Array.from(reportsByKey.values());
 
-    // Inject the FIFO report under Physical Verification (as an accordion item)
+    // Inject the FIFO report under Physical Verification (as an accordion item) and under FIFO category
     const hasFifoReport = reports.some(
       (r) =>
         getReportRepId(r) === "fifo-obsolete-idle" ||
@@ -484,17 +484,31 @@ export const loadRoleBasedSidebarData = async (epfNo: string): Promise<SidebarRe
         CategoryName: "Physical Verification",
         ReportName: "PHV Obsolete / Idle (FIFO)",
       });
-    }
-
-    // Inject the FIFO Category itself to show in the sidebar
-    const hasFifoCategory = reports.some(
-      (r) => getReportCategoryName(r).toLowerCase() === "physical verification - fifo"
-    );
-    if (!hasFifoCategory) {
       reports.push({
         RepIdNo: "fifo-obsolete-idle-cat",
         CategoryName: "Physical Verification - FIFO",
-        ReportName: "PHV Obsolete / Idle FIFO Report",
+        ReportName: "PHV Obsolete / Idle (FIFO)",
+      });
+    }
+
+    // Inject the Damage FIFO report under Physical Verification (as an accordion item) and under FIFO category
+    const hasDamageFifoReport = reports.some(
+      (r) =>
+        getReportRepId(r) === "fifo-damage" ||
+        (getReportCategoryName(r).toLowerCase() === "physical verification" &&
+          getReportName(r).toLowerCase().includes("damage") &&
+          getReportName(r).toLowerCase().includes("fifo"))
+    );
+    if (!hasDamageFifoReport) {
+      reports.push({
+        RepIdNo: "fifo-damage",
+        CategoryName: "Physical Verification",
+        ReportName: "PHV Damage (FIFO)",
+      });
+      reports.push({
+        RepIdNo: "fifo-damage-cat",
+        CategoryName: "Physical Verification - FIFO",
+        ReportName: "PHV Damage (FIFO)",
       });
     }
 

@@ -100,6 +100,7 @@ import PHVSlowNonMovingWHwise from "../mainTopics/PhysicalVerification/PHVSlowNo
 import PHVShortageSurplusWHwise from "../mainTopics/PhysicalVerification/PHVShortageSurplusWHwise";
 import PHVObsoleteIdle from "../mainTopics/PhysicalVerification/PHVObsoleteIdle";
 import PHVObsoleteIdleFIFO from "../mainTopics/fifo/PHVObsoleteIdleFIFO";
+import PHVDamageFIFO from "../mainTopics/fifo/PHVDamageFIFO";
 import PHVDamage from "../mainTopics/PhysicalVerification/PHVDamage";
 import PHVNonMovingWHwiseBOS from "../mainTopics/PhysicalVerification/PHVNonMovingWHwiseBOS";
 import PHVObsoleteIdleBOS from "../mainTopics/PhysicalVerification/PHVObsoleteIdleBOS";
@@ -323,6 +324,10 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
 	"fifo obsolete idle": PHVObsoleteIdleFIFO,
 	"phv obsolete idle fifo": PHVObsoleteIdleFIFO,
+	"fifo damage": PHVDamageFIFO,
+	"phv damage fifo": PHVDamageFIFO,
+	"phv damage (fifo)": PHVDamageFIFO,
+	"physical verification damage fifo": PHVDamageFIFO,
 	"physical verification fifo obsolete idle": PHVObsoleteIdleFIFO,
 	// Additional aliases to match backend/report-catalog variations
 	"fifo phv obsolete idle": PHVObsoleteIdleFIFO,
