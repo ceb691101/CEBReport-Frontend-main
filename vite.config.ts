@@ -22,6 +22,12 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 			},
+			"/misapi/api/phv-obsolete-idle-fifo": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
 			"/misapi": {
 				target: "http://10.128.1.126",
 				changeOrigin: true,
