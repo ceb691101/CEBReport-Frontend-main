@@ -120,6 +120,7 @@ const UserRoles = () => {
 	const [assignedCompanies, setAssignedCompanies] = useState<string[]>([]);
 	const [isAddingCostCentresToRole, setIsAddingCostCentresToRole] = useState(false);
 	const [tableSearch, setTableSearch] = useState("");
+	const [companySearch, setCompanySearch] = useState("");
 	const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
 	const [pinnedRoles, setPinnedRoles] = useState<string[]>(() => {
 		try {
@@ -375,6 +376,7 @@ const UserRoles = () => {
 		setAssignedCompanies([]);
 		setCostCentres([]);
 		setSelectedRoleKey(null);
+		setCompanySearch("");
 	};
 
 	const handleCostCentreToggle = (costCentreId: string) => {
@@ -579,7 +581,7 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/miaapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
+				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
 				{
 					method: "PUT",
 					headers: { "Content-Type": "application/json" },
@@ -683,6 +685,19 @@ const UserRoles = () => {
 		setCurrentPage(page);
 	};
 
+	const filteredMotherCompanies = motherCompanies.filter((company) => {
+		const query = normalizeKey(companySearch);
+
+		if (!query) {
+			return true;
+		}
+
+		return [company.companyId, company.companyName]
+			.map((value) => normalizeKey(value))
+			.join(" ")
+			.includes(query);
+	});
+
 	return (
 		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
 			<div className="mx-auto max-w-7xl space-y-6">
@@ -753,7 +768,12 @@ const UserRoles = () => {
 										<span className="mb-1.5 block text-sm font-medium text-stone-700">Select Companies</span>
 										<button
 											type="button"
-											onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}
+												onClick={() => {
+													setIsCompanyDropdownOpen((current) => !current);
+													if (!isCompanyDropdownOpen) {
+														setCompanySearch("");
+													}
+												}}
 											className={`${fieldBaseClass} flex items-center justify-between`}
 										>
 											<span className="truncate">
@@ -799,44 +819,67 @@ const UserRoles = () => {
 														</button>
 													</div>
 												</div>
+												<div className="mb-2 flex items-center gap-2">
+													<div className="relative flex-1">
+														<Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+														<input
+															type="text"
+															value={companySearch}
+															onChange={(e) => setCompanySearch(e.target.value)}
+															placeholder="Search companies..."
+															className="w-full rounded-md border border-stone-300 bg-white py-2 pl-10 pr-4 text-sm text-stone-800 shadow-sm outline-none transition focus:border-[#7A0000] focus:ring-2 focus:ring-[#7A0000]/10"
+														/>
+													</div>
+													{companySearch ? (
+														<button
+															type="button"
+															onClick={() => setCompanySearch("")}
+															className="rounded-md border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100"
+														>
+															Clear
+														</button>
+													) : null}
+												</div>
 												<div className="max-h-48 overflow-y-auto pr-2">
 													{isCompaniesLoading ? (
 														<div className="text-sm text-stone-500">Loading companies...</div>
 													) : motherCompanies.length === 0 ? (
 														<div className="text-sm text-stone-500">No companies available.</div>
+													) : filteredMotherCompanies.length === 0 ? (
+														<div className="text-sm text-stone-500">No matching companies found.</div>
 													) : (
 														<ul className="space-y-2">
-															{motherCompanies.map((company) => {
-																const isChecked = assignedCompanies.includes(company.companyId);
-																return (
-																	<li key={company.companyId} className="flex items-center gap-2 text-sm text-stone-800">
-																		<input
-																			type="checkbox"
-																			checked={isChecked}
-																			onChange={(e) => {
-																				const checked = e.target.checked;
-																				setAssignedCompanies((current) => {
-																					if (checked) {
-																						const normalized = normalizeKey(company.companyId);
-																						if (!normalized || current.some((item) => normalizeKey(item) === normalized)) {
-																							return current;
+																{filteredMotherCompanies.map((company) => {
+																	const isChecked = assignedCompanies.includes(company.companyId);
+																	return (
+																		<li key={company.companyId} className="flex items-center gap-2 text-sm text-stone-800">
+																			<input
+																				type="checkbox"
+																				checked={isChecked}
+																				onChange={(e) => {
+																					const checked = e.target.checked;
+																					setAssignedCompanies((current) => {
+																						if (checked) {
+																							const normalized = normalizeKey(company.companyId);
+																							if (!normalized || current.some((item) => normalizeKey(item) === normalized)) {
+																								return current;
+																							}
+																							return [...current, company.companyId];
 																						}
-																						return [...current, company.companyId];
+																						return current.filter((id) => id !== company.companyId);
+																					});
+																					if (checked) {
+																						handleFieldChange("motherCompany", company.companyId);
 																					}
-																					return current.filter((id) => id !== company.companyId);
-																				});
-																				if (checked) {
-																					handleFieldChange("motherCompany", company.companyId);
-																				}
-																			}}
-																			className="h-4 w-4 rounded border-stone-400 text-[#7A0000] focus:ring-[#7A0000]"
-																		/>
-																		<span>
-																			{company.companyId} - {company.companyName}
-																		</span>
-																	</li>
-																);
-															})}
+																				}}
+																				className="h-4 w-4 rounded border-stone-400 text-[#7A0000] focus:ring-[#7A0000]"
+																			/>
+																			<span>
+																				{company.companyId} - {company.companyName}
+																			</span>
+																		</li>
+																	);
+																})}
 														</ul>
 													)}
 												</div>
