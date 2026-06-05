@@ -39,6 +39,7 @@ import SolarAgeAnalysis from "../mainTopics/Analysis/SolarAgeAnalysis";
 // Billing & Payment reports
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
 import PaymentInquiry from "../mainTopics/CustomerDetails/PaymentInquiry";
+import TransactionHistoryOrdinary from "../mainTopics/CustomerDetails/TransactionHistoryOrdinary";
 
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
@@ -220,6 +221,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// Billing & Payment reports
 	"customer information": CustomerDetails,
 	"transaction history": CustomerDetails,
+	"transaction history - ordinary": TransactionHistoryOrdinary,
 	"bill information": CustomerDetails,
 	"payment inquiries": PaymentInquiry,
 	"bill sms inquiry": CustomerDetails,
