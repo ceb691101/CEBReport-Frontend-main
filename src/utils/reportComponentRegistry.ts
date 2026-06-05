@@ -47,7 +47,7 @@ import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 
 // Consumption Analysis reports
-import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
+//import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
 
 // CashBook reports
 import CashBookDetailsReport from "../mainTopics/CashBook/CashBookDetailsReport";
@@ -64,6 +64,7 @@ import Arreasposition from "../mainTopics/general/Arreasposition";
 import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
 import LargestCus from "../mainTopics/general/LargestCus";
 import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
+import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -256,6 +257,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise document inquiry cash book with cheque details": DocumentInquiry,
 
 	// General reports
+	"tariff block wise consumption": TariffBlockWiseConsumption,
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
 	"bill calculation": BillCalculation,
 	"listing of customers": ListingofCustomers,
