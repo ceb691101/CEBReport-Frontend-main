@@ -44,6 +44,7 @@ import TransactionHistoryOrdinary from "../mainTopics/CustomerDetails/Transactio
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
 import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
+import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 
 // Consumption Analysis reports
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
@@ -239,7 +240,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"suspense payment details": DishonouredCheques,
 	"finalized account details": DishonouredCheques,
 	"written off account details": DishonouredCheques,
-	"receivable position": DishonouredCheques,
+	"receivable position": ReceivablePosition,
 	"unload loan information": DishonouredCheques,
 	"dishonoured cheques": DishonouredCheques,
 
@@ -368,6 +369,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"area wise solar sent to billing details": SolarBillingReport,
 	"solar retail rooftop pending jobs after piv2 paid": SolarPendingJobsReport,
 	"solar rooftop applications within the selected cost centre": CcApplicationProgress,
+	"c/c solar application progress": CcApplicationProgress,
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,

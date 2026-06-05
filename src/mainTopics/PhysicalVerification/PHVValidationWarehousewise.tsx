@@ -181,9 +181,7 @@ const PHVValidationWarehousewise: React.FC = () => {
       try {
         const url = `/misapi/api/inventoryaverageconsumption/warehouses/${encodeURIComponent(
           epfNo
-        )}?costCenterId=${encodeURIComponent(
-          selectedDept.DeptId
-        )}&t=${Date.now()}`;
+        )}?costCenterId=${encodeURIComponent(selectedDept.DeptId)}`;
         console.log("Fetching warehouses from:", url);
         console.log("Selected Cost Center ID:", selectedDept.DeptId);
        

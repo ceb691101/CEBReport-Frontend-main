@@ -49,20 +49,41 @@ const LoginCard = () => {
           );
           
           if (response.ok) {
-            const adRes = await response.json();
+            let adRes: any = null;
+            try {
+              adRes = await response.json();
+            } catch {
+              adRes = null;
+            }
+
             console.log("AD Login raw response:", adRes);
-            if (adRes?.isSuccess) {
+            const isSuccess =
+              adRes?.isSuccess === true ||
+              adRes?.IsSuccess === true ||
+              adRes?.success === true ||
+              String(adRes?.isSuccess).toLowerCase() === "true";
+
+            if (isSuccess) {
               setLogged({ Logged: true, Errormsg: "" });
               isLoginSuccess = true;
             } else {
               isLoginSuccess = false;
               console.error("AD Validation failed in response body:", adRes);
+              const message =
+                adRes?.message ||
+                adRes?.Message ||
+                adRes?.error ||
+                adRes?.Error ||
+                "AD login rejected by server";
+              toast.error(message);
             }
           } else {
             console.error("AD Validation request failed with status:", response.status);
+            toast.error(`AD login request failed (${response.status})`);
           }
         } catch (adError) {
           console.error("Error during AD Validation API call:", adError);
+          toast.error("AD login service is not reachable. Check deployed API URL/CORS settings.");
         }
       }
 
@@ -70,7 +91,7 @@ const LoginCard = () => {
         // Only allow admin login if checking DB confirms they are an admin
         if (isAdmin) {
           try {
-            const adminCheck = await fetch("/roleadminapi/api/roleinfo/admin");
+            const adminCheck = await fetch("/misapi/api/roleinfo/admin");
             if (adminCheck.ok) {
               const adminPayload = await adminCheck.json();
               const isAdminInDb = Array.isArray(adminPayload?.data) && adminPayload.data.some((a: any) => 
