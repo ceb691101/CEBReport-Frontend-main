@@ -116,6 +116,7 @@ const PaymentInquiry: React.FC = () => {
   const [latestUpdateError, setLatestUpdateError] = useState<string | null>(null);
   const [latestUpdateLoading, setLatestUpdateLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"individual" | "pos" | null>(null);
+  const [posPage, setPosPage] = useState(1);
 
   // Print refs
   const paymentPrintRef = useRef<HTMLDivElement>(null);
@@ -442,6 +443,7 @@ useEffect(() => {
     setError(null);
     setPosResult(null);
     setActiveTab(null);
+    setPosPage(1);
 
     try {
       if (!province) throw new Error("Please select Province");
@@ -965,7 +967,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
+    <div className="max-w-7xl mx-auto p-4 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans max-h-[82vh] overflow-y-auto">
       {/* Error Alert */}
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -986,11 +988,21 @@ useEffect(() => {
                 <MdPermIdentity className={maroon} size={16} />
                 Account No
               </label>
+              {/* Original input with placeholder (kept commented):
               <input
                 type="text"
                 value={acctNo}
                 onChange={(e) => setAcctNo(e.target.value)}
                 placeholder="e.g., 5390001419"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+              />
+              */}
+
+              {/* Updated input: placeholder removed */}
+              <input
+                type="text"
+                value={acctNo}
+                onChange={(e) => setAcctNo(e.target.value)}
                 className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               />
             </div>
@@ -1087,9 +1099,9 @@ useEffect(() => {
               </div>
 
               {/* Payment Records Table */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                 <table className="w-full text-xs border-collapse">
-                  <thead>
+                  <thead className="sticky top-0 z-10 bg-[#7A0000]">
                     <tr className={`${maroonBg} text-white`}>
                       <th className="p-2 text-left font-semibold">Payment Date</th>
                       <th className="p-2 text-right font-semibold">Amount</th>
@@ -1375,6 +1387,24 @@ useEffect(() => {
       {/* Results Section - POS Collection */}
       {activeTab === "pos" && posResult && (
         <div ref={posPrintRef} className="mt-4 p-4 rounded-lg shadow-sm border border-gray-100 w-full bg-white">
+          {(() => {
+            const pageSize = 30;
+            const totalRecords = posResult.collectionRecords.length;
+            const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+            const currentPage = Math.min(posPage, totalPages);
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, totalRecords);
+            const pageRecords = posResult.collectionRecords.slice(startIndex, endIndex);
+
+            const handlePrev = () => {
+              setPosPage((prev) => (prev > 1 ? prev - 1 : prev));
+            };
+            const handleNext = () => {
+              setPosPage((prev) => (prev < totalPages ? prev + 1 : prev));
+            };
+
+            return (
+              <>
           <div className="flex justify-between items-start mb-4">
             <div>
               <h2 className={`text-base font-bold ${maroon}`}>
@@ -1384,7 +1414,7 @@ useEffect(() => {
                 {`Area : ${getAreaLabel()}       Counter : ${getCounterLabel()}`}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Showing all {posResult.collectionRecords.length} rows
+                Showing rows {totalRecords === 0 ? 0 : startIndex + 1}-{endIndex} of {totalRecords}
               </p>
             </div>
 
@@ -1411,9 +1441,9 @@ useEffect(() => {
           </div>
 
           {/* Collection Records Table */}
-          <div className="max-h-[70vh] overflow-auto">
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
             <table className="w-full text-xs border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-[#7A0000]">
                 <tr className={`${maroonBg} text-white`}>
                   <th className="p-2 text-left font-semibold">Account No/PIV No</th>
                   <th className="p-2 text-left font-semibold">Counter</th>
@@ -1425,7 +1455,7 @@ useEffect(() => {
                 </tr>
               </thead>
               <tbody>
-                {posResult.collectionRecords.map((record, idx) => (
+                {pageRecords.map((record, idx) => (
                   <tr key={record.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                     <td className="p-2 border-b border-gray-100">{(record.accountNo || "") + (record.pivNo ? ` / ${record.pivNo}` : "")}</td>
                     <td className="p-2 border-b border-gray-100">{record.counterNo || record.counter || record.counterName}</td>
@@ -1437,25 +1467,65 @@ useEffect(() => {
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
-                <tr className="bg-gray-100 font-bold border-t border-gray-300">
-                  <td className="p-2 text-left" colSpan={3}>Total</td>
-                  <td className="p-2 text-right text-gray-900">
-                    {posResult.collectionRecords.reduce((sum, r) => sum + (r.cash || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-2 text-right text-gray-900">
-                    {posResult.collectionRecords.reduce((sum, r) => sum + (r.cheque || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-2 text-right text-gray-900">
-                    {posResult.collectionRecords.reduce((sum, r) => sum + (r.bankDraft || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-2 text-right text-gray-900">
-                    {posResult.collectionRecords.reduce((sum, r) => sum + (r.creditCard || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                </tr>
-              </tfoot>
+              {currentPage === totalPages && (
+                <tfoot>
+                  <tr className="bg-gray-100 font-bold border-t border-gray-300">
+                    <td className="p-2 text-left" colSpan={3}>Total</td>
+                    <td className="p-2 text-right text-gray-900">
+                      {posResult.collectionRecords.reduce((sum, r) => sum + (r.cash || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-2 text-right text-gray-900">
+                      {posResult.collectionRecords.reduce((sum, r) => sum + (r.cheque || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-2 text-right text-gray-900">
+                      {posResult.collectionRecords.reduce((sum, r) => sum + (r.bankDraft || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-2 text-right text-gray-900">
+                      {posResult.collectionRecords.reduce((sum, r) => sum + (r.creditCard || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-3 flex items-center justify-between text-xs text-gray-700">
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded border text-xs ${
+                    currentPage === 1
+                      ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded border text-xs ${
+                    currentPage === totalPages
+                      ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+          </>
+            );
+          })()}
         </div>
       )}
     </div>
