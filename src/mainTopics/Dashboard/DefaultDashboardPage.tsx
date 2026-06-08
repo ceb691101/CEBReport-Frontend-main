@@ -462,7 +462,7 @@ const DefaultDashboardPage: React.FC = () => {
   const [monthlySalesData, setMonthlySalesData]         = useState<MonthlySalesData[]>([]);
   const [salesCollectionLoading, setSalesCollectionLoading] = useState(true);
   const [salesCollectionError, setSalesCollectionError]     = useState<string | null>(null);
-  const [salesChartKey, setSalesChartKey]                   = useState(0);
+  const [, setSalesChartKey]                   = useState(0);
   const [kioskWeeklyTotal, setKioskWeeklyTotal]             = useState(0);
   const [kioskDateRange, setKioskDateRange]                 = useState({ fromDate: "", toDate: "" });
   const [kioskDailyRecords, setKioskDailyRecords]           = useState<KioskCollectionRecord[]>([]);
@@ -1088,12 +1088,10 @@ const DefaultDashboardPage: React.FC = () => {
                             cardId={cardId}
                             title="Total Customers"
                             value={customerCountsLoading && bulkCountLoading ? "Loading..." : formatNumber(animatedTotal)}
-                            details={
-                              <>
-                                <span>Ordinary: {customerCountsLoading ? "..." : formatNumber(animatedOrdinary)}</span>
-                                <span>Bulk: {bulkCountLoading ? "..." : formatNumber(animatedBulk)}</span>
-                              </>
-                            }
+                            details={[
+                              <span key="ord">Ordinary: {customerCountsLoading ? "..." : formatNumber(animatedOrdinary)}</span>,
+                              <span key="bulk">Bulk: {bulkCountLoading ? "..." : formatNumber(animatedBulk)}</span>,
+                            ]}
                             icon={<Users className={`w-5 h-5 ${CEB_MAROON_TEXT}`} />}
                             iconBgClass={CEB_MAROON_BG}
                             isDragging={isDragging}
@@ -1113,12 +1111,10 @@ const DefaultDashboardPage: React.FC = () => {
                             cardId={cardId}
                             title="Solar Customers"
                             value={solarLoading || bulkSolarLoading ? "Loading..." : formatNumber(animatedSolar)}
-                            details={
-                              <>
-                                <span>Ordinary: {solarLoading ? "..." : formatNumber(animatedOrdSolarTotal)}</span>
-                                <span>Bulk: {bulkSolarLoading ? "..." : formatNumber(animatedBulkSolarTotal)}</span>
-                              </>
-                            }
+                            details={[
+                              <span key="ord">Ordinary: {solarLoading ? "..." : formatNumber(animatedOrdSolarTotal)}</span>,
+                              <span key="bulk">Bulk: {bulkSolarLoading ? "..." : formatNumber(animatedBulkSolarTotal)}</span>,
+                            ]}
                             icon={<Sun className={`w-5 h-5 ${CEB_MAROON_TEXT}`} />}
                             iconBgClass={CEB_MAROON_BG}
                             isDragging={isDragging}
@@ -1399,10 +1395,16 @@ const DefaultDashboardPage: React.FC = () => {
                                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
                                   <circle cx="100" cy="100" r="80" fill="none" stroke="#f3f4f6" strokeWidth="30" />
                                   {classes.map((cls, i) => {
+                                    const isActive = activeSolarPieChart === keys[i];
+                                    const isAnyActive = !!activeSolarPieChart;
                                     const el = (
-                                      <circle key={i} cx="100" cy="100" r="80" fill="none" stroke={colors[i]} strokeWidth="30"
+                                      <circle key={i} cx="100" cy="100" r="80" fill="none" stroke={colors[i]} 
                                         strokeDasharray={`0 ${C}`} strokeDashoffset={i === 0 ? 0 : -((offset / 100) * C)}
-                                        className={`${cls} transition-all duration-300 cursor-pointer hover:opacity-80`}
+                                        className={`${cls} transition-all duration-300 cursor-pointer`}
+                                        style={{
+                                          strokeWidth: isActive ? 36 : 30,
+                                          opacity: isAnyActive && !isActive ? 0.3 : 1,
+                                        }}
                                         onMouseEnter={() => setActiveSolarPieChart(keys[i])}
                                         onMouseLeave={() => setActiveSolarPieChart(null)} />
                                     );
@@ -1427,16 +1429,33 @@ const DefaultDashboardPage: React.FC = () => {
                                   </div>
                                 )}
                               </div>
-                              <div className="space-y-2 w-full text-sm mt-4">
-                                {netLabels.map((nl, i) => (
-                                  <div key={nl} className="flex items-center gap-2 p-1 rounded">
-                                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: colors[i] }} />
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-900">{nl}</p>
-                                      <p className="text-xs text-gray-500">{formatNumber(animatedCounts[i])} ({pcts[i].toFixed(1)}%)</p>
+                              <div className="space-y-1.5 w-full max-w-[180px] mx-auto mt-4 pl-2">
+                                {netLabels.map((nl, i) => {
+                                  const isActive = activeSolarPieChart === keys[i];
+                                  return (
+                                    <div 
+                                      key={nl} 
+                                      className={`flex items-center gap-3 p-2 rounded-xl transition-all duration-300 cursor-pointer ${
+                                        isActive 
+                                          ? "bg-gray-50 ring-1 ring-gray-200/60 scale-[1.02] shadow-sm" 
+                                          : "hover:bg-gray-50/50"
+                                      }`}
+                                      onMouseEnter={() => setActiveSolarPieChart(keys[i])}
+                                      onMouseLeave={() => setActiveSolarPieChart(null)}
+                                    >
+                                      <div 
+                                        className={`w-3 h-3 rounded-full flex-shrink-0 transition-transform duration-300 ${isActive ? 'scale-125 ring-2 ring-offset-2 ring-gray-200' : ''}`} 
+                                        style={{ backgroundColor: colors[i] }} 
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <p className={`text-[13px] font-bold leading-none transition-colors duration-300 ${isActive ? 'text-gray-900' : 'text-gray-700'}`}>{nl}</p>
+                                        <p className="text-[11px] font-medium text-gray-500 mt-1 truncate">
+                                          {formatNumber(animatedCounts[i])} <span className="opacity-70">({pcts[i].toFixed(1)}%)</span>
+                                        </p>
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </div>
                           );
