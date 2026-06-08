@@ -474,6 +474,11 @@ const SolarAgeAnalysis: React.FC = () => {
         // ="5488000000" forces text interpretation and preserves all digits
         return `"=""${value}"""`;
       }
+      if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+        // Force text interpretation for dates to prevent Excel from reformatting
+        const datePart = value.substring(0, 10);
+        return `"=""${datePart}"""`;
+      }
       return `"${value.replace(/"/g, '""')}"`;
     };
 
