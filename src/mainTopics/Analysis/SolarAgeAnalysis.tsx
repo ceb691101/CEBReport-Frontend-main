@@ -532,17 +532,7 @@ const SolarAgeAnalysis: React.FC = () => {
     //           `${item.percentage}%`,
     //         ]),
     //       ];
-    const summaryRows: string[][] = isFullReport
-      ? []
-      : [
-          [],
-          ["Age Group Summary", "Count", "Percentage"],
-          ...ageGroupSummary.map((item) => [
-            item.ageGroup,
-            item.count.toString(),
-            `${item.percentage}%`,
-          ]),
-        ];
+    const summaryRows: string[][] = [];
 
     // const csvContent = [
     //   `"Solar Age Analysis Report"`,
@@ -571,11 +561,6 @@ const SolarAgeAnalysis: React.FC = () => {
       headers.map((h) => `"${h}"`).join(","),
       ...rows.map((row) =>
         row.map((cell) => escapeCell(String(cell ?? ""))).join(",")
-      ),
-      ...summaryRows.map((row) =>
-        row.length === 0
-          ? ""
-          : row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")
       ),
     ];
 
@@ -887,7 +872,7 @@ const SolarAgeAnalysis: React.FC = () => {
     if (!ageGroupSummary.length) return null;
 
     return (
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded">
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded max-w-md">
         <div className="space-y-1">
           {ageGroupSummary.map((item, index) => {
             const ageGroupValue = ageGroups[index]?.value || "";
