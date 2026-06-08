@@ -22,6 +22,8 @@ import {
   Tooltip,
   Legend,
   LabelList,
+  AreaChart,
+  Area,
 } from "recharts";
 import DashboardSelector from "../../components/mainTopics/Dashboard/DashboardSelector";
 import KpiCard from "../../components/mainTopics/Dashboard/KpiCard";
@@ -215,218 +217,103 @@ function useCountUp(
 // SVG line chart that draws left-to-right. Re-animates every time it scrolls
 // back into view (uses useInView internally).
 
-interface DrawingLineChartProps {
+// ─── SalesAreaChart (Modern SaaS Style) ───────────────────────────────────────
+interface SalesAreaChartProps {
   data: { month: string; ordinary: number; bulk: number }[];
   formatCurrency: (n: number) => string;
   formatCompact: (n: number) => string;
   formatDateLabel: (value: string) => string;
-  chartKey: number;
 }
 
-const DrawingLineChart: React.FC<DrawingLineChartProps> = ({
+const SalesAreaChart: React.FC<SalesAreaChartProps> = ({
   data,
   formatCurrency,
   formatCompact,
   formatDateLabel,
-  chartKey,
 }) => {
-  const svgRef       = React.useRef<SVGSVGElement>(null);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const [tooltip, setTooltip] = React.useState<{
-    index: number; x: number; y: number; month: string; ordinary: number; bulk: number;
-  } | null>(null);
-  const [animate, setAnimate] = React.useState(false);
-
-  const { triggerCount } = useInView(containerRef as React.RefObject<Element>, {
-    threshold: 0.3,
-  });
-
-  const W = 480, H = 230;
-  const padL = 60, padR = 16, padT = 16, padB = 38;
-  const chartW = W - padL - padR;
-  const chartH = H - padT - padB;
-
-  const allVals = data.flatMap((d) => [d.ordinary, d.bulk]).filter(Boolean);
-  const minVal  = 0;
-  const maxVal  = allVals.length ? Math.max(...allVals) * 1.1 : 1;
-
-  const xOf = (i: number) => padL + (i / Math.max(data.length - 1, 1)) * chartW;
-  const yOf = (v: number) => padT + chartH - ((v - minVal) / (maxVal - minVal)) * chartH;
-
-  const toPolyline = (key: "ordinary" | "bulk") =>
-    data.map((d, i) => `${xOf(i)},${yOf(d[key])}`).join(" ");
-
-  const polylineLength = (points: string) => {
-    const pts = points.split(" ").map((p) => p.split(",").map(Number));
-    let len = 0;
-    for (let i = 1; i < pts.length; i++) {
-      const dx = pts[i][0] - pts[i - 1][0];
-      const dy = pts[i][1] - pts[i - 1][1];
-      len += Math.sqrt(dx * dx + dy * dy);
-    }
-    return len;
-  };
-
-  const ordPoints  = data.length >= 2 ? toPolyline("ordinary") : "";
-  const bulkPoints = data.length >= 2 ? toPolyline("bulk")     : "";
-  const ordLen     = ordPoints  ? polylineLength(ordPoints)  : 0;
-  const bulkLen    = bulkPoints ? polylineLength(bulkPoints) : 0;
-
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => ({
-    val: minVal + f * (maxVal - minVal),
-    y:   padT + chartH - f * chartH,
-  }));
-
-  // Re-trigger on new data OR on each scroll re-entry
-  React.useEffect(() => {
-    setAnimate(false);
-    const t = setTimeout(() => setAnimate(true), 60);
-    return () => clearTimeout(t);
-  }, [chartKey, triggerCount]);
-
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!svgRef.current || !data.length) return;
-    const rect  = svgRef.current.getBoundingClientRect();
-    const scaleX = W / rect.width;
-    const mx    = (e.clientX - rect.left) * scaleX - padL;
-    const step  = chartW / Math.max(data.length - 1, 1);
-    const idx   = Math.max(0, Math.min(data.length - 1, Math.round(mx / step)));
-    const d     = data[idx];
-    setTooltip({
-      index: idx,
-      x: xOf(idx),
-      y: Math.min(yOf(d.ordinary), yOf(d.bulk)) - 8,
-      month: d.month,
-      ordinary: d.ordinary,
-      bulk: d.bulk,
-    });
-  };
-
   return (
-    <div ref={containerRef} style={{ position: "relative", width: "100%", userSelect: "none" }}>
-      {/* Legend */}
-      <div style={{ display: "flex", gap: 20, marginBottom: 8, paddingLeft: padL }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500, color: "#374151" }}>
-          <svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="var(--ceb-maroon)" strokeWidth="2.5" /></svg>
-          Ordinary
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500, color: "#374151" }}>
-          <svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="var(--ceb-gold)" strokeWidth="2.5" /></svg>
-          Bulk
-        </span>
-      </div>
-
-      <svg
-        ref={svgRef}
-        viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height: "auto", overflow: "visible" }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setTooltip(null)}
-      >
-        <defs>
-          <style>{`
-            @keyframes drawLine {
-              from { stroke-dashoffset: var(--line-len); }
-              to   { stroke-dashoffset: 0; }
-            }
-            .draw-ordinary {
-              stroke-dasharray: ${ordLen};
-              stroke-dashoffset: ${ordLen};
-              animation: ${animate ? `drawLine 1.6s cubic-bezier(0.4,0,0.2,1) forwards` : "none"};
-            }
-            .draw-bulk {
-              stroke-dasharray: ${bulkLen};
-              stroke-dashoffset: ${bulkLen};
-              animation: ${animate ? `drawLine 1.6s cubic-bezier(0.4,0,0.2,1) 0.4s forwards` : "none"};
-            }
-          `}</style>
-        </defs>
-
-        {/* Grid lines */}
-        {yTicks.map((t, i) => (
-          <line key={i} x1={padL} y1={t.y} x2={W - padR} y2={t.y} stroke="#eef2f7" strokeWidth="1" strokeDasharray="3 3" />
-        ))}
-        {data.map((_, i) => (
-          <line key={`x-grid-${i}`} x1={xOf(i)} y1={padT} x2={xOf(i)} y2={padT + chartH} stroke="#eef2f7" strokeWidth="1" strokeDasharray="3 3" />
-        ))}
-
-        {/* Y-axis labels */}
-        {yTicks.map((t, i) => (
-          <text key={i} x={padL - 8} y={t.y + 4} textAnchor="end" fontSize="12" fontWeight="500" fill="#374151">
-            {formatCompact(t.val)}
-          </text>
-        ))}
-
-        {/* X-axis labels */}
-        {data.map((d, i) => (
-          <text key={i} x={xOf(i)} y={H - 2} textAnchor="middle" fontSize="12" fontWeight="500" fill="#374151">
-            {formatDateLabel(d.month)}
-          </text>
-        ))}
-
-        {/* Lines */}
-        {ordPoints && (
-          <polyline points={ordPoints} fill="none" stroke="var(--ceb-maroon)" strokeWidth="2.5"
-            strokeLinejoin="round" strokeLinecap="round" className="draw-ordinary"
-            style={{ "--line-len": `${ordLen}` } as React.CSSProperties} />
-        )}
-        {bulkPoints && (
-          <polyline points={bulkPoints} fill="none" stroke="var(--ceb-gold)" strokeWidth="2.5"
-            strokeLinejoin="round" strokeLinecap="round" className="draw-bulk"
-            style={{ "--line-len": `${bulkLen}` } as React.CSSProperties} />
-        )}
-
-        {/* Hover cursor + dots */}
-        {tooltip && (
-          <rect
-            x={Math.max(padL, xOf(tooltip.index) - (chartW / Math.max(data.length - 1, 1)) * 0.35)}
-            y={padT}
-            width={Math.min(
-              (chartW / Math.max(data.length - 1, 1)) * 0.7,
-              W - padR - Math.max(padL, xOf(tooltip.index) - (chartW / Math.max(data.length - 1, 1)) * 0.35)
-            )}
-            height={chartH}
-            fill="#f3f4f6"
-            opacity={0.45}
-            rx={4}
+    <div style={{ width: "100%", height: "100%" }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorOrdinary" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="var(--ceb-maroon)" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="var(--ceb-maroon)" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="colorBulk" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+          <XAxis 
+            dataKey="month" 
+            tickFormatter={formatDateLabel} 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{ fontSize: 11, fill: '#6b7280', fontWeight: 500 }} 
+            dy={10} 
           />
-        )}
-        {tooltip && data.map((d, i) => (
-          <g key={i}>
-            {i === tooltip.index && (
-              <>
-                <circle cx={xOf(i)} cy={yOf(d.ordinary)} r="5" fill="var(--ceb-maroon)" stroke="#fff" strokeWidth="2" />
-                <circle cx={xOf(i)} cy={yOf(d.bulk)}     r="5" fill="var(--ceb-gold)"   stroke="#fff" strokeWidth="2" />
-                <line x1={xOf(i)} y1={padT} x2={xOf(i)} y2={padT + chartH} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4 2" />
-              </>
-            )}
-          </g>
-        ))}
-
-        {/* Tooltip box */}
-        {tooltip && (() => {
-          const boxW = 188;
-          const boxH = 66;
-          const placeLeft = tooltip.x > W * 0.62;
-          const preferredX = placeLeft ? tooltip.x - boxW - 12 : tooltip.x + 12;
-          const preferredY = tooltip.y - boxH / 2;
-          const bx = Math.max(padL, Math.min(preferredX, W - padR - boxW));
-          const by = Math.max(padT, Math.min(preferredY, padT + chartH - boxH));
-          return (
-            <g>
-              <rect x={bx + 2} y={by + 3} width={boxW} height={boxH} rx="6" fill="#d1d5db" opacity="0.4" />
-              <rect x={bx} y={by} width={boxW} height={boxH} rx="6" fill="#ffffff" stroke="#e5e7eb" strokeWidth="1" />
-              <text x={bx + 10} y={by + 16} fontSize="11" fontWeight="600" fill="#111827">{formatDateLabel(tooltip.month)}</text>
-              <circle cx={bx + 10} cy={by + 31} r="4" fill="var(--ceb-maroon)" />
-              <text x={bx + 20} y={by + 35} fontSize="10" fill="#6b7280">Ordinary :</text>
-              <text x={bx + 82} y={by + 35} fontSize="10" fill="#111827" fontWeight="500">{formatCurrency(tooltip.ordinary)}</text>
-              <circle cx={bx + 10} cy={by + 49} r="4" fill="var(--ceb-gold)" />
-              <text x={bx + 20} y={by + 53} fontSize="10" fill="#6b7280">Bulk :</text>
-              <text x={bx + 60} y={by + 53} fontSize="10" fill="#111827" fontWeight="500">{formatCurrency(tooltip.bulk)}</text>
-            </g>
-          );
-        })()}
-      </svg>
+          <YAxis 
+            tickFormatter={(v) => formatCompact(Number(v))} 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{ fontSize: 11, fill: '#6b7280', fontWeight: 500 }} 
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (active && payload && payload.length) {
+                return (
+                  <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-lg border border-gray-100/80">
+                    <p className="text-sm font-bold text-gray-900 mb-3">{formatDateLabel(label)}</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-6">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[var(--ceb-maroon)]" />
+                          <span className="text-xs font-medium text-gray-500">Ordinary</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-900">{formatCurrency(Number(payload[0].value))}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-6">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                          <span className="text-xs font-medium text-gray-500">Bulk</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-900">{formatCurrency(Number(payload[1].value))}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+          <Legend 
+            iconType="circle" 
+            wrapperStyle={{ fontSize: '12px', fontWeight: 500, paddingTop: '10px' }} 
+          />
+          <Area 
+            type="monotone" 
+            dataKey="ordinary" 
+            name="Ordinary" 
+            stroke="var(--ceb-maroon)" 
+            strokeWidth={3} 
+            fillOpacity={1} 
+            fill="url(#colorOrdinary)" 
+            activeDot={{ r: 6, strokeWidth: 0, fill: "var(--ceb-maroon)" }} 
+          />
+          <Area 
+            type="monotone" 
+            dataKey="bulk" 
+            name="Bulk" 
+            stroke="#f59e0b" 
+            strokeWidth={3} 
+            fillOpacity={1} 
+            fill="url(#colorBulk)" 
+            activeDot={{ r: 6, strokeWidth: 0, fill: "#f59e0b" }} 
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 };
@@ -1422,11 +1309,14 @@ const DefaultDashboardPage: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 auto-rows-fr">
 
                   <Reveal delay={0} className="h-full">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
-                      <div className="flex items-center justify-between mb-6">
+                    <div className="bg-white rounded-[24px] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] border border-gray-100/80 p-6 h-full flex flex-col hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden group">
+                      {/* Decorative gradient */}
+                      <div className="absolute -right-10 -top-10 w-40 h-40 bg-gradient-to-bl from-orange-50 to-transparent rounded-full opacity-60 pointer-events-none group-hover:scale-110 transition-transform duration-500" />
+
+                      <div className="flex items-center justify-between mb-6 relative z-10">
                         <div>
-                          <h3 className="font-semibold text-gray-900">Kiosk Daily Collection Trend</h3>
-                          <p className="text-sm text-gray-500 mt-1">
+                          <h3 className="font-bold text-[15px] text-gray-900 tracking-tight">Kiosk Daily Collection Trend</h3>
+                          <p className="text-[13px] text-gray-500 font-medium mt-1">
                             Daily collection amounts for the week {kioskDateRange.fromDate && kioskDateRange.toDate ? `(${kioskDateRange.fromDate} to ${kioskDateRange.toDate})` : ""}
                           </p>
                         </div>
@@ -1451,18 +1341,18 @@ const DefaultDashboardPage: React.FC = () => {
                                 : 0;
 
                               return (
-                                <div key={`${item.TransDate}-${index}`} className="flex items-center justify-between gap-3 text-xs min-h-0">
-                                  <span className="min-w-[72px] font-medium text-gray-500">{String(item.TransDate)}</span>
-                                  <div className="flex-1 h-3 rounded-full bg-orange-100 overflow-hidden">
+                                <div key={`${item.TransDate}-${index}`} className="flex items-center justify-between gap-4 text-xs min-h-0 group/row hover:bg-gray-50/80 p-2 -mx-2 rounded-lg transition-colors cursor-default relative z-10">
+                                  <span className="min-w-[72px] font-semibold text-gray-500 group-hover/row:text-gray-900 transition-colors">{String(item.TransDate)}</span>
+                                  <div className="flex-1 h-2.5 rounded-full bg-orange-100/50 overflow-hidden shadow-inner">
                                     <div
-                                      className="h-full rounded-full bg-[color:var(--ceb-maroon)] transition-all duration-700 ease-out"
+                                      className="h-full rounded-full bg-gradient-to-r from-[var(--ceb-maroon)] to-orange-500 transition-all duration-700 ease-out"
                                       style={{
                                         width: `${kioskTrendInView ? widthPercent : 0}%`,
                                         transitionDelay: `${index * 70}ms`,
                                       }}
                                     />
                                   </div>
-                                  <span className="min-w-[88px] text-right font-semibold text-gray-800">
+                                  <span className="min-w-[88px] text-right font-bold text-gray-900 group-hover/row:text-[var(--ceb-maroon)] transition-colors">
                                     {formatCurrency(amount)}
                                   </span>
                                 </div>
@@ -1476,10 +1366,15 @@ const DefaultDashboardPage: React.FC = () => {
 
                   {/* Solar customers — dual pie charts */}
                   <Reveal delay={120} className="h-full">
-                    <div ref={solarPieRef} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
+                    <div ref={solarPieRef} className="bg-white rounded-[24px] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] border border-gray-100/80 p-6 h-full flex flex-col hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden group">
+                      {/* Decorative gradient */}
+                      <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-gradient-to-tr from-amber-50 to-transparent rounded-full opacity-60 pointer-events-none group-hover:scale-110 transition-transform duration-500" />
                       <style key={solarPieAnimKey}>{solarPieStyles}</style>
-                      <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-semibold text-gray-900">Solar Customers by Net Type</h3>
+                      <div className="flex items-center justify-between mb-6 relative z-10">
+                        <div>
+                          <h3 className="font-bold text-[15px] text-gray-900 tracking-tight">Solar Customers by Net Type</h3>
+                          <p className="text-[13px] text-gray-500 font-medium mt-1">Breakdown by connection category</p>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-6">
                         {[
@@ -1554,11 +1449,12 @@ const DefaultDashboardPage: React.FC = () => {
                 {/* ── Sales & Collection Distribution ──────────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 auto-rows-fr">
                   <Reveal delay={240} className="h-full">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
-                      <div className="flex items-center justify-between mb-6">
+                    <div className="bg-white rounded-[24px] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] border border-gray-100/80 p-6 h-full flex flex-col hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden group">
+                      <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-gradient-to-tl from-indigo-50 to-transparent rounded-full opacity-60 pointer-events-none group-hover:scale-110 transition-transform duration-500" />
+                      <div className="flex items-center justify-between mb-6 relative z-10">
                         <div>
-                          <h3 className="font-semibold text-gray-900">Sales & Collection Distribution</h3>
-                          <p className="text-sm text-gray-500 mt-1">Daily Collection Trend by Customer Type {salesCollectionDateRange}
+                          <h3 className="font-bold text-[15px] text-gray-900 tracking-tight">Sales & Collection Distribution</h3>
+                          <p className="text-[13px] text-gray-500 font-medium mt-1">Daily Collection Trend by Customer Type {salesCollectionDateRange}
                           </p>
                         </div>
                         <PieChart className="w-5 h-5 text-gray-400" />
@@ -1570,7 +1466,7 @@ const DefaultDashboardPage: React.FC = () => {
                           <div className="h-64 flex items-center justify-center text-red-400 text-sm">{salesCollectionError}</div>
                         ) : (
                           <div className="h-full flex flex-col">
-                            <DrawingLineChart data={salesLineData} formatCurrency={formatCurrency} formatCompact={formatCompact} formatDateLabel={formatSalesDateLabel} chartKey={salesChartKey} />
+                            <SalesAreaChart data={salesLineData} formatCurrency={formatCurrency} formatCompact={formatCompact} formatDateLabel={formatSalesDateLabel} />
                           </div>
                         )}
                       </div>
@@ -1591,16 +1487,17 @@ const DefaultDashboardPage: React.FC = () => {
                   </Reveal>
 
                   <Reveal delay={300} className="h-full">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
-                      <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white rounded-[24px] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] border border-gray-100/80 p-6 h-full flex flex-col hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden group">
+                      <div className="absolute -left-10 -top-10 w-40 h-40 bg-gradient-to-br from-emerald-50 to-transparent rounded-full opacity-60 pointer-events-none group-hover:scale-110 transition-transform duration-500" />
+                      <div className="flex items-center justify-between mb-4 relative z-10">
                         <div>
-                          <h3 className="font-semibold text-gray-900">Solar Generation Capacity</h3>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <h3 className="font-bold text-[15px] text-gray-900 tracking-tight">Solar Generation Capacity</h3>
+                          <p className="text-[13px] text-gray-500 font-medium mt-1">
                             Capacity (kW) 
                             {selectedSolarBillCycleLabel ? ` - ${selectedSolarBillCycleLabel}` : ""}
                           </p>
                         </div>
-                        <span className="text-[color:var(--ceb-navy)] text-xs font-semibold tracking-wide">GRAPH</span>
+                        <span className="text-[color:var(--ceb-navy)] text-[11px] font-bold tracking-widest bg-slate-50 px-2 py-1 rounded-md">GRAPH</span>
                       </div>
 
                       <div className="mb-3">

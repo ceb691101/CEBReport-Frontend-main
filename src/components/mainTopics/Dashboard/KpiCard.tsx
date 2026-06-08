@@ -40,14 +40,19 @@ const KpiCard: React.FC<KpiCardProps> = ({
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
       className={[
-        "relative bg-white rounded-2xl p-6 shadow-sm border transition-all duration-150 select-none group",
+        "relative bg-white rounded-[20px] p-6 border transition-all duration-300 select-none group flex flex-col justify-between overflow-hidden",
+        "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] hover:-translate-y-0.5",
         isDragging ? "opacity-40 scale-95 border-blue-300 shadow-none" : "opacity-100 scale-100",
-        isDragOver ? "border-blue-500 ring-2 ring-blue-300 shadow-md" : "border-gray-100",
+        isDragOver ? "border-blue-500 ring-4 ring-blue-50" : "border-gray-100/80",
       ].join(" ")}
       style={{ cursor: isDragging ? "grabbing" : "grab" }}
     >
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-40 transition-opacity">
-        <svg width="12" height="16" viewBox="0 0 12 16" fill="#6b7280">
+      {/* Decorative subtle background blob */}
+      <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-gradient-to-br from-gray-50 to-gray-100/50 opacity-50 blur-xl pointer-events-none transition-transform duration-500 group-hover:scale-110" />
+
+      {/* Drag Handle (Visible on hover) */}
+      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-30 transition-opacity p-1 cursor-grab active:cursor-grabbing">
+        <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" className="text-gray-400">
           <circle cx="3" cy="3" r="1.5" />
           <circle cx="9" cy="3" r="1.5" />
           <circle cx="3" cy="8" r="1.5" />
@@ -57,15 +62,39 @@ const KpiCard: React.FC<KpiCardProps> = ({
         </svg>
       </div>
 
-      <div className="flex items-center justify-end mb-2">
-        <div className={`p-2 ${iconBgClass} rounded-lg`}>{icon}</div>
+      <div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-2.5 rounded-xl flex items-center justify-center ${iconBgClass} shadow-sm backdrop-blur-sm`}>
+            {icon}
+          </div>
+          <h3 className="text-[13px] font-semibold text-gray-500 tracking-wide uppercase mt-0.5">
+            {title}
+          </h3>
+        </div>
+
+        <div className="mb-1 relative z-10">
+          <p className="text-[28px] font-bold text-gray-900 tracking-tight leading-none">
+            {value}
+          </p>
+        </div>
       </div>
 
-      <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-
-      {details ? <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">{details}</div> : null}
-      {subtitle ? <p className="text-xs text-gray-500 mt-2">{subtitle}</p> : null}
+      <div className="mt-4 flex flex-col gap-2 relative z-10">
+        {details && (
+          <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600 font-medium">
+            {React.Children.map(details, (child, i) => (
+              <React.Fragment key={i}>
+                <span className="bg-gray-50/80 px-2 py-1 rounded-md border border-gray-100 text-gray-600">
+                  {child}
+                </span>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+        {subtitle && (
+          <p className="text-[13px] text-gray-400 font-medium">{subtitle}</p>
+        )}
+      </div>
     </div>
   );
 };
