@@ -114,6 +114,11 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 			},	
+			"/MRMSAPI": {
+				target: "http://itservice.cebinfo.ceb",
+				changeOrigin: true,
+				secure: false,
+			},
 			"/misreportsapi": {
 				target: "http://localhost:44381",
 				changeOrigin: true,

@@ -223,7 +223,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// Billing & Payment reports
 	"customer information": CustomerDetails,
 	"transaction history": CustomerDetails,
-	"transaction history - ordinary": TransactionHistoryOrdinary,
+	"transaction history ordinary": TransactionHistoryOrdinary,
 	"bill information": CustomerDetails,
 	"payment inquiries": PaymentInquiry,
 	"bill sms inquiry": CustomerDetails,
