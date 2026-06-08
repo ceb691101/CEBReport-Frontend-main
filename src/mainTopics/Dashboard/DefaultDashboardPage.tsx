@@ -1051,7 +1051,7 @@ const DefaultDashboardPage: React.FC = () => {
       return billCycle;
     }
 
-    return `${monthName} ${String(year % 100).padStart(2, "0")}`;
+    return `${1900 + year} - ${monthName}`;
   };
   const formatIsoDate = (date: Date) => {
     const year = date.getFullYear();
