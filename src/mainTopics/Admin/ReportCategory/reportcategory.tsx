@@ -24,22 +24,6 @@ const fieldBaseClass =
 const buttonBaseClass =
   "rounded-lg px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
 
-const toTitleCase = (value: string) => {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    return "";
-  }
-
-  return trimmed
-    .split(/\s+/)
-    .map((word) =>
-      word.length === 1
-        ? word.toUpperCase()
-        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    )
-    .join(" ");
-};
 
 const ReportCategory = () => {
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
@@ -103,7 +87,7 @@ const ReportCategory = () => {
     }
 
     const normalizedCatCode = form.catCode.trim().toUpperCase();
-    const normalizedCatName = toTitleCase(form.catName);
+    const normalizedCatName = form.catName.trim();
 
     setIsSubmitting(true);
 
@@ -146,7 +130,7 @@ const ReportCategory = () => {
     }
 
     const normalizedCatCode = form.catCode.trim().toUpperCase();
-    const normalizedCatName = toTitleCase(form.catName);
+    const normalizedCatName = form.catName.trim();
 
     setIsSubmitting(true);
 
@@ -244,7 +228,7 @@ const ReportCategory = () => {
     setSelectedCatCode(category.catCode);
     setForm({
       catCode: category.catCode,
-      catName: toTitleCase(category.catName),
+      catName: category.catName,
     });
     setMode("edit");
   };
@@ -305,9 +289,6 @@ const ReportCategory = () => {
                 className={fieldBaseClass}
                 value={form.catName}
                 onChange={(e) => setForm({ ...form, catName: e.target.value })}
-                onBlur={(e) =>
-                  setForm({ ...form, catName: toTitleCase(e.target.value) })
-                }
                 placeholder="e.g., Work In Progress"
               />
             </div>
