@@ -15,7 +15,6 @@ const TransactionHistoryOrdinary: React.FC = () => {
   const [months, setMonths] = useState<YrMnthDetail[]>([]);
   
   const [loading, setLoading] = useState(false);
-  const [fetchingMonths, setFetchingMonths] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
 
@@ -24,38 +23,25 @@ const TransactionHistoryOrdinary: React.FC = () => {
   const maroon = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
-  const fetchMonths = useMemo(
-    () =>
-      debounce(async (acct: string) => {
-        if (!acct || acct.length < 3) {
-          setMonths([]);
-          return;
-        }
-        try {
-          setFetchingMonths(true);
-          const url =
-            acct[2] === "7"
-              ? "/CEBINFO_API_2025/api/billMonthBulk"
-              : "/CEBINFO_API_2025/api/billMonth";
-
-          const response = await axios.post(url, { acctNo: acct });
-          setMonths(response.data.yrMnthDetail || []);
-        } catch (err) {
-          setMonths([]);
-          console.error("Failed to fetch bill cycles", err);
-        } finally {
-          setFetchingMonths(false);
-        }
-      }, 500),
-    []
-  );
-
   useEffect(() => {
-    fetchMonths(accountNumber);
-    return () => {
-      fetchMonths.cancel();
-    };
-  }, [accountNumber, fetchMonths]);
+    // Display bill cycles from 101 to 453 with formatted dates (e.g. "453 - May 26")
+    const generatedMonths: YrMnthDetail[] = [];
+    
+    // Start date: May 2026 (Month is 0-indexed in JS, so 4 is May)
+    let currentDate = new Date(2026, 4, 1); 
+    
+    for (let i = 453; i >= 101; i--) {
+      const monthStr = currentDate.toLocaleString('en-US', { month: 'short' });
+      const yearStr = currentDate.getFullYear().toString().slice(-2);
+      
+      generatedMonths.push({ yrMonth: `${i} - ${monthStr} ${yearStr}` });
+      
+      // Subtract 1 month
+      currentDate.setMonth(currentDate.getMonth() - 1);
+    }
+    
+    setMonths(generatedMonths);
+  }, []);
 
   const handleViewDetails = async () => {
     if (!accountNumber) {
@@ -111,7 +97,7 @@ const TransactionHistoryOrdinary: React.FC = () => {
     if (!data || !data.trxList) return;
     
     const rows: string[] = [];
-    rows.push("Transaction History Report");
+    rows.push("Transaction History - Ordinary Report");
     rows.push(`Account Number,${data.customer_master_detail?.acct_number || ''}`);
     rows.push("");
     rows.push("Bill Month,Transaction Date,Description,Payment Date,Transaction Amount,Balance");
@@ -210,7 +196,7 @@ const TransactionHistoryOrdinary: React.FC = () => {
               body { padding: 1.5cm; }
             }
           `}</style>
-          <h2 className={`text-xl font-bold mb-6 ${maroon}`}>Transaction History</h2>
+          <h2 className={`text-xl font-bold mb-6 ${maroon}`}>Transaction History - Ordinary</h2>
           
           <div className="grid grid-cols-[150px_1fr] gap-y-3 mb-8 text-sm text-gray-900 font-medium">
             <div>Account No</div>
@@ -320,9 +306,8 @@ const TransactionHistoryOrdinary: React.FC = () => {
               className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent text-gray-700"
               value={fromBillCycle}
               onChange={(e) => setFromBillCycle(e.target.value)}
-              disabled={fetchingMonths}
             >
-              <option value="">{fetchingMonths ? "Loading..." : "Select bill cycle"}</option>
+              <option value="">Select bill cycle</option>
               {months.map((month) => (
                 <option key={month.yrMonth} value={month.yrMonth}>
                   {month.yrMonth}
