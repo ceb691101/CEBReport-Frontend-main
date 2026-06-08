@@ -702,7 +702,7 @@ useEffect(() => {
           </tr>
         </thead>
         <tbody>
-          ${posResult.collectionRecords.map((record, idx) => `
+          ${posResult.collectionRecords.map((record, _idx) => `
             <tr>
               <td>${(record.accountNo || "") + (record.pivNo ? ` / ${record.pivNo}` : "")}</td>
               <td>${record.counterNo || record.counter || record.counterName || ""}</td>

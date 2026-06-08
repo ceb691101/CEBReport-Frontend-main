@@ -532,7 +532,6 @@ const SolarAgeAnalysis: React.FC = () => {
     //           `${item.percentage}%`,
     //         ]),
     //       ];
-    const summaryRows: string[][] = [];
 
     // const csvContent = [
     //   `"Solar Age Analysis Report"`,
