@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { ChevronDown, Pin, PinOff, RefreshCw, Search } from "lucide-react";
+import { useUser } from "../../../contexts/UserContext";
 
 type RoleType = "admin" | "user";
 
@@ -103,6 +104,7 @@ const actionButtonLightClass =
 	"rounded-lg border border-[#7A0000]/20 bg-white px-5 py-2.5 text-sm font-semibold text-[#7A0000] transition hover:bg-[#7A0000]/5";
 
 const UserRoles = () => {
+	const { user } = useUser();
 	const [activeTab, setActiveTab] = useState<RoleType>("user");
 	const [roles, setRoles] = useState<RoleRecord[]>([]);
 	const [selectedRoleKey, setSelectedRoleKey] = useState<string | null>(null);
@@ -501,6 +503,8 @@ const UserRoles = () => {
 			costCentre: form.costCentres[0] ?? "",
 			costCentres: form.costCentres,
 			lvlNo: 1,
+			addUser: user?.Userno || "",
+			updateUser: user?.Userno || "",
 		};
 
 		// Omit roleName when blank so backend can accept empty names
@@ -541,6 +545,19 @@ const UserRoles = () => {
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+
+		// Validation: Check if EPF No and User Type combined already exists
+		const normalizedUserType = form.userType === "ADMINISTRATOR" ? "ADMIN" : form.userType;
+		const isDuplicate = roles.some(
+			(r) =>
+				normalizeKey(r.epfNo) === normalizeKey(form.epfNo) &&
+				normalizeKey(r.userType) === normalizeKey(normalizedUserType)
+		);
+		if (isDuplicate) {
+			toast.error("A role with this EPF Number and User Type already exists.");
+			return;
+		}
+
 		setIsSubmitting(true);
 
 		try {
@@ -574,6 +591,19 @@ const UserRoles = () => {
 
 	const handleEdit = async () => {
 		if (!selectedRole) {
+			return;
+		}
+
+		// Validation: Check if EPF No and User Type combined already exists on a different role
+		const normalizedUserType = form.userType === "ADMINISTRATOR" ? "ADMIN" : form.userType;
+		const isDuplicate = roles.some(
+			(r) =>
+				getRoleKey(r) !== getRoleKey(selectedRole) &&
+				normalizeKey(r.epfNo) === normalizeKey(form.epfNo) &&
+				normalizeKey(r.userType) === normalizeKey(normalizedUserType)
+		);
+		if (isDuplicate) {
+			toast.error("A role with this EPF Number and User Type already exists.");
 			return;
 		}
 
@@ -1123,7 +1153,7 @@ const UserRoles = () => {
 												const isPinned = pinnedRoles.includes(getRoleKey(role));
 												return (
 													<tr
-														key={`${role.epfNo}-${role.userType}-${role.roleId}`}
+														key={`${role.epfNo}-${role.userType}`}
 														onClick={() => handleRoleSelect(role)}
 														className={`cursor-pointer transition ${isSelected ? "bg-[#7A0000]/8" : "hover:bg-stone-50"
 															}`}
