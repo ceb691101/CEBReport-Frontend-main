@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MdPermIdentity, MdDateRange } from "react-icons/md";
-import { FaFileDownload, FaPrint, FaArrowLeft } from "react-icons/fa";
+import { FaFileDownload, FaPrint } from "react-icons/fa";
 import { postJSON } from "../../helpers/LoginHelper";
-import axios from "axios";
-import debounce from "lodash/debounce";
 
 type YrMnthDetail = {
   yrMonth: string;
