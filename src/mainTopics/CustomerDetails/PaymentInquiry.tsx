@@ -683,13 +683,48 @@ useEffect(() => {
   };
 
   const handlePosPrint = () => {
-    if (!posResult || !posPrintRef.current) return;
+    if (!posResult) return;
 
     const printWindow = window.open("", "_blank", "width=1200,height=800");
     if (!printWindow) return;
 
-    const tableEl = posPrintRef.current.querySelector("table");
-    const tableHTML = tableEl ? tableEl.outerHTML : posPrintRef.current.innerHTML;
+    const tableHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Account No/PIV No</th>
+            <th>Counter</th>
+            <th>Stub No.</th>
+            <th class="text-right">Cash</th>
+            <th class="text-right">Cheque</th>
+            <th class="text-right">Bank Draft</th>
+            <th class="text-right">Credit Card</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${posResult.collectionRecords.map((record, idx) => `
+            <tr>
+              <td>${(record.accountNo || "") + (record.pivNo ? ` / ${record.pivNo}` : "")}</td>
+              <td>${record.counterNo || record.counter || record.counterName || ""}</td>
+              <td>${record.stubNo || ""}</td>
+              <td class="text-right">${(record.cash || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td class="text-right">${(record.cheque || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td class="text-right">${(record.bankDraft || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td class="text-right">${(record.creditCard || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="bold text-left">Total</td>
+            <td class="text-right bold">${posResult.collectionRecords.reduce((sum, r) => sum + (r.cash || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td class="text-right bold">${posResult.collectionRecords.reduce((sum, r) => sum + (r.cheque || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td class="text-right bold">${posResult.collectionRecords.reduce((sum, r) => sum + (r.bankDraft || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td class="text-right bold">${posResult.collectionRecords.reduce((sum, r) => sum + (r.creditCard || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
 
     printWindow.document.write(`
       <html>
