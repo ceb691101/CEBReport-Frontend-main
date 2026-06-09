@@ -82,13 +82,67 @@ const TransactionHistoryOrdinary: React.FC = () => {
   };
 
   const printPDF = () => {
-    if (!printRef.current) return;
-    const printContents = printRef.current.innerHTML;
-    const originalContents = document.body.innerHTML;
-    document.body.innerHTML = printContents;
-    window.print();
-    document.body.innerHTML = originalContents;
-    window.location.reload();
+    const content = printRef.current;
+    if (!content) return;
+
+    const printWindow = window.open("", "_blank", "width=1200,height=800");
+    if (!printWindow) return;
+
+    const generatedDate = new Date().toLocaleDateString();
+    const generatedTime = new Date().toLocaleTimeString();
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Transaction History - Ordinary</title>
+          <style>
+            body { font-family: Arial, sans-serif; font-size: 12px; margin: 10mm; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #d1d5db; padding: 6px 8px; font-size: 11px; }
+            th { background-color: #f0f0f0 !important; color: black !important; text-align: left; font-weight: bold; }
+            tr.bg-\\[\\#7A0000\\] { background-color: #f0f0f0 !important; color: black !important; }
+            .grid { display: grid; }
+            .grid-cols-\\[150px_1fr\\] { grid-template-columns: 150px 1fr; }
+            .gap-y-3 { row-gap: 8px; }
+            .text-xl { font-size: 16px; }
+            .font-bold { font-weight: bold; }
+            .mb-6 { margin-bottom: 16px; }
+            .mb-8 { margin-bottom: 24px; }
+            .text-\\[\\#7A0000\\] { color: #7A0000; }
+            .flex { display: flex; }
+            .justify-end { justify-content: flex-end; }
+            .ml-4 { margin-left: 16px; }
+            .text-right { text-align: right; }
+            .font-semibold { font-weight: 600; }
+            .bg-white { background-color: white; }
+            .bg-gray-50 { background-color: #f9fafb; }
+            
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${generatedDate} at ${generatedTime} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${content.innerHTML}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   const downloadAsCSV = () => {
@@ -110,7 +164,7 @@ const TransactionHistoryOrdinary: React.FC = () => {
       }
       const amtStr = t.trnsac_amt != null ? t.trnsac_amt.toFixed(2) + " " + (t.crdt_code || "") : "";
       const isCr = t.cf_amt < 0;
-      const balStr = t.cf_amt != null ? Math.abs(t.cf_amt).toFixed(2) + (isCr ? " Cr" : " Dr") : "";
+      const balStr = t.cf_amt != null ? Math.abs(t.cf_amt).toFixed(2) + (isCr ? " C" : " D") : "";
 
       rows.push(`"${billMonthStr}","${t.trnsac_date || ''}","${t.transac_desc || ''}","${t.pmnt_date || ''}","${amtStr}","${balStr}"`);
     });
@@ -141,7 +195,7 @@ const TransactionHistoryOrdinary: React.FC = () => {
 
       const amtStr = t.trnsac_amt != null ? t.trnsac_amt.toFixed(2) + " " + (t.crdt_code || "") : "";
       const isCr = t.cf_amt < 0;
-      const balStr = t.cf_amt != null ? Math.abs(t.cf_amt).toFixed(2) + (isCr ? " Cr" : " Dr") : "";
+      const balStr = t.cf_amt != null ? Math.abs(t.cf_amt).toFixed(2) + (isCr ? " C" : " D") : "";
 
       return {
         billMonth: billMonthStr,
@@ -158,7 +212,7 @@ const TransactionHistoryOrdinary: React.FC = () => {
     if (trxList.length > 0) {
       const bfAmt = trxList[0].bf_amt;
       const isCr = bfAmt < 0;
-      bfBalanceStr = Math.abs(bfAmt).toFixed(2) + (isCr ? " Cr" : " Dr");
+      bfBalanceStr = Math.abs(bfAmt).toFixed(2) + (isCr ? " C" : " D");
     }
 
     return (
@@ -188,12 +242,6 @@ const TransactionHistoryOrdinary: React.FC = () => {
         </div>
 
         <div ref={printRef} className="p-4 bg-white">
-          <style>{`
-            @media print {
-              @page { margin: 0; }
-              body { padding: 1.5cm; }
-            }
-          `}</style>
           <h2 className={`text-xl font-bold mb-6 ${maroon}`}>Transaction History - Ordinary</h2>
           
           <div className="grid grid-cols-[150px_1fr] gap-y-3 mb-8 text-sm text-gray-900 font-medium">
@@ -250,18 +298,6 @@ const TransactionHistoryOrdinary: React.FC = () => {
                 )}
               </tbody>
             </table>
-          </div>
-          
-          <div className="mt-3 text-xs text-gray-600 text-center sm:text-left">
-            {new Date().toLocaleString("en-US", {
-              year: "numeric",
-              month: "numeric",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-              second: "2-digit",
-              hour12: true,
-            }).replace(",", "")}
           </div>
         </div>
       </div>
