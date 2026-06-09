@@ -101,6 +101,8 @@ import AnnualVerificationWHwiseSignature from "../mainTopics/PhysicalVerificatio
 import PHVSlowNonMovingWHwise from "../mainTopics/PhysicalVerification/PHVSlowNonMovingWHwise";
 import PHVShortageSurplusWHwise from "../mainTopics/PhysicalVerification/PHVShortageSurplusWHwise";
 import PHVObsoleteIdle from "../mainTopics/PhysicalVerification/PHVObsoleteIdle";
+import PHVObsoleteIdleFIFO from "../mainTopics/fifo/PHVObsoleteIdleFIFO";
+import PHVDamageFIFO from "../mainTopics/fifo/PHVDamageFIFO";
 import PHVDamage from "../mainTopics/PhysicalVerification/PHVDamage";
 import PHVNonMovingWHwiseBOS from "../mainTopics/PhysicalVerification/PHVNonMovingWHwiseBOS";
 import PHVObsoleteIdleBOS from "../mainTopics/PhysicalVerification/PHVObsoleteIdleBOS";
@@ -140,6 +142,7 @@ import AreaWiseSRPEstimationPIV from "../mainTopics/SRP/AreaWiseSRPEstimationPIV
 import CostCenterTrial from "../mainTopics/TrialBalance/CostCenterTrial";
 import ProvintionalWiseTrial from "../mainTopics/TrialBalance/ProvintionalWiseTrial";
 import ReagionTrial from "../mainTopics/TrialBalance/ReagionTrial";
+import AreaTrialBalance from "../mainTopics/TrialBalance/AreaTrialBalance";
 
 // Work In Progress reports
 import AgeAnalysisCostCenter from "../mainTopics/WorkInProgress/AgeAnalysisCostCenter";
@@ -324,6 +327,22 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"physical verification shortage surplus wh wise av 1 b": PHVShortageSurplusWHwise,
 	"6 1 physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
 	"physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
+	"fifo obsolete idle": PHVObsoleteIdleFIFO,
+	"phv obsolete idle fifo": PHVObsoleteIdleFIFO,
+	"physical verification obsolete idle fifo": PHVObsoleteIdleFIFO,
+	"fifo damage": PHVDamageFIFO,
+	"phv damage fifo": PHVDamageFIFO,
+	"phv damage (fifo)": PHVDamageFIFO,
+	"physical verification damage fifo": PHVDamageFIFO,
+	"physical verification fifo obsolete idle": PHVObsoleteIdleFIFO,
+	// Additional aliases to match backend/report-catalog variations
+	"fifo phv obsolete idle": PHVObsoleteIdleFIFO,
+	"phv fifo obsolete idle": PHVObsoleteIdleFIFO,
+	"phv obsolete fifo": PHVObsoleteIdleFIFO,
+	"phv obsolete idle - fifo": PHVObsoleteIdleFIFO,
+	"phv obsolete idle (fifo)": PHVObsoleteIdleFIFO,
+	"phv obsolete idle fifo report": PHVObsoleteIdleFIFO,
+	"fifo obsolete idle phv": PHVObsoleteIdleFIFO,
 	// PHV abbreviation variants for obsolete/idle (non-BOS)
 	"phv obsolete idle grade code av 7a": PHVObsoleteIdle,
 	"phv obsolete idle grade code av 7 a": PHVObsoleteIdle,
@@ -365,7 +384,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar connection details incl reading and usage retail": SolarConnectionDetailsRetail,
 	"solar connection details incl reading and usage bulk": SolarConnectionDetailsBulk,
 	"solar customer information": SolarCustomerInformation,
-	"rooftop solar input data portal for t and d loss calculation":RoofTopSolarInputData,
+	"rooftop solar input data portal for t and d loss calculation": RoofTopSolarInputData,
 
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
@@ -391,6 +410,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"provincial trial balance": ProvintionalWiseTrial,
 	"region trial balance end of month year": ReagionTrial,
 	"region trial balance": ReagionTrial,
+	"area wise trial balance": AreaTrialBalance,
 
 	// Work In Progress reports
 	"cost center wise work in progress with age analysis": AgeAnalysisCostCenter,

@@ -19,6 +19,124 @@ interface TrialBalanceData {
 	CctName: string;
 }
 
+type RoleInfoRecord = {
+	EpfNo?: unknown;
+	epfNo?: unknown;
+	UserNo?: unknown;
+	userNo?: unknown;
+	UserType?: unknown;
+	userType?: unknown;
+	CostCentre?: unknown;
+	costCentre?: unknown;
+	CostCentres?: unknown;
+	costCentres?: unknown;
+	CostCentreId?: unknown;
+	costCentreId?: unknown;
+	DepartmentId?: unknown;
+	DeptId?: unknown;
+};
+
+const ROLE_INFO_ENDPOINTS = [
+	"/misapi/api/roleinfo/admin",
+	"/misapi/api/roleinfo/user",
+];
+
+const normalizeKey = (value: unknown): string =>
+	String(value ?? "")
+		.trim()
+		.toUpperCase();
+
+const normalizeCostCenterId = (value: unknown): string => {
+	const raw = String(value ?? "").trim();
+	if (!raw) return "";
+	return raw.split("-")[0].trim().toUpperCase();
+};
+
+const getApiItems = (payload: unknown): unknown[] => {
+	if (Array.isArray(payload)) {
+		return payload;
+	}
+
+	if (payload && typeof payload === "object") {
+		const data = (payload as {data?: unknown}).data;
+		if (Array.isArray(data)) {
+			return data;
+		}
+
+		const result = (payload as {result?: unknown}).result;
+		if (Array.isArray(result)) {
+			return result;
+		}
+
+		return [payload];
+	}
+
+	return [];
+};
+
+const readRecordEpfNo = (record: unknown): string => {
+	if (!record || typeof record !== "object") {
+		return "";
+	}
+
+	const roleRecord = record as RoleInfoRecord;
+	return String(
+		roleRecord.EpfNo ??
+			roleRecord.epfNo ??
+			roleRecord.UserNo ??
+			roleRecord.userNo ??
+			""
+	)
+		.trim();
+};
+
+const extractCostCentreIds = (value: unknown): string[] => {
+	const ids = new Set<string>();
+
+	const addValue = (raw: unknown) => {
+		if (raw === undefined || raw === null) {
+			return;
+		}
+
+		if (Array.isArray(raw)) {
+			raw.forEach(addValue);
+			return;
+		}
+
+		const text = String(raw).trim();
+		if (!text) {
+			return;
+		}
+
+		text
+			.split(",")
+			.map((item) => normalizeCostCenterId(item))
+			.filter(Boolean)
+			.forEach((item) => ids.add(item));
+	};
+
+	if (value && typeof value === "object") {
+		const record = value as RoleInfoRecord;
+		addValue(record.CostCentres);
+		addValue(record.costCentres);
+		addValue(record.CostCentre);
+		addValue(record.costCentre);
+		addValue(record.CostCentreId);
+		addValue(record.costCentreId);
+		addValue(record.DepartmentId);
+		addValue(record.DeptId);
+	}
+
+	addValue(value);
+	return Array.from(ids);
+};
+
+const hasGlobalCostCentreAccess = (ids: string[]): boolean =>
+	ids.some((id) => {
+		const normalized = normalizeKey(id);
+		return normalized === "ALL" || normalized === "*" || normalized.startsWith("ALL ");
+	});
+
 const CostCenterTrial: React.FC = () => {
 	// Get user from context
 	const {user} = useUser();
@@ -60,6 +178,9 @@ const CostCenterTrial: React.FC = () => {
 	);
 	const [trialLoading, setTrialLoading] = useState(false);
 	const [trialError, setTrialError] = useState<string | null>(null);
+	const [allowedCostCenterIds, setAllowedCostCenterIds] = useState<string[] | null>(
+		null
+	);
 
 	// Get EPF Number from user context (Userno field)
 	const epfNo = user?.Userno || "";
@@ -110,6 +231,46 @@ const CostCenterTrial: React.FC = () => {
 
 			setLoading(true);
 			try {
+				const roleResponses = await Promise.allSettled(
+					ROLE_INFO_ENDPOINTS.map(async (endpoint) => {
+						const response = await fetch(endpoint, {
+							credentials: "include",
+							headers: {Accept: "application/json"},
+						});
+
+						if (!response.ok) {
+							throw new Error(`HTTP error! status: ${response.status}`);
+						}
+
+						return response.json();
+					})
+				);
+
+				const roleIds = new Set<string>();
+				roleResponses.forEach((result) => {
+					if (result.status !== "fulfilled") {
+						return;
+					}
+
+					getApiItems(result.value).forEach((record) => {
+						if (
+							normalizeKey(readRecordEpfNo(record)) !== normalizeKey(epfNo)
+						) {
+							return;
+						}
+
+						extractCostCentreIds(record).forEach((id) => {
+							const normalizedId = normalizeCostCenterId(id);
+							if (normalizedId) {
+								roleIds.add(normalizedId);
+							}
+						});
+					});
+				});
+
+				const nextAllowedIds = Array.from(roleIds);
+				setAllowedCostCenterIds(nextAllowedIds);
+
 				const res = await fetch(
 					`/misapi/api/incomeexpenditure/departments/${epfNo}`
 				);
@@ -158,7 +319,17 @@ const CostCenterTrial: React.FC = () => {
 					setFiltered(testData);
 				} else {
 					setData(final);
-					setFiltered(final);
+					const visibleData = hasGlobalCostCentreAccess(nextAllowedIds)
+						? final
+						: final.filter((item) =>
+							roleIds.has(normalizeCostCenterId(item.compId))
+						);
+
+					setFiltered(visibleData);
+
+					if (!hasGlobalCostCentreAccess(nextAllowedIds) && visibleData.length === 0) {
+						setError("No cost centres are assigned to your role.");
+					}
 				}
 			} catch (e: any) {
 				console.error("Error fetching data:", e);
@@ -180,7 +351,13 @@ const CostCenterTrial: React.FC = () => {
 
 	// Filter cost centers
 	useEffect(() => {
-		const f = data.filter(
+		const allowedIds = allowedCostCenterIds ?? [];
+		const visibleData =
+			hasGlobalCostCentreAccess(allowedIds) || allowedIds.length === 0
+				? data
+				: data.filter((item) => allowedIds.includes(normalizeCostCenterId(item.compId)));
+
+		const f = visibleData.filter(
 			(c) =>
 				(!searchId ||
 					c.compId.toLowerCase().includes(searchId.toLowerCase())) &&
@@ -189,7 +366,7 @@ const CostCenterTrial: React.FC = () => {
 		);
 		setFiltered(f);
 		setPage(1);
-	}, [searchId, searchName, data]);
+	}, [searchId, searchName, data, allowedCostCenterIds]);
 
 	const paginatedCostCenters = filtered.slice(
 		(page - 1) * pageSize,
