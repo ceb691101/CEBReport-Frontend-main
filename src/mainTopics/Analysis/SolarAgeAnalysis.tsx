@@ -190,16 +190,61 @@ const SolarAgeAnalysis: React.FC = () => {
         }
 
         // Fetch bill cycles from the shared bill cycle API
+        // Original implementation (kept commented for reference):
+        // const maxCycleData = await fetchWithErrorHandling(
+        //   "/misapi/api/billcycle/max"
+        // );
+        // if (maxCycleData.data && maxCycleData.data.BillCycles?.length > 0) {
+        //   const options = generateBillCycleOptions(
+        //     maxCycleData.data.BillCycles,
+        //     maxCycleData.data.MaxBillCycle
+        //   );
+        //   setBillCycleOptions(options);
+        //   setFormData((prev) => ({ ...prev, billCycle: options[0].code }));
+        // } else {
+        //   setBillCycleOptions([]);
+        //   setFormData((prev) => ({ ...prev, billCycle: "" }));
+        // }
+
+        // New robust handler: tolerate different response shapes from the billcycle API.
+        // billcycle api from billcyclecontroller
         const maxCycleData = await fetchWithErrorHandling(
           "/misapi/api/billcycle/max"
         );
-        if (maxCycleData.data && maxCycleData.data.BillCycles?.length > 0) {
-          const options = generateBillCycleOptions(
-            maxCycleData.data.BillCycles,
-            maxCycleData.data.MaxBillCycle
-          );
+
+        // Try several common locations/shapes for the bill cycle list and max cycle
+        const raw = maxCycleData?.data ?? maxCycleData;
+
+        // Possible shapes:
+        // { BillCycles: string[], MaxBillCycle: string }
+        // { billCycles: string[], MaxBillCycle: string }
+        // { BillCycleList: string[], MaxBillCycle: string }
+        // ["202301 - Jan 2023", ...]
+        // { Items: [{ Code, Display }], MaxBillCycle: '...'}
+
+        let billCycles: string[] = [];
+        let maxBillCycle = "";
+
+        if (Array.isArray(raw)) {
+          // response is directly an array
+          billCycles = raw.map((r: any) => (typeof r === "string" ? r : String(r)));
+        } else if (raw) {
+          if (Array.isArray(raw.BillCycles)) billCycles = raw.BillCycles;
+          else if (Array.isArray(raw.billCycles)) billCycles = raw.billCycles;
+          else if (Array.isArray(raw.BillCycleList)) billCycles = raw.BillCycleList;
+          else if (Array.isArray(raw.Items)) {
+            // Items might be objects with Display or Label
+            billCycles = raw.Items.map((it: any) => it.Display ?? it.Label ?? it.Name ?? it);
+          }
+
+          // Max cycle may be in different fields
+          maxBillCycle = raw.MaxBillCycle ?? raw.maxBillCycle ?? raw.MaxCycle ?? "";
+        }
+
+        if (billCycles && billCycles.length > 0) {
+          const options = generateBillCycleOptions(billCycles, String(maxBillCycle || "0"));
           setBillCycleOptions(options);
-          setFormData((prev) => ({ ...prev, billCycle: options[0].code }));
+          setFormData((prev) => ({ ...prev, billCycle: options[0]?.code ?? "" }));
         } else {
           setBillCycleOptions([]);
           setFormData((prev) => ({ ...prev, billCycle: "" }));
@@ -418,6 +463,25 @@ const SolarAgeAnalysis: React.FC = () => {
     if (!customers.length) return;
 
     const isFullReport = reportMode === "full";
+
+     // Escape a cell value for CSV.
+    // Long numeric-only strings (e.g. account numbers) are wrapped with ="..."
+    // so Excel / WPS Office renders the full number instead of scientific notation.
+    // This also maximises the visible column width because the cell content is
+    // treated as text and the full value is always displayed.
+    const escapeCell = (value: string): string => {
+      if (/^\d{7,}$/.test(value)) {
+        // ="5488000000" forces text interpretation and preserves all digits
+        return `"=""${value}"""`;
+      }
+      if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+        // Force text interpretation for dates to prevent Excel from reformatting
+        const datePart = value.substring(0, 10);
+        return `"=""${datePart}"""`;
+      }
+      return `"${value.replace(/"/g, '""')}"`;
+    };
+
     const headers = isFullReport
       ? [
           "Account Number",
@@ -456,46 +520,81 @@ const SolarAgeAnalysis: React.FC = () => {
           ]
     );
 
-    const summaryRows =
-      isFullReport
-        ? []
-        : [
-            [],
-            ["Age Group Summary"],
-            ...ageGroupSummary.map((item) => [
-              item.ageGroup,
-              item.count.toString(),
-              `${item.percentage}%`,
-            ]),
-          ];
+    // const summaryRows =
+    //   isFullReport
+    //     ? []
+    //     : [
+    //         [],
+    //         ["Age Group Summary"],
+    //         ...ageGroupSummary.map((item) => [
+    //           item.ageGroup,
+    //           item.count.toString(),
+    //           `${item.percentage}%`,
+    //         ]),
+    //       ];
 
-    const csvContent = [
+    // const csvContent = [
+    //   `"Solar Age Analysis Report"`,
+    //   `"Bill Cycle: ${getFormattedBillCycle()}"`,
+    //   `"Area: ${
+    //     areas.find((a) => a.AreaCode === formData.areaCode)?.AreaName
+    //   } (${formData.areaCode})"`,
+    //   `"Total Customers: ${customers.length}"`,
+    //   "",
+    //   headers.map((h) => `"${h}"`).join(","),
+    //   ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    //   ...summaryRows.map((row) =>
+    //     row.map((cell) => `"${cell}"`).join(",")
+    //   ),
+    // ].join("\n");
+
+        const areaName =
+      areas.find((a) => a.AreaCode === formData.areaCode)?.AreaName || "";
+ 
+    const lines: string[] = [
       `"Solar Age Analysis Report"`,
       `"Bill Cycle: ${getFormattedBillCycle()}"`,
-      `"Area: ${
-        areas.find((a) => a.AreaCode === formData.areaCode)?.AreaName
-      } (${formData.areaCode})"`,
+      `"Area: ${areaName} (${formData.areaCode})"`,
       `"Total Customers: ${customers.length}"`,
       "",
       headers.map((h) => `"${h}"`).join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
-      ...summaryRows.map((row) =>
-        row.map((cell) => `"${cell}"`).join(",")
+      ...rows.map((row) =>
+        row.map((cell) => escapeCell(String(cell ?? ""))).join(",")
       ),
-    ].join("\n");
+    ];
 
+
+  //   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  //   const url = URL.createObjectURL(blob);
+  //   const link = document.createElement("a");
+  //   link.href = url;
+  //   link.download = `SolarAgeAnalysis_Cycle${
+  //     formData.billCycle
+  //   }_Area${formData.areaCode}_${new Date().toISOString().slice(0, 10)}.csv`;
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+  //   URL.revokeObjectURL(url);
+  // }, [customers, formData, billCycleOptions, areas, ageGroupSummary]);
+
+  // UTF-8 BOM ensures Excel / WPS Office opens the file with the correct
+    // encoding so special characters (e.g. Sinhala names) are not garbled.
+    const BOM = "\uFEFF";
+    const csvContent = BOM + lines.join("\r\n");
+ 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `SolarAgeAnalysis_Cycle${
-      formData.billCycle
-    }_Area${formData.areaCode}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `SolarAgeAnalysis_Cycle${formData.billCycle}_Area${
+      formData.areaCode
+    }_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [customers, formData, billCycleOptions, areas, ageGroupSummary]);
+  }, [customers, reportMode, formData, billCycleOptions, areas, ageGroupSummary]);
+ 
 
   const printPDF = () => {
     if (!customers.length) return;
@@ -646,13 +745,26 @@ const SolarAgeAnalysis: React.FC = () => {
               required
             >
               {areas.map((area) => (
-                <option
-                  key={area.AreaCode}
-                  value={area.AreaCode}
-                  className="text-xs py-1"
-                >
-                  {area.AreaName} ({area.AreaCode})
-                </option>
+                <React.Fragment key={area.AreaCode}>
+                  {/* Original display (kept commented):
+                  <option
+                    key={area.AreaCode}
+                    value={area.AreaCode}
+                    className="text-xs py-1"
+                  >
+                    {area.AreaName} ({area.AreaCode})
+                  </option>
+                  */}
+
+                  {/* New display: areaCode - areaName */}
+                  <option
+                    key={area.AreaCode}
+                    value={area.AreaCode}
+                    className="text-xs py-1"
+                  >
+                    {area.AreaCode} - {area.AreaName}
+                  </option>
+                </React.Fragment>
               ))}
             </select>
           </div>
@@ -759,7 +871,7 @@ const SolarAgeAnalysis: React.FC = () => {
     if (!ageGroupSummary.length) return null;
 
     return (
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded">
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded max-w-md">
         <div className="space-y-1">
           {ageGroupSummary.map((item, index) => {
             const ageGroupValue = ageGroups[index]?.value || "";
@@ -806,10 +918,6 @@ const SolarAgeAnalysis: React.FC = () => {
     if (!reportMode) return null;
 
     const filteredData = getFilteredCustomers();
-    const selectedLabel =
-      reportMode === "full"
-        ? "Full Report"
-        : ageGroups.find((g) => g.value === selectedAgeGroup)?.label || selectedAgeGroup;
     const isFullReport = reportMode === "full";
     const showDetailsTable = isFullReport || Boolean(selectedAgeGroup);
     const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
@@ -820,28 +928,21 @@ const SolarAgeAnalysis: React.FC = () => {
 
     return (
       <div className="mt-8 p-4 bg-white border border-gray-300 rounded">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className={`text-lg font-semibold ${maroon}`}>
-            Customers: {selectedLabel}
-          </h3>
-          {reportMode === "age" && (
+        {/* Clear Filter button when viewing an age-filtered view */}
+        {reportMode === "age" && selectedAgeGroup && (
+          <div className="w-full flex justify-end mb-3">
             <button
               onClick={() => {
                 setSelectedAgeGroup(null);
                 setCustomers(allCustomers);
                 setCurrentPage(1);
               }}
-              className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white"
+              className="px-3 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white"
             >
               Clear Filter
             </button>
-          )}
-        </div>
-
-        <p className="text-sm text-gray-600 mb-4">
-          Total: <span className="font-bold">{filteredData.length}</span> customers
-        </p>
-
+          </div>
+        )}
         {showDetailsTable && filteredData.length === 0 ? (
           <p className="text-gray-500 text-sm">No customers found in this age group.</p>
         ) : showDetailsTable ? (
@@ -943,7 +1044,7 @@ const SolarAgeAnalysis: React.FC = () => {
       <div className="mt-8" ref={printRef}>
         <div className="flex justify-between items-center mb-2">
           <h3 className={`text-lg font-semibold ${maroon}`}>
-            {isFullReport ? "Solar Customers Full Report" : "Solar Customers Age Analysis"}
+            {isFullReport ? "Solar Customers Full Report" : "Age Analysis of Solar Power Consumers"}
           </h3>
           <div className="flex gap-2 mt-2">
             <button

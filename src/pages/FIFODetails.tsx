@@ -3,13 +3,10 @@ import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import { useReportRenderer } from "../hooks/useReportRenderer";
 
-
-
-const Analysis = () => {
-  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Analysis"]);
+const FIFODetails = () => {
+  const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Physical Verification - FIFO"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const renderReport = useReportRenderer();
-
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -25,9 +22,8 @@ const Analysis = () => {
     }
   };
 
-
   return (
-    <div className="flex flex-col gap-4 pt-5">
+    <div className="flex flex-col gap-4 pt-4 px-10">
       {subtopics.map((subtopic) => (
         <SubtopicCard
           key={subtopic.id}
@@ -36,13 +32,11 @@ const Analysis = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-            {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
   );
 };
 
-export default Analysis;
-
-
+export default FIFODetails;

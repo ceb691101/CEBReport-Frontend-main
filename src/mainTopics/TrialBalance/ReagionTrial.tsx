@@ -21,6 +21,109 @@ interface TrialBalanceData {
 	ClosingBalance: number;
 }
 
+type RoleInfoRecord = {
+	EpfNo?: unknown;
+	epfNo?: unknown;
+	UserNo?: unknown;
+	userNo?: unknown;
+	Company?: unknown;
+	company?: unknown;
+	MotherCompany?: unknown;
+	motherCompany?: unknown;
+};
+
+const ROLE_INFO_ENDPOINTS = [
+	"/misapi/api/roleinfo/admin",
+	"/misapi/api/roleinfo/user",
+];
+
+const normalizeKey = (value: unknown): string =>
+	String(value ?? "")
+		.trim()
+		.toUpperCase();
+
+const normalizeCompanyId = (value: unknown): string => {
+	const raw = String(value ?? "").trim();
+	if (!raw) return "";
+	return raw.split("-")[0].trim().toUpperCase();
+};
+
+const getApiItems = (payload: unknown): unknown[] => {
+	if (Array.isArray(payload)) {
+		return payload;
+	}
+
+	if (payload && typeof payload === "object") {
+		const data = (payload as {data?: unknown}).data;
+		if (Array.isArray(data)) {
+			return data;
+		}
+
+		const result = (payload as {result?: unknown}).result;
+		if (Array.isArray(result)) {
+			return result;
+		}
+
+		return [payload];
+	}
+
+	return [];
+};
+
+const readRecordEpfNo = (record: unknown): string => {
+	if (!record || typeof record !== "object") {
+		return "";
+	}
+
+	const roleRecord = record as RoleInfoRecord;
+	return String(
+		roleRecord.EpfNo ??
+			roleRecord.epfNo ??
+			roleRecord.UserNo ??
+			roleRecord.userNo ??
+			""
+	)
+		.trim();
+};
+
+const extractCompanyIds = (value: unknown): string[] => {
+	const ids = new Set<string>();
+
+	const addValue = (raw: unknown) => {
+		if (raw === undefined || raw === null) {
+			return;
+		}
+
+		if (Array.isArray(raw)) {
+			raw.forEach(addValue);
+			return;
+		}
+
+		String(raw)
+			.split(/[;,]/)
+			.map((item) => normalizeCompanyId(item))
+			.filter(Boolean)
+			.forEach((item) => ids.add(item));
+	};
+
+	if (value && typeof value === "object") {
+		const record = value as RoleInfoRecord;
+		addValue(record.Company);
+		addValue(record.company);
+		addValue(record.MotherCompany);
+		addValue(record.motherCompany);
+	}
+
+	addValue(value);
+	return Array.from(ids);
+};
+
+const hasGlobalCompanyAccess = (ids: string[]): boolean =>
+	ids.some((id) => {
+		const normalized = normalizeKey(id);
+		return normalized === "ALL" || normalized === "*" || normalized.startsWith("ALL ");
+	});
+
 const RegionTrial: React.FC = () => {
 	const {user} = useUser();
 	const [data, setData] = useState<Region[]>([]);
@@ -56,6 +159,9 @@ const RegionTrial: React.FC = () => {
 	);
 	const [trialLoading, setTrialLoading] = useState(false);
 	const [trialError, setTrialError] = useState<string | null>(null);
+	const [allowedCompanyIds, setAllowedCompanyIds] = useState<string[] | null>(
+		null
+	);
 
 	const epfNo = user?.Userno || "";
 
@@ -94,6 +200,44 @@ const RegionTrial: React.FC = () => {
 			}
 			setLoading(true);
 			try {
+				const roleResponses = await Promise.allSettled(
+					ROLE_INFO_ENDPOINTS.map(async (endpoint) => {
+						const response = await fetch(endpoint, {
+							credentials: "include",
+							headers: {Accept: "application/json"},
+						});
+
+						if (!response.ok) {
+							throw new Error(`HTTP error! status: ${response.status}`);
+						}
+
+						return response.json();
+					})
+				);
+
+				const companyIds = new Set<string>();
+				roleResponses.forEach((result) => {
+					if (result.status !== "fulfilled") {
+						return;
+					}
+
+					getApiItems(result.value).forEach((record) => {
+						if (normalizeKey(readRecordEpfNo(record)) !== normalizeKey(epfNo)) {
+							return;
+						}
+
+						extractCompanyIds(record).forEach((id) => {
+							const normalizedId = normalizeCompanyId(id);
+							if (normalizedId) {
+								companyIds.add(normalizedId);
+							}
+						});
+					});
+				});
+
+				const nextAllowedIds = Array.from(companyIds);
+				setAllowedCompanyIds(nextAllowedIds);
+
 				const res = await fetch(
 					`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/70`
 				);
@@ -106,9 +250,20 @@ const RegionTrial: React.FC = () => {
 					CompName: item.CompName,
 				}));
 				setData(final);
-				setFiltered(final);
+				const visibleData = hasGlobalCompanyAccess(nextAllowedIds)
+					? final
+					: final.filter((item) =>
+						companyIds.has(normalizeCompanyId(item.compId))
+					);
+
+				setFiltered(visibleData);
+
+				if (!hasGlobalCompanyAccess(nextAllowedIds) && visibleData.length === 0) {
+					setError("No regions are assigned to your role.");
+				}
 			} catch (e: any) {
 				setError(e.message);
+				setAllowedCompanyIds(null);
 			} finally {
 				setLoading(false);
 			}
@@ -117,7 +272,15 @@ const RegionTrial: React.FC = () => {
 	}, [epfNo]);
 
 	useEffect(() => {
-		const f = data.filter(
+		const allowedIds = allowedCompanyIds ?? [];
+		const visibleData =
+			hasGlobalCompanyAccess(allowedIds) || allowedIds.length === 0
+				? data
+				: data.filter((region) =>
+					allowedIds.includes(normalizeCompanyId(region.compId))
+				);
+
+		const f = visibleData.filter(
 			(c) =>
 				(!searchId ||
 					c.compId.toLowerCase().includes(searchId.toLowerCase())) &&
@@ -126,7 +289,7 @@ const RegionTrial: React.FC = () => {
 		);
 		setFiltered(f);
 		setPage(1);
-	}, [searchId, searchName, data]);
+	}, [searchId, searchName, data, allowedCompanyIds]);
 
 	const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 

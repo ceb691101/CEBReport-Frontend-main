@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import {
 	FaSearch,
 	FaSyncAlt,
@@ -7,7 +7,7 @@ import {
 	FaPrint,
 	FaChevronDown,
 } from "react-icons/fa";
-import {useUser} from "../../contexts/UserContext";
+import { useUser } from "../../contexts/UserContext";
 
 interface Company {
 	compId: string;
@@ -28,7 +28,7 @@ interface TrialBalanceData {
 
 const ProvintionalWiseTrial: React.FC = () => {
 	// Get user from context
-	const {user} = useUser();
+	const { user } = useUser();
 
 	// Main state
 	const [data, setData] = useState<Company[]>([]);
@@ -77,10 +77,10 @@ const ProvintionalWiseTrial: React.FC = () => {
 
 	// Available years and months
 	const years = Array.from(
-		{length: 21},
+		{ length: 21 },
 		(_, i) => new Date().getFullYear() - i
 	);
-	const months = Array.from({length: 12}, (_, i) => i + 1); // [1, 2, ..., 12]
+	const months = Array.from({ length: 12 }, (_, i) => i + 1); // [1, 2, ..., 12]
 
 	// Paginated companies
 	const paginatedCompanies = filtered.slice(
@@ -106,10 +106,9 @@ const ProvintionalWiseTrial: React.FC = () => {
 			document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
-	// Fetch companies
+	// Fetch province list
 	useEffect(() => {
-		const fetchData = async () => {
-			// Don't fetch if no EPF number
+		const fetchProvinces = async () => {
 			if (!epfNo) {
 				setError("No EPF number available. Please login again.");
 				setLoading(false);
@@ -118,19 +117,37 @@ const ProvintionalWiseTrial: React.FC = () => {
 
 			setLoading(true);
 			try {
-				const res = await fetch(
-					`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/60`
-				);
-				if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+				const res = await fetch(`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/60`);
+				if (!res.ok) {
+					throw new Error(`HTTP error! status: ${res.status}`);
+				}
 
-				const txt = await res.text();
-				const parsed = JSON.parse(txt);
-				const rawData = Array.isArray(parsed) ? parsed : parsed.data || [];
+				const contentType = res.headers.get("content-type");
+				if (!contentType || !contentType.includes("application/json")) {
+					const text = await res.text();
+					throw new Error(`Expected JSON but got: ${text.substring(0, 100)}`);
+				}
 
-				const final: Company[] = rawData.map((item: any) => ({
-					compId: item.CompId,
-					CompName: item.CompName,
-				}));
+				const parsed = await res.json();
+				let rawData: any[] = [];
+				if (Array.isArray(parsed)) {
+					rawData = parsed;
+				} else if (parsed.data && Array.isArray(parsed.data)) {
+					rawData = parsed.data;
+				} else if (parsed.result && Array.isArray(parsed.result)) {
+					rawData = parsed.result;
+				}
+
+				const final: Company[] = rawData
+					.map((item: any) => ({
+						compId: (item.CompId ?? item.compId ?? item.COMP_ID ?? "")
+							.toString()
+							.trim(),
+						CompName: (item.CompNm ?? item.CompName ?? item.compNm ?? item.compName ?? item.COMP_NM ?? "")
+							.toString()
+							.trim(),
+					}))
+					.filter((item) => item.compId !== "");
 
 				setData(final);
 				setFiltered(final);
@@ -140,7 +157,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 				setLoading(false);
 			}
 		};
-		fetchData();
+		fetchProvinces();
 	}, [epfNo]);
 
 	// Filter companies
@@ -177,7 +194,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 
 			const response = await fetch(apiUrl, {
 				credentials: "include",
-				headers: {Accept: "application/json"},
+				headers: { Accept: "application/json" },
 			});
 
 			if (!response.ok)
@@ -262,7 +279,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 			)
 		).sort();
 
-		return {costCenters, grouped};
+		return { costCenters, grouped };
 	};
 
 	// Get category based on AccountCode or TitleFlag
@@ -282,7 +299,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 
 	// Calculate category totals
 	const calculateCategoryTotals = () => {
-		const {costCenters, grouped} = getConsolidatedData();
+		const { costCenters, grouped } = getConsolidatedData();
 
 		const categoryTotals: Record<string, Record<string, number>> = {
 			Assets: {},
@@ -318,7 +335,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 			});
 		});
 
-		return {categoryTotals, costCenters};
+		return { categoryTotals, costCenters };
 	};
 
 	const clearFilters = () => {
@@ -378,9 +395,8 @@ const ProvintionalWiseTrial: React.FC = () => {
 			>
 				<span>{selectedYear || "Select Year"}</span>
 				<FaChevronDown
-					className={`w-3 h-3 text-gray-400 transition-transform ${
-						yearDropdownOpen ? "rotate-180" : ""
-					}`}
+					className={`w-3 h-3 text-gray-400 transition-transform ${yearDropdownOpen ? "rotate-180" : ""
+						}`}
 				/>
 			</button>
 
@@ -398,11 +414,10 @@ const ProvintionalWiseTrial: React.FC = () => {
 									fetchTrialBalanceData();
 								}
 							}}
-							className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
-								selectedYear === year
+							className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${selectedYear === year
 									? "bg-[#7A0000] text-white"
 									: "text-gray-700"
-							}`}
+								}`}
 						>
 							{year}
 						</button>
@@ -427,9 +442,8 @@ const ProvintionalWiseTrial: React.FC = () => {
 			>
 				<span>{getMonthName(selectedMonth)}</span>
 				<FaChevronDown
-					className={`w-3 h-3 text-gray-400 transition-transform ${
-						monthDropdownOpen ? "rotate-180" : ""
-					}`}
+					className={`w-3 h-3 text-gray-400 transition-transform ${monthDropdownOpen ? "rotate-180" : ""
+						}`}
 				/>
 			</button>
 
@@ -447,11 +461,10 @@ const ProvintionalWiseTrial: React.FC = () => {
 									fetchTrialBalanceData();
 								}
 							}}
-							className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
-								selectedMonth === month
+							className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${selectedMonth === month
 									? "bg-[#7A0000] text-white"
 									: "text-gray-700"
-							}`}
+								}`}
 						>
 							{getMonthName(month)}
 						</button>
@@ -461,33 +474,32 @@ const ProvintionalWiseTrial: React.FC = () => {
 		</div>
 	);
 
-		const escapeCSVField = (field: string | number): string => {
-			const stringField = String(field);
-			// If field contains comma, quote, or newline, wrap in quotes and escape internal quotes
-			if (
-				stringField.includes(",") ||
-				stringField.includes('"') ||
-				stringField.includes("\n")
-			) {
-				return '"' + stringField.replace(/"/g, '""') + '"';
-			}
-			return stringField;
-		};
+	const escapeCSVField = (field: string | number): string => {
+		const stringField = String(field);
+		// If field contains comma, quote, or newline, wrap in quotes and escape internal quotes
+		if (
+			stringField.includes(",") ||
+			stringField.includes('"') ||
+			stringField.includes("\n")
+		) {
+			return '"' + stringField.replace(/"/g, '""') + '"';
+		}
+		return stringField;
+	};
 
 	// CSV export function
 	const downloadAsCSV = () => {
 		if (!trialBalanceData || trialBalanceData.length === 0) return;
 
-		const {costCenters, grouped} = getConsolidatedData();
-		const {categoryTotals} = calculateCategoryTotals();
+		const { costCenters, grouped } = getConsolidatedData();
+		const { categoryTotals } = calculateCategoryTotals();
 
 		const rows: string[] = [];
 
 		// Report Header
 		rows.push(`"Monthly Trial Balance Report"`);
 		rows.push(
-			`"Company: ${
-				selectedCompany?.compId
+			`"Company: ${selectedCompany?.compId
 			} - ${selectedCompany?.CompName?.toUpperCase()}"`
 		);
 		rows.push(
@@ -593,7 +605,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 
 		// Download CSV
 		const csvContent = rows.join("\n");
-		const blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
 		link.href = url;
@@ -608,8 +620,8 @@ const ProvintionalWiseTrial: React.FC = () => {
 	// Print PDF function
 	const printPDF = () => {
 		if (!trialBalanceData || trialBalanceData.length === 0) return;
-		const {costCenters, grouped} = getConsolidatedData();
-		const {categoryTotals} = calculateCategoryTotals();
+		const { costCenters, grouped } = getConsolidatedData();
+		const { categoryTotals } = calculateCategoryTotals();
 
 		const printWindow = window.open("", "_blank");
 		if (!printWindow) return;
@@ -657,9 +669,8 @@ const ProvintionalWiseTrial: React.FC = () => {
 
 					tableRowsHTML += `
           <tr class="category-header">
-            <td colspan="${
-					costCenters.length + 3
-				}" style="text-align: center; font-weight: bold; background-color: #f5f5f5; color: #7A0000; border-top: 2px solid #7A0000; border-bottom: 2px solid #7A0000; padding: 8px;">
+            <td colspan="${costCenters.length + 3
+						}" style="text-align: center; font-weight: bold; background-color: #f5f5f5; color: #7A0000; border-top: 2px solid #7A0000; border-bottom: 2px solid #7A0000; padding: 8px;">
               ${categoryInfo.icon} ${categoryInfo.desc}
             </td>
           </tr>
@@ -672,24 +683,22 @@ const ProvintionalWiseTrial: React.FC = () => {
 						);
 						tableRowsHTML += `
             <tr>
-              <td style="padding: 6px; border: 1px solid #ddd; font-family: monospace;">${
-						row.AccountCode
-					}</td>
-              <td style="padding: 6px; border: 1px solid #ddd;">${
-						row.AccountName
-					}</td>
+              <td style="padding: 6px; border: 1px solid #ddd; font-family: monospace;">${row.AccountCode
+							}</td>
+              <td style="padding: 6px; border: 1px solid #ddd;">${row.AccountName
+							}</td>
               ${costCenters
-						.map(
-							(cc) => `
+								.map(
+									(cc) => `
                 <td style="padding: 6px; border: 1px solid #ddd; text-align: right; font-family: monospace;">${formatNumber(
-							row.balances[cc] || 0
-						)}</td>
+										row.balances[cc] || 0
+									)}</td>
               `
-						)
-						.join("")}
+								)
+								.join("")}
               <td style="padding: 6px; border: 1px solid #ddd; text-align: right; font-family: monospace; font-weight: bold;">${formatNumber(
-						total
-					)}</td>
+									total
+								)}</td>
             </tr>
           `;
 					});
@@ -700,14 +709,14 @@ const ProvintionalWiseTrial: React.FC = () => {
               ${categoryInfo.icon} TOTAL ${category.toUpperCase()}
             </td>
             ${costCenters
-					.map(
-						(cc) => `
+							.map(
+								(cc) => `
               <td style="padding: 6px; border: 1px solid #ddd; text-align: right; font-family: monospace; background-color: #f9f9f9; font-weight: bold;">
                 ${formatNumber(categoryTotals[category][cc])}
               </td>
             `
-					)
-					.join("")}
+							)
+							.join("")}
             <td style="padding: 6px; border: 1px solid #ddd; text-align: right; font-family: monospace; background-color: #f9f9f9; font-weight: bold;">
               ${formatNumber(categoryTotals[category]["total"])}
             </td>
@@ -752,8 +761,8 @@ const ProvintionalWiseTrial: React.FC = () => {
       <html>
       <head>
         <title>Trial Balance - ${getMonthName(
-				selectedMonth
-			)} ${selectedYear}</title>
+			selectedMonth
+		)} ${selectedYear}</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -819,9 +828,9 @@ const ProvintionalWiseTrial: React.FC = () => {
             tr { page-break-inside: avoid; }
             @page {
                 @bottom-left { content: "Printed on: ${new Date().toLocaleString(
-							"en-US",
-							{timeZone: "Asia/Colombo"}
-						)}"; font-size: 0.75rem; color: gray; }
+			"en-US",
+			{ timeZone: "Asia/Colombo" }
+		)}"; font-size: 0.75rem; color: gray; }
                 @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 0.75rem; color: gray; }
               }
           }
@@ -830,11 +839,10 @@ const ProvintionalWiseTrial: React.FC = () => {
       <body>
         <div class="header">
           <h1>Monthly Trial Balance - ${getMonthName(
-					selectedMonth
-				)} ${selectedYear}</h1>
-          <h2>Company: ${selectedCompany?.compId} - ${
-			selectedCompany?.CompName
-		}</h2>
+			selectedMonth
+		)} ${selectedYear}</h1>
+          <h2>Company: ${selectedCompany?.compId} - ${selectedCompany?.CompName
+			}</h2>
         </div>
         <table>
           <thead>
@@ -842,12 +850,12 @@ const ProvintionalWiseTrial: React.FC = () => {
               <th style="width: 15%;">Account Code</th>
               <th style="width: 30%;">Account Name</th>
               ${costCenters
-						.map(
-							(cc) => `
+				.map(
+					(cc) => `
                 <th style="width: 15%;">${cc}</th>
               `
-						)
-						.join("")}
+				)
+				.join("")}
               <th style="width: 15%;">Total</th>
             </tr>
           </thead>
@@ -985,13 +993,11 @@ const ProvintionalWiseTrial: React.FC = () => {
 									{paginatedCompanies.map((company, i) => (
 										<tr
 											key={i}
-											className={`${
-												i % 2 ? "bg-white" : "bg-gray-50"
-											} ${
-												selectedCompany?.compId === company.compId
+											className={`${i % 2 ? "bg-white" : "bg-gray-50"
+												} ${selectedCompany?.compId === company.compId
 													? "ring-2 ring-[#7A0000] ring-inset"
 													: ""
-											}`}
+												}`}
 										>
 											<td className="px-4 py-2 truncate">
 												{company.compId}
@@ -1007,16 +1013,15 @@ const ProvintionalWiseTrial: React.FC = () => {
 													disabled={
 														!selectedMonth || !selectedYear
 													}
-													className={`px-3 py-1 ${
-														selectedCompany?.compId ===
-														company.compId
+													className={`px-3 py-1 ${selectedCompany?.compId ===
+															company.compId
 															? "bg-green-600 text-white"
 															: maroonGrad + " text-white"
-													} rounded text-xs font-medium hover:brightness-110 transition shadow disabled:opacity-50 disabled:cursor-not-allowed`}
+														} rounded text-xs font-medium hover:brightness-110 transition shadow disabled:opacity-50 disabled:cursor-not-allowed`}
 												>
 													<FaEye className="inline-block mr-1 w-3 h-3" />
 													{selectedCompany?.compId ===
-													company.compId
+														company.compId
 														? "Viewing"
 														: "View"}
 												</button>
@@ -1062,8 +1067,8 @@ const ProvintionalWiseTrial: React.FC = () => {
 	const TrialBalanceModal = () => {
 		if (!trialModalOpen || !selectedCompany) return null;
 
-		const {costCenters, grouped} = getConsolidatedData();
-		const {categoryTotals} = calculateCategoryTotals();
+		const { costCenters, grouped } = getConsolidatedData();
+		const { categoryTotals } = calculateCategoryTotals();
 
 		return (
 			<div className="fixed inset-0 bg-white flex items-start justify-end z-50 pt-24 pb-8 pl-64">
@@ -1244,7 +1249,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 																		>
 																			{formatNumber(
 																				row.balances[cc] ||
-																					null
+																				null
 																			)}
 																		</td>
 																	))}
@@ -1263,7 +1268,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 																		{categoryInfo.icon}
 																	</span>
 																	<span>
-																		TOTAL 
+																		TOTAL
 																		{category.toUpperCase()}
 																	</span>
 																</div>
@@ -1275,7 +1280,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 																>
 																	{formatNumber(
 																		categoryTotals[category][
-																			cc
+																		cc
 																		]
 																	)}
 																</td>
@@ -1283,7 +1288,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 															<td className="px-2 py-1 text-right font-mono">
 																{formatNumber(
 																	categoryTotals[category][
-																		"total"
+																	"total"
 																	]
 																)}
 															</td>

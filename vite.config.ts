@@ -22,13 +22,35 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 			},
+<<<<<<< HEAD
 			// Local testing: route CC Application report to local .NET backend
 			"/misapi/api/solarjobs/ccapplication": {
+=======
+			"/misapi/api/phv-obsolete-idle-fifo": {
+>>>>>>> c998d1df1da9fd2e403ae3fac07d2e5814e3d305
 				target: "http://localhost:44381",
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
+<<<<<<< HEAD
+=======
+			"/misapi/api/phv-damage-fifo": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+
+			"/misapi/api/areatrialbalance": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+
+
+>>>>>>> c998d1df1da9fd2e403ae3fac07d2e5814e3d305
 			"/misapi": {
 				target: "http://10.128.1.126",
 				changeOrigin: true,
@@ -120,12 +142,20 @@ export default defineConfig({
 				target: "http://smartceb.ceb:81",
 				changeOrigin: true,
 				secure: false,
+<<<<<<< HEAD
+=======
+			},	
+			"/MRMSAPI": {
+				target: "http://itservice.cebinfo.ceb",
+				changeOrigin: true,
+				secure: false,
+>>>>>>> c998d1df1da9fd2e403ae3fac07d2e5814e3d305
 			},
 			"/misreportsapi": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
 				secure: false,
-				rewrite: (path) => path.replace(/^\/misreportsapi/, ""),
+				rewrite: (path) => path.replace(/^\/misreportapi/, ""),
 			},
 			"/pivapi": {
 				target: "http://localhost:44381",
@@ -133,6 +163,8 @@ export default defineConfig({
 				secure: false,
 				rewrite: (path) => path.replace(/^\/pivapi/, ""),
 			},
+
+
 		},
 	},
 });	

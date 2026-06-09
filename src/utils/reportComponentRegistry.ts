@@ -39,6 +39,7 @@ import SolarAgeAnalysis from "../mainTopics/Analysis/SolarAgeAnalysis";
 // Billing & Payment reports
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
 import PaymentInquiry from "../mainTopics/CustomerDetails/PaymentInquiry";
+import TransactionHistoryOrdinary from "../mainTopics/CustomerDetails/TransactionHistoryOrdinary";
 
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
@@ -46,7 +47,7 @@ import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 
 // Consumption Analysis reports
-import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
+//import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
 
 // CashBook reports
 import CashBookDetailsReport from "../mainTopics/CashBook/CashBookDetailsReport";
@@ -63,6 +64,7 @@ import Arreasposition from "../mainTopics/general/Arreasposition";
 import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
 import LargestCus from "../mainTopics/general/LargestCus";
 import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
+import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -99,6 +101,8 @@ import AnnualVerificationWHwiseSignature from "../mainTopics/PhysicalVerificatio
 import PHVSlowNonMovingWHwise from "../mainTopics/PhysicalVerification/PHVSlowNonMovingWHwise";
 import PHVShortageSurplusWHwise from "../mainTopics/PhysicalVerification/PHVShortageSurplusWHwise";
 import PHVObsoleteIdle from "../mainTopics/PhysicalVerification/PHVObsoleteIdle";
+import PHVObsoleteIdleFIFO from "../mainTopics/fifo/PHVObsoleteIdleFIFO";
+import PHVDamageFIFO from "../mainTopics/fifo/PHVDamageFIFO";
 import PHVDamage from "../mainTopics/PhysicalVerification/PHVDamage";
 import PHVNonMovingWHwiseBOS from "../mainTopics/PhysicalVerification/PHVNonMovingWHwiseBOS";
 import PHVObsoleteIdleBOS from "../mainTopics/PhysicalVerification/PHVObsoleteIdleBOS";
@@ -138,6 +142,7 @@ import AreaWiseSRPEstimationPIV from "../mainTopics/SRP/AreaWiseSRPEstimationPIV
 import CostCenterTrial from "../mainTopics/TrialBalance/CostCenterTrial";
 import ProvintionalWiseTrial from "../mainTopics/TrialBalance/ProvintionalWiseTrial";
 import ReagionTrial from "../mainTopics/TrialBalance/ReagionTrial";
+import AreaTrialBalance from "../mainTopics/TrialBalance/AreaTrialBalance";
 
 // Work In Progress reports
 import AgeAnalysisCostCenter from "../mainTopics/WorkInProgress/AgeAnalysisCostCenter";
@@ -221,6 +226,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// Billing & Payment reports
 	"customer information": CustomerDetails,
 	"transaction history": CustomerDetails,
+	"transaction history ordinary": TransactionHistoryOrdinary,
 	"bill information": CustomerDetails,
 	"payment inquiries": PaymentInquiry,
 	"bill sms inquiry": CustomerDetails,
@@ -254,6 +260,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise document inquiry cash book with cheque details": DocumentInquiry,
 
 	// General reports
+	"tariff block wise consumption": TariffBlockWiseConsumption,
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
 	"bill calculation": BillCalculation,
 	"listing of customers": ListingofCustomers,
@@ -320,6 +327,22 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"physical verification shortage surplus wh wise av 1 b": PHVShortageSurplusWHwise,
 	"6 1 physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
 	"physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
+	"fifo obsolete idle": PHVObsoleteIdleFIFO,
+	"phv obsolete idle fifo": PHVObsoleteIdleFIFO,
+	"physical verification obsolete idle fifo": PHVObsoleteIdleFIFO,
+	"fifo damage": PHVDamageFIFO,
+	"phv damage fifo": PHVDamageFIFO,
+	"phv damage (fifo)": PHVDamageFIFO,
+	"physical verification damage fifo": PHVDamageFIFO,
+	"physical verification fifo obsolete idle": PHVObsoleteIdleFIFO,
+	// Additional aliases to match backend/report-catalog variations
+	"fifo phv obsolete idle": PHVObsoleteIdleFIFO,
+	"phv fifo obsolete idle": PHVObsoleteIdleFIFO,
+	"phv obsolete fifo": PHVObsoleteIdleFIFO,
+	"phv obsolete idle - fifo": PHVObsoleteIdleFIFO,
+	"phv obsolete idle (fifo)": PHVObsoleteIdleFIFO,
+	"phv obsolete idle fifo report": PHVObsoleteIdleFIFO,
+	"fifo obsolete idle phv": PHVObsoleteIdleFIFO,
 	// PHV abbreviation variants for obsolete/idle (non-BOS)
 	"phv obsolete idle grade code av 7a": PHVObsoleteIdle,
 	"phv obsolete idle grade code av 7 a": PHVObsoleteIdle,
@@ -361,7 +384,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar connection details incl reading and usage retail": SolarConnectionDetailsRetail,
 	"solar connection details incl reading and usage bulk": SolarConnectionDetailsBulk,
 	"solar customer information": SolarCustomerInformation,
-	"rooftop solar input data portal for t and d loss calculation":RoofTopSolarInputData,
+	"rooftop solar input data portal for t and d loss calculation": RoofTopSolarInputData,
 
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
@@ -387,6 +410,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"provincial trial balance": ProvintionalWiseTrial,
 	"region trial balance end of month year": ReagionTrial,
 	"region trial balance": ReagionTrial,
+	"area wise trial balance": AreaTrialBalance,
 
 	// Work In Progress reports
 	"cost center wise work in progress with age analysis": AgeAnalysisCostCenter,
