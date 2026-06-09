@@ -1,4 +1,4 @@
-import {defineConfig} from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -34,6 +34,15 @@ export default defineConfig({
 				secure: false,
 				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
+
+			"/misapi/api/areatrialbalance": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+
+
 			"/misapi": {
 				target: "http://10.128.1.126",
 				changeOrigin: true,
@@ -125,7 +134,7 @@ export default defineConfig({
 				target: "http://smartceb.ceb:81",
 				changeOrigin: true,
 				secure: false,
-			},	
+			},
 			"/misreportsapi": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
@@ -138,6 +147,8 @@ export default defineConfig({
 				secure: false,
 				rewrite: (path) => path.replace(/^\/pivapi/, ""),
 			},
+
+
 		},
 	},
 });

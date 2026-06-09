@@ -140,6 +140,7 @@ import AreaWiseSRPEstimationPIV from "../mainTopics/SRP/AreaWiseSRPEstimationPIV
 import CostCenterTrial from "../mainTopics/TrialBalance/CostCenterTrial";
 import ProvintionalWiseTrial from "../mainTopics/TrialBalance/ProvintionalWiseTrial";
 import ReagionTrial from "../mainTopics/TrialBalance/ReagionTrial";
+import AreaTrialBalance from "../mainTopics/TrialBalance/AreaTrialBalance";
 
 // Work In Progress reports
 import AgeAnalysisCostCenter from "../mainTopics/WorkInProgress/AgeAnalysisCostCenter";
@@ -378,7 +379,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar connection details incl reading and usage retail": SolarConnectionDetailsRetail,
 	"solar connection details incl reading and usage bulk": SolarConnectionDetailsBulk,
 	"solar customer information": SolarCustomerInformation,
-	"rooftop solar input data portal for t and d loss calculation":RoofTopSolarInputData,
+	"rooftop solar input data portal for t and d loss calculation": RoofTopSolarInputData,
 
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
@@ -404,6 +405,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"provincial trial balance": ProvintionalWiseTrial,
 	"region trial balance end of month year": ReagionTrial,
 	"region trial balance": ReagionTrial,
+	"area wise trial balance": AreaTrialBalance,
 
 	// Work In Progress reports
 	"cost center wise work in progress with age analysis": AgeAnalysisCostCenter,
