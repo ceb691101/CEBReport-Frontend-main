@@ -601,6 +601,8 @@ const SolarAgeAnalysis: React.FC = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
     const isFullReport = reportMode === "full";
+    const generatedDate = new Date().toLocaleDateString();
+    const generatedTime = new Date().toLocaleTimeString();
 
     const generateTableHTML = () => {
       let tableHTML = `
@@ -671,6 +673,18 @@ const SolarAgeAnalysis: React.FC = () => {
             }
             @page {
               margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${generatedDate} at ${generatedTime} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
             }
             .total-row {
               font-weight: bold;
