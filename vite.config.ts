@@ -1,4 +1,4 @@
-import {defineConfig} from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -21,6 +21,13 @@ export default defineConfig({
 				target: "http://10.128.1.126",
 				changeOrigin: true,
 				secure: false,
+			},
+			// Local testing: route CC Application report to local .NET backend
+			"/misapi/api/solarjobs/ccapplication": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
 			"/misapi": {
 				target: "http://10.128.1.126",
@@ -113,7 +120,7 @@ export default defineConfig({
 				target: "http://smartceb.ceb:81",
 				changeOrigin: true,
 				secure: false,
-			},	
+			},
 			"/misreportsapi": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
@@ -128,4 +135,4 @@ export default defineConfig({
 			},
 		},
 	},
-});
+});	
