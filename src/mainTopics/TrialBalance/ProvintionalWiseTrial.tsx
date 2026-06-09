@@ -26,109 +26,6 @@ interface TrialBalanceData {
 	ClosingBalance: number;
 }
 
-type RoleInfoRecord = {
-	EpfNo?: unknown;
-	epfNo?: unknown;
-	UserNo?: unknown;
-	userNo?: unknown;
-	Company?: unknown;
-	company?: unknown;
-	MotherCompany?: unknown;
-	motherCompany?: unknown;
-};
-
-const ROLE_INFO_ENDPOINTS = [
-	"/misapi/api/roleinfo/admin",
-	"/misapi/api/roleinfo/user",
-];
-
-const normalizeKey = (value: unknown): string =>
-	String(value ?? "")
-		.trim()
-		.toUpperCase();
-
-const normalizeCompanyId = (value: unknown): string => {
-	const raw = String(value ?? "").trim();
-	if (!raw) return "";
-	return raw.split("-")[0].trim().toUpperCase();
-};
-
-const getApiItems = (payload: unknown): unknown[] => {
-	if (Array.isArray(payload)) {
-		return payload;
-	}
-
-	if (payload && typeof payload === "object") {
-		const data = (payload as { data?: unknown }).data;
-		if (Array.isArray(data)) {
-			return data;
-		}
-
-		const result = (payload as { result?: unknown }).result;
-		if (Array.isArray(result)) {
-			return result;
-		}
-
-		return [payload];
-	}
-
-	return [];
-};
-
-const readRecordEpfNo = (record: unknown): string => {
-	if (!record || typeof record !== "object") {
-		return "";
-	}
-
-	const roleRecord = record as RoleInfoRecord;
-	return String(
-		roleRecord.EpfNo ??
-		roleRecord.epfNo ??
-		roleRecord.UserNo ??
-		roleRecord.userNo ??
-		""
-	)
-		.trim();
-};
-
-const extractCompanyIds = (value: unknown): string[] => {
-	const ids = new Set<string>();
-
-	const addValue = (raw: unknown) => {
-		if (raw === undefined || raw === null) {
-			return;
-		}
-
-		if (Array.isArray(raw)) {
-			raw.forEach(addValue);
-			return;
-		}
-
-		String(raw)
-			.split(/[;,]/)
-			.map((item) => normalizeCompanyId(item))
-			.filter(Boolean)
-			.forEach((item) => ids.add(item));
-	};
-
-	if (value && typeof value === "object") {
-		const record = value as RoleInfoRecord;
-		addValue(record.Company);
-		addValue(record.company);
-		addValue(record.MotherCompany);
-		addValue(record.motherCompany);
-	}
-
-	addValue(value);
-	return Array.from(ids);
-};
-
-const hasGlobalCompanyAccess = (ids: string[]): boolean =>
-	ids.some((id) => {
-		const normalized = normalizeKey(id);
-		return normalized === "ALL" || normalized === "*" || normalized.startsWith("ALL ");
-	});
-
 const ProvintionalWiseTrial: React.FC = () => {
 	// Get user from context
 	const { user } = useUser();
@@ -165,9 +62,6 @@ const ProvintionalWiseTrial: React.FC = () => {
 	);
 	const [trialLoading, setTrialLoading] = useState(false);
 	const [trialError, setTrialError] = useState<string | null>(null);
-	const [allowedCompanyIds, setAllowedCompanyIds] = useState<string[] | null>(
-		null
-	);
 
 	// Get EPF Number from user context (Userno field)
 	const epfNo = user?.Userno || "";
@@ -212,10 +106,9 @@ const ProvintionalWiseTrial: React.FC = () => {
 			document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
-	// Fetch companies
+	// Fetch province list
 	useEffect(() => {
-		const fetchData = async () => {
-			// Don't fetch if no EPF number
+		const fetchProvinces = async () => {
 			if (!epfNo) {
 				setError("No EPF number available. Please login again.");
 				setLoading(false);
@@ -224,63 +117,19 @@ const ProvintionalWiseTrial: React.FC = () => {
 
 			setLoading(true);
 			try {
-				const roleResponses = await Promise.allSettled(
-					ROLE_INFO_ENDPOINTS.map(async (endpoint) => {
-						const response = await fetch(endpoint, {
-							credentials: "include",
-							headers: { Accept: "application/json" },
-						});
-
-						if (!response.ok) {
-							throw new Error(`HTTP error! status: ${response.status}`);
-						}
-
-						return response.json();
-					})
-				);
-
-				const companyIds = new Set<string>();
-				roleResponses.forEach((result) => {
-					if (result.status !== "fulfilled") {
-						return;
-					}
-
-					getApiItems(result.value).forEach((record) => {
-						if (normalizeKey(readRecordEpfNo(record)) !== normalizeKey(epfNo)) {
-							return;
-						}
-
-						extractCompanyIds(record).forEach((id) => {
-							const normalizedId = normalizeCompanyId(id);
-							if (normalizedId) {
-								companyIds.add(normalizedId);
-							}
-						});
-					});
-				});
-
-				const nextAllowedIds = Array.from(companyIds);
-				setAllowedCompanyIds(nextAllowedIds);
-
-				const res = await fetch(
-					`/misapi/api/materialcommittedstock/provinces`
-				);
-
+				const res = await fetch(`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/60`);
 				if (!res.ok) {
 					throw new Error(`HTTP error! status: ${res.status}`);
 				}
 
 				const contentType = res.headers.get("content-type");
-
 				if (!contentType || !contentType.includes("application/json")) {
 					const text = await res.text();
 					throw new Error(`Expected JSON but got: ${text.substring(0, 100)}`);
 				}
 
 				const parsed = await res.json();
-
 				let rawData: any[] = [];
-
 				if (Array.isArray(parsed)) {
 					rawData = parsed;
 				} else if (parsed.data && Array.isArray(parsed.data)) {
@@ -291,60 +140,29 @@ const ProvintionalWiseTrial: React.FC = () => {
 
 				const final: Company[] = rawData
 					.map((item: any) => ({
-						compId: (
-							item.CompId ??
-							item.compId ??
-							item.COMP_ID ??
-							""
-						)
+						compId: (item.CompId ?? item.compId ?? item.COMP_ID ?? "")
 							.toString()
 							.trim(),
-
-						CompName: (
-							item.CompNm ??
-							item.CompName ??
-							item.compNm ??
-							item.compName ??
-							item.COMP_NM ??
-							""
-						)
+						CompName: (item.CompNm ?? item.CompName ?? item.compNm ?? item.compName ?? item.COMP_NM ?? "")
 							.toString()
 							.trim(),
 					}))
 					.filter((item) => item.compId !== "");
+
 				setData(final);
-				const visibleData = hasGlobalCompanyAccess(nextAllowedIds)
-					? final
-					: final.filter((item) =>
-						companyIds.has(normalizeCompanyId(item.compId))
-					);
-
-				setFiltered(visibleData);
-
-				if (!hasGlobalCompanyAccess(nextAllowedIds) && visibleData.length === 0) {
-					setError("No companies are assigned to your role.");
-				}
+				setFiltered(final);
 			} catch (e: any) {
 				setError(e.message);
-				setAllowedCompanyIds(null);
 			} finally {
 				setLoading(false);
 			}
 		};
-		fetchData();
+		fetchProvinces();
 	}, [epfNo]);
 
 	// Filter companies
 	useEffect(() => {
-		const allowedIds = allowedCompanyIds ?? [];
-		const visibleData =
-			hasGlobalCompanyAccess(allowedIds) || allowedIds.length === 0
-				? data
-				: data.filter((company) =>
-					allowedIds.includes(normalizeCompanyId(company.compId))
-				);
-
-		const f = visibleData.filter(
+		const f = data.filter(
 			(c) =>
 				(!searchId ||
 					c.compId.toLowerCase().includes(searchId.toLowerCase())) &&
@@ -353,7 +171,7 @@ const ProvintionalWiseTrial: React.FC = () => {
 		);
 		setFiltered(f);
 		setPage(1);
-	}, [searchId, searchName, data, allowedCompanyIds]);
+	}, [searchId, searchName, data]);
 
 	// Handle company selection - Auto fetch data when selected
 	const handleCompanySelect = (company: Company) => {
