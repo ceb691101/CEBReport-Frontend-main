@@ -53,11 +53,19 @@ const PHVValidation: React.FC = () => {
       return "";
     }
 
+<<<<<<< HEAD
+    const paddedMonth = String(selectedMonth).padStart(2, "0");
+=======
+>>>>>>> c998d1df1da9fd2e403ae3fac07d2e5814e3d305
     const params = new URLSearchParams({
       deptId: selectedDept.DeptId,
       deptName: selectedDept.DeptName,
       repYear: String(selectedYear),
+<<<<<<< HEAD
+      repMonth: paddedMonth,
+=======
       repMonth: String(selectedMonth),
+>>>>>>> c998d1df1da9fd2e403ae3fac07d2e5814e3d305
       download: String(download),
     });
 
@@ -81,12 +89,13 @@ const PHVValidation: React.FC = () => {
     setShowReport(true);
 
     try {
+      const paddedMonth = String(selectedMonth).padStart(2, "0");
       const res = await fetch(
         `/misapi/api/physical-verification-validation?deptId=${encodeURIComponent(
           dept.id
         )}&repYear=${encodeURIComponent(
           selectedYear
-        )}&repMonth=${encodeURIComponent(selectedMonth)}`
+        )}&repMonth=${encodeURIComponent(paddedMonth)}`
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
