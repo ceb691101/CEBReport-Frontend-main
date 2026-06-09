@@ -491,27 +491,6 @@ export const loadRoleBasedSidebarData = async (epfNo: string): Promise<SidebarRe
       });
     }
 
-    // Inject the Damage FIFO report under Physical Verification (as an accordion item) and under FIFO category
-    const hasDamageFifoReport = reports.some(
-      (r) =>
-        getReportRepId(r) === "fifo-damage" ||
-        (getReportCategoryName(r).toLowerCase() === "physical verification" &&
-          getReportName(r).toLowerCase().includes("damage") &&
-          getReportName(r).toLowerCase().includes("fifo"))
-    );
-    if (!hasDamageFifoReport) {
-      reports.push({
-        RepIdNo: "fifo-damage",
-        CategoryName: "Physical Verification",
-        ReportName: "PHV Damage (FIFO)",
-      });
-      reports.push({
-        RepIdNo: "fifo-damage-cat",
-        CategoryName: "Physical Verification - FIFO",
-        ReportName: "PHV Damage (FIFO)",
-      });
-    }
-
     const topics = buildTopics(reports);
 
     if (topics.length === 0) {

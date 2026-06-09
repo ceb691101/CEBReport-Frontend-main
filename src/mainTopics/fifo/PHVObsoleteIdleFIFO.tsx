@@ -27,14 +27,6 @@ interface FIFOItem {
   CostCentreName?: string;
 }
 
-const formatNumber = (num: number | null | undefined): string => {
-  if (num == null) return "0.00";
-  return num.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-};
-
 const parseApiResponse = (response: any): any[] => {
   if (Array.isArray(response)) return response;
   if (response.data && Array.isArray(response.data)) return response.data;

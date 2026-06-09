@@ -325,6 +325,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"physical verification obsolete idle grade code av 7a": PHVObsoleteIdle,
 	"fifo obsolete idle": PHVObsoleteIdleFIFO,
 	"phv obsolete idle fifo": PHVObsoleteIdleFIFO,
+	"physical verification obsolete idle fifo": PHVObsoleteIdleFIFO,
 	"fifo damage": PHVDamageFIFO,
 	"phv damage fifo": PHVDamageFIFO,
 	"phv damage (fifo)": PHVDamageFIFO,

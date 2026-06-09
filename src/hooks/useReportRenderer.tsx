@@ -6,6 +6,7 @@ import {
 import { normalizeReportName } from "../utils/reportNameMatch";
 import DynamicReportByRepId from "../components/shared/DynamicReportByRepId";
 import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
+import PHVObsoleteIdleFIFO from "../mainTopics/fifo/PHVObsoleteIdleFIFO";
 
 /**
  * Hook to render a report component based on its name.
@@ -20,6 +21,10 @@ export const useReportRenderer = () => {
 		if (repId === "29" || repId === "14") {
 				return <CcApplicationProgress />;
 			}
+
+		if (repId === "103") {
+			return <PHVObsoleteIdleFIFO />;
+		}
 
 		const normalized = normalizeReportName(subtopicName);
 		const withoutLeadingNumber = normalizeReportName(
