@@ -269,12 +269,12 @@ const TransactionHistoryOrdinary: React.FC = () => {
             <table className="w-full text-xs border-collapse border border-gray-200">
               <thead className="sticky top-0 z-10 bg-[#7A0000] print:table-row-group">
                 <tr className="bg-[#7A0000] text-white">
-                  <th className="p-2 text-left font-semibold">Bill Month</th>
-                  <th className="p-2 text-left font-semibold">Transaction Date</th>
-                  <th className="p-2 text-left font-semibold">Description</th>
-                  <th className="p-2 text-left font-semibold">Payment Date</th>
-                  <th className="p-2 text-right font-semibold">Transaction Amount</th>
-                  <th className="p-2 text-right font-semibold">Balance</th>
+                  <th className="w-1/6 p-2 text-left font-semibold">Bill Month</th>
+                  <th className="w-1/6 p-2 text-left font-semibold">Transaction Date</th>
+                  <th className="w-1/6 p-2 text-left font-semibold">Description</th>
+                  <th className="w-1/6 p-2 text-left font-semibold">Payment Date</th>
+                  <th className="w-1/6 p-2 text-right font-semibold">Transaction Amount</th>
+                  <th className="w-1/6 p-2 text-right font-semibold">Balance</th>
                 </tr>
               </thead>
               <tbody>
