@@ -26,56 +26,6 @@ const formatLocalYmd = (date: Date) => {
 	return `${year}-${month}-${day}`;
 };
 
-<<<<<<< HEAD
-=======
-const defaultFromDate = formatLocalYmd(new Date(today.getFullYear(), today.getMonth(), 1));
-const defaultToDate = formatLocalYmd(today);
-
-const formatDate = (date: string | null): string => {
-if (!date) return "";
-const dateObj = new Date(date);
-if (Number.isNaN(dateObj.getTime())) return date;
-return dateObj.toLocaleDateString("en-GB", {
-year: "numeric",
-month: "2-digit",
-day: "2-digit",
-});
-};
-
-const csvEscape = (val: string | number | null | undefined): string => {
-if (val == null) return '""';
-const str = String(val);
-if (/[,\n"']/.test(str)) return `"${str.replace(/"/g, '""')}"`;
-return str;
-};
-
-const buildApiUrl = (fromDate: string, toDate: string, costctr: string) => {
-        const base = API_BASE || "/misapi";
-        const normalizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
-        const params = new URLSearchParams({
-                fromDate,
-                toDate,
-                costctr,
-        });
-        return `/misapi/api/solarjobs/ccapplication/list?${params.toString()}`;
-};
-
-const columns = [
-"Application ID",
-"Application No",
-"Submit Date",
-"Approved Date",
-"Project No",
-"PIV Date",
-"Application Sub Type",
-"Paid Date",
-"PIV2 Paid Date",
-"Energized Date",
-"Existing Acc No",
-"Cost Center"
-];
-
->>>>>>> c998d1df1da9fd2e403ae3fac07d2e5814e3d305
 const CcApplicationProgress: React.FC = () => {
 	const { user } = useUser();
 	const epfNo = user?.Userno || "";
