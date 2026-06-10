@@ -174,50 +174,91 @@ const UserRoles = () => {
 		}
 	};
 
-	const loadCostCentres = async (companyId: string) => {
-		if (!companyId) {
-			setCostCentres([]);
-			setIsCostCentresLoading(false);
-			return;
-		}
+	useEffect(() => {
+		let isMounted = true;
 
-		setIsCostCentresLoading(true);
-
-		try {
-			const response = await fetch(
-				`/misapi/api/roleinfo/companies/${encodeURIComponent(companyId)}/costcentres`
-			);
-
-			if (!response.ok) {
-				throw new Error(`Failed to load cost centres. (${response.status})`);
+		const fetchAllCostCentres = async () => {
+			if (assignedCompanies.length === 0) {
+				setCostCentres([]);
+				setIsCostCentresLoading(false);
+				return;
 			}
 
-			const payload = await response.json();
+			setIsCostCentresLoading(true);
 
-			if (payload?.errorMessage) {
-				throw new Error(payload.errorMessage);
+			try {
+				let results: any[] = [];
+
+				if (assignedCompanies.length === motherCompanies.length && motherCompanies.length > 0) {
+					// Optimization: Fetch all cost centres at once if all companies are selected
+					const response = await fetch("/misapi/api/roleinfo/companies/ALL/costcentres");
+					if (!response.ok) {
+						throw new Error(`Failed to load cost centres for all companies. (${response.status})`);
+					}
+					const payload = await response.json();
+					if (payload?.errorMessage) {
+						throw new Error(payload.errorMessage);
+					}
+					results = [payload?.data ?? []];
+				} else {
+					const promises = assignedCompanies.map(async (companyId) => {
+						const response = await fetch(
+							`/misapi/api/roleinfo/companies/${encodeURIComponent(companyId)}/costcentres`
+						);
+						if (!response.ok) {
+							throw new Error(`Failed to load cost centres for company ${companyId}. (${response.status})`);
+						}
+						const payload = await response.json();
+						if (payload?.errorMessage) {
+							throw new Error(payload.errorMessage);
+						}
+						return Array.isArray(payload?.data) ? payload.data : [];
+					});
+					results = await Promise.all(promises);
+				}
+
+				if (!isMounted) return;
+
+				const nextCostCentres: CostCentreOption[] = [];
+				const seenIds = new Set<string>();
+
+				for (const data of results) {
+					for (const item of data) {
+						const costCentreId = item?.costCentre ?? item?.CostCentreId ?? item?.DepartmentId ?? "";
+						if (costCentreId && !seenIds.has(costCentreId.toUpperCase())) {
+							seenIds.add(costCentreId.toUpperCase());
+							nextCostCentres.push({
+								costCentreId: costCentreId,
+								departmentName: item?.departmentName ?? item?.DepartmentName ?? item?.CostCentreName ?? "",
+								lvlNo: Number(item?.lvlNo ?? item?.LvlNo ?? 0),
+								costCentreName: item?.costCentreName ?? item?.CostCentreName ?? item?.DepartmentName ?? "",
+								costCentreDisplay: item?.costCentreDisplay ?? item?.CostCentreDisplay ?? "",
+							});
+						}
+					}
+				}
+
+				setCostCentres(nextCostCentres);
+			} catch (error) {
+				if (isMounted) {
+					const message =
+						error instanceof Error ? error.message : "Failed to load cost centres.";
+					toast.error(message);
+					setCostCentres([]);
+				}
+			} finally {
+				if (isMounted) {
+					setIsCostCentresLoading(false);
+				}
 			}
+		};
 
-			const nextCostCentres: CostCentreOption[] = Array.isArray(payload?.data)
-				? payload.data.map((item: any) => ({
-					costCentreId: item?.costCentre ?? item?.CostCentreId ?? item?.DepartmentId ?? "",
-					departmentName: item?.departmentName ?? item?.DepartmentName ?? item?.CostCentreName ?? "",
-					lvlNo: Number(item?.lvlNo ?? item?.LvlNo ?? 0),
-					costCentreName: item?.costCentreName ?? item?.CostCentreName ?? item?.DepartmentName ?? "",
-					costCentreDisplay: item?.costCentreDisplay ?? item?.CostCentreDisplay ?? "",
-				}))
-				: [];
+		fetchAllCostCentres();
 
-			setCostCentres(nextCostCentres);
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "Failed to load cost centres.";
-			toast.error(message);
-			setCostCentres([]);
-		} finally {
-			setIsCostCentresLoading(false);
-		}
-	};
+		return () => {
+			isMounted = false;
+		};
+	}, [assignedCompanies, motherCompanies]);
 
 	const loadRoles = async (type: RoleType) => {
 		setIsLoading(true);
@@ -352,9 +393,7 @@ const UserRoles = () => {
 			.catch(() => {});
 	}, []);
 
-	useEffect(() => {
-		loadCostCentres(form.motherCompany);
-	}, [form.motherCompany]);
+
 
 	useEffect(() => {
 		try {
@@ -429,7 +468,7 @@ const UserRoles = () => {
 			return;
 		}
 
-		if (!form.motherCompany.trim()) {
+		if (assignedCompanies.length === 0) {
 			toast.warning("Please select a company first.");
 			return;
 		}
@@ -535,10 +574,7 @@ const UserRoles = () => {
 			costCentres: role.costCentres,
 		});
 
-		// Explicitly load cost centres for the selected company
-		if (primaryCompany) {
-			loadCostCentres(primaryCompany);
-		}
+
 
 		setActiveTab(userTypeForForm.trim().toUpperCase().startsWith("USER") ? "user" : "admin");
 	};
@@ -1011,8 +1047,8 @@ const UserRoles = () => {
 										<div className="text-sm text-stone-500">Loading cost centres...</div>
 									) : costCentres.length === 0 ? (
 										<div className="text-sm text-stone-500">
-											{form.motherCompany
-												? "No departments or cost centres found for the selected company."
+											{assignedCompanies.length > 0
+												? "No departments or cost centres found for the selected companies."
 												: "Select a company to load departments and cost centres."}
 										</div>
 									) : (
