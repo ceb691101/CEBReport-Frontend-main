@@ -3,7 +3,6 @@ import {toast} from "react-toastify";
 import {Eye} from "lucide-react";
 import DateRangePicker from "../../components/utils/DateRangePicker";
 import ReportViewer from "../../components/utils/ReportViewer";
-import {API_BASE} from "../../config/apiBase";
 
 interface CcApplicationRow {
 ApplicationId: string;
@@ -50,8 +49,6 @@ return str;
 };
 
 const buildApiUrl = (fromDate: string, toDate: string, costctr: string) => {
-        const base = API_BASE || "/misapi";
-        const normalizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
         const params = new URLSearchParams({
                 fromDate,
                 toDate,
