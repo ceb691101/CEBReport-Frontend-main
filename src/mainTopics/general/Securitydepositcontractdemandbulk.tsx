@@ -126,7 +126,7 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
       setIsLoadingBillCycles(true);
       setBillCycleError(null);
       try {
-        const response = await fetchWithErrorHandling(`/misapi/api/contract-demand/bill-cycles`);
+        const response = await fetchWithErrorHandling(`/misapi/api/bulk/mon_tot/billcycle/max`);
         console.log("Bill cycle response:", response);
 
         const billCyclesArray = response?.data?.BillCycles ?? response?.data?.billCycles;
