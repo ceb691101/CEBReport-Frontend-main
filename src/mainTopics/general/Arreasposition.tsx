@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
 interface Area {
   areaCode: string;
   areaName: string;
@@ -12,19 +9,12 @@ interface AreasPositionRow {
   readerCode: string;
   monthlyBill: string;
   totalBalance: string;
-  noOfMonthsInArrears: string;
+  ratio: string;
   noOfAccounts: string;
 }
 
-interface AreasPositionApiResult {
-  billCycle: string;
-  rows: AreasPositionRow[];
-}
+// Removed unused interface: AreasPositionApiResult (ts6196)
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
 async function apiFetch<T>(
   url: string
 ): Promise<{ data: T | null; errorMessage: string | null }> {
@@ -63,54 +53,50 @@ const parseNumber = (value: any): number => {
   return isNaN(num) ? 0 : num;
 };
 
-// Build last-24-months bill cycle list going back from a given max cycle number.
-// Bill cycles are sequential integers (e.g. 438 = latest month).
-const buildBillCycleOptions = (maxCycle: string): string[] => {
-  const max = parseInt(maxCycle, 10);
-  if (isNaN(max)) return [maxCycle];
-  const options: string[] = [];
-  for (let i = 0; i < 24; i++) {
-    options.push(String(max - i));
-  }
-  return options;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const billCycleToLabel = (cycle: number): string => {
+  const baseYear = 1988;
+  const baseMonth = 8;
+  const totalMonths = baseMonth + (cycle - 1);
+  const year = baseYear + Math.floor(totalMonths / 12);
+  const month = totalMonths % 12;
+  const yy = String(year).slice(-2);
+  return `${cycle} - ${MONTHS[month]} ${yy}`;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────────────────────────────────────
 const AreasPosition: React.FC = () => {
-  const maroon = "text-[#7A0000]";
+  const maroon     = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
-  // ── Dropdown data ──────────────────────────────────────────────────────────
   const [areas, setAreas]                     = useState<Area[]>([]);
   const [billCycleOptions, setBillCycleOptions] = useState<string[]>([]);
 
-  // ── Form state ─────────────────────────────────────────────────────────────
-  const [selectedArea, setSelectedArea]         = useState("");
+  const [selectedArea, setSelectedArea]           = useState("");
   const [selectedBillCycle, setSelectedBillCycle] = useState("");
 
-  // ── Loading states ─────────────────────────────────────────────────────────
-  const [loadingAreas, setLoadingAreas]       = useState(false);
-  const [loadingCycles, setLoadingCycles]     = useState(false);
-  const [loadingReport, setLoadingReport]     = useState(false);
+  const [loadingAreas, setLoadingAreas]   = useState(false);
+  const [loadingCycles, setLoadingCycles] = useState(false);
+  const [loadingReport, setLoadingReport] = useState(false);
 
-  // ── Error states ───────────────────────────────────────────────────────────
-  const [areaError, setAreaError]     = useState("");
-  const [cycleError, setCycleError]   = useState("");
-  const [reportError, setReportError] = useState("");
+  const [areaError, setAreaError]     = useState<string | null>(null);
+  const [cycleError, setCycleError]   = useState<string | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
 
-  // ── Report state ───────────────────────────────────────────────────────────
-  const [reportData, setReportData]           = useState<AreasPositionRow[]>([]);
+  const [reportData, setReportData]             = useState<AreasPositionRow[]>([]);
   const [resolvedBillCycle, setResolvedBillCycle] = useState("");
-  const [selectedAreaName, setSelectedAreaName]   = useState("");
-  const [hasSearched, setHasSearched]             = useState(false);
+  const [selectedAreaName, setSelectedAreaName] = useState("");
+  const [hasSearched, setHasSearched]           = useState(false);
+
+  const selectCls =
+    "w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent";
 
   // ── 1. Fetch areas on mount ────────────────────────────────────────────────
   useEffect(() => {
     const fetchAreas = async () => {
       setLoadingAreas(true);
-      setAreaError("");
+      setAreaError(null);
       try {
         const response = await apiFetch<any[]>(`/misapi/api/ordinary/areas`);
         if (response.errorMessage) {
@@ -134,24 +120,24 @@ const AreasPosition: React.FC = () => {
     fetchAreas();
   }, []);
 
-  // ── 2. Fetch max bill cycle when area changes → build 24-month dropdown ────
+  // ── 2. Fetch max bill cycle when area changes ──────────────────────────────
   useEffect(() => {
     if (!selectedArea) {
       setBillCycleOptions([]);
       setSelectedBillCycle("");
-      setCycleError("");
+      setCycleError(null);
       return;
     }
 
     const fetchMaxCycle = async () => {
       setLoadingCycles(true);
-      setCycleError("");
+      setCycleError(null);
       setSelectedBillCycle("");
       setBillCycleOptions([]);
 
       try {
-        const response = await apiFetch<{ billCycle: string }>(
-          `/misapi/api/areas-position/max-bill-cycle?areaCode=${encodeURIComponent(selectedArea)}`
+        const response = await apiFetch<any>(
+          `/misapi/api/billsmry/areas/arrears-position/billcycle/max?areaCode=${encodeURIComponent(selectedArea)}`
         );
 
         if (response.errorMessage) {
@@ -159,15 +145,27 @@ const AreasPosition: React.FC = () => {
           return;
         }
 
-        const maxCycle = response.data?.billCycle;
+        const raw = response.data as any;
+        const maxCycle: string | undefined =
+          typeof raw === "string" || typeof raw === "number"
+            ? String(raw)
+            : raw?.maxBillCycle ?? raw?.MaxBillCycle ?? raw?.billCycle ?? raw?.BillCycle ?? undefined;
+
         if (!maxCycle) {
           setCycleError("No bill cycle data found for this area.");
           return;
         }
 
-        const options = buildBillCycleOptions(maxCycle);
+        const max = parseInt(maxCycle, 10);
+        if (isNaN(max)) {
+          setCycleError("Invalid bill cycle value returned from server.");
+          return;
+        }
+
+        const options: string[] = [];
+        for (let i = 0; i < 24; i++) options.push(String(max - i));
         setBillCycleOptions(options);
-        setSelectedBillCycle(options[0]); // default to latest (max)
+        setSelectedBillCycle(options[0]);
       } catch (err: any) {
         setCycleError(err.message || "Failed to load bill cycles.");
       } finally {
@@ -188,11 +186,11 @@ const AreasPosition: React.FC = () => {
     const areaNameSnapshot  = areaObj?.areaName ?? areaCodeSnapshot;
 
     setLoadingReport(true);
-    setReportError("");
+    setReportError(null);
 
     try {
-      const reportResponse = await apiFetch<AreasPositionApiResult>(
-        `/misapi/api/areas-position/report?areaCode=${encodeURIComponent(areaCodeSnapshot)}&billCycle=${encodeURIComponent(billCycleSnapshot)}`
+      const reportResponse = await apiFetch<any>(
+        `/misapi/api/arrears-position/report?billCycle=${encodeURIComponent(billCycleSnapshot)}&areaCode=${encodeURIComponent(areaCodeSnapshot)}`
       );
 
       if (reportResponse.errorMessage) {
@@ -200,23 +198,42 @@ const AreasPosition: React.FC = () => {
         return;
       }
 
-      const result = reportResponse.data;
+      const raw = reportResponse.data as any;
 
-      if (!result || !Array.isArray(result.rows) || result.rows.length === 0) {
+      let rows: any[]          = [];
+      let returnedCycle: string = billCycleSnapshot;
+
+      if (Array.isArray(raw)) {
+        rows = raw;
+      } else if (raw && Array.isArray(raw.data)) {
+        rows = raw.data;
+        returnedCycle = raw.billCycle ?? raw.BillCycle ?? billCycleSnapshot;
+      } else if (raw && Array.isArray(raw.rows)) {
+        rows = raw.rows;
+        returnedCycle = raw.billCycle ?? raw.BillCycle ?? billCycleSnapshot;
+      } else if (raw && Array.isArray(raw.result)) {
+        rows = raw.result;
+        returnedCycle = raw.billCycle ?? raw.BillCycle ?? billCycleSnapshot;
+      } else if (raw && Array.isArray(raw.Results)) {
+        rows = raw.Results;
+        returnedCycle = raw.billCycle ?? raw.BillCycle ?? billCycleSnapshot;
+      }
+
+      if (!rows || rows.length === 0) {
         setReportError("No data available for the selected area and bill cycle.");
         return;
       }
 
-      const mappedRows: AreasPositionRow[] = result.rows.map((item: any) => ({
-        readerCode:          item.ReaderCode          ?? item.readerCode          ?? "",
-        monthlyBill:         item.MonthlyBill         ?? item.monthlyBill         ?? "0.00",
-        totalBalance:        item.TotalBalance        ?? item.totalBalance        ?? "0.00",
-        noOfMonthsInArrears: item.NoOfMonthsInArrears ?? item.noOfMonthsInArrears ?? "0.00",
-        noOfAccounts:        item.NoOfAccounts        ?? item.noOfAccounts        ?? "0",
+      const mappedRows: AreasPositionRow[] = rows.map((item: any) => ({
+        readerCode:   String(item.ReaderCode    ?? item.readerCode    ?? ""),
+        monthlyBill:  String(item.Charge        ?? item.charge        ?? "0.00"),
+        totalBalance: String(item.CrntBalance   ?? item.crntBalance   ?? item.CurrentBalance ?? item.currentBalance ?? "0.00"),
+        ratio:        String(item.Ratio         ?? item.ratio         ?? "0.00"),
+        noOfAccounts: String(item.ReaderCount   ?? item.readerCount   ?? "0"),
       }));
 
       setReportData(mappedRows);
-      setResolvedBillCycle(result.billCycle ?? billCycleSnapshot);
+      setResolvedBillCycle(returnedCycle);
       setSelectedAreaName(areaNameSnapshot);
       setHasSearched(true);
     } catch (err: any) {
@@ -227,62 +244,18 @@ const AreasPosition: React.FC = () => {
   }, [selectedArea, selectedBillCycle, areas]);
 
   // ── Derived totals ─────────────────────────────────────────────────────────
-  const totalMonthlyBill = reportData.reduce((s, r) => s + parseNumber(r.monthlyBill),  0);
+  const totalMonthlyBill = reportData.reduce((s, r) => s + parseNumber(r.monthlyBill), 0);
   const totalBalance     = reportData.reduce((s, r) => s + parseNumber(r.totalBalance), 0);
   const totalAccounts    = reportData.reduce((s, r) => s + parseNumber(r.noOfAccounts), 0);
-
-  // ── Shared UI helpers ──────────────────────────────────────────────────────
-  const selectCls =
-    "w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent";
-
-  const loadingPlaceholder = (msg: string) => (
-    <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-      {msg}
-    </div>
-  );
-
-  const errorPlaceholder = (msg: string) => (
-    <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
-      {msg}
-    </div>
-  );
-
-  const spinnerIcon = (
-    <svg
-      className="animate-spin h-3 w-3 text-white"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      />
-    </svg>
-  );
 
   const handleBackToForm = () => {
     setHasSearched(false);
     setReportData([]);
-    setReportError("");
+    setReportError(null);
     setResolvedBillCycle("");
   };
 
   // ── Export helpers ─────────────────────────────────────────────────────────
-  const downloadTextFile = (filename: string, content: string, mime = "text/plain;charset=utf-8") => {
-    const blob = new Blob([content], { type: mime });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
   const escapeCsv = (v: unknown) => {
     const s = String(v ?? "");
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -290,35 +263,59 @@ const AreasPosition: React.FC = () => {
 
   const handleExportCsv = () => {
     if (!reportData.length) { setReportError("No data to export."); return; }
-    const header = ["Reader Code", "Monthly Bill", "Total Balance", "No. of Months in Arrears", "No. of Accounts"];
-    const rows   = reportData.map((r) => [r.readerCode, r.monthlyBill, r.totalBalance, r.noOfMonthsInArrears, r.noOfAccounts]);
+    const header = ["Reader Code", "Charge (Monthly Bill)", "Current Balance", "Ratio", "Reader Count"];
+    const rows   = reportData.map((r) => [r.readerCode, r.monthlyBill, r.totalBalance, r.ratio, r.noOfAccounts]);
     const csv    = [header, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\r\n");
-    downloadTextFile(`areas-position_${selectedArea}_${resolvedBillCycle}_${new Date().toISOString().slice(0, 10)}.csv`, csv, "text/csv;charset=utf-8");
+    const link   = document.createElement("a");
+    link.href    = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    link.download = `ArrearsPosition_${selectedArea}_${resolvedBillCycle}.csv`;
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleExportPdf = () => {
     if (!reportData.length) { setReportError("No data to export."); return; }
     const title    = "Arrears Position \u2013 Meter Reader Wise";
-    const subtitle = `Area: ${selectedAreaName} | Bill Cycle: ${resolvedBillCycle}`;
     const rowsHtml = reportData.map((r) => `<tr>
-      <td style="border:1px solid #999;padding:5px 8px;text-align:center">${escapeCsv(r.readerCode)}</td>
-      <td style="border:1px solid #999;padding:5px 8px;text-align:right">${r.monthlyBill}</td>
-      <td style="border:1px solid #999;padding:5px 8px;text-align:right">${r.totalBalance}</td>
-      <td style="border:1px solid #999;padding:5px 8px;text-align:right">${r.noOfMonthsInArrears}</td>
-      <td style="border:1px solid #999;padding:5px 8px;text-align:right">${r.noOfAccounts}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:center;font-size:10px">${escapeCsv(r.readerCode)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:10px">${r.monthlyBill}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:10px">${r.totalBalance}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:10px">${r.ratio}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:10px">${r.noOfAccounts}</td>
     </tr>`).join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"/><title>${title}</title>
-<style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{font-size:15px;margin:0 0 4px}.sub{font-size:11px;margin:0 0 12px;color:#444}
-table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #999;padding:5px 8px;vertical-align:top}
-th{background:#b0e0e8}tfoot td{font-weight:bold;background:#f3f4f6}@page{size:A4 landscape;margin:12mm}</style>
-</head><body><h1>${title}</h1><p class="sub">${subtitle}</p>
-<table><thead><tr><th>Reader Code</th><th style="text-align:right">Monthly Bill</th><th style="text-align:right">Total Balance</th>
-<th style="text-align:right">No. of Months in Arrears</th><th style="text-align:right">No. of Accounts</th></tr></thead>
+<style>
+  body{font-family:Arial,sans-serif;margin:10mm;color:#111}
+  h2{color:#7A0000;font-size:13px;margin-bottom:6px}
+  .meta{font-size:11px;margin-bottom:12px}
+  .meta span{font-weight:bold}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th{background:#b0e0e8;font-weight:bold;text-align:center;padding:5px 4px;border:1px solid #aaa;font-size:10px}
+  td{padding:3px 4px;border:1px solid #ccc;font-size:10px;vertical-align:top}
+  tr:nth-child(even){background:#f5f5f5}
+  .total-row td{background:#d3d3d3;font-weight:bold}
+  @page{size:A4 landscape;margin:12mm}
+</style>
+</head><body>
+<h2>${title}</h2>
+<div class="meta">Area : &nbsp;<span>${selectedAreaName}</span><br>Bill Cycle : &nbsp;<span>${resolvedBillCycle}</span></div>
+<table><thead><tr>
+  <th>Reader Code</th>
+  <th style="text-align:right">Charge (Monthly Bill)</th>
+  <th style="text-align:right">Current Balance</th>
+  <th style="text-align:right">Ratio</th>
+  <th style="text-align:right">Reader Count</th>
+</tr></thead>
 <tbody>${rowsHtml}</tbody>
-<tfoot><tr><td>Total</td>
-<td style="text-align:right">${totalMonthlyBill.toLocaleString("en-US",{minimumFractionDigits:2})}</td>
-<td style="text-align:right">${totalBalance.toLocaleString("en-US",{minimumFractionDigits:2})}</td>
-<td></td><td style="text-align:right">${totalAccounts.toLocaleString("en-US")}</td></tr></tfoot>
+<tfoot><tr class="total-row">
+  <td><b>Total</b></td>
+  <td style="text-align:right"><b>${totalMonthlyBill.toLocaleString("en-US", { minimumFractionDigits: 2 })}</b></td>
+  <td style="text-align:right"><b>${totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</b></td>
+  <td></td>
+  <td style="text-align:right"><b>${totalAccounts.toLocaleString("en-US")}</b></td>
+</tr></tfoot>
 </table></body></html>`;
     const w = window.open("", "_blank");
     if (!w) { setReportError("Popup blocked. Please allow popups to export PDF."); return; }
@@ -330,48 +327,37 @@ th{background:#b0e0e8}tfoot td{font-weight:bold;background:#f3f4f6}@page{size:A4
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
 
-      {/* Connection warning */}
-      {areaError && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-            <span className="text-sm text-yellow-800">⚠️ Database Connection Issues Detected</span>
-          </div>
-          <p className="text-xs text-yellow-700 mt-1">
-            Please ensure your backend API is running on port 44381 and the database is properly configured.
-          </p>
-        </div>
-      )}
-
-      {/* ── FORM ────────────────────────────────────────────────────────────── */}
+      {/* ── FORM ──────────────────────────────────────────────────────────── */}
       {!hasSearched && (
         <>
           <div className="mb-6">
             <h2 className={`text-xl font-bold ${maroon}`}>
               Arrears Position – Meter Reader Wise
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Select an area and bill cycle to view the meter reader arrears position
-            </p>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-4">
 
-            {/* ── Area ──────────────────────────────────────────────────────── */}
-            <div className="flex flex-col">
-              <label className={`text-xs font-medium mb-1 ${maroon}`}>
-                Area: <span className="text-red-600">*</span>
-              </label>
-              {loadingAreas
-                ? loadingPlaceholder("Loading areas...")
-                : areaError
-                ? errorPlaceholder(areaError)
-                : (
+            {/* Row 1 – Area */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col">
+                <label className={`text-xs font-medium mb-1 ${maroon}`}>
+                  Select Area: <span className="text-red-600">*</span>
+                </label>
+                {loadingAreas ? (
+                  <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                    Loading areas...
+                  </div>
+                ) : areaError ? (
+                  <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
+                    {areaError}
+                  </div>
+                ) : (
                   <select
                     value={selectedArea}
                     onChange={(e) => {
                       setSelectedArea(e.target.value);
-                      setReportError("");
+                      setReportError(null);
                     }}
                     className={selectCls}
                   >
@@ -383,59 +369,74 @@ th{background:#b0e0e8}tfoot td{font-weight:bold;background:#f3f4f6}@page{size:A4
                     ))}
                   </select>
                 )}
+              </div>
             </div>
 
-            {/* ── Bill Cycle ────────────────────────────────────────────────── */}
-            <div className="flex flex-col">
-              <label className={`text-xs font-medium mb-1 ${maroon}`}>
-                Bill Cycle: <span className="text-red-600">*</span>
-              </label>
-              {!selectedArea ? (
-                <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-400">
-                  Please select an area first
-                </div>
-              ) : loadingCycles ? (
-                loadingPlaceholder("Loading bill cycles...")
-              ) : cycleError ? (
-                errorPlaceholder(cycleError)
-              ) : billCycleOptions.length === 0 ? (
-                <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                  No bill cycles available for selected area
-                </div>
-              ) : (
-                <select
-                  value={selectedBillCycle}
-                  onChange={(e) => setSelectedBillCycle(e.target.value)}
-                  className={selectCls}
-                >
-                  {billCycleOptions.map((cycle) => (
-                    <option key={cycle} value={cycle}>
-                      {cycle}
-                    </option>
-                  ))}
-                </select>
-              )}
+            {/* Row 2 – Bill Cycle */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col">
+                <label className={`text-xs font-medium mb-1 ${!selectedArea ? "text-gray-400" : maroon}`}>
+                  Select Bill Cycle: <span className="text-red-600">*</span>
+                </label>
+                {!selectedArea ? (
+                  <div className={`w-full px-2 py-1.5 text-xs border rounded-md bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed`}>
+                    Please select an area first
+                  </div>
+                ) : loadingCycles ? (
+                  <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                    Loading bill cycles...
+                  </div>
+                ) : cycleError ? (
+                  <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
+                    {cycleError}
+                  </div>
+                ) : billCycleOptions.length === 0 ? (
+                  <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                    No bill cycles available for selected area
+                  </div>
+                ) : (
+                  <select
+                    value={selectedBillCycle}
+                    onChange={(e) => setSelectedBillCycle(e.target.value)}
+                    disabled={!selectedArea}
+                    className={`w-full px-2 py-1.5 text-xs border rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent ${
+                      !selectedArea ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" : "border-gray-300"
+                    }`}
+                  >
+                    {billCycleOptions.map((cycle) => (
+                      <option key={cycle} value={cycle}>
+                        {billCycleToLabel(parseInt(cycle, 10))}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
-            {/* ── Submit button ─────────────────────────────────────────────── */}
-            <div>
+            {/* Submit */}
+            <div className="w-full mt-6 flex justify-end">
               <button
                 onClick={fetchReport}
                 disabled={loadingReport || !selectedArea || !selectedBillCycle}
-                className={`px-5 py-1.5 rounded-md font-medium text-xs shadow transition-opacity
+                className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
                   ${maroonGrad} text-white
                   ${loadingReport || !selectedArea || !selectedBillCycle
-                    ? "opacity-50 cursor-not-allowed"
+                    ? "opacity-70 cursor-not-allowed"
                     : "hover:opacity-90"}`}
               >
                 {loadingReport ? (
-                  <span className="flex items-center gap-2">{spinnerIcon} Loading...</span>
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Loading...
+                  </span>
                 ) : (
                   "Generate Report"
                 )}
               </button>
             </div>
-
           </div>
 
           {reportError && (
@@ -446,10 +447,9 @@ th{background:#b0e0e8}tfoot td{font-weight:bold;background:#f3f4f6}@page{size:A4
         </>
       )}
 
-      {/* ── REPORT ──────────────────────────────────────────────────────────── */}
+      {/* ── REPORT ────────────────────────────────────────────────────────── */}
       {hasSearched && (
-        <div>
-          {/* Report header */}
+        <div className="mt-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
             <div>
               <h2 className={`text-xl font-bold ${maroon}`}>
@@ -463,13 +463,16 @@ th{background:#b0e0e8}tfoot td{font-weight:bold;background:#f3f4f6}@page{size:A4
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
+            <div className="flex space-x-2 mt-2 md:mt-0">
               {/* CSV */}
               <button
                 onClick={handleExportCsv}
                 disabled={!reportData.length}
                 className={`flex items-center gap-1 px-3 py-1.5 border border-blue-400 rounded-md text-xs font-medium shadow-sm
-                  ${!reportData.length ? "text-blue-300 bg-gray-50 cursor-not-allowed" : "text-blue-700 bg-white hover:bg-blue-50"}`}
+                  focus:outline-none focus:ring-2 focus:ring-blue-200 transition
+                  ${!reportData.length
+                    ? "text-blue-300 bg-gray-50 cursor-not-allowed"
+                    : "text-blue-700 bg-white hover:bg-blue-50 hover:text-blue-800"}`}
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -483,7 +486,10 @@ th{background:#b0e0e8}tfoot td{font-weight:bold;background:#f3f4f6}@page{size:A4
                 onClick={handleExportPdf}
                 disabled={!reportData.length}
                 className={`flex items-center gap-1 px-3 py-1.5 border border-green-400 rounded-md text-xs font-medium shadow-sm
-                  ${!reportData.length ? "text-green-300 bg-gray-50 cursor-not-allowed" : "text-green-700 bg-white hover:bg-green-50"}`}
+                  focus:outline-none focus:ring-2 focus:ring-green-200 transition
+                  ${!reportData.length
+                    ? "text-green-300 bg-gray-50 cursor-not-allowed"
+                    : "text-green-700 bg-white hover:bg-green-50 hover:text-green-800"}`}
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -495,40 +501,59 @@ th{background:#b0e0e8}tfoot td{font-weight:bold;background:#f3f4f6}@page{size:A4
               {/* Back */}
               <button
                 onClick={handleBackToForm}
-                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white"
+                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
               >
                 Back to Form
               </button>
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto max-h-[calc(100vh-350px)] border border-gray-300 rounded-lg">
-            <table className="w-full border-collapse text-xs">
-              <thead>
-                <tr className="bg-[#b0e0e8] text-gray-800 sticky top-0">
-                  <th className="border border-gray-300 px-3 py-2 text-center font-bold">Reader Code</th>
-                  <th className="border border-gray-300 px-3 py-2 text-right font-bold">Monthly Bill</th>
-                  <th className="border border-gray-300 px-3 py-2 text-right font-bold">Total Balance</th>
-                  <th className="border border-gray-300 px-3 py-2 text-right font-bold">No. of Months in Arrears</th>
-                  <th className="border border-gray-300 px-3 py-2 text-right font-bold">No. of Accounts</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {reportData.map((r, i) => (
-                  <tr key={`${r.readerCode}-${i}`} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td className="border border-gray-300 px-3 py-1 text-center font-mono">{r.readerCode}</td>
-                    <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.monthlyBill}</td>
-                    <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.totalBalance}</td>
-                    <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.noOfMonthsInArrears}</td>
-                    <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.noOfAccounts}</td>
+          {/* Scrollable table */}
+          <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg">
+            <div className="min-w-full py-4">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr className="bg-[#b0e0e8] text-gray-800 sticky top-0">
+                    <th className="border border-gray-300 px-3 py-2 text-center font-bold">Reader Code</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Charge (Monthly Bill)</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Current Balance</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Ratio</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Reader Count</th>
                   </tr>
-                ))}
-              </tbody>
-
-
-            </table>
+                </thead>
+                <tbody>
+                  {reportData.map((r, i) => (
+                    <tr key={`${r.readerCode}-${i}`} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      <td className="border border-gray-300 px-3 py-1 text-center font-mono">{r.readerCode}</td>
+                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.monthlyBill}</td>
+                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.totalBalance}</td>
+                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.ratio}</td>
+                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.noOfAccounts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-[#d3d3d3] font-bold sticky bottom-0">
+                    <td className="border border-gray-300 px-3 py-2 text-center font-bold">TOTAL</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right font-mono font-bold">
+                      {totalMonthlyBill.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-right font-mono font-bold">
+                      {totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-right font-mono font-bold">—</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right font-mono font-bold">
+                      {totalAccounts.toLocaleString("en-US")}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+              {reportData.length > 0 && (
+                <p className="text-xs text-gray-500 mt-2 text-right px-2">
+                  Total records: {reportData.length.toLocaleString()}
+                </p>
+              )}
+            </div>
           </div>
 
           {reportError && (
