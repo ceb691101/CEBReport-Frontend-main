@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 
 const HeadOfficePOSCollection: React.FC = () => {
   const [reportType, setReportType] = useState('Bulk');
-  const [fromDate, setFromDate] = useState<Date | null>(null);
-  const [toDate, setToDate] = useState<Date | null>(null);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   const maroon = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
@@ -53,17 +51,11 @@ const HeadOfficePOSCollection: React.FC = () => {
               <label className={`${maroon} text-xs font-medium mb-1`}>
                 From Date
               </label>
-              <DatePicker
-                selected={fromDate}
-                onChange={(date: Date | null) => setFromDate(date)}
-                selectsStart
-                startDate={fromDate ?? undefined}
-                endDate={toDate ?? undefined}
-                maxDate={toDate ?? new Date()}
-                dateFormat="dd-MM-yyyy"
-                placeholderText="Select from date"
-                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent outline-none"
-                wrapperClassName="w-full"
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               />
             </div>
 
@@ -71,18 +63,11 @@ const HeadOfficePOSCollection: React.FC = () => {
               <label className={`${maroon} text-xs font-medium mb-1`}>
                 To Date
               </label>
-              <DatePicker
-                selected={toDate}
-                onChange={(date: Date | null) => setToDate(date)}
-                selectsEnd
-                startDate={fromDate ?? undefined}
-                endDate={toDate ?? undefined}
-                minDate={fromDate ?? undefined}
-                maxDate={new Date()}
-                dateFormat="dd-MM-yyyy"
-                placeholderText="Select to date"
-                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent outline-none"
-                wrapperClassName="w-full"
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
               />
             </div>
           </div>
