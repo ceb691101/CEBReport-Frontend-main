@@ -91,6 +91,22 @@ const splitDelimitedValues = (value: unknown): string[] =>
 const getRoleKey = (role: Pick<RoleRecord, "epfNo" | "userType">): string =>
 	normalizeRoleKey(role.epfNo, role.userType);
 
+const handleResponse = async (response: Response) => {
+	if (!response.ok) {
+		const text = await response.text();
+		if (text.trim().startsWith("<")) {
+			throw new Error(`Server returned error ${response.status} (${response.statusText}). WebDAV module or IIS URL routing might be blocking PUT/DELETE methods.`);
+		}
+		try {
+			const json = JSON.parse(text);
+			throw new Error(json?.errorMessage ?? `Request failed with status ${response.status}`);
+		} catch {
+			throw new Error(text || `Request failed with status ${response.status}`);
+		}
+	}
+	return response.json();
+};
+
 const actionButtonPrimaryClass =
 	"rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60";
 
@@ -158,8 +174,8 @@ const UserRoles = () => {
 
 			const nextCompanies: MotherCompanyOption[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-					companyId: item?.CompanyId ?? "",
-					companyName: item?.CompanyName ?? "",
+					companyId: normalizeText(item?.CompanyId),
+					companyName: normalizeText(item?.CompanyName),
 				}))
 				: [];
 
@@ -297,20 +313,20 @@ const UserRoles = () => {
 
 			const nextRoles: RoleRecord[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-					epfNo: item?.EpfNo ?? "",
-					roleId: item?.RoleId ?? "",
-					roleName: item?.RoleName ?? "",
-					company: item?.Company ?? "",
-					motherCompany: item?.MotherCompany ?? "",
-					userGroup: item?.UserGroup ?? "",
-					costCentre: item?.CostCentre ?? "",
+					epfNo: normalizeText(item?.EpfNo),
+					roleId: normalizeText(item?.RoleId),
+					roleName: normalizeText(item?.RoleName),
+					company: normalizeText(item?.Company),
+					motherCompany: normalizeText(item?.MotherCompany),
+					userGroup: normalizeText(item?.UserGroup),
+					costCentre: normalizeText(item?.CostCentre),
 					costCentres: Array.isArray(item?.CostCentres)
-						? item.CostCentres.filter((value: string) => value)
+						? item.CostCentres.map((value: any) => normalizeText(value)).filter(Boolean)
 						: String(item?.CostCentre ?? "")
 							.split(",")
-							.map((value: string) => value.trim())
+							.map((value: string) => normalizeText(value))
 							.filter((value: string) => value.length > 0),
-					userType: item?.UserType ?? "",
+					userType: normalizeText(item?.UserType),
 				}))
 				: [];
 
@@ -350,8 +366,8 @@ const UserRoles = () => {
 
 			const groups: UserGroupOption[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-					userGroupId: item?.UserGroupId ?? "",
-					userGroupName: item?.UserGroupName ?? "",
+					userGroupId: normalizeText(item?.UserGroupId),
+					userGroupName: normalizeText(item?.UserGroupName),
 				}))
 				: [];
 			setUserGroups(groups);
@@ -381,11 +397,11 @@ const UserRoles = () => {
 				if (Array.isArray(payload?.data)) {
 					setAllCostCentres(
 						payload.data.map((item: any) => ({
-							costCentreId: item?.costCentre ?? item?.CostCentreId ?? item?.DepartmentId ?? "",
-							departmentName: item?.departmentName ?? item?.DepartmentName ?? item?.CostCentreName ?? "",
+							costCentreId: normalizeText(item?.costCentre ?? item?.CostCentreId ?? item?.DepartmentId),
+							departmentName: normalizeText(item?.departmentName ?? item?.DepartmentName ?? item?.CostCentreName),
 							lvlNo: Number(item?.lvlNo ?? item?.LvlNo ?? 0),
-							costCentreName: item?.costCentreName ?? item?.CostCentreName ?? item?.DepartmentName ?? "",
-							costCentreDisplay: item?.costCentreDisplay ?? item?.CostCentreDisplay ?? "",
+							costCentreName: normalizeText(item?.costCentreName ?? item?.CostCentreName ?? item?.DepartmentName),
+							costCentreDisplay: normalizeText(item?.costCentreDisplay ?? item?.CostCentreDisplay),
 						}))
 					);
 				}
@@ -505,7 +521,7 @@ const UserRoles = () => {
 				}
 			);
 
-			const payload = await response.json();
+			const payload = await handleResponse(response);
 
 			if (payload?.errorMessage) {
 				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
@@ -557,8 +573,16 @@ const UserRoles = () => {
 	const handleRoleSelect = (role: RoleRecord) => {
 		setSelectedRoleKey(getRoleKey(role));
 		const roleCompanies = splitDelimitedValues(role.company);
-		const primaryCompany = roleCompanies[0] ?? normalizeText(role.company);
-		setAssignedCompanies(roleCompanies.length > 0 ? roleCompanies : primaryCompany ? [primaryCompany] : []);
+		const isAll = roleCompanies.some((c) => c.toUpperCase() === "ALL");
+		const resolvedCompanies = isAll
+			? motherCompanies.map((c) => c.companyId)
+			: roleCompanies.map((rc) => {
+				const matched = motherCompanies.find((c) => normalizeKey(c.companyId) === normalizeKey(rc));
+				return matched ? matched.companyId : rc;
+			});
+		setAssignedCompanies(resolvedCompanies);
+
+		const primaryCompany = resolvedCompanies[0] ?? "";
 
 		// Denormalize userType: backend stores "ADMIN" but form needs "ADMINISTRATOR"
 		const userTypeForForm = role.userType === "ADMIN" ? "ADMINISTRATOR" : role.userType;
@@ -603,7 +627,7 @@ const UserRoles = () => {
 				body: JSON.stringify(buildRolePayload()),
 			});
 
-			const payload = await response.json();
+			const payload = await handleResponse(response);
 
 			if (payload?.errorMessage) {
 				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
@@ -647,9 +671,9 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
+				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}/update`,
 				{
-					method: "PUT",
+					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						...buildRolePayload(selectedRole.epfNo),
@@ -657,15 +681,23 @@ const UserRoles = () => {
 					}),
 				}
 			);
-			const payload = await response.json();
+			const payload = await handleResponse(response);
 
 			if (payload?.errorMessage) {
 				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
 			}
 
 			toast.success(payload?.data?.message ?? "Role updated successfully.");
-			await loadRoles(activeTab);
-			setSelectedRoleKey(normalizeRoleKey(form.epfNo, form.userType === "ADMINISTRATOR" ? "ADMIN" : form.userType));
+			const nextTab =
+				form.userType.trim().toUpperCase().startsWith("USER") ? "user" : "admin";
+			setActiveTab(nextTab);
+			await loadRoles(nextTab);
+			setSelectedRoleKey(
+				normalizeRoleKey(
+					form.epfNo,
+					form.userType === "ADMINISTRATOR" ? "ADMIN" : form.userType
+				)
+			);
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : "Failed to update role.";
@@ -684,10 +716,10 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
-				{ method: "DELETE" }
+				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}/delete`,
+				{ method: "POST" }
 			);
-			const payload = await response.json();
+			const payload = await handleResponse(response);
 
 			if (payload?.errorMessage) {
 				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
@@ -807,7 +839,9 @@ const UserRoles = () => {
 								value={form.userType}
 								onChange={(value) => {
 									handleFieldChange("userType", value);
-									setActiveTab(value === "USER" ? "user" : "admin");
+									if (!selectedRole) {
+										setActiveTab(value === "USER" ? "user" : "admin");
+									}
 								}}
 							/>
 
@@ -916,7 +950,7 @@ const UserRoles = () => {
 													) : (
 														<ul className="space-y-2">
 																{filteredMotherCompanies.map((company) => {
-																	const isChecked = assignedCompanies.includes(company.companyId);
+																	const isChecked = assignedCompanies.some((id) => normalizeKey(id) === normalizeKey(company.companyId));
 																	return (
 																		<li key={company.companyId} className="flex items-center gap-2 text-sm text-stone-800">
 																			<input
@@ -932,7 +966,7 @@ const UserRoles = () => {
 																							}
 																							return [...current, company.companyId];
 																						}
-																						return current.filter((id) => id !== company.companyId);
+																						return current.filter((id) => normalizeKey(id) !== normalizeKey(company.companyId));
 																					});
 																					if (checked) {
 																						handleFieldChange("motherCompany", company.companyId);
@@ -972,7 +1006,7 @@ const UserRoles = () => {
 														{matchedCompany ? ` - ${matchedCompany.companyName}` : ""}
 														<button
 															type="button"
-															onClick={() => setAssignedCompanies((current) => current.filter((id) => id !== companyId))}
+															onClick={() => setAssignedCompanies((current) => current.filter((id) => normalizeKey(id) !== normalizeKey(companyId)))}
 															className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 font-bold"
 														>
 															×
@@ -1002,11 +1036,11 @@ const UserRoles = () => {
 
 								{/* User's Assigned Cost Centers */}
 								{assignedCostCentres.length > 0 && (
-									<div className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-3">
+									<div className="mb-4 rounded-xl border border-green-200 bg-green-50 p-2.5">
 										<div className="mb-2 text-xs font-semibold text-green-800 uppercase tracking-wide">
 											User's Assigned Cost Centers
 										</div>
-										<ul className="space-y-2">
+										<div className="flex flex-wrap gap-2">
 											{assignedCostCentres.map((assignedCostCentreId) => {
 												const idPart = assignedCostCentreId.split("-")[0].trim();
 												const matchedCostCentre = allCostCentres.find(
@@ -1021,20 +1055,22 @@ const UserRoles = () => {
 												}
 
 												return (
-													<li key={assignedCostCentreId} className="flex items-center gap-2 text-sm text-green-900">
-														<input
-															type="checkbox"
-															checked={true}
-															onChange={() => handleCostCentreToggle(assignedCostCentreId)}
-															className="h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-600"
-														/>
-														<span className="font-medium">
-															{displayName}
-														</span>
-													</li>
+													<span
+														key={assignedCostCentreId}
+														className="inline-flex items-center gap-1 rounded-full border border-green-300 bg-white pl-2.5 pr-1.5 py-1 text-xs font-medium text-green-800"
+													>
+														{displayName}
+														<button
+															type="button"
+															onClick={() => handleCostCentreToggle(assignedCostCentreId)}
+															className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-green-400 hover:bg-green-100 hover:text-green-600 font-bold"
+														>
+															×
+														</button>
+													</span>
 												);
 											})}
-										</ul>
+										</div>
 									</div>
 								)}
 
@@ -1261,6 +1297,9 @@ const UserRoles = () => {
 									</div>
 									<div>
 										<span className="font-semibold text-stone-800">User Type:</span> {selectedRole.userType || "-"}
+									</div>
+									<div className="md:col-span-2">
+										<span className="font-semibold text-stone-800">Assigned Companies:</span> {selectedRole.company || "-"}
 									</div>
 								</div>
 							) : (

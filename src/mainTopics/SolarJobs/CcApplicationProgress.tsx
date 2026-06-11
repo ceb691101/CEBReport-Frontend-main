@@ -3,7 +3,6 @@ import {toast} from "react-toastify";
 import {Eye} from "lucide-react";
 import DateRangePicker from "../../components/utils/DateRangePicker";
 import ReportViewer from "../../components/utils/ReportViewer";
-import {API_BASE} from "../../config/apiBase";
 
 interface CcApplicationRow {
 ApplicationId: string;
