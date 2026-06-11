@@ -93,13 +93,27 @@ const HeadOfficePOSCollection: React.FC = () => {
             .text-center { text-align: center; }
             .header { font-weight: bold; margin-bottom: 5px; color: #7A0000; font-size: 16px; }
             .subheader { margin-bottom: 12px; font-size: 12px; }
+            @page {
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+            }
           </style>
         </head>
         <body>
           <div class="header">Head Office POS Collection (${reportType})</div>
           <div class="subheader">
-            From: <b>${fromDate}</b> &nbsp;&nbsp;&nbsp; To: <b>${toDate}</b><br/>
-            Generated on: <b>${new Date().toLocaleString()}</b>
+            From: <b>${fromDate}</b> &nbsp;&nbsp;&nbsp; To: <b>${toDate}</b>
           </div>
           ${tableHTML}
         </body>
@@ -146,11 +160,13 @@ const HeadOfficePOSCollection: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans max-h-[82vh] overflow-y-auto">
-      <h2 className={`text-xl font-bold mb-6 ${maroon}`}>
-        Head Office POS Collection
-      </h2>
+      {!results && (
+        <>
+          <h2 className={`text-xl font-bold mb-6 ${maroon}`}>
+            Head Office POS Collection
+          </h2>
 
-      {error && (
+          {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-700 text-xs">{error}</p>
         </div>
@@ -216,12 +232,14 @@ const HeadOfficePOSCollection: React.FC = () => {
           <button 
             onClick={handleViewReport}
             disabled={loading}
-            className={`px-6 py-2 rounded-md font-medium text-xs transition-opacity duration-300 shadow text-white flex items-center justify-center min-w-[120px] ${maroonGrad} ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+            className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow ${maroonGrad} text-white ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
           >
             {loading ? "Loading..." : "View Report"}
           </button>
         </div>
       </div>
+        </>
+      )}
 
       {results && (
         <div ref={printRef} className="mt-4 p-4 rounded-xl shadow border border-gray-200 w-full bg-white">
@@ -244,6 +262,12 @@ const HeadOfficePOSCollection: React.FC = () => {
                 className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
               >
                 <FaPrint className="w-3 h-3" /> PDF
+              </button>
+              <button
+                onClick={() => setResults(null)}
+                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
+              >
+                Back to Form
               </button>
             </div>
           </div>
