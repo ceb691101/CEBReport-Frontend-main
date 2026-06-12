@@ -10,6 +10,7 @@ type RoleRecord = {
 	roleId: string;
 	roleName: string;
 	company: string;
+	assignedCompanies: string[];
 	motherCompany: string;
 	userGroup: string;
 	costCentre: string;
@@ -84,9 +85,61 @@ const normalizeRoleKey = (epfNo: unknown, userType: unknown): string =>
 
 const splitDelimitedValues = (value: unknown): string[] =>
 	normalizeText(value)
-		.split(/[;,]/)
+		.split(/[;,\|/\s]+/)
 		.map((item) => item.trim())
 		.filter(Boolean);
+
+const toAssignedCompanyValues = (value: unknown): string[] => {
+	if (Array.isArray(value)) {
+		return value
+			.flatMap((item) => {
+				if (item && typeof item === "object") {
+					const company = item as Record<string, unknown>;
+					return splitDelimitedValues(
+						company.CompanyId ??
+						company.companyId ??
+						company.Company ??
+						company.company ??
+						company.MotherCompany ??
+						company.motherCompany
+					);
+				}
+				return splitDelimitedValues(item);
+			})
+			.filter(Boolean);
+	}
+
+	return splitDelimitedValues(value);
+};
+
+const uniqueByNormalizedKey = (values: string[]): string[] => {
+	const seen = new Set<string>();
+
+	return values.filter((value) => {
+		const key = normalizeKey(value);
+		if (!key || seen.has(key)) {
+			return false;
+		}
+		seen.add(key);
+		return true;
+	});
+};
+
+const resolveAssignedCompanyIds = (
+	companyValues: string[],
+	motherCompanies: MotherCompanyOption[]
+): string[] => {
+	const isAll = companyValues.some((companyId) => normalizeKey(companyId) === "ALL");
+
+	return uniqueByNormalizedKey(isAll
+		? motherCompanies.map((company) => company.companyId)
+		: companyValues.map((companyId) => {
+			const matched = motherCompanies.find(
+				(company) => normalizeKey(company.companyId) === normalizeKey(companyId)
+			);
+			return matched ? matched.companyId : companyId;
+		}));
+};
 
 const getRoleKey = (role: Pick<RoleRecord, "epfNo" | "userType">): string =>
 	normalizeRoleKey(role.epfNo, role.userType);
@@ -317,6 +370,13 @@ const UserRoles = () => {
 					roleId: normalizeText(item?.RoleId),
 					roleName: normalizeText(item?.RoleName),
 					company: normalizeText(item?.Company),
+					assignedCompanies: uniqueByNormalizedKey(toAssignedCompanyValues(
+						item?.AssignedCompanies ??
+						item?.assignedCompanies ??
+						item?.Companies ??
+						item?.companies ??
+						item?.Company
+					)),
 					motherCompany: normalizeText(item?.MotherCompany),
 					userGroup: normalizeText(item?.UserGroup),
 					costCentre: normalizeText(item?.CostCentre),
@@ -572,14 +632,10 @@ const UserRoles = () => {
 
 	const handleRoleSelect = (role: RoleRecord) => {
 		setSelectedRoleKey(getRoleKey(role));
-		const roleCompanies = splitDelimitedValues(role.company);
-		const isAll = roleCompanies.some((c) => c.toUpperCase() === "ALL");
-		const resolvedCompanies = isAll
-			? motherCompanies.map((c) => c.companyId)
-			: roleCompanies.map((rc) => {
-				const matched = motherCompanies.find((c) => normalizeKey(c.companyId) === normalizeKey(rc));
-				return matched ? matched.companyId : rc;
-			});
+		const roleCompanies = role.assignedCompanies.length > 0
+			? role.assignedCompanies
+			: splitDelimitedValues(role.company);
+		const resolvedCompanies = resolveAssignedCompanyIds(roleCompanies, motherCompanies);
 		setAssignedCompanies(resolvedCompanies);
 
 		const primaryCompany = resolvedCompanies[0] ?? "";
@@ -740,6 +796,24 @@ const UserRoles = () => {
 	const selectedRole = selectedRoleKey
 		? roles.find((role) => getRoleKey(role) === selectedRoleKey) ?? null
 		: null;
+
+	useEffect(() => {
+		if (!selectedRole) {
+			return;
+		}
+
+		const roleCompanies = selectedRole.assignedCompanies.length > 0
+			? selectedRole.assignedCompanies
+			: splitDelimitedValues(selectedRole.company);
+		const resolvedCompanies = resolveAssignedCompanyIds(roleCompanies, motherCompanies);
+
+		setAssignedCompanies((current) => {
+			const currentKey = uniqueByNormalizedKey(current).map(normalizeKey).join("|");
+			const nextKey = resolvedCompanies.map(normalizeKey).join("|");
+			return currentKey === nextKey ? current : resolvedCompanies;
+		});
+	}, [motherCompanies, selectedRole]);
+
 	const assignedCostCentres = Array.from(
 		new Set(form.costCentres.map((value) => normalizeText(value)).filter(Boolean))
 	);
@@ -987,36 +1061,6 @@ const UserRoles = () => {
 										</>
 									)}
 								</div>
-								{assignedCompanies.length > 0 && (
-									<div className="rounded-xl border border-stone-200 bg-stone-50 p-2.5">
-										<div className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-600">
-											Assigned Companies
-										</div>
-										<div className="flex flex-wrap gap-2">
-											{assignedCompanies.map((companyId) => {
-												const matchedCompany = motherCompanies.find(
-													(c) => normalizeKey(c.companyId) === normalizeKey(companyId)
-												);
-												return (
-													<span
-														key={companyId}
-														className="inline-flex items-center gap-1 rounded-full border border-stone-300 bg-white pl-2.5 pr-1.5 py-1 text-xs font-medium text-stone-700"
-													>
-														{companyId}
-														{matchedCompany ? ` - ${matchedCompany.companyName}` : ""}
-														<button
-															type="button"
-															onClick={() => setAssignedCompanies((current) => current.filter((id) => normalizeKey(id) !== normalizeKey(companyId)))}
-															className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 font-bold"
-														>
-															×
-														</button>
-													</span>
-												);
-											})}
-										</div>
-									</div>
-								)}
 							</div>
 
 							<div>
@@ -1065,7 +1109,7 @@ const UserRoles = () => {
 															onClick={() => handleCostCentreToggle(assignedCostCentreId)}
 															className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-green-400 hover:bg-green-100 hover:text-green-600 font-bold"
 														>
-															×
+															&times;
 														</button>
 													</span>
 												);
