@@ -5,9 +5,7 @@ import {
 	Eye,
 	ChevronLeft,
 	Download,
-	Calendar,
 	FileText,
-	X,
 } from "lucide-react";
 import { useUser } from "../../contexts/UserContext";
 import { toast } from "react-toastify";
@@ -18,13 +16,6 @@ interface Department {
 	DeptId: string;
 	DeptName: string;
 }
-
-const formatLocalYmd = (date: Date) => {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${year}-${month}-${day}`;
-};
 
 const CcApplicationProgress: React.FC = () => {
 	const { user } = useUser();

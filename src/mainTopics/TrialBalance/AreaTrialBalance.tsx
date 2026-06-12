@@ -22,7 +22,6 @@ const AreaTrialBalance: React.FC = () => {
 
   // Style classes
   const maroon = "text-[#7A0000]";
-  const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
   const handleViewReport = async (company: { compId: string; CompName: string }) => {
     if (!selectedYear || !selectedMonth) {
@@ -205,11 +204,10 @@ const AreaTrialBalance: React.FC = () => {
             }
           }, [epfNo])}
           onViewItem={(company: { id: string; name: string }) => {
-            const typedCompany: Company = {
+            handleViewReport({
               compId: company.id,
               CompName: company.name,
-            };
-            handleViewReport(typedCompany);
+            });
           }}
           idColumnTitle="Company Code"
           nameColumnTitle="Company Name"
