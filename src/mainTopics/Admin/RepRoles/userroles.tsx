@@ -133,13 +133,24 @@ const resolveAssignedCompanyIds = (
 
 	return uniqueByNormalizedKey(isAll
 		? motherCompanies.map((company) => company.companyId)
-		: companyValues.map((companyId) => {
+		: companyValues.map((companyValue) => {
+			const normalizedValue = normalizeKey(companyValue);
+			const normalizedPrefix = normalizeKey(normalizeText(companyValue).split(/[-:]/)[0]);
 			const matched = motherCompanies.find(
-				(company) => normalizeKey(company.companyId) === normalizeKey(companyId)
+				(company) =>
+					normalizeKey(company.companyId) === normalizedValue ||
+					normalizeKey(company.companyName) === normalizedValue ||
+					normalizeKey(company.companyId) === normalizedPrefix
 			);
-			return matched ? matched.companyId : companyId;
+			return matched ? matched.companyId : companyValue;
 		}));
 };
+
+const normalizeCostCentreId = (value: unknown): string =>
+	normalizeText(value).split("-")[0].trim();
+
+const uniqueCostCentreIds = (values: string[]): string[] =>
+	uniqueByNormalizedKey(values.map(normalizeCostCentreId).filter(Boolean));
 
 const getRoleKey = (role: Pick<RoleRecord, "epfNo" | "userType">): string =>
 	normalizeRoleKey(role.epfNo, role.userType);
@@ -183,7 +194,6 @@ const UserRoles = () => {
 	const [isCostCentresLoading, setIsCostCentresLoading] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [motherCompanies, setMotherCompanies] = useState<MotherCompanyOption[]>([]);
-	const [allCostCentres, setAllCostCentres] = useState<CostCentreOption[]>([]);
 	const [costCentres, setCostCentres] = useState<CostCentreOption[]>([]);
 	const [userGroups, setUserGroups] = useState<UserGroupOption[]>([]);
 	const [isUserGroupsLoading, setIsUserGroupsLoading] = useState(false);
@@ -380,12 +390,12 @@ const UserRoles = () => {
 					motherCompany: normalizeText(item?.MotherCompany),
 					userGroup: normalizeText(item?.UserGroup),
 					costCentre: normalizeText(item?.CostCentre),
-					costCentres: Array.isArray(item?.CostCentres)
+					costCentres: uniqueCostCentreIds(Array.isArray(item?.CostCentres)
 						? item.CostCentres.map((value: any) => normalizeText(value)).filter(Boolean)
 						: String(item?.CostCentre ?? "")
-							.split(",")
+							.split(/[;,]+/)
 							.map((value: string) => normalizeText(value))
-							.filter((value: string) => value.length > 0),
+							.filter((value: string) => value.length > 0)),
 					userType: normalizeText(item?.UserType),
 				}))
 				: [];
@@ -448,25 +458,6 @@ const UserRoles = () => {
 	useEffect(() => {
 		loadMotherCompanies();
 		loadUserGroups();
-		
-		// Preload all cost centres to match names for assigned cost centres 
-		// that might belong to other companies than the primary one.
-		fetch("/misapi/api/roleinfo/companies/ALL/costcentres")
-			.then((res) => res.json())
-			.then((payload) => {
-				if (Array.isArray(payload?.data)) {
-					setAllCostCentres(
-						payload.data.map((item: any) => ({
-							costCentreId: normalizeText(item?.costCentre ?? item?.CostCentreId ?? item?.DepartmentId),
-							departmentName: normalizeText(item?.departmentName ?? item?.DepartmentName ?? item?.CostCentreName),
-							lvlNo: Number(item?.lvlNo ?? item?.LvlNo ?? 0),
-							costCentreName: normalizeText(item?.costCentreName ?? item?.CostCentreName ?? item?.DepartmentName),
-							costCentreDisplay: normalizeText(item?.costCentreDisplay ?? item?.CostCentreDisplay),
-						}))
-					);
-				}
-			})
-			.catch(() => {});
 	}, []);
 
 
@@ -497,27 +488,29 @@ const UserRoles = () => {
 	};
 
 	const handleCostCentreToggle = (costCentreId: string) => {
+		const normalizedCostCentreId = normalizeCostCentreId(costCentreId);
+
 		setForm((current) => ({
 			...current,
-			costCentres: current.costCentres.includes(costCentreId)
-				? current.costCentres.filter((value) => value !== costCentreId)
-				: [...current.costCentres, costCentreId],
+			costCentres: current.costCentres.some((value) => normalizeKey(normalizeCostCentreId(value)) === normalizeKey(normalizedCostCentreId))
+				? current.costCentres.filter((value) => normalizeKey(normalizeCostCentreId(value)) !== normalizeKey(normalizedCostCentreId))
+				: uniqueCostCentreIds([...current.costCentres, normalizedCostCentreId]),
 		}));
 	};
 
 	const selectAllCostCentres = () => {
 		setForm((current) => ({
 			...current,
-			costCentres: costCentres.map((item) => item.costCentreId),
+			costCentres: uniqueCostCentreIds(costCentres.map((item) => item.costCentreId)),
 		}));
 	};
 
 	const invertCostCentreSelection = () => {
 		setForm((current) => ({
 			...current,
-			costCentres: costCentres
+			costCentres: uniqueCostCentreIds(costCentres
 				.map((item) => item.costCentreId)
-				.filter((costCentreId) => !current.costCentres.includes(costCentreId)),
+				.filter((costCentreId) => !current.costCentres.some((value) => normalizeKey(normalizeCostCentreId(value)) === normalizeKey(costCentreId)))),
 		}));
 	};
 
@@ -634,7 +627,7 @@ const UserRoles = () => {
 		setSelectedRoleKey(getRoleKey(role));
 		const roleCompanies = role.assignedCompanies.length > 0
 			? role.assignedCompanies
-			: splitDelimitedValues(role.company);
+			: splitDelimitedValues(role.company || role.motherCompany);
 		const resolvedCompanies = resolveAssignedCompanyIds(roleCompanies, motherCompanies);
 		setAssignedCompanies(resolvedCompanies);
 
@@ -804,7 +797,7 @@ const UserRoles = () => {
 
 		const roleCompanies = selectedRole.assignedCompanies.length > 0
 			? selectedRole.assignedCompanies
-			: splitDelimitedValues(selectedRole.company);
+			: splitDelimitedValues(selectedRole.company || selectedRole.motherCompany);
 		const resolvedCompanies = resolveAssignedCompanyIds(roleCompanies, motherCompanies);
 
 		setAssignedCompanies((current) => {
@@ -814,9 +807,6 @@ const UserRoles = () => {
 		});
 	}, [motherCompanies, selectedRole]);
 
-	const assignedCostCentres = Array.from(
-		new Set(form.costCentres.map((value) => normalizeText(value)).filter(Boolean))
-	);
 	const filteredRoles = roles.filter((role) => {
 		const query = normalizeKey(tableSearch);
 
@@ -869,6 +859,13 @@ const UserRoles = () => {
 			.join(" ")
 			.includes(query);
 	});
+	const hasAllCompaniesSelected = assignedCompanies.some((companyId) => normalizeKey(companyId) === "ALL");
+	const isCompanySelected = (companyId: string): boolean =>
+		hasAllCompaniesSelected ||
+		assignedCompanies.some((selectedCompanyId) => normalizeKey(selectedCompanyId) === normalizeKey(companyId));
+	const selectedCompanyCount = hasAllCompaniesSelected
+		? motherCompanies.length
+		: motherCompanies.filter((company) => isCompanySelected(company.companyId)).length;
 
 	return (
 		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
@@ -951,9 +948,9 @@ const UserRoles = () => {
 											className={`${fieldBaseClass} flex items-center justify-between`}
 										>
 											<span className="truncate">
-												{assignedCompanies.length === 0
+												{selectedCompanyCount === 0
 													? "Select companies"
-													: `${assignedCompanies.length} companies selected`}
+													: `${selectedCompanyCount} companies selected`}
 											</span>
 											<ChevronDown className={`h-4 w-4 text-stone-500 transition-transform ${isCompanyDropdownOpen ? "rotate-180" : ""}`} />
 										</button>
@@ -1024,7 +1021,7 @@ const UserRoles = () => {
 													) : (
 														<ul className="space-y-2">
 																{filteredMotherCompanies.map((company) => {
-																	const isChecked = assignedCompanies.some((id) => normalizeKey(id) === normalizeKey(company.companyId));
+																	const isChecked = isCompanySelected(company.companyId);
 																	return (
 																		<li key={company.companyId} className="flex items-center gap-2 text-sm text-stone-800">
 																			<input
@@ -1038,7 +1035,12 @@ const UserRoles = () => {
 																							if (!normalized || current.some((item) => normalizeKey(item) === normalized)) {
 																								return current;
 																							}
-																							return [...current, company.companyId];
+																							return uniqueByNormalizedKey([...current, company.companyId]);
+																						}
+																						if (current.some((id) => normalizeKey(id) === "ALL")) {
+																							return motherCompanies
+																								.map((item) => item.companyId)
+																								.filter((id) => normalizeKey(id) !== normalizeKey(company.companyId));
 																						}
 																						return current.filter((id) => normalizeKey(id) !== normalizeKey(company.companyId));
 																					});
@@ -1078,46 +1080,6 @@ const UserRoles = () => {
 									</button>
 								</div>
 
-								{/* User's Assigned Cost Centers */}
-								{assignedCostCentres.length > 0 && (
-									<div className="mb-4 rounded-xl border border-green-200 bg-green-50 p-2.5">
-										<div className="mb-2 text-xs font-semibold text-green-800 uppercase tracking-wide">
-											User's Assigned Cost Centers
-										</div>
-										<div className="flex flex-wrap gap-2">
-											{assignedCostCentres.map((assignedCostCentreId) => {
-												const idPart = assignedCostCentreId.split("-")[0].trim();
-												const matchedCostCentre = allCostCentres.find(
-													(item) => normalizeKey(item.costCentreId) === normalizeKey(idPart)
-												) || costCentres.find(
-													(item) => normalizeKey(item.costCentreId) === normalizeKey(idPart)
-												);
-
-												let displayName = assignedCostCentreId;
-												if (matchedCostCentre && (matchedCostCentre.departmentName || matchedCostCentre.costCentreName)) {
-													displayName = `${idPart} - ${matchedCostCentre.departmentName || matchedCostCentre.costCentreName}`;
-												}
-
-												return (
-													<span
-														key={assignedCostCentreId}
-														className="inline-flex items-center gap-1 rounded-full border border-green-300 bg-white pl-2.5 pr-1.5 py-1 text-xs font-medium text-green-800"
-													>
-														{displayName}
-														<button
-															type="button"
-															onClick={() => handleCostCentreToggle(assignedCostCentreId)}
-															className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-green-400 hover:bg-green-100 hover:text-green-600 font-bold"
-														>
-															&times;
-														</button>
-													</span>
-												);
-											})}
-										</div>
-									</div>
-								)}
-
 								{/* Available Departments */}
 								<div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
 									<div className="mb-2 text-xs font-semibold text-stone-700 uppercase tracking-wide">
@@ -1141,12 +1103,16 @@ const UserRoles = () => {
 											</div>
 											<ul className="space-y-2">
 												{costCentres
-													.filter((item) => !form.costCentres.includes(item.costCentreId))
-													.map((item) => (
+													.map((item) => {
+														const isChecked = form.costCentres.some(
+															(costCentreId) => normalizeKey(normalizeCostCentreId(costCentreId)) === normalizeKey(item.costCentreId)
+														);
+
+														return (
 														<li key={item.costCentreId} className="flex items-center gap-2 text-sm text-stone-800">
 															<input
 																type="checkbox"
-																checked={false}
+																checked={isChecked}
 																onChange={() => handleCostCentreToggle(item.costCentreId)}
 																className="h-4 w-4 rounded border-stone-400 text-[#7A0000] focus:ring-[#7A0000]"
 															/>
@@ -1154,7 +1120,8 @@ const UserRoles = () => {
 																{item.costCentreId} - {item.departmentName || item.costCentreName}
 															</span>
 														</li>
-													))}
+													);
+												})}
 											</ul>
 										</>
 									)}
@@ -1245,8 +1212,8 @@ const UserRoles = () => {
 											<th className="px-4 py-3">EPF No</th>
 											<th className="px-4 py-3">Role ID</th>
 											<th className="px-4 py-3">Role Name</th>
-											<th className="px-4 py-3">Company</th>
-											<th className="px-4 py-3">User Type</th>
+											<th className="px-4 py-3">Mother Company</th>
+											<th className="px-4 py-3">User Group</th>
 											<th className="px-4 py-3"></th>
 										</tr>
 									</thead>
@@ -1277,8 +1244,8 @@ const UserRoles = () => {
 														<td className="px-4 py-3">{role.epfNo || "-"}</td>
 														<td className="px-4 py-3 font-semibold text-stone-900">{role.roleId}</td>
 														<td className="px-4 py-3">{role.roleName || "-"}</td>
-														<td className="px-4 py-3">{role.company || "-"}</td>
-														<td className="px-4 py-3">{role.userType || "-"}</td>
+														<td className="px-4 py-3">{role.motherCompany || "-"}</td>
+														<td className="px-4 py-3">{role.userGroup || "-"}</td>
 														<td className="px-4 py-3">
 															<button
 																type="button"
