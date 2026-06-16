@@ -13,6 +13,7 @@ import { useUser } from "../../contexts/UserContext";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DateRangePicker from "../../components/utils/DateRangePicker";
+import ReportViewer from "../../components/utils/ReportViewer";
 
 interface Department {
 	DeptId: string;
@@ -25,6 +26,51 @@ const formatLocalYmd = (date: Date) => {
 	const day = String(date.getDate()).padStart(2, "0");
 	return `${year}-${month}-${day}`;
 };
+
+const defaultFromDate = formatLocalYmd(new Date(today.getFullYear(), today.getMonth(), 1));
+const defaultToDate = formatLocalYmd(today);
+
+const formatDate = (date: string | null): string => {
+if (!date) return "";
+const dateObj = new Date(date);
+if (Number.isNaN(dateObj.getTime())) return date;
+return dateObj.toLocaleDateString("en-GB", {
+year: "numeric",
+month: "2-digit",
+day: "2-digit",
+});
+};
+
+const csvEscape = (val: string | number | null | undefined): string => {
+if (val == null) return '""';
+const str = String(val);
+if (/[,\n"']/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+return str;
+};
+
+const buildApiUrl = (fromDate: string, toDate: string, costctr: string) => {
+        const params = new URLSearchParams({
+                fromDate,
+                toDate,
+                costctr,
+        });
+        return `/misapi/api/solarjobs/ccapplication/list?${params.toString()}`;
+};
+
+const columns = [
+"Application ID",
+"Application No",
+"Submit Date",
+"Approved Date",
+"Project No",
+"PIV Date",
+"Application Sub Type",
+"Paid Date",
+"PIV2 Paid Date",
+"Energized Date",
+"Existing Acc No",
+"Cost Center"
+];
 
 const CcApplicationProgress: React.FC = () => {
 	const { user } = useUser();
