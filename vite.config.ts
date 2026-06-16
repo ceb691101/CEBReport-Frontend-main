@@ -176,7 +176,7 @@ export default defineConfig({
 				target: "http://smartceb.ceb:81",
 				changeOrigin: true,
 				secure: false,
-			},	
+			},
 			"/MRMSAPI": {
 				target: "http://itservice.cebinfo.ceb",
 				changeOrigin: true,
@@ -195,7 +195,15 @@ export default defineConfig({
 				rewrite: (path) => path.replace(/^\/pivapi/, ""),
 			},
 
+			// Local testing: route CC Application report to local .NET backend
+			"/misapi/api/solarjobs/ccapplication": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+
 
 		},
 	},
-});
+});	

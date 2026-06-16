@@ -1,5 +1,5 @@
-import React, {useRef} from "react";
-import {Download, Printer, X} from "lucide-react";
+import React, { useRef } from "react";
+import { Download, Printer, X } from "lucide-react";
 
 interface ReportViewerProps {
 	title: string;
@@ -21,7 +21,7 @@ interface ReportViewerProps {
 	children?: React.ReactNode;
 }
 
-	const maroon = "text-[#7A0000]";
+const maroon = "text-[#7A0000]";
 
 
 const ReportViewer: React.FC<ReportViewerProps> = ({

@@ -45,6 +45,7 @@ import TransactionHistoryOrdinary from "../mainTopics/CustomerDetails/Transactio
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
 import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
+import HeadOfficePOSCollection from "../mainTopics/Collections/HeadOfficePOSCollection";
 
 // Consumption Analysis reports
 //import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
@@ -241,6 +242,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"kiosk payment collection": DishonouredCheques,
 	"payment collection": DishonouredCheques,
 	"head office collection total": HeadOfficeCollectionTotal,
+	"head office pos collection": HeadOfficePOSCollection,
 	"suspense payment details": DishonouredCheques,
 	"finalized account details": DishonouredCheques,
 	"written off account details": DishonouredCheques,
