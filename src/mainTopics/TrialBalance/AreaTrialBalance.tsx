@@ -5,6 +5,11 @@ import ReportViewer from "../../components/utils/ReportViewer";
 import YearMonthDropdowns from "../../components/utils/YearMonthDropdowns";
 import ReusableCompanyList from "../../components/utils/ReusableCompanyList";
 
+type Company = {
+  compId: string;
+  CompName: string;
+};
+
 const AreaTrialBalance: React.FC = () => {
   const { user } = useUser();
   const epfNo = user?.Userno || "";
@@ -23,7 +28,7 @@ const AreaTrialBalance: React.FC = () => {
   // Style classes
   const maroon = "text-[#7A0000]";
 
-  const handleViewReport = async (company: { compId: string; CompName: string }) => {
+  const handleViewReport = async (company: Company) => {
     if (!selectedYear || !selectedMonth) {
       toast.error("Please select both Year and Month first.");
       return;

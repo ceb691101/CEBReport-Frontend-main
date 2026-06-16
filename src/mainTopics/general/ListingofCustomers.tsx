@@ -15,7 +15,6 @@ interface FilterOption {
 }
 
 interface FiltersData {
-  // API may return PascalCase or camelCase — we handle both
   BillCycle?: string;            billCycle?: string;
   Tariffs?: FilterOption[];      tariffs?: FilterOption[];
   Transformers?: FilterOption[]; transformers?: FilterOption[];
@@ -59,7 +58,6 @@ type Operator = "=" | ">" | "<" | ">=" | "<=";
 const fmt = (n: number, d = 2) =>
   n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 
-// Accept PascalCase or camelCase from API
 const pick = <T,>(a: T | undefined, b: T | undefined, fb: T): T => a ?? b ?? fb;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -82,11 +80,7 @@ const ListingOfCustomers: React.FC = () => {
   // ── Loading flags ──────────────────────────────────────────────────────────
   const [isLoadingAreas,   setIsLoadingAreas]   = useState(false);
   const [isLoadingFilters, setIsLoadingFilters] = useState(false);
-  // filtersLoaded is set to true ONLY after the /filters API call succeeds.
-  // We use this (not !!billCycle) as the ready-gate because React setState
-  // is async — billCycle may still be "" on the render cycle right after
-  // setBillCycle(bc) is called inside the async function.
-  const [filtersLoaded, setFiltersLoaded] = useState(false);
+  const [filtersLoaded,    setFiltersLoaded]    = useState(false);
 
   // ── Error state ────────────────────────────────────────────────────────────
   const [areaError,   setAreaError]   = useState<string | null>(null);
@@ -99,13 +93,13 @@ const ListingOfCustomers: React.FC = () => {
   const [selectedAreaName, setSelectedAreaName] = useState("");
 
   // ── Filter field state ─────────────────────────────────────────────────────
-  const [useTariff,  setUseTariff]  = useState(false); const [tariff,  setTariff]  = useState("");
-  const [useTrans,   setUseTrans]   = useState(false); const [trans,   setTrans]   = useState("");
-  const [usePhase,   setUsePhase]   = useState(false); const [phase,   setPhase]   = useState("");
-  const [useConn,    setUseConn]    = useState(false); const [conn,    setConn]    = useState("");
-  const [useReader,  setUseReader]  = useState(false); const [reader,  setReader]  = useState("");
-  const [usePack,    setUsePack]    = useState(false); const [pack,    setPack]    = useState("");
-  const [useDepot,   setUseDepot]   = useState(false); const [depot,   setDepot]   = useState("");
+  const [useTariff, setUseTariff] = useState(false); const [tariff, setTariff] = useState("");
+  const [useTrans,  setUseTrans]  = useState(false); const [trans,  setTrans]  = useState("");
+  const [usePhase,  setUsePhase]  = useState(false); const [phase,  setPhase]  = useState("");
+  const [useConn,   setUseConn]   = useState(false); const [conn,   setConn]   = useState("");
+  const [useReader, setUseReader] = useState(false); const [reader, setReader] = useState("");
+  const [usePack,   setUsePack]   = useState(false); const [pack,   setPack]   = useState("");
+  const [useDepot,  setUseDepot]  = useState(false); const [depot,  setDepot]  = useState("");
 
   const [useBal,  setUseBal]  = useState(false);
   const [balOp,   setBalOp]   = useState<Operator>("=");
@@ -127,14 +121,9 @@ const ListingOfCustomers: React.FC = () => {
     setAreaError(null);
     fetch("/misapi/api/bulk/areas", { headers: { Accept: "application/json" } })
       .then(async r => {
-        if (!r.ok) {
-          throw new Error(`HTTP ${r.status}: ${r.statusText}`);
-        }
-        try {
-          return await r.json();
-        } catch (e) {
-          throw new Error("Invalid JSON response from areas API");
-        }
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        try { return await r.json(); }
+        catch (e) { throw new Error("Invalid JSON response from areas API"); }
       })
       .then(d => setAreas(d.data || []))
       .catch(e => setAreaError(e.message))
@@ -143,7 +132,6 @@ const ListingOfCustomers: React.FC = () => {
 
   // ── 2. When area changes → get bill cycle → get filters ───────────────────
   useEffect(() => {
-    // Reset everything when area is cleared
     if (!areaCode) {
       setBillCycle("");
       setFilters(null);
@@ -156,7 +144,6 @@ const ListingOfCustomers: React.FC = () => {
 
     let cancelled = false;
 
-    // Reset state for new area
     setIsLoadingFilters(true);
     setFiltersLoaded(false);
     setBillCycle("");
@@ -165,7 +152,6 @@ const ListingOfCustomers: React.FC = () => {
     setFilterError(null);
     setReportError(null);
 
-    // ── Helper: pull billCycle string out of any response shape ────────────
     const extractBc = (json: any): string => {
       const n = json?.data ?? json?.Data ?? json ?? null;
       return String(
@@ -176,28 +162,17 @@ const ListingOfCustomers: React.FC = () => {
 
     const run = async () => {
       try {
-        // ── Step 1: resolve max bill cycle ──────────────────────────────────
-        // The listing-of-customers/max-bill-cycle endpoint may not be deployed
-        // yet (404). We try it first, then fall back to areas-position which
-        // uses the same ordinary DB connection and is confirmed live.
         let resolvedBc = "";
 
         for (const url of [
-          `/misapi/api/listing-of-customers/max-bill-cycle?areaCode=${areaCode}`,
-          `/misapi/api/areas-position/max-bill-cycle?areaCode=${areaCode}`,
+          `/misapi/api/billsmry/prn_dat_1/billcycle/max?areaCode=${areaCode}`,
         ]) {
           try {
             const r = await fetch(url, { headers: { Accept: "application/json" } });
-            // A 404 response still parses as JSON on this server (IIS returns
-            // {"Message":"No HTTP resource…"}), so we check status first.
             if (!r.ok) { console.warn(`[LOC] ${url} → ${r.status}`); continue; }
             let j;
-            try {
-              j = await r.json();
-            } catch (e) {
-              console.warn(`[LOC] ${url} → Invalid JSON response:`, e);
-              continue;
-            }
+            try { j = await r.json(); }
+            catch (e) { console.warn(`[LOC] ${url} → Invalid JSON:`, e); continue; }
             console.log(`[LOC] bill-cycle from ${url}:`, JSON.stringify(j));
             resolvedBc = extractBc(j);
             if (resolvedBc) break;
@@ -215,10 +190,6 @@ const ListingOfCustomers: React.FC = () => {
 
         if (!cancelled) setBillCycle(resolvedBc);
 
-        // ── Step 2: try to load filter dropdowns (may also be 404) ──────────
-        // If the endpoint is not yet deployed we still unlock the UI so the
-        // user can run the report without pre-filled dropdowns — the filter
-        // inputs fall back to free-text when no options are available.
         try {
           const fRes = await fetch(
             `/misapi/api/listing-of-customers/filters?areaCode=${areaCode}&billCycle=${resolvedBc}`,
@@ -227,12 +198,9 @@ const ListingOfCustomers: React.FC = () => {
 
           if (fRes.ok) {
             let fJson;
-            try {
-              fJson = await fRes.json();
-            } catch (e) {
-              console.warn("[LOC] filters endpoint returned invalid JSON:", e);
-              // Continue without filters - UI will work with empty dropdowns
-            }
+            try { fJson = await fRes.json(); }
+            catch (e) { console.warn("[LOC] filters endpoint returned invalid JSON:", e); }
+
             if (fJson) {
               console.log("[LOC] filters response:", JSON.stringify(fJson));
               const fData = fJson?.data ?? fJson?.Data ?? null;
@@ -257,8 +225,6 @@ const ListingOfCustomers: React.FC = () => {
           console.warn("[LOC] filters fetch error, continuing without options:", e);
         }
 
-        // Unlock the UI regardless of whether filter options loaded — the
-        // dropdowns degrade to free-text inputs when opts is empty.
         if (!cancelled) {
           setFiltersLoaded(true);
           setFilterError(null);
@@ -273,7 +239,6 @@ const ListingOfCustomers: React.FC = () => {
     };
 
     run();
-
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [areaCode]);
@@ -318,54 +283,47 @@ const ListingOfCustomers: React.FC = () => {
       useArrearsPosition: useArr,
     };
 
-    if (useTariff && tariff) payload.tariff = tariff;
-    if (useTrans && trans) payload.transformer = trans;
-    if (usePhase && phase) payload.phase = phase;
-    if (useConn && conn) payload.connectionType = conn;
-    if (useReader && reader) payload.readerCode = reader;
-    if (usePack && pack) payload.dailyPackNo = pack;
-    if (useDepot && depot) payload.depot = depot;
-    if (useBal && balAmt) {
+    if (useTariff && tariff)   payload.tariff = tariff;
+    if (useTrans  && trans)    payload.transformer = trans;
+    if (usePhase  && phase)    payload.phase = phase;
+    if (useConn   && conn)     payload.connectionType = conn;
+    if (useReader && reader)   payload.readerCode = reader;
+    if (usePack   && pack)     payload.dailyPackNo = pack;
+    if (useDepot  && depot)    payload.depot = depot;
+    if (useBal    && balAmt) {
       payload.balanceOperator = balOp;
-      payload.balanceAmount = balAmt;
+      payload.balanceAmount   = balAmt;
     }
     if (usePay && payDate) {
       payload.lastPaymentOperator = payOp;
-      payload.lastPaymentDate = payDate;
+      payload.lastPaymentDate     = payDate;
     }
     if (useArr && arrPos) {
-      payload.arrearsOperator = arrOp;
-      payload.arrearsPosition = arrPos;
+      payload.arrearsOperator  = arrOp;
+      payload.arrearsPosition  = arrPos;
     }
 
     try {
-      const url = "/misapi/api/listing-of-customers/report";
-      const res = await fetch(url, {
-        method: "POST",
+      const res  = await fetch("/misapi/api/listing-of-customers/report", {
+        method:  "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(payload),
+        body:    JSON.stringify(payload),
       });
 
       const text = await res.text();
       let data: any = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (e) {
-        console.warn("[LOC] report API returned non-JSON text:", text);
-      }
+      try { data = text ? JSON.parse(text) : null; }
+      catch (e) { console.warn("[LOC] report API returned non-JSON text:", text); }
 
       if (!res.ok) {
-        const errorMessage = data?.errorMessage || data?.Message || text || `${res.status} ${res.statusText}`;
-        throw new Error(errorMessage);
+        throw new Error(data?.errorMessage || data?.Message || text || `${res.status} ${res.statusText}`);
       }
 
       if (data?.data && Array.isArray(data.data)) {
         setReportData(data.data);
         setSelectedAreaName(areas.find(a => a.AreaCode === areaCode)?.AreaName ?? areaCode);
         setReportVisible(true);
-        if (data.data.length === 0) {
-          setReportError("No records found for the selected criteria.");
-        }
+        if (data.data.length === 0) setReportError("No records found for the selected criteria.");
       } else {
         setReportError(data?.errorMessage || "Cannot get listing of customers report data.");
       }
@@ -378,9 +336,11 @@ const ListingOfCustomers: React.FC = () => {
 
   // ── CSV export ─────────────────────────────────────────────────────────────
   const downloadCSV = () => {
-    const headers = ["Acct. Number","Meter Numbers","Customer Name","Address","Tariff",
+    const headers = [
+      "Acct. Number","Meter Numbers","Customer Name","Address","Tariff",
       "Current Depot","Transformer","Reader Code","KWh Charge","Current Balance",
-      "No. of Phase","Connection Type","Daily Pack No.","Walk Seq","KVA Rating"];
+      "No. of Phase","Connection Type","Daily Pack No.","Walk Seq","KVA Rating",
+    ];
     const rows = reportData.map(r => [
       r.AccountNumber, r.MeterNumbers, r.CustomerName, r.Address, r.Tariff,
       r.CurrentDepot, r.Transformer, r.ReaderCode, r.KwhCharge, r.CurrentBalance,
@@ -422,39 +382,40 @@ const ListingOfCustomers: React.FC = () => {
     setTimeout(() => { w.print(); w.close(); }, 400);
   };
 
-  // ── Resolved option lists — handle PascalCase or camelCase ────────────────
-  const oTariff  = pick(filters?.Tariffs,         filters?.tariffs,         []);
-  const oTrans   = pick(filters?.Transformers,    filters?.transformers,    []);
-  const oPhase   = pick(filters?.Phases,          filters?.phases,          []);
-  const oConn    = pick(filters?.ConnectionTypes, filters?.connectionTypes, []);
-  const oReader  = pick(filters?.ReaderCodes,     filters?.readerCodes,     []);
-  const oPack    = pick(filters?.DailyPacks,      filters?.dailyPacks,      []);
-  const oDepot   = pick(filters?.Depots,          filters?.depots,          []);
+  // ── Resolved option lists ──────────────────────────────────────────────────
+  const oTariff = pick(filters?.Tariffs,         filters?.tariffs,         []);
+  const oTrans  = pick(filters?.Transformers,    filters?.transformers,    []);
+  const oPhase  = pick(filters?.Phases,          filters?.phases,          []);
+  const oConn   = pick(filters?.ConnectionTypes, filters?.connectionTypes, []);
+  const oReader = pick(filters?.ReaderCodes,     filters?.readerCodes,     []);
+  const oPack   = pick(filters?.DailyPacks,      filters?.dailyPacks,      []);
+  const oDepot  = pick(filters?.Depots,          filters?.depots,          []);
 
-  // ── ready: true only after filters API call succeeded ─────────────────────
-  // Do NOT use !!billCycle here — setState is async, billCycle may be ""
-  // on the render cycle immediately after setBillCycle(bc) is called.
+  // ready: true only after filters API call succeeded
   const ready = filtersLoaded && !isLoadingFilters;
 
   // ── Sub-components ─────────────────────────────────────────────────────────
 
+  // Dropdown or free-text fallback. Disabled unless area is ready AND checkbox is checked.
   const DarkSelect = ({
-    value, onChange, disabled, opts,
+    value, onChange, active, opts,
   }: {
-    value: string; onChange: (v: string) => void;
-    disabled: boolean; opts: FilterOption[];
+    value: string;
+    onChange: (v: string) => void;
+    active: boolean;       // true = checkbox is checked AND area is ready
+    opts: FilterOption[];
   }) => {
-    // If the filters endpoint hasn't loaded any options yet, fall back to a
-    // free-text input so the user can still type a value manually.
     if (opts.length === 0) {
       return (
         <input
           type="text"
           value={value}
           onChange={e => onChange(e.target.value)}
-          disabled={disabled}
-          placeholder={disabled ? "" : "type value…"}
-          className="w-52 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+          disabled={!active}
+          placeholder={active ? "type value…" : ""}
+          className="w-52 px-2 py-1.5 text-xs border border-gray-300 rounded-md
+                     focus:ring-2 focus:ring-[#7A0000] focus:border-transparent
+                     disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
         />
       );
     }
@@ -462,8 +423,10 @@ const ListingOfCustomers: React.FC = () => {
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        disabled={disabled}
-        className="w-52 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+        disabled={!active}
+        className="w-52 px-2 py-1.5 text-xs border border-gray-300 rounded-md
+                   focus:ring-2 focus:ring-[#7A0000] focus:border-transparent
+                   disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
       >
         <option value=""></option>
         {opts.map((o, idx) => (
@@ -473,14 +436,17 @@ const ListingOfCustomers: React.FC = () => {
     );
   };
 
+  // Operator selector — disabled unless its row's checkbox is checked AND area is ready
   const OpSel = ({
-    val, set, on,
-  }: { val: Operator; set: (v: Operator) => void; on: boolean }) => (
+    val, set, active,
+  }: { val: Operator; set: (v: Operator) => void; active: boolean }) => (
     <select
       value={val}
       onChange={e => set(e.target.value as Operator)}
-      disabled={!on}
-      className="w-14 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+      disabled={!active}
+      className="w-14 px-2 py-1.5 text-xs border border-gray-300 rounded-md
+                 focus:ring-2 focus:ring-[#7A0000] focus:border-transparent
+                 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
     >
       {(["=", ">", "<", ">=", "<="] as Operator[]).map(o => (
         <option key={o} value={o}>{o}</option>
@@ -488,11 +454,14 @@ const ListingOfCustomers: React.FC = () => {
     </select>
   );
 
+  // Row wrapper — checkbox is disabled while area/filters are still loading
   const Row = ({
-    label, checked, onCheck, children, checkboxDisabled,
+    label, checked, onCheck, children,
   }: {
-    label: string; checked: boolean;
-    onCheck: (v: boolean) => void; children: React.ReactNode; checkboxDisabled?: boolean;
+    label: string;
+    checked: boolean;
+    onCheck: (v: boolean) => void;
+    children: React.ReactNode;
   }) => (
     <div className="flex items-center gap-4 p-2 border-b border-gray-200">
       <label className="flex items-center gap-2 cursor-pointer select-none flex-shrink-0 w-48">
@@ -500,8 +469,9 @@ const ListingOfCustomers: React.FC = () => {
           type="checkbox"
           checked={checked}
           onChange={e => onCheck(e.target.checked)}
-          disabled={checkboxDisabled}
-          className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300 rounded"
+          disabled={!ready}   // checkbox only available once area+filters are loaded
+          className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300 rounded
+                     disabled:cursor-not-allowed"
         />
         <span className="text-xs text-gray-700">{label}</span>
       </label>
@@ -519,9 +489,7 @@ const ListingOfCustomers: React.FC = () => {
       {!reportVisible && (
         <>
           <div className="mb-6">
-            <h2 className={`text-xl font-bold ${maroon}`}>
-              Listing of Customers
-            </h2>
+            <h2 className={`text-xl font-bold ${maroon}`}>Listing of Customers</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -544,7 +512,8 @@ const ListingOfCustomers: React.FC = () => {
                   value={areaCode}
                   onChange={e => { setAreaCode(e.target.value); setReportError(null); }}
                   required
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md
+                             focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
                 >
                   <option value="">Select Area</option>
                   {areas.map(a => (
@@ -554,123 +523,110 @@ const ListingOfCustomers: React.FC = () => {
               )}
             </div>
 
-            {/* Status messages below area */}
+            {/* Status messages */}
             {isLoadingFilters && (
-              <div className="text-xs text-blue-600 mt-1">
-                Loading filter options…
-              </div>
+              <div className="text-xs text-blue-600 mt-1">Loading filter options…</div>
             )}
             {filterError && !isLoadingFilters && (
-              <div className="text-xs text-red-600 mt-1">
-                {filterError}
-              </div>
+              <div className="text-xs text-red-600 mt-1">{filterError}</div>
             )}
             {ready && (
-              <div className="text-xs text-green-600 mt-1">
-                Bill Cycle: {billCycle}
-              </div>
+              <div className="text-xs text-green-600 mt-1">Bill Cycle: {billCycle}</div>
             )}
 
-            {/* Filter rows */}
+            {/* ── Filter rows ────────────────────────────────────────────── */}
             <div style={{ borderTop: "1px solid #3a3a52" }}>
 
-              <Row label="Tariff"
-                checked={useTariff}
-                onCheck={v => { setUseTariff(v); if (!v) setTariff(""); }}
-                checkboxDisabled={!tariff}>
+              {/* Tariff — dropdown active only when checkbox is checked */}
+              <Row label="Tariff" checked={useTariff}
+                onCheck={v => { setUseTariff(v); if (!v) setTariff(""); }}>
                 <DarkSelect value={tariff} onChange={setTariff}
-                  disabled={!ready} opts={oTariff} />
+                  active={ready && useTariff} opts={oTariff} />
               </Row>
 
-              <Row label="Transformer"
-                checked={useTrans}
-                onCheck={v => { setUseTrans(v); if (!v) setTrans(""); }}
-                checkboxDisabled={!trans}>
+              {/* Transformer */}
+              <Row label="Transformer" checked={useTrans}
+                onCheck={v => { setUseTrans(v); if (!v) setTrans(""); }}>
                 <DarkSelect value={trans} onChange={setTrans}
-                  disabled={!ready} opts={oTrans} />
+                  active={ready && useTrans} opts={oTrans} />
               </Row>
 
-              <Row label="Phase"
-                checked={usePhase}
-                onCheck={v => { setUsePhase(v); if (!v) setPhase(""); }}
-                checkboxDisabled={!phase}>
+              {/* Phase */}
+              <Row label="Phase" checked={usePhase}
+                onCheck={v => { setUsePhase(v); if (!v) setPhase(""); }}>
                 <DarkSelect value={phase} onChange={setPhase}
-                  disabled={!ready} opts={oPhase} />
+                  active={ready && usePhase} opts={oPhase} />
               </Row>
 
-              <Row label="Connection Type"
-                checked={useConn}
-                onCheck={v => { setUseConn(v); if (!v) setConn(""); }}
-                checkboxDisabled={!conn}>
+              {/* Connection Type */}
+              <Row label="Connection Type" checked={useConn}
+                onCheck={v => { setUseConn(v); if (!v) setConn(""); }}>
                 <DarkSelect value={conn} onChange={setConn}
-                  disabled={!ready} opts={oConn} />
+                  active={ready && useConn} opts={oConn} />
               </Row>
 
-              <Row label="Reader"
-                checked={useReader}
-                onCheck={v => { setUseReader(v); if (!v) setReader(""); }}
-                checkboxDisabled={!reader}>
+              {/* Reader */}
+              <Row label="Reader" checked={useReader}
+                onCheck={v => { setUseReader(v); if (!v) setReader(""); }}>
                 <DarkSelect value={reader} onChange={setReader}
-                  disabled={!ready} opts={oReader} />
+                  active={ready && useReader} opts={oReader} />
               </Row>
 
-              <Row label="Daily Pack"
-                checked={usePack}
-                onCheck={v => { setUsePack(v); if (!v) setPack(""); }}
-                checkboxDisabled={!pack}>
+              {/* Daily Pack */}
+              <Row label="Daily Pack" checked={usePack}
+                onCheck={v => { setUsePack(v); if (!v) setPack(""); }}>
                 <DarkSelect value={pack} onChange={setPack}
-                  disabled={!ready} opts={oPack} />
+                  active={ready && usePack} opts={oPack} />
               </Row>
 
-              <Row label="Depot"
-                checked={useDepot}
-                onCheck={v => { setUseDepot(v); if (!v) setDepot(""); }}
-                checkboxDisabled={!depot}>
+              {/* Depot */}
+              <Row label="Depot" checked={useDepot}
+                onCheck={v => { setUseDepot(v); if (!v) setDepot(""); }}>
                 <DarkSelect value={depot} onChange={setDepot}
-                  disabled={!ready} opts={oDepot} />
+                  active={ready && useDepot} opts={oDepot} />
               </Row>
 
               {/* Balance */}
-              <Row label="Balance"
-                checked={useBal}
-                onCheck={v => { setUseBal(v); if (!v) { setBalAmt(""); setBalOp("="); } }}
-                checkboxDisabled={!balAmt}>
-                <OpSel val={balOp} set={setBalOp} on={ready} />
+              <Row label="Balance" checked={useBal}
+                onCheck={v => { setUseBal(v); if (!v) { setBalAmt(""); setBalOp("="); } }}>
+                <OpSel val={balOp} set={setBalOp} active={ready && useBal} />
                 <input
                   type="number"
                   value={balAmt}
                   onChange={e => setBalAmt(e.target.value)}
-                  disabled={!ready}
-                  className="w-32 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  disabled={!ready || !useBal}
+                  className="w-32 px-2 py-1.5 text-xs border border-gray-300 rounded-md
+                             focus:ring-2 focus:ring-[#7A0000] focus:border-transparent
+                             disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                 />
               </Row>
 
               {/* Last Payment Date */}
-              <Row label="Last Payment Date"
-                checked={usePay}
-                onCheck={v => { setUsePay(v); if (!v) { setPayDate(""); setPayOp("="); } }}
-                checkboxDisabled={!payDate}>
-                <OpSel val={payOp} set={setPayOp} on={ready} />
+              <Row label="Last Payment Date" checked={usePay}
+                onCheck={v => { setUsePay(v); if (!v) { setPayDate(""); setPayOp("="); } }}>
+                <OpSel val={payOp} set={setPayOp} active={ready && usePay} />
                 <input
                   type="date"
                   value={payDate}
                   onChange={e => setPayDate(e.target.value)}
-                  disabled={!ready}
-                  className="w-40 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  disabled={!ready || !usePay}
+                  className="w-40 px-2 py-1.5 text-xs border border-gray-300 rounded-md
+                             focus:ring-2 focus:ring-[#7A0000] focus:border-transparent
+                             disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                 />
               </Row>
 
               {/* Arrears Position */}
-              <Row label="Arrears Position"
-                checked={useArr}
-                onCheck={v => { setUseArr(v); if (!v) { setArrPos("1"); setArrOp(">="); } }}
-                checkboxDisabled={arrPos === "1"}>
-                <OpSel val={arrOp} set={setArrOp} on={ready} />
+              <Row label="Arrears Position" checked={useArr}
+                onCheck={v => { setUseArr(v); if (!v) { setArrPos("1"); setArrOp(">="); } }}>
+                <OpSel val={arrOp} set={setArrOp} active={ready && useArr} />
                 <select
                   value={arrPos}
                   onChange={e => setArrPos(e.target.value)}
-                  disabled={!ready}
-                  className="w-14 px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  disabled={!ready || !useArr}
+                  className="w-14 px-2 py-1.5 text-xs border border-gray-300 rounded-md
+                             focus:ring-2 focus:ring-[#7A0000] focus:border-transparent
+                             disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                 >
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
                     <option key={n} value={String(n)}>{n}</option>
@@ -682,25 +638,29 @@ const ListingOfCustomers: React.FC = () => {
 
             {/* Submit error */}
             {reportError && (
-              <div className="text-xs text-red-600 mt-4">
-                {reportError}
-              </div>
+              <div className="text-xs text-red-600 mt-4">{reportError}</div>
             )}
 
-            {/* View Report button */}
+            {/* Generate Report button */}
             <div className="w-full mt-6 flex justify-end">
               <button
                 type="submit"
                 disabled={loading || !areaCode || !billCycle || isLoadingFilters}
                 className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
                   ${maroonGrad} text-white
-                  ${loading || !areaCode || !billCycle || isLoadingFilters ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"}`}
+                  ${loading || !areaCode || !billCycle || isLoadingFilters
+                    ? "opacity-70 cursor-not-allowed"
+                    : "hover:opacity-90"}`}
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10"
+                        stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962
+                           7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                     Loading...
                   </span>
@@ -726,13 +686,15 @@ const ListingOfCustomers: React.FC = () => {
             </div>
             <div className="flex gap-2 mt-2 md:mt-0">
               <button onClick={downloadCSV}
-                className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700
-                           bg-white rounded text-xs font-medium shadow-sm hover:bg-blue-50 transition">
+                className="flex items-center gap-1 px-3 py-1.5 border border-blue-400
+                           text-blue-700 bg-white rounded text-xs font-medium shadow-sm
+                           hover:bg-blue-50 transition">
                 <FaFileDownload className="w-3 h-3" /> CSV
               </button>
               <button onClick={printPDF}
-                className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700
-                           bg-white rounded text-xs font-medium shadow-sm hover:bg-green-50 transition">
+                className="flex items-center gap-1 px-3 py-1.5 border border-green-400
+                           text-green-700 bg-white rounded text-xs font-medium shadow-sm
+                           hover:bg-green-50 transition">
                 <FaPrint className="w-3 h-3" /> PDF
               </button>
               <button
@@ -753,13 +715,14 @@ const ListingOfCustomers: React.FC = () => {
                   <thead>
                     <tr className="bg-[#b0e0e8] text-gray-800">
                       {[
-                        "Acct. Number", "Meter Numbers", "Customer Name", "Address",
-                        "Tariff", "Current Depot", "Transformer", "Reader Code",
-                        "KWh Charge", "Current Balance", "No. of Phase",
-                        "Connection Type", "Daily Pack No.", "Walk Seq", "KVA Rating",
+                        "Acct. Number","Meter Numbers","Customer Name","Address",
+                        "Tariff","Current Depot","Transformer","Reader Code",
+                        "KWh Charge","Current Balance","No. of Phase",
+                        "Connection Type","Daily Pack No.","Walk Seq","KVA Rating",
                       ].map(h => (
                         <th key={h}
-                          className="border border-gray-300 px-2 py-2 text-center font-bold whitespace-nowrap">
+                          className="border border-gray-300 px-2 py-2 text-center
+                                     font-bold whitespace-nowrap">
                           {h}
                         </th>
                       ))}
