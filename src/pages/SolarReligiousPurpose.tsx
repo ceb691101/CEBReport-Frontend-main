@@ -31,21 +31,22 @@ const SolarReligiousPurpose = () => {
   };
 
   const renderSubtopicContent = (subtopicName: string) => {
-    switch (subtopicName) {
-      case "Area Wise SRP Application PIV (PIVI) To be Paid Report":
+    const normalized = subtopicName.toLowerCase().replace(/\s+/g, " ").trim();
+    switch (normalized) {
+      case "area wise srp application piv (pivi) to be paid report":
         return <AreaWiseSRPApplicationPIV />;
-      case "Area Wise SRP Application PIV Status Report":
+      case "area wise srp application piv status report":
         return <AreaWiseSRPApplicationPIVStatus />;
-      case "Area Wise SRP Estimation PIV (PIVII) To be Paid Report":
+      case "area wise srp estimation piv (pivii) to be paid report":
         return <AreaWiseSRPEstimationPIV />;
 
-      case "Area Wise SRP Application PIV (PIVI) Paid Report":
+      case "area wise srp application piv (pivi) paid report":
         return <AreaWiseSRPApplicationPIVPaidReport/>;
 
-       case "Division Wise SRP Application PIV (PIVI) To be Paid Report":
+       case "division wise srp application piv (pivi) to be paid report":
         return <DivisionWiseSRPApplicationPIVPaidReport/>;
 
-      case "Area Wise SRP Estimation PIV (PIVII) Paid Report":
+      case "area wise srp estimation piv (pivii) paid report":
         return <AreaWiseSRPEstimationPIVPaidReport/>;
 
       default:
