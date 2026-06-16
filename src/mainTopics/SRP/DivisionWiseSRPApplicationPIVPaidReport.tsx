@@ -124,7 +124,7 @@ const DivisionWiseSRPApplicationPIVPendingReport: React.FC = () => {
 
     try {
       const url =
-        `misapi/api/area-wise-srp-piv-pending/list` +
+        `/misapi/api/area-wise-srp-piv-pending/list` +
         `?compId=${company.compId.trim()}` +
         `&fromDate=${fromDate.replace(/-/g, "/")}` +
         `&toDate=${toDate.replace(/-/g, "/")}`;

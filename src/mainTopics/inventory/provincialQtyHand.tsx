@@ -129,7 +129,7 @@ const ProvincialQtyHand: React.FC = () => {
       }
       setLoading(true);
       try {
-        const res = await fetch(`/misapi/api/materialcommittedstock/provinces`);
+        const res = await fetch(`/misapi/api/incomeexpenditure/Usercompanies/${encodeURIComponent(epfNo)}/60`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
