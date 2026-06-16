@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { 
-  BarChart3, Menu, X, Home, DollarSign, 
-  // Users,
+import {
+  BarChart3, Menu, X, Home, DollarSign,
+  Users,
   // Briefcase, Sun, CreditCard, Target, Package
 } from "lucide-react";
 
@@ -20,18 +20,18 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
   const dashboards = [
     { id: "default", label: "Default", icon: Home },
     { id: "financial", label: "Financial", icon: DollarSign },
-   /* { id: "customer", label: "Customer Management", icon: Users },
-    { id: "operations", label: "Operations/Field", icon: Briefcase },
-    { id: "analytics", label: "Analytics", icon: BarChart3 },
-    { id: "solar", label: "Solar Operations", icon: Sun },
-    { id: "collections", label: "Collections & Payments", icon: CreditCard },
-    { id: "executive", label: "Executive/KPI", icon: Target },
-    { id: "inventory", label: "Inventory & Procurement", icon: Package },*/
+    { id: "dgm", label: "DGM Dashboard", icon: Users },
+    /* { id: "operations", label: "Operations/Field", icon: Briefcase },
+     { id: "analytics", label: "Analytics", icon: BarChart3 },
+     { id: "solar", label: "Solar Operations", icon: Sun },
+     { id: "collections", label: "Collections & Payments", icon: CreditCard },
+     { id: "executive", label: "Executive/KPI", icon: Target },
+     { id: "inventory", label: "Inventory & Procurement", icon: Package },*/
   ];
 
   return (
     <div className={`${isOpen ? 'w-64' : 'w-16'} bg-white border-r border-gray-200 shadow-sm transition-all duration-300 h-screen flex flex-col`}>
-      
+
       {/* HEADER: Only shows Hamburger when collapsed */}
       <div className={`p-4 border-b border-gray-200 flex items-center ${isOpen ? 'justify-between' : 'justify-center'}`}>
         {isOpen && (
@@ -40,7 +40,7 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
             <h2 className="text-sm font-semibold text-gray-900 truncate tracking-wide">Dashboard</h2>
           </div>
         )}
-        
+
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
@@ -57,13 +57,11 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
             <button
               key={dashboard.id}
               onClick={() => onSelectDashboard(dashboard.id)}
-              className={`w-full rounded-lg text-sm transition-all flex items-center ${
-                isOpen ? 'px-4 py-3 gap-3 justify-start' : 'p-3 justify-center'
-              } ${
-                activeDashboard === dashboard.id
+              className={`w-full rounded-lg text-sm transition-all flex items-center ${isOpen ? 'px-4 py-3 gap-3 justify-start' : 'p-3 justify-center'
+                } ${activeDashboard === dashboard.id
                   ? "bg-[var(--ceb-maroon)] text-white shadow-md font-medium"
                   : "text-gray-700 hover:bg-gray-100 font-normal"
-              }`}
+                }`}
               title={!isOpen ? dashboard.label : ""}
             >
               <Icon className={`w-5 h-5 flex-shrink-0`} />

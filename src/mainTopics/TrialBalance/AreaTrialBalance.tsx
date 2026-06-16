@@ -209,11 +209,10 @@ const AreaTrialBalance: React.FC = () => {
             }
           }, [epfNo])}
           onViewItem={(company: { id: string; name: string }) => {
-            const typedCompany: Company = {
+            handleViewReport({
               compId: company.id,
               CompName: company.name,
-            };
-            handleViewReport(typedCompany);
+            });
           }}
           idColumnTitle="Company Code"
           nameColumnTitle="Company Name"

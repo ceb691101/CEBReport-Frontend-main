@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import DefaultDashboardPage from "../mainTopics/Dashboard/DefaultDashboardPage";
 import AnalyticsDashboardPage from "../mainTopics/Dashboard/AnalyticsDashboardPage";
 import FinancialDashboardPage from "../mainTopics/Dashboard/FinancialDashboardPage";
-import CustomerDashboardPage from "../mainTopics/Dashboard/CustomerDashboardPage";
+import DgmDashboardPage from "../mainTopics/Dashboard/DgmDashboardPage";
 import OperationsDashboardPage from "../mainTopics/Dashboard/OperationsDashboardPage";
 import SolarDashboardPage from "../mainTopics/Dashboard/SolarDashboardPage";
 import CollectionsDashboardPage from "../mainTopics/Dashboard/CollectionsDashboardPage";
@@ -14,7 +14,7 @@ import InventoryDashboardPage from "../mainTopics/Dashboard/InventoryDashboardPa
 const secondaryDashboardPages: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboardPage,
   financial: FinancialDashboardPage,
-  customer: CustomerDashboardPage,
+  dgm: DgmDashboardPage,
   operations: OperationsDashboardPage,
   solar: SolarDashboardPage,
   collections: CollectionsDashboardPage,
@@ -25,7 +25,7 @@ const secondaryDashboardPages: Record<string, React.ComponentType> = {
 const dashboardKeyBySubtopicId: Record<number, string> = {
   2000: "default",
   2001: "financial",
-  2002: "customer",
+  2002: "dgm",
   2003: "operations",
   2004: "analytics",
   2005: "solar",
