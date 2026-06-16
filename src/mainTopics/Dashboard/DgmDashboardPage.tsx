@@ -10,9 +10,16 @@ import {
   ArrowUpDown,
   Info,
   TrendingUp,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Building,
+  Layers,
+  Activity,
 } from "lucide-react";
 import DashboardHeader from "../../components/mainTopics/Dashboard/DashboardHeader";
 import DashboardSelector from "../../components/mainTopics/Dashboard/DashboardSelector";
+import { useUser } from "../../contexts/UserContext";
 import {
   ResponsiveContainer,
   BarChart,
@@ -22,6 +29,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  AreaChart,
+  Area,
 } from "recharts";
 
 // Scroll reveal transition hook
@@ -69,49 +78,187 @@ const Reveal: React.FC<{ children: React.ReactNode; delay?: number; className?: 
   );
 };
 
+// Custom Tooltip component for side-by-side grouped details
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const grouped: Record<string, { app?: number; conn?: number }> = {};
+    
+    payload.forEach((item: any) => {
+      const nameStr = item.name || "";
+      const isApp = nameStr.endsWith(" (App)");
+      const cleanName = nameStr.replace(" (App)", "").replace(" (Conn)", "");
+      
+      if (!grouped[cleanName]) {
+        grouped[cleanName] = {};
+      }
+      
+      if (isApp) {
+        grouped[cleanName].app = item.value;
+      } else {
+        grouped[cleanName].conn = item.value;
+      }
+    });
+
+    return (
+      <div className="bg-white/95 backdrop-blur-md p-4 border border-slate-200/80 shadow-xl rounded-2xl text-xs space-y-3 font-sans min-w-[260px]">
+        <div className="font-extrabold text-slate-800 text-sm border-b border-slate-100 pb-1.5 font-mono">
+          Dept: {label}
+        </div>
+        <div className="space-y-2">
+          {Object.entries(grouped).map(([typeName, values]) => {
+            const appVal = values.app || 0;
+            const connVal = values.conn || 0;
+            const pendingVal = Math.max(0, appVal - connVal);
+            
+            return (
+              <div key={typeName} className="flex flex-col gap-1 border-b border-slate-100/50 pb-2 last:border-0 last:pb-0">
+                <span className="font-bold text-slate-700 text-[11px]">{typeName}</span>
+                <div className="flex items-center justify-between gap-4 text-[10px]">
+                  <div className="flex items-center gap-1 text-orange-700 font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                    <span>Applied: {appVal}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-700 font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span>Given: {connVal}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-red-600 font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    <span>Pending: {pendingVal}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const DgmDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const activeDashboard = "dgm";
+  const { user } = useUser();
+  const epfNo = user?.Userno || "";
 
   const [pivTotal, setPivTotal] = useState<{ date: string; amount: number }[]>([]);
   const [stockValue, setStockValue] = useState<number | null>(null);
   const [appCounts, setAppCounts] = useState<{ deptId: string; description: string; appType: string; noOfApplications: number }[]>([]);
+  const [connectionsGiven, setConnectionsGiven] = useState<{ deptId: string; description: string; appType: string; noOfConnections: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [fetchCount, setFetchCount] = useState(0);
+  
+  // Year and Company Selection States (Defaulting to 2024 because the DB contains records up to 2024)
+  const [selectedYear, setSelectedYear] = useState<number>(2024);
+  const [companies, setCompanies] = useState<{ compId: string; compName: string }[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("WPN");
 
   // UX Interactive States
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "count-desc" | "count-asc">("name");
+  const [sortBy, setSortBy] = useState<"name" | "apps-desc" | "conns-desc" | "pending-desc">("name");
   const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
+  const [expandedDepts, setExpandedDepts] = useState<Record<string, boolean>>({});
+
+  const companyDropdownRef = useRef<HTMLDivElement>(null);
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  const [companySearchQuery, setCompanySearchQuery] = useState("");
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(e.target as Node)) {
+        setIsCompanyDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const filteredCompanies = useMemo(() => {
+    return companies.filter(
+      (c) =>
+        c.compId.toLowerCase().includes(companySearchQuery.toLowerCase()) ||
+        c.compName.toLowerCase().includes(companySearchQuery.toLowerCase())
+    );
+  }, [companies, companySearchQuery]);
+
+  // Fetch authorized companies list on mount
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      if (!epfNo) return;
+      try {
+        const res = await fetch(`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/60`);
+        if (!res.ok) throw new Error("Failed to fetch companies");
+        const parsed = await res.json();
+        let rawData: any[] = [];
+        if (Array.isArray(parsed)) {
+          rawData = parsed;
+        } else if (parsed.data && Array.isArray(parsed.data)) {
+          rawData = parsed.data;
+        } else if (parsed.result && Array.isArray(parsed.result)) {
+          rawData = parsed.result;
+        }
+
+        const final = rawData
+          .map((item: any) => ({
+            compId: (item.CompId ?? item.compId ?? item.COMP_ID ?? "").toString().trim(),
+            compName: (item.CompNm ?? item.CompName ?? item.compNm ?? item.compName ?? item.COMP_NM ?? "").toString().trim(),
+          }))
+          .filter((item) => item.compId !== "");
+
+        if (final.length > 0) {
+          setCompanies(final);
+          // Set initial selected company to WPN if it is available, otherwise the first in the list
+          const hasWPN = final.some(c => c.compId.toUpperCase() === "WPN");
+          setSelectedCompanyId(hasWPN ? "WPN" : final[0].compId);
+        } else {
+          setCompanies([{ compId: "WPN", compName: "WPN" }]);
+          setSelectedCompanyId("WPN");
+        }
+      } catch (err) {
+        console.error("Failed to load authorized companies:", err);
+        setCompanies([{ compId: "WPN", compName: "WPN" }]);
+        setSelectedCompanyId("WPN");
+      }
+    };
+    fetchCompanies();
+  }, [epfNo]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const query = fetchCount > 0 ? "?refresh=true" : "";
-        const [r1, r2, r3] = await Promise.all([
-          fetch(`/misapi/api/dgm/piv-total${query}`, {
+        const queryRefresh = fetchCount > 0 ? "?refresh=true" : "";
+        const queryAppConn = `?companyId=${selectedCompanyId}&year=${selectedYear}${fetchCount > 0 ? "&refresh=true" : ""}`;
+        const [r1, r2, r3, r4] = await Promise.all([
+          fetch(`/misapi/api/dgm/piv-total${queryRefresh}`, {
             headers: { Accept: "application/json" },
           }),
-          fetch(`/misapi/api/dgm/stock-value${query}`, {
+          fetch(`/misapi/api/dgm/stock-value${queryRefresh}`, {
             headers: { Accept: "application/json" },
           }),
-          fetch(`/misapi/api/dgm/application-count${query}`, {
+          fetch(`/misapi/api/dgm/application-count${queryAppConn}`, {
+            headers: { Accept: "application/json" },
+          }),
+          fetch(`/misapi/api/dgm/connections-given${queryAppConn}`, {
             headers: { Accept: "application/json" },
           }),
         ]);
-        if (!r1.ok || !r2.ok || !r3.ok) {
+        if (!r1.ok || !r2.ok || !r3.ok || !r4.ok) {
           throw new Error("Failed to fetch DGM dashboard data");
         }
-        const [pivData, stockData, appData] = await Promise.all([
+        const [pivData, stockData, appData, connData] = await Promise.all([
           r1.json(),
           r2.json(),
           r3.json(),
+          r4.json(),
         ]);
-
+        
         const getVal = (obj: any) => obj?.Value ?? obj?.value;
         const getAt = (obj: any) => obj?.FetchedAt ?? obj?.fetchedAt;
 
@@ -128,11 +275,16 @@ const DgmDashboardPage: React.FC = () => {
         const appList = Array.isArray(getVal(appData)) ? getVal(appData) : Array.isArray(appData) ? appData : [];
         setAppCounts(appList);
 
+        // 4. Connections Given Data
+        const connList = Array.isArray(getVal(connData)) ? getVal(connData) : Array.isArray(connData) ? connData : [];
+        setConnectionsGiven(connList);
+
         // Track latest FetchedAt
         const latestTime = new Date(Math.max(
           new Date(getAt(pivData) || 0).getTime(),
           new Date(getAt(stockData) || 0).getTime(),
-          new Date(getAt(appData) || 0).getTime()
+          new Date(getAt(appData) || 0).getTime(),
+          new Date(getAt(connData) || 0).getTime()
         ));
         setLastUpdated(latestTime.getTime() > 0 ? latestTime.toLocaleTimeString() : null);
       } catch (err: any) {
@@ -142,10 +294,10 @@ const DgmDashboardPage: React.FC = () => {
       }
     };
     fetchData();
-  }, [fetchCount]);
+  }, [fetchCount, selectedYear, selectedCompanyId]);
 
-  // Calculations for PIV Weekly Collections
-  const total7DayCollection = useMemo(() => {
+  // Calculations for PIV 30-Day Collections
+  const total30DayCollection = useMemo(() => {
     return pivTotal.reduce((sum, item) => sum + (item.amount || 0), 0);
   }, [pivTotal]);
 
@@ -156,20 +308,42 @@ const DgmDashboardPage: React.FC = () => {
     }));
   }, [pivTotal]);
 
-  // Group applications by cost center/deptId for both chart and table layouts
+  // Unified data processing: Group both apps & connections given side-by-side
   const applicationChartData = useMemo(() => {
-    const deptMap: Record<string, { name: string; totalCount: number;[key: string]: any }> = {};
+    const deptMap: Record<string, { name: string; totalApps: number; totalConns: number; completionRate: number; [key: string]: any }> = {};
+
+    // 1. Group Applications Submitted
     appCounts.forEach((item) => {
       const deptKey = item.deptId || "Other";
       if (!deptMap[deptKey]) {
-        deptMap[deptKey] = { name: deptKey, totalCount: 0 };
+        deptMap[deptKey] = { name: deptKey, totalApps: 0, totalConns: 0, completionRate: 0 };
       }
       const typeLabel = item.description || "Unknown Type";
-      deptMap[deptKey][typeLabel] = (deptMap[deptKey][typeLabel] || 0) + item.noOfApplications;
-      deptMap[deptKey].totalCount += item.noOfApplications;
+      const key = `${typeLabel} (App)`;
+      deptMap[deptKey][key] = (deptMap[deptKey][key] || 0) + item.noOfApplications;
+      deptMap[deptKey].totalApps += item.noOfApplications;
     });
+
+    // 2. Group Connections Given
+    connectionsGiven.forEach((item) => {
+      const deptKey = item.deptId || "Other";
+      if (!deptMap[deptKey]) {
+        deptMap[deptKey] = { name: deptKey, totalApps: 0, totalConns: 0, completionRate: 0 };
+      }
+      const typeLabel = item.description || "Unknown Type";
+      const key = `${typeLabel} (Conn)`;
+      deptMap[deptKey][key] = (deptMap[deptKey][key] || 0) + item.noOfConnections;
+      deptMap[deptKey].totalConns += item.noOfConnections;
+    });
+
+    // 3. Compute Completion Rate & Pending
+    Object.values(deptMap).forEach((dept) => {
+      dept.completionRate = dept.totalApps > 0 ? (dept.totalConns / dept.totalApps) * 100 : 0;
+      dept.pending = Math.max(0, dept.totalApps - dept.totalConns);
+    });
+
     return Object.values(deptMap);
-  }, [appCounts]);
+  }, [appCounts, connectionsGiven]);
 
   // Filter based on Search Term
   const filteredApplicationData = useMemo(() => {
@@ -183,24 +357,51 @@ const DgmDashboardPage: React.FC = () => {
     const data = [...filteredApplicationData];
     if (sortBy === "name") {
       data.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortBy === "count-desc") {
-      data.sort((a, b) => b.totalCount - a.totalCount);
-    } else if (sortBy === "count-asc") {
-      data.sort((a, b) => a.totalCount - b.totalCount);
+    } else if (sortBy === "apps-desc") {
+      data.sort((a, b) => b.totalApps - a.totalApps);
+    } else if (sortBy === "conns-desc") {
+      data.sort((a, b) => b.totalConns - a.totalConns);
+    } else if (sortBy === "pending-desc") {
+      data.sort((a, b) => b.pending - a.pending);
     }
     return data;
   }, [filteredApplicationData, sortBy]);
 
-  // Extract unique application types for Recharts bars mapping
-  const applicationTypes = useMemo(() => {
+  // Extract unique types for Recharts mapping (Warm palette for apps, Cool palette for connections)
+  const appTypesList = useMemo(() => {
     const types = new Set<string>();
     appCounts.forEach((item) => {
-      types.add(item.description || "Unknown Type");
+      types.add(`${item.description || "Unknown Type"} (App)`);
     });
     return Array.from(types);
   }, [appCounts]);
 
-  const chartColors = ["#813405", "#d45113", "#f9a03f", "#f8dda4", "#10b981", "#3b82f6", "#6366f1", "#a1a1aa"];
+  const connTypesList = useMemo(() => {
+    const types = new Set<string>();
+    connectionsGiven.forEach((item) => {
+      types.add(`${item.description || "Unknown Type"} (Conn)`);
+    });
+    return Array.from(types);
+  }, [connectionsGiven]);
+
+  // Combined unique clean types list for table breakdown rendering
+  const allCleanTypes = useMemo(() => {
+    const set = new Set<string>();
+    appCounts.forEach(it => { if (it.description) set.add(it.description); });
+    connectionsGiven.forEach(it => { if (it.description) set.add(it.description); });
+    return Array.from(set).sort();
+  }, [appCounts, connectionsGiven]);
+
+  const toggleDeptExpand = (name: string) => {
+    setExpandedDepts((prev) => ({
+      ...prev,
+      [name]: !prev[name],
+    }));
+  };
+
+  // Dynamic color palettes
+  const appColors = ["#813405", "#d45113", "#f9a03f", "#f8dda4", "#a04006", "#bd5008"];
+  const connColors = ["#10b981", "#059669", "#06b6d4", "#3b82f6", "#6366f1", "#4f46e5"];
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -250,122 +451,135 @@ const DgmDashboardPage: React.FC = () => {
             )}
 
             {/* Top Row Widgets */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
-              {/* Stock Value Widget Card */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-12">
+                         {/* Stock Value Widget Card (Premium Light Theme) */}
               <Reveal delay={0}>
-                <div className="bg-gradient-to-br from-white to-blue-50/20 rounded-3xl p-6 shadow-sm border border-slate-200/60 hover:shadow-xl hover:border-blue-500/20 transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all duration-500" />
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-blue-600/10 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                        <Package className="w-6 h-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <h2 className="text-base font-extrabold text-slate-800">Stock Value</h2>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">NEW items</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-100 rounded-full px-2 py-0.5 uppercase">
-                      Active
-                    </span>
-                  </div>
-                  {loading ? (
-                    <div className="space-y-2 my-4">
-                      <div className="h-9 w-48 bg-slate-100 rounded-lg animate-pulse" />
-                      <div className="h-4 w-32 bg-slate-100 rounded-lg animate-pulse" />
-                    </div>
-                  ) : (
-                    <div className="my-2">
-                      <p className="text-3xl font-black text-slate-900 tracking-tight flex items-baseline gap-1">
-                        <span className="text-sm font-extrabold text-slate-500">LKR</span>
-                        {stockValue !== null ? (stockValue / 1_000_000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
-                        <span className="text-lg font-black text-blue-600">M</span>
-                      </p>
-                      <p className="text-xs text-slate-400 font-semibold mt-1">
-                        Full sum: LKR {stockValue?.toLocaleString("en-US", { minimumFractionDigits: 2 }) ?? "0.00"}
-                      </p>
-                    </div>
-                  )}
+                <div className="bg-gradient-to-br from-white via-white to-blue-50/20 rounded-3xl p-6 shadow-sm border border-slate-200/60 hover:border-blue-400/30 hover:shadow-lg hover:shadow-blue-500/5 transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group h-full flex flex-col justify-between min-h-[300px]">
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-all duration-500 pointer-events-none" />
                   
-                </div>
-              </Reveal>
-
-              {/* PIV Daily Breakdown Card */}
-              <Reveal delay={100} className="lg:col-span-2">
-                <div className="bg-gradient-to-br from-white to-orange-50/20 rounded-3xl p-6 shadow-sm border border-slate-200/60 hover:shadow-xl hover:border-orange-500/20 transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
-                  <div className="flex items-center justify-between mb-5">
-                    <div>
-                      <h3 className="text-base font-extrabold text-slate-800">Daily PIV Breakdown</h3>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5">Collections per day relative to weekly total</p>
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                          <Package className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-base font-extrabold text-slate-800">Stock Value</h2>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">NEW items</p>
+                        </div>
+                      </div>
+                      
                     </div>
-                    {total7DayCollection > 0 && (
-                      <span className="text-xs font-bold text-orange-700 bg-orange-50 border border-orange-100 rounded-full px-3 py-1">
-                        Total: LKR {(total7DayCollection / 1_000_000).toFixed(2)}M
-                      </span>
+
+                    {loading ? (
+                      <div className="space-y-3 my-5">
+                        <div className="h-10 w-48 bg-slate-100 rounded-xl animate-pulse" />
+                        <div className="h-4 w-32 bg-slate-100 rounded-xl animate-pulse" />
+                      </div>
+                    ) : (
+                      <div className="my-4">
+                        <p className="text-4xl font-black text-slate-900 tracking-tight flex items-baseline gap-1.5">
+                          <span className="text-sm font-extrabold text-slate-400">LKR</span>
+                          {stockValue !== null ? (stockValue / 1_000_000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
+                          <span className="text-xl font-black text-blue-600">M</span>
+                        </p>
+                        <p className="text-xs text-slate-500 font-semibold mt-2">
+                          Full Sum: LKR {stockValue?.toLocaleString("en-US", { minimumFractionDigits: 2 }) ?? "0.00"}
+                        </p>
+                      </div>
                     )}
                   </div>
 
-                  {loading ? (
-                    <div className="space-y-4 py-2">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="space-y-1">
-                          <div className="flex justify-between"><div className="h-4 w-24 bg-slate-100 rounded animate-pulse" /><div className="h-4 w-32 bg-slate-100 rounded animate-pulse" /></div>
-                          <div className="h-2 w-full bg-slate-100 rounded animate-pulse" />
-                        </div>
-                      ))}
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                    <span className="flex items-center gap-1.5">
+                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      <span></span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold tracking-wider uppercase"></span>
+                  </div>
+                </div>
+              </Reveal>              {/* PIV Daily Breakdown Card (List View Only) */}
+              <Reveal delay={100} className="lg:col-span-2">
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/60 hover:shadow-md transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden h-full flex flex-col justify-between min-h-[300px]">
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                          <Activity className="w-4 h-4 text-orange-500" />
+                          Daily PIV Breakdown
+                        </h3>
+                        <p className="text-xs text-slate-400 font-medium mt-0.5">Collections per day relative to 30-day total</p>
+                      </div>
+                      
+                      {total30DayCollection > 0 && (
+                        <span className="text-xs font-bold text-orange-700 bg-orange-50 border border-orange-100 rounded-full px-3 py-1 self-start sm:self-auto">
+                          Total: LKR {(total30DayCollection / 1_000_000).toFixed(2)}M
+                        </span>
+                      )}
                     </div>
-                  ) : breakdownData.length === 0 ? (
-                    <div className="text-center py-10 text-slate-400 text-sm font-semibold">
-                      No collection details available for this period.
-                    </div>
-                  ) : (
-                    <div className="space-y-3.5">
-                      {breakdownData.map((item) => {
-                        const pct = total7DayCollection > 0 ? (item.amount / total7DayCollection) * 100 : 0;
-                        return (
-                          <div key={item.date} className="flex flex-col gap-1.5 group">
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="font-bold text-slate-600 group-hover:text-slate-900 transition-colors">{item.label}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-slate-900 text-sm">
-                                  LKR {item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 rounded px-1.5 py-0.5 min-w-[36px] text-center">
-                                  {pct.toFixed(0)}%
-                                </span>
+
+                    {loading ? (
+                      <div className="space-y-4 py-2">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="space-y-1">
+                            <div className="flex justify-between"><div className="h-4 w-24 bg-slate-100 rounded animate-pulse" /><div className="h-4 w-32 bg-slate-100 rounded animate-pulse" /></div>
+                            <div className="h-2 w-full bg-slate-100 rounded animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : breakdownData.length === 0 ? (
+                      <div className="text-center py-10 text-slate-400 text-sm font-semibold">
+                        No collection details available for this period.
+                      </div>
+                    ) : (
+                      /* Clean Scrollable List View of progress bars */
+                      <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+                        {breakdownData.map((item) => {
+                          const pct = total30DayCollection > 0 ? (item.amount / total30DayCollection) * 100 : 0;
+                          return (
+                            <div key={item.date} className="flex flex-col gap-1 group">
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="font-bold text-slate-600 group-hover:text-slate-900 transition-colors">{item.label}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-slate-800 text-[11px]">
+                                    LKR {item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                  <span className="text-[9px] font-bold text-slate-500 bg-slate-100 rounded px-1.5 py-0.5 min-w-[32px] text-center">
+                                    {pct.toFixed(0)}%
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-[color:var(--ceb-maroon,#813405)] to-orange-500 rounded-full transition-all duration-500 shadow-sm"
+                                  style={{
+                                    width: `${pct > 0 ? Math.max(pct, 2) : 0}%`,
+                                  }}
+                                />
                               </div>
                             </div>
-                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-[color:var(--ceb-maroon,#813405)] to-orange-500 rounded-full transition-all duration-500 shadow-sm"
-                                style={{
-                                  width: `${pct > 0 ? Math.max(pct, 4) : 0}%`,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </Reveal>
-            </div>
-
-            {/* Bottom Row - Connection Applications Widget */}
+            </div>            {/* Bottom Row - Connection applications & Completed Connections Given (Merged) */}
             <Reveal delay={200}>
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/60 hover:shadow-md transition-shadow w-full">
-
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/60 hover:shadow-lg transition-all duration-300 w-full">
+                
                 {/* Header Controls */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-5">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-emerald-600/10 rounded-2xl">
-                      <BarChart3 className="w-6 h-6 text-emerald-600" />
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                      <BarChart3 className="w-6 h-6 text-emerald-600 animate-pulse" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-extrabold text-slate-900">Connection Applications (Current Year)</h2>
-                      <p className="text-xs text-slate-400 font-medium">Total submitted applications by cost center and type</p>
+                      <h2 className="text-lg font-black text-slate-900 tracking-tight">Construction Progress Monitoring</h2>
+                      <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                        Side-by-side comparison of Applications Submitted vs Connections Given ({selectedCompanyId} - {selectedYear})
+                      </p>
                     </div>
                   </div>
 
@@ -373,42 +587,122 @@ const DgmDashboardPage: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-3">
                     {/* Search Field */}
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                      <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search Dept ID..."
-                        className="pl-9 pr-3 py-1.5 w-40 text-xs font-semibold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--ceb-maroon,#813405)]/30 focus:border-[color:var(--ceb-maroon,#813405)] transition-all bg-slate-50/50"
+                        className="pl-10 pr-3.5 py-2 w-44 text-xs font-semibold rounded-2xl border border-slate-200 focus:outline-none focus:ring-4 focus:ring-[color:var(--ceb-maroon,#813405)]/10 focus:border-[color:var(--ceb-maroon,#813405)] transition-all bg-slate-50/50"
                       />
                     </div>
 
+                    {/* Searchable Company Selector */}
+                    {companies.length > 0 && (
+                      <div className="relative" ref={companyDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCompanyDropdownOpen(!isCompanyDropdownOpen);
+                            setCompanySearchQuery(""); // Reset search term when opening
+                          }}
+                          className="px-3.5 py-2 w-56 text-left text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[color:var(--ceb-maroon,#813405)]/10 text-slate-700 flex items-center justify-between shadow-sm hover:bg-slate-50 transition-all"
+                        >
+                          <span className="truncate flex items-center gap-2">
+                            <Building className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                            {selectedCompanyId} - {companies.find(c => c.compId === selectedCompanyId)?.compName || ""}
+                          </span>
+                          <ChevronDown className="w-3.5 h-3.5 ml-1 flex-shrink-0 text-slate-400" />
+                        </button>
+
+                        {isCompanyDropdownOpen && (
+                          <div className="absolute right-0 lg:left-0 mt-2 w-72 bg-white border border-slate-200/80 rounded-2xl shadow-xl z-50 p-2.5 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                            <div className="relative">
+                              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+                              <input
+                                type="text"
+                                value={companySearchQuery}
+                                onChange={(e) => setCompanySearchQuery(e.target.value)}
+                                placeholder="Search company..."
+                                className="w-full pl-8 pr-2.5 py-2 text-xs border border-slate-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-[color:var(--ceb-maroon,#813405)]/10 bg-slate-50/50 font-medium"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-48 overflow-y-auto divide-y divide-slate-50 pr-1 scrollbar-thin">
+                              {filteredCompanies.length === 0 ? (
+                                <div className="text-[10px] text-slate-400 p-2.5 text-center font-bold">
+                                  No companies found
+                                </div>
+                              ) : (
+                                filteredCompanies.map((c) => (
+                                  <button
+                                    key={c.compId}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedCompanyId(c.compId);
+                                      setIsCompanyDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2.5 text-[11px] font-bold transition-colors hover:bg-slate-50 block truncate ${
+                                      selectedCompanyId === c.compId
+                                        ? "text-[color:var(--ceb-maroon,#813405)] bg-[color:var(--ceb-maroon,#813405)]/5"
+                                        : "text-slate-600"
+                                    }`}
+                                  >
+                                    <span className="font-mono">{c.compId}</span> - {c.compName}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Year Selector */}
+                    <div className="flex items-center gap-1.5 relative">
+                      <Calendar className="absolute left-2.5 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
+                      <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(Number(e.target.value))}
+                        className="pl-8 pr-8 py-2 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[color:var(--ceb-maroon,#813405)]/10 text-slate-700 appearance-none cursor-pointer"
+                      >
+                        {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map((yr) => (
+                          <option key={yr} value={yr}>
+                            {yr}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-2.5 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
+                    </div>
+
                     {/* Sort Selector */}
-                    <div className="flex items-center gap-1.5">
-                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                    <div className="flex items-center gap-1.5 relative">
+                      <ArrowUpDown className="absolute left-2.5 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
                       <select
                         value={sortBy}
                         onChange={(e: any) => setSortBy(e.target.value)}
-                        className="px-2 py-1.5 text-xs font-semibold bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[color:var(--ceb-maroon,#813405)]/30 text-slate-700"
+                        className="pl-8 pr-8 py-2 text-xs font-bold bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[color:var(--ceb-maroon,#813405)]/10 text-slate-700 appearance-none cursor-pointer animate-none"
                       >
                         <option value="name">Sort: Dept Code</option>
-                        <option value="count-desc">Sort: Count High-Low</option>
-                        <option value="count-asc">Sort: Count Low-High</option>
+                        <option value="apps-desc">Sort: Applications (High-Low)</option>
+                        <option value="conns-desc">Sort: Connections Given (High-Low)</option>
+                        <option value="pending-desc">Sort: Pending (High-Low)</option>
                       </select>
+                      <ChevronDown className="absolute right-2.5 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
                     </div>
 
-                    {/* View Switcher Toggles */}
-                    <div className="flex items-center bg-slate-100 rounded-xl p-1">
+                    {/* View Switcher Toggles (Chart vs Table) */}
+                    <div className="flex items-center bg-slate-100 rounded-2xl p-0.5 border border-slate-200/40">
                       <button
                         onClick={() => setViewMode("chart")}
-                        className={`p-1.5 rounded-lg transition-all ${viewMode === "chart" ? "bg-white text-[color:var(--ceb-maroon,#813405)] shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+                        className={`p-2 rounded-xl transition-all ${viewMode === "chart" ? "bg-white text-[color:var(--ceb-maroon,#813405)] shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
                         title="Chart View"
                       >
                         <BarChart3 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setViewMode("table")}
-                        className={`p-1.5 rounded-lg transition-all ${viewMode === "table" ? "bg-white text-[color:var(--ceb-maroon,#813405)] shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+                        className={`p-2 rounded-xl transition-all ${viewMode === "table" ? "bg-white text-[color:var(--ceb-maroon,#813405)] shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
                         title="Table View"
                       >
                         <Table className="w-4 h-4" />
@@ -419,42 +713,64 @@ const DgmDashboardPage: React.FC = () => {
 
                 {/* Main Content Area (Chart or Table) */}
                 {loading ? (
-                  <div className="h-72 w-full bg-slate-50 rounded-2xl animate-pulse flex items-center justify-center">
-                    <span className="text-sm font-semibold text-slate-400 animate-bounce">Loading workloads...</span>
+                  <div className="h-80 w-full bg-slate-50 rounded-2xl animate-pulse flex items-center justify-center">
+                    <span className="text-sm font-semibold text-slate-400 animate-bounce">Loading data...</span>
                   </div>
                 ) : sortedApplicationData.length === 0 ? (
-                  <div className="h-72 flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <div className="h-80 flex flex-col items-center justify-center text-slate-400 gap-2">
                     <BarChart3 className="w-10 h-10 opacity-20" />
-                    <span className="text-sm font-bold">No application data matches filters</span>
+                    <span className="text-sm font-bold">No records match search criteria</span>
                   </div>
                 ) : viewMode === "chart" ? (
-                  /* Recharts Stacked Bar Chart with Rounded Bars & Glassmorphic Tooltip */
-                  <div className="h-80 w-full">
+                  /* Combined Side-by-Side Stacked Bar Chart */
+                  <div className="h-96 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={sortedApplicationData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                         <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                        
+                        {/* Custom Tooltip mapping cleaner name format */}
                         <Tooltip
-                          contentStyle={{
-                            borderRadius: "16px",
-                            border: "1px solid rgba(255,255,255,0.4)",
-                            boxShadow: "0 10px 40px rgba(0,0,0,0.08)",
-                            fontSize: 12,
-                            backgroundColor: "rgba(255, 255, 255, 0.85)",
-                            backdropFilter: "blur(12px)",
-                          }}
-                          labelStyle={{ fontWeight: "bold", color: "#1e293b", marginBottom: "4px" }}
+                          content={<CustomTooltip />}
+                          cursor={{ fill: "rgba(0,0,0,0.02)" }}
                         />
-                        <Legend iconType="circle" wrapperStyle={{ fontSize: 11, fontWeight: 600, paddingTop: 12 }} />
-                        {applicationTypes.map((type, index) => (
+
+                        {/* Hardcoded clean double-category Legend */}
+                        <Legend
+                          iconType="circle"
+                          wrapperStyle={{ fontSize: 11, fontWeight: 700, paddingTop: 12 }}
+                          payload={[
+                            { value: "Applications Submitted", type: "circle", id: "apps", color: "#813405" },
+                            { value: "Connections Given", type: "circle", id: "conns", color: "#10b981" }
+                          ]}
+                        />
+
+                        {/* Stacking applications (Warm colors, stack apps) */}
+                        {appTypesList.map((type, index) => (
                           <Bar
                             key={type}
                             dataKey={type}
-                            stackId="a"
-                            fill={chartColors[index % chartColors.length]}
-                            maxBarSize={28}
-                            radius={index === applicationTypes.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                            stackId="apps"
+                            fill={appColors[index % appColors.length]}
+                            maxBarSize={16}
+                            radius={index === appTypesList.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                            legendType="none"
+                            isAnimationActive
+                            animationDuration={800}
+                          />
+                        ))}
+
+                        {/* Stacking connections given (Cool colors, stack conns) */}
+                        {connTypesList.map((type, index) => (
+                          <Bar
+                            key={type}
+                            dataKey={type}
+                            stackId="conns"
+                            fill={connColors[index % connColors.length]}
+                            maxBarSize={16}
+                            radius={index === connTypesList.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                            legendType="none"
                             isAnimationActive
                             animationDuration={800}
                           />
@@ -463,32 +779,100 @@ const DgmDashboardPage: React.FC = () => {
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  /* Beautifully Styled Data Table */
-                  <div className="overflow-x-auto rounded-2xl border border-slate-200/80 shadow-sm max-h-[350px] overflow-y-auto">
+                  /* Custom Performance Table with Expandable side-by-side comparable type breakdowns */
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200/80 shadow-sm max-h-[460px] overflow-y-auto pr-1">
                     <table className="w-full text-left text-xs text-slate-700">
                       <thead className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider sticky top-0 border-b border-slate-200 z-10">
                         <tr>
-                          <th className="px-5 py-3.5 bg-slate-50">Dept / Cost Center</th>
-                          {applicationTypes.map((type) => (
-                            <th key={type} className="px-5 py-3.5 text-right">{type}</th>
-                          ))}
-                          <th className="px-5 py-3.5 text-right font-black text-slate-900 bg-slate-100/60">Total</th>
+                          <th className="px-6 py-4 bg-slate-50 w-12"></th>
+                          <th className="px-6 py-4">Dept / Cost Center</th>
+                          <th className="px-6 py-4 text-right">Total Applications</th>
+                          <th className="px-6 py-4 text-right">Total Connections Given</th>
+                          <th className="px-6 py-4 text-right text-red-600/90 font-extrabold">Pending Connections</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {sortedApplicationData.map((row, i) => (
-                          <tr key={row.name} className={`hover:bg-slate-50/70 transition-colors ${i % 2 === 0 ? "bg-white" : "bg-slate-50/20"}`}>
-                            <td className="px-5 py-3 font-bold text-slate-800 font-mono">{row.name}</td>
-                            {applicationTypes.map((type) => (
-                              <td key={type} className="px-5 py-3 text-right font-semibold text-slate-500 font-mono">
-                                {row[type] || "—"}
-                              </td>
-                            ))}
-                            <td className="px-5 py-3 text-right font-extrabold text-[color:var(--ceb-maroon,#813405)] font-mono bg-slate-50/40">
-                              {row.totalCount}
-                            </td>
-                          </tr>
-                        ))}
+                        {sortedApplicationData.map((row, i) => {
+                          const isExpanded = !!expandedDepts[row.name];
+
+                          return (
+                            <React.Fragment key={row.name}>
+                              <tr
+                                onClick={() => toggleDeptExpand(row.name)}
+                                className={`cursor-pointer hover:bg-slate-50/80 transition-colors ${i % 2 === 0 ? "bg-white" : "bg-slate-50/10"}`}
+                              >
+                                <td className="px-6 py-3.5 text-center text-slate-400">
+                                  {isExpanded ? <ChevronUp className="w-4 h-4 text-[color:var(--ceb-maroon,#813405)] font-bold" /> : <ChevronDown className="w-4 h-4" />}
+                                </td>
+                                <td className="px-6 py-3.5 font-extrabold text-slate-800 font-mono tracking-tight text-sm">{row.name}</td>
+                                <td className="px-6 py-3.5 text-right font-bold text-slate-700 font-mono">
+                                  {row.totalApps}
+                                </td>
+                                <td className="px-6 py-3.5 text-right font-bold text-emerald-600 font-mono">
+                                  {row.totalConns}
+                                </td>
+                                <td className="px-6 py-3.5 text-right font-mono">
+                                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold inline-block ${
+                                    row.pending > 0 
+                                      ? "bg-red-50 text-red-600 border border-red-100" 
+                                      : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                  }`}>
+                                    {row.pending}
+                                  </span>
+                                </td>
+                              </tr>
+                              {isExpanded && (
+                                <tr className="bg-slate-50/30">
+                                  <td colSpan={5} className="px-6 sm:px-12 py-4 border-t border-b border-slate-200/50">
+                                    <div className="max-w-3xl bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-3.5">
+                                      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Info className="w-4 h-4 text-indigo-500" />
+                                        Comparable Type Breakdowns for {row.name}
+                                      </p>
+                                      <div className="overflow-x-auto rounded-xl border border-slate-100">
+                                        <table className="w-full text-left text-xs text-slate-700">
+                                          <thead className="bg-slate-50/80 text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                                            <tr>
+                                              <th className="px-4 py-3">Connection Type</th>
+                                              <th className="px-4 py-3 text-right">Applications Submitted</th>
+                                              <th className="px-4 py-3 text-right">Connections Given</th>
+                                              <th className="px-4 py-3 text-right text-red-600/90 font-extrabold">Pending</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-slate-100">
+                                            {allCleanTypes.map((type) => {
+                                              const appKey = `${type} (App)`;
+                                              const connKey = `${type} (Conn)`;
+                                              const typeApps = row[appKey] || 0;
+                                              const typeConns = row[connKey] || 0;
+
+                                              if (typeApps === 0 && typeConns === 0) return null;
+
+                                              const typePending = Math.max(0, typeApps - typeConns);
+
+                                              return (
+                                                <tr key={type} className="hover:bg-slate-50/50 transition-colors">
+                                                  <td className="px-4 py-2.5 font-bold text-slate-700">{type}</td>
+                                                  <td className="px-4 py-2.5 text-right font-mono font-semibold text-slate-600">{typeApps}</td>
+                                                  <td className="px-4 py-2.5 text-right font-mono font-semibold text-emerald-600">{typeConns}</td>
+                                                  <td className="px-4 py-2.5 text-right font-mono">
+                                                    <span className={typePending > 0 ? "font-bold text-red-600" : "font-semibold text-slate-400"}>
+                                                      {typePending}
+                                                    </span>
+                                                  </td>
+                                                </tr>
+                                              );
+                                            })}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

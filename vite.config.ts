@@ -42,13 +42,13 @@ export default defineConfig({
 				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
 
-		/*	"/misapi/api/solarjobs/ccapplication": {
+			"/misapi/api/solarjobs/ccapplication": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
-*/
+
 			"/misapi/api/dgm": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
