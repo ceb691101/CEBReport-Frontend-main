@@ -14,7 +14,6 @@ import {
   ChevronUp,
   Calendar,
   Building,
-  Layers,
   Activity,
 } from "lucide-react";
 import DashboardHeader from "../../components/mainTopics/Dashboard/DashboardHeader";
@@ -29,8 +28,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  AreaChart,
-  Area,
+  
 } from "recharts";
 
 // Scroll reveal transition hook
