@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FaFileDownload, FaPrint, FaArrowLeft } from "react-icons/fa";
+import { FaFileDownload, FaPrint } from "react-icons/fa";
 
 interface Province {
   ProvinceCode: string;
@@ -272,6 +272,82 @@ const CustomersHighestOutstanding: React.FC = () => {
     a.click();
   };
 
+  const renderTotalRow = (areaName: string, records: CustomerOutstandingResult[]) => {
+    const count = records.length;
+    const totalBalance = records.reduce((sum, r) => sum + (r.currentBalance ?? r.CurrentBalance ?? 0), 0);
+    const totalArrears = records.reduce((sum, r) => sum + (r.arrearsBalance ?? r.ArrearsBalance ?? 0), 0);
+
+    return (
+      <tr 
+        key={`total-${areaName}`}
+        className="font-bold border-b border-gray-300"
+        style={{ backgroundColor: "#E2F0D9" }}
+      >
+        <td className="p-2 border border-gray-300 font-bold text-gray-900">Total</td>
+        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300 text-right font-bold text-gray-900">
+          {totalBalance.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300 text-right font-bold text-gray-900">
+          {totalArrears.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+      </tr>
+    );
+  };
+
+  const renderGrandTotalRow = (records: CustomerOutstandingResult[]) => {
+    const count = records.length;
+    const totalBalance = records.reduce((sum, r) => sum + (r.currentBalance ?? r.CurrentBalance ?? 0), 0);
+    const totalArrears = records.reduce((sum, r) => sum + (r.arrearsBalance ?? r.ArrearsBalance ?? 0), 0);
+
+    return (
+      <tr 
+        key="grand-total"
+        className="font-bold border-b border-gray-300"
+        style={{ backgroundColor: "#FFF2CC" }}
+      >
+        <td className="p-2 border border-gray-300 font-bold text-gray-900">Total</td>
+        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300 text-right font-bold text-gray-900">
+          {totalBalance.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300 text-right font-bold text-gray-900">
+          {totalArrears.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300"></td>
+      </tr>
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-4 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans max-h-[82vh] overflow-y-auto">
       {!results && (
@@ -415,24 +491,24 @@ const CustomersHighestOutstanding: React.FC = () => {
                 {getSelectedName()}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex space-x-2">
               <button
                 onClick={downloadCSV}
-                className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 transition"
+                className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
               >
-                <FaFileDownload className="w-3.5 h-3.5" /> CSV
+                <FaFileDownload className="w-3 h-3" /> CSV
               </button>
               <button
                 onClick={handlePrint}
-                className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 transition"
+                className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
               >
-                <FaPrint className="w-3.5 h-3.5" /> PDF
+                <FaPrint className="w-3 h-3" /> PDF
               </button>
               <button
                 onClick={() => setResults(null)}
-                className="flex items-center gap-1 px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white transition"
+                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center transition"
               >
-                <FaArrowLeft className="w-3 h-3 mr-1" /> Back
+                Back to Form
               </button>
             </div>
           </div>
@@ -467,9 +543,36 @@ const CustomersHighestOutstanding: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {results.length > 0 ? (
-                  results.map((r, idx) => {
+                {(() => {
+                  if (!results || results.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={13} className="p-6 text-center text-gray-500 font-medium">
+                          No records found matching the criteria.
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  const rows: React.ReactNode[] = [];
+                  let currentAreaRecords: CustomerOutstandingResult[] = [];
+                  let lastAreaName = "";
+
+                  results.forEach((r, idx) => {
                     const area = r.areaName || r.AreaName || "";
+                    if (idx === 0) {
+                      lastAreaName = area;
+                    }
+
+                    if (area.trim().toLowerCase() !== lastAreaName.trim().toLowerCase()) {
+                      // Add the subtotal row for the completed area group
+                      rows.push(renderTotalRow(lastAreaName, currentAreaRecords));
+                      currentAreaRecords = [];
+                      lastAreaName = area;
+                    }
+
+                    currentAreaRecords.push(r);
+
                     const accountNo = r.accountNumber || r.AccountNumber || "—";
                     const name = r.customerName || r.CustomerName || "—";
                     const address = r.address || r.Address || "—";
@@ -483,17 +586,21 @@ const CustomersHighestOutstanding: React.FC = () => {
                     const arrearsMonths = r.arrearsMonths ?? r.ArrearsMonths ?? 0;
                     const units = r.units ?? r.Units ?? 0;
 
-                    const prevRow = idx > 0 ? results[idx - 1] : null;
-                    const prevAreaName = (prevRow?.areaName || prevRow?.AreaName || "").trim().toLowerCase();
-                    const currAreaName = area.trim().toLowerCase();
-                    const showArea = idx === 0 || prevAreaName !== currAreaName;
+                    const showArea = currentAreaRecords.length === 1;
 
-                    return (
+                    const nextRow = idx < results.length - 1 ? results[idx + 1] : null;
+                    const nextAreaName = (nextRow?.areaName || nextRow?.AreaName || "").trim().toLowerCase();
+                    const isLastOfArea = idx === results.length - 1 || nextAreaName !== area.trim().toLowerCase();
+
+                    rows.push(
                       <tr
                         key={`${accountNo}-${idx}`}
                         className="bg-white hover:bg-gray-50 text-gray-900 border-b border-gray-300"
                       >
-                        <td className="p-2 border border-gray-300 font-medium text-gray-700">
+                        <td 
+                          className="p-2 border border-gray-300 font-medium text-gray-700"
+                          style={{ borderBottom: isLastOfArea ? undefined : "hidden" }}
+                        >
                           {showArea ? area : ""}
                         </td>
                         <td className="p-2 border border-gray-300 font-mono">{accountNo}</td>
@@ -531,14 +638,20 @@ const CustomersHighestOutstanding: React.FC = () => {
                         </td>
                       </tr>
                     );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={13} className="p-6 text-center text-gray-500 font-medium">
-                      No records found matching the criteria.
-                    </td>
-                  </tr>
-                )}
+                  });
+
+                  // Add the subtotal row for the final area group
+                  if (currentAreaRecords.length > 0) {
+                    rows.push(renderTotalRow(lastAreaName, currentAreaRecords));
+                  }
+
+                  // Add the grand total row for all records combined
+                  if (results.length > 0) {
+                    rows.push(renderGrandTotalRow(results));
+                  }
+
+                  return rows;
+                })()}
               </tbody>
             </table>
           </div>
