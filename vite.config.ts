@@ -1,4 +1,4 @@
-import {defineConfig} from "vite";
+import { defineConfig 	} from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -42,7 +42,64 @@ export default defineConfig({
 				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
 
+/*
 
+			"/misapi/api/solarjobs/ccapplication": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+*/
+			"/misapi/api/dgm": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+
+			"/misapi/api/divisionwise-srp-estimation": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/area-wise-srp-piv-pending": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/area-wise-srp-piv-paid": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/area-wise-srp-estimation-piv-paid": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/areawisesrpestimationpiv": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/areawisesrpapplicationpiv": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/areawisesrpapplicationpivstatus": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
 			"/misapi": {
 				target: "http://10.128.1.126",
 				changeOrigin: true,
@@ -151,14 +208,6 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/pivapi/, ""),
-			},
-
-			// Local testing: route CC Application report to local .NET backend
-			"/misapi/api/solarjobs/ccapplication": {
-				target: "http://localhost:44381",
-				changeOrigin: true,
-				secure: false,
-				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
 
 

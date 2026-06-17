@@ -5,9 +5,7 @@ import {
 	Eye,
 	ChevronLeft,
 	Download,
-	Calendar,
 	FileText,
-	X,
 } from "lucide-react";
 import { useUser } from "../../contexts/UserContext";
 import { toast } from "react-toastify";
@@ -26,6 +24,10 @@ const formatLocalYmd = (date: Date) => {
 	return `${year}-${month}-${day}`;
 };
 
+const today = new Date();
+const defaultFromDate = formatLocalYmd(new Date(today.getFullYear(), today.getMonth(), 1));
+const defaultToDate = formatLocalYmd(today);
+
 const CcApplicationProgress: React.FC = () => {
 	const { user } = useUser();
 	const epfNo = user?.Userno || "";
@@ -41,8 +43,8 @@ const CcApplicationProgress: React.FC = () => {
 	const pageSize = 9;
 
 	// Date range
-	const [fromDate, setFromDate] = useState("");
-	const [toDate, setToDate] = useState("");
+	const [fromDate, setFromDate] = useState(defaultFromDate);
+	const [toDate, setToDate] = useState(defaultToDate);
 
 	// PDF report modal state
 	const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
