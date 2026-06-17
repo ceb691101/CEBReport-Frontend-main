@@ -47,6 +47,7 @@ import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 import HeadOfficePOSCollection from "../mainTopics/Collections/HeadOfficePOSCollection";
 
+
 // Consumption Analysis reports
 //import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
 
@@ -66,6 +67,7 @@ import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
 import LargestCus from "../mainTopics/general/LargestCus";
 import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
+import FinalizedAccounts from "../mainTopics/general/FinalizedAccounts";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -277,7 +279,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"shakthi led distribution summary": ActiveCustomersSalesByTariff,
 	"standing order report": ActiveCustomersSalesByTariff,
 	"registered consumers for sms alerts": RegisteredConsumersForSMSAlerts,
-	"finalized accounts": ActiveCustomersSalesByTariff,
+	"finalized accounts": FinalizedAccounts,
 	"outstanding dues": ActiveCustomersSalesByTariff,
 	"largest consumption": ActiveCustomersSalesByTariff,
 	"security deposit contract demand bulk": Securitydepositcontractdemandbulk,
