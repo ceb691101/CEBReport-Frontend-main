@@ -11,18 +11,32 @@ interface Division {
 }
 
 interface CustomerOutstandingResult {
-  accountNo?: string;
+  AreaName?: string;
+  areaName?: string;
+  AccountNumber?: string;
   accountNumber?: string;
+  CustomerName?: string;
   customerName?: string;
-  name?: string;
+  Address?: string;
   address?: string;
-  province?: string;
-  region?: string;
-  division?: string;
-  monthsInArrears?: number;
+  Telephone?: string;
+  telephone?: string;
+  LastCashDate?: string;
+  lastCashDate?: string;
+  CurrentReadingDate?: string;
+  currentReadingDate?: string;
+  CurrentBalance?: number;
+  currentBalance?: number;
+  KwhCharge?: number;
+  kwhCharge?: number;
+  ArrearsBalance?: number;
+  arrearsBalance?: number;
+  TariffCode?: string;
+  tariffCode?: string;
+  ArrearsMonths?: number;
   arrearsMonths?: number;
-  outstandingBalance?: number;
-  balance?: number;
+  Units?: number;
+  units?: number;
 }
 
 const CustomersHighestOutstanding: React.FC = () => {
@@ -46,7 +60,6 @@ const CustomersHighestOutstanding: React.FC = () => {
   const printRef = useRef<HTMLDivElement>(null);
 
   const maroon = "text-[#7A0000]";
-  const maroonBg = "bg-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
   // Fetch Provinces
@@ -55,7 +68,7 @@ const CustomersHighestOutstanding: React.FC = () => {
       setIsLoadingProvinces(true);
       setProvinceError(null);
       try {
-        const res = await fetch("/misapi/api/ordinary/province", {
+        const res = await fetch("/api/ordinary/province", {
           headers: { Accept: "application/json" },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -78,7 +91,7 @@ const CustomersHighestOutstanding: React.FC = () => {
       setIsLoadingDivisions(true);
       setDivisionError(null);
       try {
-        const res = await fetch("/misapi/api/ordinary/region", {
+        const res = await fetch("/api/ordinary/region", {
           headers: { Accept: "application/json" },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -129,7 +142,7 @@ const CustomersHighestOutstanding: React.FC = () => {
         OutstandingBalance: Number(outstandingBalance),
       };
 
-      const response = await fetch("/misapi/api/collection/highest-outstanding", {
+      const response = await fetch("/api/collection/highest-outstanding", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -181,14 +194,14 @@ const CustomersHighestOutstanding: React.FC = () => {
         <head>
           <title>Customers with Highest Outstanding Balance (Ordinary)</title>
           <style>
-            body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+            body { font-family: Arial, sans-serif; font-size: 11px; margin: 20px; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { padding: 6px 8px; border: 1px solid #d1d5db; text-align: left; }
-            th { background-color: #f0f0f0; font-weight: bold; }
+            th, td { padding: 4px 6px; border: 1px solid #d4d4d4; text-align: left; }
+            th { background-color: #eaeaea; font-weight: bold; color: #222222; }
             .text-right { text-align: right; }
             .text-center { text-align: center; }
-            .header { font-weight: bold; margin-bottom: 5px; color: #7A0000; font-size: 16px; }
-            .subheader { margin-bottom: 12px; font-size: 12px; }
+            .header { font-weight: bold; margin-bottom: 2px; color: #7A0000; font-size: 16px; }
+            .subheader { margin-bottom: 15px; font-size: 12px; font-weight: bold; color: #7A0000; }
             @page {
               margin-bottom: 18mm;
               @bottom-left {
@@ -208,11 +221,7 @@ const CustomersHighestOutstanding: React.FC = () => {
         </head>
         <body>
           <div class="header">Customers with Highest Outstanding Balance (Ordinary)</div>
-          <div class="subheader">
-            Scope: <b>${scope} (${getSelectedName()})</b> &nbsp;&nbsp;&nbsp;
-            Min Months in Arrears: <b>${monthsInArrears}</b> &nbsp;&nbsp;&nbsp;
-            Min Outstanding Balance: <b>LKR ${outstandingBalance.toLocaleString()}</b>
-          </div>
+          <div class="subheader">${getSelectedName()}</div>
           ${tableHTML}
         </body>
       </html>
@@ -232,18 +241,25 @@ const CustomersHighestOutstanding: React.FC = () => {
     rows.push(`Min Months in Arrears: ${monthsInArrears}`);
     rows.push(`Min Outstanding Balance: ${outstandingBalance}`);
     rows.push("");
-    rows.push("Rank,Account Number,Customer Name,Address,Province/Division,Months in Arrears,Outstanding Balance (LKR)");
+    rows.push("Area Name,Account No,Name,Address,Telephone,Last Cash Date,Current Reading Date,Current Balance,kWh Charge,Current Balance - kWh Charge,Tariff,Months in Arrears,Units");
 
-    results.forEach((r, idx) => {
-      const accountNo = r.accountNo || r.accountNumber || "";
-      const name = r.customerName || r.name || "";
-      const address = r.address || "";
-      const loc = r.province || r.region || r.division || "";
-      const months = r.monthsInArrears ?? r.arrearsMonths ?? 0;
-      const balance = r.outstandingBalance ?? r.balance ?? 0;
+    results.forEach((r) => {
+      const area = r.areaName || r.AreaName || "";
+      const acct = r.accountNumber || r.AccountNumber || "";
+      const name = r.customerName || r.CustomerName || "";
+      const address = r.address || r.Address || "";
+      const tel = r.telephone || r.Telephone || "";
+      const lastCash = r.lastCashDate || r.LastCashDate || "";
+      const readDate = r.currentReadingDate || r.CurrentReadingDate || "";
+      const balance = r.currentBalance ?? r.CurrentBalance ?? 0;
+      const charge = r.kwhCharge ?? r.KwhCharge ?? 0;
+      const netBalance = r.arrearsBalance ?? r.ArrearsBalance ?? 0;
+      const tariff = r.tariffCode || r.TariffCode || "";
+      const months = r.arrearsMonths ?? r.ArrearsMonths ?? 0;
+      const units = r.units ?? r.Units ?? 0;
 
       rows.push(
-        `${idx + 1},"${accountNo}","${name.replace(/"/g, '""')}","${address.replace(/"/g, '""')}","${loc}",${months},${balance}`
+        `"${area.replace(/"/g, '""')}","${acct}","${name.replace(/"/g, '""')}","${address.replace(/"/g, '""')}","${tel}","${lastCash}","${readDate}",${balance},${charge},${netBalance},"${tariff}",${months.toFixed(1)},${units}`
       );
     });
 
@@ -390,16 +406,16 @@ const CustomersHighestOutstanding: React.FC = () => {
 
       {results && (
         <div ref={printRef} className="mt-4 p-4 rounded-xl shadow border border-gray-200 w-full bg-white">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 print:hidden">
             <div>
               <h2 className={`text-xl font-bold ${maroon} mb-1`}>
-                Highest Outstanding Customers
+                Customers with Highest Outstanding Balance (Ordinary)
               </h2>
-              <div className="text-xs text-gray-700 font-medium">
-                Scope: {scope} ({getSelectedName()}) | Months In Arrears: &ge;{monthsInArrears} | Balance: &ge;LKR {outstandingBalance.toLocaleString()}
+              <div className="text-xs text-gray-700 font-bold">
+                {getSelectedName()}
               </div>
             </div>
-            <div className="flex gap-2 print:hidden">
+            <div className="flex gap-2">
               <button
                 onClick={downloadCSV}
                 className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 transition"
@@ -421,46 +437,96 @@ const CustomersHighestOutstanding: React.FC = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto max-h-[500px] overflow-y-auto border border-gray-200 rounded-lg">
+          {/* Report header matching screenshot when printing/viewing */}
+          <div className="hidden print:block mb-4">
+            <h2 className="text-xl font-bold text-[#7A0000] mb-1">
+              Customers with Highest Outstanding Balance (Ordinary)
+            </h2>
+            <div className="text-sm font-bold text-[#7A0000]">
+              {getSelectedName()}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto border border-gray-300 rounded-lg">
             <table className="w-full text-xs border-collapse">
-              <thead className="sticky top-0 z-10 bg-[#7A0000] text-white">
-                <tr className={`${maroonBg}`}>
-                  <th className="p-2.5 text-center font-semibold border-b border-gray-200 w-12">Rank</th>
-                  <th className="p-2.5 text-left font-semibold border-b border-gray-200">Account Number</th>
-                  <th className="p-2.5 text-left font-semibold border-b border-gray-200">Customer Name</th>
-                  <th className="p-2.5 text-left font-semibold border-b border-gray-200">Address</th>
-                  <th className="p-2.5 text-left font-semibold border-b border-gray-200">{scope}</th>
-                  <th className="p-2.5 text-right font-semibold border-b border-gray-200">Months in Arrears</th>
-                  <th className="p-2.5 text-right font-semibold border-b border-gray-200">Outstanding Balance (LKR)</th>
+              <thead className="sticky top-0 z-10 bg-[#EAEAEA] text-gray-800 font-semibold border-b border-gray-300">
+                <tr>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Area Name</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Account No</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Name</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Address</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Telephone</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Last Cash Date</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Current Reading Date</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">Current Balance</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">kWh Charge</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">Current Balance - kWh Charge</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-center">Tariff</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">Months in Arrears</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">Units</th>
                 </tr>
               </thead>
               <tbody>
                 {results.length > 0 ? (
                   results.map((r, idx) => {
-                    const accountNo = r.accountNo || r.accountNumber || "—";
-                    const name = r.customerName || r.name || "—";
-                    const address = r.address || "—";
-                    const loc = r.province || r.region || r.division || "—";
-                    const months = r.monthsInArrears ?? r.arrearsMonths ?? 0;
-                    const balance = r.outstandingBalance ?? r.balance ?? 0;
+                    const area = r.areaName || r.AreaName || "";
+                    const accountNo = r.accountNumber || r.AccountNumber || "—";
+                    const name = r.customerName || r.CustomerName || "—";
+                    const address = r.address || r.Address || "—";
+                    const telephone = r.telephone || r.Telephone || "—";
+                    const lastCashDate = r.lastCashDate || r.LastCashDate || "—";
+                    const currentReadingDate = r.currentReadingDate || r.CurrentReadingDate || "—";
+                    const currentBalance = r.currentBalance ?? r.CurrentBalance ?? 0;
+                    const kwhCharge = r.kwhCharge ?? r.KwhCharge ?? 0;
+                    const arrearsBalance = r.arrearsBalance ?? r.ArrearsBalance ?? 0;
+                    const tariffCode = r.tariffCode || r.TariffCode || "—";
+                    const arrearsMonths = r.arrearsMonths ?? r.ArrearsMonths ?? 0;
+                    const units = r.units ?? r.Units ?? 0;
+
+                    const prevRow = idx > 0 ? results[idx - 1] : null;
+                    const prevAreaName = (prevRow?.areaName || prevRow?.AreaName || "").trim().toLowerCase();
+                    const currAreaName = area.trim().toLowerCase();
+                    const showArea = idx === 0 || prevAreaName !== currAreaName;
 
                     return (
                       <tr
                         key={`${accountNo}-${idx}`}
-                        className={idx % 2 === 0 ? "bg-white hover:bg-gray-50" : "bg-gray-50 hover:bg-gray-100"}
+                        className="bg-white hover:bg-gray-50 text-gray-900 border-b border-gray-300"
                       >
-                        <td className="p-2.5 text-center border-b border-gray-150 font-medium text-gray-700">
-                          {idx + 1}
+                        <td className="p-2 border border-gray-300 font-medium text-gray-700">
+                          {showArea ? area : ""}
                         </td>
-                        <td className="p-2.5 border-b border-gray-150 font-mono">{accountNo}</td>
-                        <td className="p-2.5 border-b border-gray-150">{name}</td>
-                        <td className="p-2.5 border-b border-gray-150">{address}</td>
-                        <td className="p-2.5 border-b border-gray-150">{loc}</td>
-                        <td className="p-2.5 text-right border-b border-gray-150">{months}</td>
-                        <td className="p-2.5 text-right font-semibold border-b border-gray-150 text-red-700">
-                          {balance.toLocaleString("en-US", {
+                        <td className="p-2 border border-gray-300 font-mono">{accountNo}</td>
+                        <td className="p-2 border border-gray-300">{name}</td>
+                        <td className="p-2 border border-gray-300">{address}</td>
+                        <td className="p-2 border border-gray-300">{telephone}</td>
+                        <td className="p-2 border border-gray-300">{lastCashDate}</td>
+                        <td className="p-2 border border-gray-300">{currentReadingDate}</td>
+                        <td className="p-2 border border-gray-300 text-right">
+                          {currentBalance.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td className="p-2 border border-gray-300 text-right">
+                          {kwhCharge.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td className="p-2 border border-gray-300 text-right font-semibold">
+                          {arrearsBalance.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td className="p-2 border border-gray-300 text-center">{tariffCode}</td>
+                        <td className="p-2 border border-gray-300 text-right">
+                          {arrearsMonths.toFixed(1)}
+                        </td>
+                        <td className="p-2 border border-gray-300 text-right">
+                          {units.toLocaleString("en-US", {
+                            maximumFractionDigits: 0,
                           })}
                         </td>
                       </tr>
@@ -468,7 +534,7 @@ const CustomersHighestOutstanding: React.FC = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="p-6 text-center text-gray-500 font-medium">
+                    <td colSpan={13} className="p-6 text-center text-gray-500 font-medium">
                       No records found matching the criteria.
                     </td>
                   </tr>
