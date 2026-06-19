@@ -83,7 +83,7 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
     const fetchProvinces = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/committedstock/api/materialcommittedstock/provinces`);
+        const res = await fetch(`/misapi/api/materialcommittedstock/provinces`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const txt = await res.text();
         const parsed = JSON.parse(txt);
@@ -132,7 +132,7 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
     setReportLoading(true);
     setReportError(null);
     try {
-      let apiUrl = `/committedstock/api/materialcommittedstock/get?compId=${encodeURIComponent(selectedProvince.compId)}`;
+      let apiUrl = `/misapi/api/materialcommittedstock/get?compId=${encodeURIComponent(selectedProvince.compId)}`;
       if (materialSelectionType === "specific" && materialCode.trim()) {
         apiUrl += `&matCode=${encodeURIComponent(materialCode.trim())}`;
       }

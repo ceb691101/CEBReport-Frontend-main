@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import { Outlet } from "react-router-dom";
 import SubtopicCard from "../components/shared/SubtopicCard";
+import { useReportRenderer } from "../hooks/useReportRenderer";
 
 import AreaWiseSRPApplicationPIV from "../mainTopics/SRP/AreaWiseSRPApplicationPIV";
 import AreaWiseSRPApplicationPIVStatus from "../mainTopics/SRP/AreaWiseSRPApplicationPIVStatus";
@@ -15,6 +16,7 @@ const SolarReligiousPurpose = () => {
     "Solar Religious Purpose (SRP)",
   ]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const renderReport = useReportRenderer();
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -30,12 +32,14 @@ const SolarReligiousPurpose = () => {
     }
   };
 
-  const renderSubtopicContent = (subtopicName: string) => {
+  const renderSubtopicContent = (subtopicName: string, repIdNo?: string) => {
     const normalized = subtopicName.toLowerCase().replace(/\s+/g, " ").trim();
     switch (normalized) {
       case "area wise srp application piv (pivi) to be paid report":
         return <AreaWiseSRPApplicationPIV />;
       case "area wise srp application piv status report":
+      case "area wise srp application all pivs (pivi)":
+      case "area wise srp application all pivs pivi":
         return <AreaWiseSRPApplicationPIVStatus />;
       case "area wise srp estimation piv (pivii) to be paid report":
         return <AreaWiseSRPEstimationPIV />;
@@ -50,11 +54,7 @@ const SolarReligiousPurpose = () => {
         return <AreaWiseSRPEstimationPIVPaidReport/>;
 
       default:
-        return (
-          <div className="text-red-500 text-xs">
-            No content available for {subtopicName}
-          </div>
-        );
+        return renderReport(subtopicName, repIdNo);
     }
   };
 
@@ -68,7 +68,7 @@ const SolarReligiousPurpose = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-          {renderSubtopicContent(subtopic.name)}
+          {renderSubtopicContent(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
       <Outlet />
