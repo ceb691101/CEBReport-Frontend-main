@@ -56,8 +56,11 @@ const CustomersHighestOutstanding: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<CustomerOutstandingResult[] | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 100;
 
   const printRef = useRef<HTMLDivElement>(null);
+  const printTableRef = useRef<HTMLTableElement>(null);
 
   const maroon = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
@@ -132,6 +135,7 @@ const CustomersHighestOutstanding: React.FC = () => {
     setLoading(true);
     setError(null);
     setResults(null);
+    setCurrentPage(1);
 
     try {
       const payload = {
@@ -182,12 +186,11 @@ const CustomersHighestOutstanding: React.FC = () => {
   };
 
   const handlePrint = () => {
-    if (!printRef.current) return;
+    if (!printTableRef.current) return;
     const printWindow = window.open("", "_blank", "width=1200,height=800");
     if (!printWindow) return;
 
-    const tableEl = printRef.current.querySelector("table");
-    const tableHTML = tableEl ? tableEl.outerHTML : printRef.current.innerHTML;
+    const tableHTML = printTableRef.current.outerHTML;
 
     printWindow.document.write(`
       <html>
@@ -345,6 +348,176 @@ const CustomersHighestOutstanding: React.FC = () => {
         <td className="p-2 border border-gray-300"></td>
         <td className="p-2 border border-gray-300"></td>
       </tr>
+    );
+  };
+
+  const renderTableRows = (recordsToRender: CustomerOutstandingResult[], startIndex: number, isPrint: boolean = false) => {
+    if (!recordsToRender || recordsToRender.length === 0) {
+      return (
+        <tr>
+          <td colSpan={13} className="p-6 text-center text-gray-500 font-medium">
+            No records found matching the criteria.
+          </td>
+        </tr>
+      );
+    }
+
+    const rows: React.ReactNode[] = [];
+    let currentAreaRecords: CustomerOutstandingResult[] = [];
+    let lastAreaName = "";
+
+    recordsToRender.forEach((r, idx) => {
+      const area = r.areaName || r.AreaName || "";
+      if (idx === 0) {
+        lastAreaName = area;
+      }
+
+      if (area.trim().toLowerCase() !== lastAreaName.trim().toLowerCase()) {
+        // Add the subtotal row for the completed area group using all records of this area in the report
+        const allAreaRecords = results ? results.filter(
+          (item) => (item.areaName || item.AreaName || "").trim().toLowerCase() === lastAreaName.trim().toLowerCase()
+        ) : [];
+        rows.push(renderTotalRow(lastAreaName, allAreaRecords));
+        currentAreaRecords = [];
+        lastAreaName = area;
+      }
+
+      currentAreaRecords.push(r);
+
+      const accountNo = r.accountNumber || r.AccountNumber || "—";
+      const name = r.customerName || r.CustomerName || "—";
+      const address = r.address || r.Address || "—";
+      const telephone = r.telephone || r.Telephone || "—";
+      const lastCashDate = r.lastCashDate || r.LastCashDate || "—";
+      const currentReadingDate = r.currentReadingDate || r.CurrentReadingDate || "—";
+      const currentBalance = r.currentBalance ?? r.CurrentBalance ?? 0;
+      const kwhCharge = r.kwhCharge ?? r.KwhCharge ?? 0;
+      const arrearsBalance = r.arrearsBalance ?? r.ArrearsBalance ?? 0;
+      const tariffCode = r.tariffCode || r.TariffCode || "—";
+      const arrearsMonths = r.arrearsMonths ?? r.ArrearsMonths ?? 0;
+      const units = r.units ?? r.Units ?? 0;
+
+      const showArea = currentAreaRecords.length === 1;
+
+      const nextRow = idx < recordsToRender.length - 1 ? recordsToRender[idx + 1] : null;
+      const nextAreaName = (nextRow?.areaName || nextRow?.AreaName || "").trim().toLowerCase();
+      const isLastOfArea = idx === recordsToRender.length - 1 || nextAreaName !== area.trim().toLowerCase();
+
+      rows.push(
+        <tr
+          key={`${accountNo}-${idx}`}
+          className="bg-white hover:bg-gray-50 text-gray-900 border-b border-gray-300"
+        >
+          <td 
+            className="p-2 border border-gray-300 font-medium text-gray-700"
+            style={{ borderBottom: isLastOfArea ? undefined : "hidden" }}
+          >
+            {showArea ? area : ""}
+          </td>
+          <td className="p-2 border border-gray-300 font-mono">{accountNo}</td>
+          <td className="p-2 border border-gray-300">{name}</td>
+          <td className="p-2 border border-gray-300">{address}</td>
+          <td className="p-2 border border-gray-300">{telephone}</td>
+          <td className="p-2 border border-gray-300">{lastCashDate}</td>
+          <td className="p-2 border border-gray-300">{currentReadingDate}</td>
+          <td className="p-2 border border-gray-300 text-right">
+            {currentBalance.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </td>
+          <td className="p-2 border border-gray-300 text-right">
+            {kwhCharge.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </td>
+          <td className="p-2 border border-gray-300 text-right font-semibold">
+            {arrearsBalance.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </td>
+          <td className="p-2 border border-gray-300 text-center">{tariffCode}</td>
+          <td className="p-2 border border-gray-300 text-right">
+            {arrearsMonths.toFixed(1)}
+          </td>
+          <td className="p-2 border border-gray-300 text-right">
+            {units.toLocaleString("en-US", {
+              maximumFractionDigits: 0,
+            })}
+          </td>
+        </tr>
+      );
+    });
+
+    // Add the subtotal row for the final area group on this page if it is globally finished
+    if (currentAreaRecords.length > 0 && results) {
+      const globalLastIdx = startIndex + recordsToRender.length - 1;
+      const nextGlobalRow = globalLastIdx < results.length - 1 ? results[globalLastIdx + 1] : null;
+      const nextGlobalAreaName = (nextGlobalRow?.areaName || nextGlobalRow?.AreaName || "").trim().toLowerCase();
+      const isGlobalEnd = globalLastIdx === results.length - 1 || nextGlobalAreaName !== lastAreaName.trim().toLowerCase();
+
+      if (isGlobalEnd) {
+        const allAreaRecords = results.filter(
+          (item) => (item.areaName || item.AreaName || "").trim().toLowerCase() === lastAreaName.trim().toLowerCase()
+        );
+        rows.push(renderTotalRow(lastAreaName, allAreaRecords));
+      }
+    }
+
+    // Add the grand total row for all records combined
+    if (results && results.length > 0) {
+      if (isPrint) {
+        rows.push(renderGrandTotalRow(results));
+      } else {
+        const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
+        const safePage = Math.min(currentPage, totalPages);
+        if (safePage === totalPages) {
+          rows.push(renderGrandTotalRow(results));
+        }
+      }
+    }
+
+    return rows;
+  };
+
+  const renderPagination = () => {
+    if (!results || results.length <= pageSize) return null;
+
+    const totalPages = Math.max(1, Math.ceil(results.length / pageSize));
+    const safePage = Math.min(currentPage, totalPages);
+    const startIndex = (safePage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+
+    return (
+      <div className="mt-3 flex items-center justify-between text-xs text-gray-700 font-sans print:hidden">
+        <span>
+          Showing {startIndex + 1}-{Math.min(endIndex, results.length)} of {results.length}
+        </span>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={safePage <= 1}
+            className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+          >
+            Previous
+          </button>
+          <span>
+            Page {safePage} / {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={safePage >= totalPages}
+            className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     );
   };
 
@@ -544,117 +717,46 @@ const CustomersHighestOutstanding: React.FC = () => {
               </thead>
               <tbody>
                 {(() => {
-                  if (!results || results.length === 0) {
-                    return (
-                      <tr>
-                        <td colSpan={13} className="p-6 text-center text-gray-500 font-medium">
-                          No records found matching the criteria.
-                        </td>
-                      </tr>
-                    );
-                  }
+                  const totalPages = results ? Math.max(1, Math.ceil(results.length / pageSize)) : 1;
+                  const safePage = Math.min(currentPage, totalPages);
+                  const startIndex = (safePage - 1) * pageSize;
+                  const endIndex = startIndex + pageSize;
+                  const paginatedResults = results ? results.slice(startIndex, endIndex) : [];
 
-                  const rows: React.ReactNode[] = [];
-                  let currentAreaRecords: CustomerOutstandingResult[] = [];
-                  let lastAreaName = "";
-
-                  results.forEach((r, idx) => {
-                    const area = r.areaName || r.AreaName || "";
-                    if (idx === 0) {
-                      lastAreaName = area;
-                    }
-
-                    if (area.trim().toLowerCase() !== lastAreaName.trim().toLowerCase()) {
-                      // Add the subtotal row for the completed area group
-                      rows.push(renderTotalRow(lastAreaName, currentAreaRecords));
-                      currentAreaRecords = [];
-                      lastAreaName = area;
-                    }
-
-                    currentAreaRecords.push(r);
-
-                    const accountNo = r.accountNumber || r.AccountNumber || "—";
-                    const name = r.customerName || r.CustomerName || "—";
-                    const address = r.address || r.Address || "—";
-                    const telephone = r.telephone || r.Telephone || "—";
-                    const lastCashDate = r.lastCashDate || r.LastCashDate || "—";
-                    const currentReadingDate = r.currentReadingDate || r.CurrentReadingDate || "—";
-                    const currentBalance = r.currentBalance ?? r.CurrentBalance ?? 0;
-                    const kwhCharge = r.kwhCharge ?? r.KwhCharge ?? 0;
-                    const arrearsBalance = r.arrearsBalance ?? r.ArrearsBalance ?? 0;
-                    const tariffCode = r.tariffCode || r.TariffCode || "—";
-                    const arrearsMonths = r.arrearsMonths ?? r.ArrearsMonths ?? 0;
-                    const units = r.units ?? r.Units ?? 0;
-
-                    const showArea = currentAreaRecords.length === 1;
-
-                    const nextRow = idx < results.length - 1 ? results[idx + 1] : null;
-                    const nextAreaName = (nextRow?.areaName || nextRow?.AreaName || "").trim().toLowerCase();
-                    const isLastOfArea = idx === results.length - 1 || nextAreaName !== area.trim().toLowerCase();
-
-                    rows.push(
-                      <tr
-                        key={`${accountNo}-${idx}`}
-                        className="bg-white hover:bg-gray-50 text-gray-900 border-b border-gray-300"
-                      >
-                        <td 
-                          className="p-2 border border-gray-300 font-medium text-gray-700"
-                          style={{ borderBottom: isLastOfArea ? undefined : "hidden" }}
-                        >
-                          {showArea ? area : ""}
-                        </td>
-                        <td className="p-2 border border-gray-300 font-mono">{accountNo}</td>
-                        <td className="p-2 border border-gray-300">{name}</td>
-                        <td className="p-2 border border-gray-300">{address}</td>
-                        <td className="p-2 border border-gray-300">{telephone}</td>
-                        <td className="p-2 border border-gray-300">{lastCashDate}</td>
-                        <td className="p-2 border border-gray-300">{currentReadingDate}</td>
-                        <td className="p-2 border border-gray-300 text-right">
-                          {currentBalance.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </td>
-                        <td className="p-2 border border-gray-300 text-right">
-                          {kwhCharge.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </td>
-                        <td className="p-2 border border-gray-300 text-right font-semibold">
-                          {arrearsBalance.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </td>
-                        <td className="p-2 border border-gray-300 text-center">{tariffCode}</td>
-                        <td className="p-2 border border-gray-300 text-right">
-                          {arrearsMonths.toFixed(1)}
-                        </td>
-                        <td className="p-2 border border-gray-300 text-right">
-                          {units.toLocaleString("en-US", {
-                            maximumFractionDigits: 0,
-                          })}
-                        </td>
-                      </tr>
-                    );
-                  });
-
-                  // Add the subtotal row for the final area group
-                  if (currentAreaRecords.length > 0) {
-                    rows.push(renderTotalRow(lastAreaName, currentAreaRecords));
-                  }
-
-                  // Add the grand total row for all records combined
-                  if (results.length > 0) {
-                    rows.push(renderGrandTotalRow(results));
-                  }
-
-                  return rows;
+                  return renderTableRows(paginatedResults, startIndex, false);
                 })()}
               </tbody>
             </table>
           </div>
+
+          {renderPagination()}
+
+          {/* Hidden full table for printing */}
+          <div className="hidden">
+            <table ref={printTableRef} className="w-full text-xs border-collapse">
+              <thead>
+                <tr>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Area Name</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Account No</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Name</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Address</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Telephone</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Last Cash Date</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-left">Current Reading Date</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">Current Balance</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">kWh Charge</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">Current Balance - kWh Charge</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-center">Tariff</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">Months in Arrears</th>
+                  <th className="p-2 border border-gray-300 font-semibold text-right">Units</th>
+                </tr>
+              </thead>
+              <tbody>
+                {renderTableRows(results || [], 0, true)}
+              </tbody>
+            </table>
+          </div>
+
           <div className="mt-3 text-2xs text-gray-500 print:hidden">
             Generated on: {new Date().toLocaleString()}
           </div>
