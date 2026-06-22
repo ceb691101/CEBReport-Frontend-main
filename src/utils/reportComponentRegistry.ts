@@ -46,6 +46,7 @@ import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
 import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 import HeadOfficePOSCollection from "../mainTopics/Collections/HeadOfficePOSCollection";
+import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHighestOutstanding";
 
 
 // Consumption Analysis reports
@@ -251,6 +252,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"receivable position": ReceivablePosition,
 	"unload loan information": DishonouredCheques,
 	"dishonoured cheques": DishonouredCheques,
+	"customers with highest outstanding balance": CustomersHighestOutstanding,
 
 	// Consumption Analysis reports
 	"tariff block wise consumption report": TariffBlockWiseConsumption,
