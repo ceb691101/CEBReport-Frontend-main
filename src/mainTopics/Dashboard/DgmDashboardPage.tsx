@@ -80,29 +80,53 @@ const Reveal: React.FC<{ children: React.ReactNode; delay?: number; className?: 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const grouped: Record<string, { app?: number; conn?: number }> = {};
+    let totalApps = 0;
+    let totalConns = 0;
     
     payload.forEach((item: any) => {
       const nameStr = item.name || "";
       const isApp = nameStr.endsWith(" (App)");
       const cleanName = nameStr.replace(" (App)", "").replace(" (Conn)", "");
+      const val = Number(item.value) || 0;
       
       if (!grouped[cleanName]) {
         grouped[cleanName] = {};
       }
       
       if (isApp) {
-        grouped[cleanName].app = item.value;
+        grouped[cleanName].app = val;
+        totalApps += val;
       } else {
-        grouped[cleanName].conn = item.value;
+        grouped[cleanName].conn = val;
+        totalConns += val;
       }
     });
 
+    const totalPending = Math.max(0, totalApps - totalConns);
+
     return (
-      <div className="bg-white/95 backdrop-blur-md p-4 border border-slate-200/80 shadow-xl rounded-2xl text-xs space-y-3 font-sans min-w-[260px]">
-        <div className="font-extrabold text-slate-800 text-sm border-b border-slate-100 pb-1.5 font-mono">
-          Dept: {label}
+      <div className="bg-white/95 backdrop-blur-md p-4 border border-slate-200/80 shadow-xl rounded-2xl text-xs space-y-3 font-sans min-w-[280px]">
+        <div className="border-b border-slate-100 pb-2">
+          <div className="font-extrabold text-slate-800 text-sm font-mono">
+            Dept: {label}
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Apps</span>
+              <span className="text-xs font-extrabold text-[#813405] font-mono">{totalApps}</span>
+            </div>
+            <div className="flex flex-col border-l border-slate-200/60 pl-2">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Total Conns</span>
+              <span className="text-xs font-extrabold text-emerald-600 font-mono">{totalConns}</span>
+            </div>
+            <div className="flex flex-col border-l border-slate-200/60 pl-2">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pending</span>
+              <span className="text-xs font-extrabold text-red-600 font-mono">{totalPending}</span>
+            </div>
+          </div>
         </div>
         <div className="space-y-2">
+          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Type Breakdown</div>
           {Object.entries(grouped).map(([typeName, values]) => {
             const appVal = values.app || 0;
             const connVal = values.conn || 0;
@@ -511,7 +535,7 @@ const DgmDashboardPage: React.FC = () => {
                       
                       {total30DayCollection > 0 && (
                         <span className="text-xs font-bold text-orange-700 bg-orange-50 border border-orange-100 rounded-full px-3 py-1 self-start sm:self-auto">
-                          Total: LKR {(total30DayCollection / 1_000_000).toFixed(2)}M
+                          Last 30 Days
                         </span>
                       )}
                     </div>
@@ -734,14 +758,57 @@ const DgmDashboardPage: React.FC = () => {
                           cursor={{ fill: "rgba(0,0,0,0.02)" }}
                         />
 
-                        {/* Hardcoded clean double-category Legend */}
+                        {/* Interactive Legend with color-meaning tooltips on hover */}
                         <Legend
-                          iconType="circle"
-                          wrapperStyle={{ fontSize: 11, fontWeight: 700, paddingTop: 12 }}
-                          payload={[
-                            { value: "Applications Submitted", type: "circle", id: "apps", color: "#813405" },
-                            { value: "Connections Given", type: "circle", id: "conns", color: "#10b981" }
-                          ]}
+                          content={() => (
+                            <div className="flex items-center justify-center gap-8 pt-3 pb-1">
+                              {/* Applications Submitted legend item */}
+                              <div className="relative group/apps cursor-pointer">
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-amber-50 transition-colors duration-200">
+                                  <span className="w-3 h-3 rounded-full bg-[#813405] ring-2 ring-[#813405]/20" />
+                                  <span className="text-[11px] font-bold text-slate-700">Applications Submitted</span>
+                                </div>
+                                {/* Tooltip popup */}
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 pointer-events-none group-hover/apps:opacity-100 group-hover/apps:pointer-events-auto transition-all duration-300 z-50">
+                                  <div className="bg-white border border-slate-200 shadow-xl rounded-xl p-3 min-w-[200px]">
+                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 pb-1.5">Color Meanings — Applications</p>
+                                    <div className="space-y-1.5">
+                                      {appTypesList.map((type, index) => (
+                                        <div key={type} className="flex items-center gap-2">
+                                          <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: appColors[index % appColors.length] }} />
+                                          <span className="text-[10px] font-semibold text-slate-600 truncate">{type.replace(" (App)", "")}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-white border-r border-b border-slate-200 rotate-45" />
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Connections Given legend item */}
+                              <div className="relative group/conns cursor-pointer">
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-emerald-50 transition-colors duration-200">
+                                  <span className="w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+                                  <span className="text-[11px] font-bold text-slate-700">Connections Given</span>
+                                </div>
+                                {/* Tooltip popup */}
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 pointer-events-none group-hover/conns:opacity-100 group-hover/conns:pointer-events-auto transition-all duration-300 z-50">
+                                  <div className="bg-white border border-slate-200 shadow-xl rounded-xl p-3 min-w-[200px]">
+                                    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 pb-1.5">Color Meanings — Connections</p>
+                                    <div className="space-y-1.5">
+                                      {connTypesList.map((type, index) => (
+                                        <div key={type} className="flex items-center gap-2">
+                                          <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: connColors[index % connColors.length] }} />
+                                          <span className="text-[10px] font-semibold text-slate-600 truncate">{type.replace(" (Conn)", "")}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-white border-r border-b border-slate-200 rotate-45" />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         />
 
                         {/* Stacking applications (Warm colors, stack apps) */}
