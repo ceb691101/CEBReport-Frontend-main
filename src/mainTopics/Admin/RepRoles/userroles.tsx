@@ -10,6 +10,7 @@ type RoleRecord = {
 	roleId: string;
 	roleName: string;
 	company: string;
+	assignedCompanies: string[];
 	motherCompany: string;
 	userGroup: string;
 	costCentre: string;
@@ -84,12 +85,91 @@ const normalizeRoleKey = (epfNo: unknown, userType: unknown): string =>
 
 const splitDelimitedValues = (value: unknown): string[] =>
 	normalizeText(value)
-		.split(/[;,]/)
+		.split(/[;,\|/\s]+/)
 		.map((item) => item.trim())
 		.filter(Boolean);
 
+const toAssignedCompanyValues = (value: unknown): string[] => {
+	if (Array.isArray(value)) {
+		return value
+			.flatMap((item) => {
+				if (item && typeof item === "object") {
+					const company = item as Record<string, unknown>;
+					return splitDelimitedValues(
+						company.CompanyId ??
+						company.companyId ??
+						company.Company ??
+						company.company ??
+						company.MotherCompany ??
+						company.motherCompany
+					);
+				}
+				return splitDelimitedValues(item);
+			})
+			.filter(Boolean);
+	}
+
+	return splitDelimitedValues(value);
+};
+
+const uniqueByNormalizedKey = (values: string[]): string[] => {
+	const seen = new Set<string>();
+
+	return values.filter((value) => {
+		const key = normalizeKey(value);
+		if (!key || seen.has(key)) {
+			return false;
+		}
+		seen.add(key);
+		return true;
+	});
+};
+
+const resolveAssignedCompanyIds = (
+	companyValues: string[],
+	motherCompanies: MotherCompanyOption[]
+): string[] => {
+	const isAll = companyValues.some((companyId) => normalizeKey(companyId) === "ALL");
+
+	return uniqueByNormalizedKey(isAll
+		? motherCompanies.map((company) => company.companyId)
+		: companyValues.map((companyValue) => {
+			const normalizedValue = normalizeKey(companyValue);
+			const normalizedPrefix = normalizeKey(normalizeText(companyValue).split(/[-:]/)[0]);
+			const matched = motherCompanies.find(
+				(company) =>
+					normalizeKey(company.companyId) === normalizedValue ||
+					normalizeKey(company.companyName) === normalizedValue ||
+					normalizeKey(company.companyId) === normalizedPrefix
+			);
+			return matched ? matched.companyId : companyValue;
+		}));
+};
+
+const normalizeCostCentreId = (value: unknown): string =>
+	normalizeText(value).split("-")[0].trim();
+
+const uniqueCostCentreIds = (values: string[]): string[] =>
+	uniqueByNormalizedKey(values.map(normalizeCostCentreId).filter(Boolean));
+
 const getRoleKey = (role: Pick<RoleRecord, "epfNo" | "userType">): string =>
 	normalizeRoleKey(role.epfNo, role.userType);
+
+const handleResponse = async (response: Response) => {
+	if (!response.ok) {
+		const text = await response.text();
+		if (text.trim().startsWith("<")) {
+			throw new Error(`Server returned error ${response.status} (${response.statusText}). WebDAV module or IIS URL routing might be blocking PUT/DELETE methods.`);
+		}
+		try {
+			const json = JSON.parse(text);
+			throw new Error(json?.errorMessage ?? `Request failed with status ${response.status}`);
+		} catch {
+			throw new Error(text || `Request failed with status ${response.status}`);
+		}
+	}
+	return response.json();
+};
 
 const actionButtonPrimaryClass =
 	"rounded-lg bg-[#7A0000] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#620000] disabled:cursor-not-allowed disabled:opacity-60";
@@ -114,7 +194,6 @@ const UserRoles = () => {
 	const [isCostCentresLoading, setIsCostCentresLoading] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [motherCompanies, setMotherCompanies] = useState<MotherCompanyOption[]>([]);
-	const [allCostCentres, setAllCostCentres] = useState<CostCentreOption[]>([]);
 	const [costCentres, setCostCentres] = useState<CostCentreOption[]>([]);
 	const [userGroups, setUserGroups] = useState<UserGroupOption[]>([]);
 	const [isUserGroupsLoading, setIsUserGroupsLoading] = useState(false);
@@ -158,8 +237,8 @@ const UserRoles = () => {
 
 			const nextCompanies: MotherCompanyOption[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-					companyId: item?.CompanyId ?? "",
-					companyName: item?.CompanyName ?? "",
+					companyId: normalizeText(item?.CompanyId),
+					companyName: normalizeText(item?.CompanyName),
 				}))
 				: [];
 
@@ -174,50 +253,91 @@ const UserRoles = () => {
 		}
 	};
 
-	const loadCostCentres = async (companyId: string) => {
-		if (!companyId) {
-			setCostCentres([]);
-			setIsCostCentresLoading(false);
-			return;
-		}
+	useEffect(() => {
+		let isMounted = true;
 
-		setIsCostCentresLoading(true);
-
-		try {
-			const response = await fetch(
-				`/misapi/api/roleinfo/companies/${encodeURIComponent(companyId)}/costcentres`
-			);
-
-			if (!response.ok) {
-				throw new Error(`Failed to load cost centres. (${response.status})`);
+		const fetchAllCostCentres = async () => {
+			if (assignedCompanies.length === 0) {
+				setCostCentres([]);
+				setIsCostCentresLoading(false);
+				return;
 			}
 
-			const payload = await response.json();
+			setIsCostCentresLoading(true);
 
-			if (payload?.errorMessage) {
-				throw new Error(payload.errorMessage);
+			try {
+				let results: any[] = [];
+
+				if (assignedCompanies.length === motherCompanies.length && motherCompanies.length > 0) {
+					// Optimization: Fetch all cost centres at once if all companies are selected
+					const response = await fetch("/misapi/api/roleinfo/companies/ALL/costcentres");
+					if (!response.ok) {
+						throw new Error(`Failed to load cost centres for all companies. (${response.status})`);
+					}
+					const payload = await response.json();
+					if (payload?.errorMessage) {
+						throw new Error(payload.errorMessage);
+					}
+					results = [payload?.data ?? []];
+				} else {
+					const promises = assignedCompanies.map(async (companyId) => {
+						const response = await fetch(
+							`/misapi/api/roleinfo/companies/${encodeURIComponent(companyId)}/costcentres`
+						);
+						if (!response.ok) {
+							throw new Error(`Failed to load cost centres for company ${companyId}. (${response.status})`);
+						}
+						const payload = await response.json();
+						if (payload?.errorMessage) {
+							throw new Error(payload.errorMessage);
+						}
+						return Array.isArray(payload?.data) ? payload.data : [];
+					});
+					results = await Promise.all(promises);
+				}
+
+				if (!isMounted) return;
+
+				const nextCostCentres: CostCentreOption[] = [];
+				const seenIds = new Set<string>();
+
+				for (const data of results) {
+					for (const item of data) {
+						const costCentreId = item?.costCentre ?? item?.CostCentreId ?? item?.DepartmentId ?? "";
+						if (costCentreId && !seenIds.has(costCentreId.toUpperCase())) {
+							seenIds.add(costCentreId.toUpperCase());
+							nextCostCentres.push({
+								costCentreId: costCentreId,
+								departmentName: item?.departmentName ?? item?.DepartmentName ?? item?.CostCentreName ?? "",
+								lvlNo: Number(item?.lvlNo ?? item?.LvlNo ?? 0),
+								costCentreName: item?.costCentreName ?? item?.CostCentreName ?? item?.DepartmentName ?? "",
+								costCentreDisplay: item?.costCentreDisplay ?? item?.CostCentreDisplay ?? "",
+							});
+						}
+					}
+				}
+
+				setCostCentres(nextCostCentres);
+			} catch (error) {
+				if (isMounted) {
+					const message =
+						error instanceof Error ? error.message : "Failed to load cost centres.";
+					toast.error(message);
+					setCostCentres([]);
+				}
+			} finally {
+				if (isMounted) {
+					setIsCostCentresLoading(false);
+				}
 			}
+		};
 
-			const nextCostCentres: CostCentreOption[] = Array.isArray(payload?.data)
-				? payload.data.map((item: any) => ({
-					costCentreId: item?.costCentre ?? item?.CostCentreId ?? item?.DepartmentId ?? "",
-					departmentName: item?.departmentName ?? item?.DepartmentName ?? item?.CostCentreName ?? "",
-					lvlNo: Number(item?.lvlNo ?? item?.LvlNo ?? 0),
-					costCentreName: item?.costCentreName ?? item?.CostCentreName ?? item?.DepartmentName ?? "",
-					costCentreDisplay: item?.costCentreDisplay ?? item?.CostCentreDisplay ?? "",
-				}))
-				: [];
+		fetchAllCostCentres();
 
-			setCostCentres(nextCostCentres);
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "Failed to load cost centres.";
-			toast.error(message);
-			setCostCentres([]);
-		} finally {
-			setIsCostCentresLoading(false);
-		}
-	};
+		return () => {
+			isMounted = false;
+		};
+	}, [assignedCompanies, motherCompanies]);
 
 	const loadRoles = async (type: RoleType) => {
 		setIsLoading(true);
@@ -256,20 +376,27 @@ const UserRoles = () => {
 
 			const nextRoles: RoleRecord[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-					epfNo: item?.EpfNo ?? "",
-					roleId: item?.RoleId ?? "",
-					roleName: item?.RoleName ?? "",
-					company: item?.Company ?? "",
-					motherCompany: item?.MotherCompany ?? "",
-					userGroup: item?.UserGroup ?? "",
-					costCentre: item?.CostCentre ?? "",
-					costCentres: Array.isArray(item?.CostCentres)
-						? item.CostCentres.filter((value: string) => value)
+					epfNo: normalizeText(item?.EpfNo),
+					roleId: normalizeText(item?.RoleId),
+					roleName: normalizeText(item?.RoleName),
+					company: normalizeText(item?.Company),
+					assignedCompanies: uniqueByNormalizedKey(toAssignedCompanyValues(
+						item?.AssignedCompanies ??
+						item?.assignedCompanies ??
+						item?.Companies ??
+						item?.companies ??
+						item?.Company
+					)),
+					motherCompany: normalizeText(item?.MotherCompany),
+					userGroup: normalizeText(item?.UserGroup),
+					costCentre: normalizeText(item?.CostCentre),
+					costCentres: uniqueCostCentreIds(Array.isArray(item?.CostCentres)
+						? item.CostCentres.map((value: any) => normalizeText(value)).filter(Boolean)
 						: String(item?.CostCentre ?? "")
-							.split(",")
-							.map((value: string) => value.trim())
-							.filter((value: string) => value.length > 0),
-					userType: item?.UserType ?? "",
+							.split(/[;,]+/)
+							.map((value: string) => normalizeText(value))
+							.filter((value: string) => value.length > 0)),
+					userType: normalizeText(item?.UserType),
 				}))
 				: [];
 
@@ -309,8 +436,8 @@ const UserRoles = () => {
 
 			const groups: UserGroupOption[] = Array.isArray(payload?.data)
 				? payload.data.map((item: any) => ({
-					userGroupId: item?.UserGroupId ?? "",
-					userGroupName: item?.UserGroupName ?? "",
+					userGroupId: normalizeText(item?.UserGroupId),
+					userGroupName: normalizeText(item?.UserGroupName),
 				}))
 				: [];
 			setUserGroups(groups);
@@ -331,30 +458,9 @@ const UserRoles = () => {
 	useEffect(() => {
 		loadMotherCompanies();
 		loadUserGroups();
-		
-		// Preload all cost centres to match names for assigned cost centres 
-		// that might belong to other companies than the primary one.
-		fetch("/misapi/api/roleinfo/companies/ALL/costcentres")
-			.then((res) => res.json())
-			.then((payload) => {
-				if (Array.isArray(payload?.data)) {
-					setAllCostCentres(
-						payload.data.map((item: any) => ({
-							costCentreId: item?.costCentre ?? item?.CostCentreId ?? item?.DepartmentId ?? "",
-							departmentName: item?.departmentName ?? item?.DepartmentName ?? item?.CostCentreName ?? "",
-							lvlNo: Number(item?.lvlNo ?? item?.LvlNo ?? 0),
-							costCentreName: item?.costCentreName ?? item?.CostCentreName ?? item?.DepartmentName ?? "",
-							costCentreDisplay: item?.costCentreDisplay ?? item?.CostCentreDisplay ?? "",
-						}))
-					);
-				}
-			})
-			.catch(() => {});
 	}, []);
 
-	useEffect(() => {
-		loadCostCentres(form.motherCompany);
-	}, [form.motherCompany]);
+
 
 	useEffect(() => {
 		try {
@@ -382,27 +488,29 @@ const UserRoles = () => {
 	};
 
 	const handleCostCentreToggle = (costCentreId: string) => {
+		const normalizedCostCentreId = normalizeCostCentreId(costCentreId);
+
 		setForm((current) => ({
 			...current,
-			costCentres: current.costCentres.includes(costCentreId)
-				? current.costCentres.filter((value) => value !== costCentreId)
-				: [...current.costCentres, costCentreId],
+			costCentres: current.costCentres.some((value) => normalizeKey(normalizeCostCentreId(value)) === normalizeKey(normalizedCostCentreId))
+				? current.costCentres.filter((value) => normalizeKey(normalizeCostCentreId(value)) !== normalizeKey(normalizedCostCentreId))
+				: uniqueCostCentreIds([...current.costCentres, normalizedCostCentreId]),
 		}));
 	};
 
 	const selectAllCostCentres = () => {
 		setForm((current) => ({
 			...current,
-			costCentres: costCentres.map((item) => item.costCentreId),
+			costCentres: uniqueCostCentreIds(costCentres.map((item) => item.costCentreId)),
 		}));
 	};
 
 	const invertCostCentreSelection = () => {
 		setForm((current) => ({
 			...current,
-			costCentres: costCentres
+			costCentres: uniqueCostCentreIds(costCentres
 				.map((item) => item.costCentreId)
-				.filter((costCentreId) => !current.costCentres.includes(costCentreId)),
+				.filter((costCentreId) => !current.costCentres.some((value) => normalizeKey(normalizeCostCentreId(value)) === normalizeKey(costCentreId)))),
 		}));
 	};
 
@@ -429,7 +537,7 @@ const UserRoles = () => {
 			return;
 		}
 
-		if (!form.motherCompany.trim()) {
+		if (assignedCompanies.length === 0) {
 			toast.warning("Please select a company first.");
 			return;
 		}
@@ -466,7 +574,7 @@ const UserRoles = () => {
 				}
 			);
 
-			const payload = await response.json();
+			const payload = await handleResponse(response);
 
 			if (payload?.errorMessage) {
 				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
@@ -517,9 +625,13 @@ const UserRoles = () => {
 
 	const handleRoleSelect = (role: RoleRecord) => {
 		setSelectedRoleKey(getRoleKey(role));
-		const roleCompanies = splitDelimitedValues(role.company);
-		const primaryCompany = roleCompanies[0] ?? normalizeText(role.company);
-		setAssignedCompanies(roleCompanies.length > 0 ? roleCompanies : primaryCompany ? [primaryCompany] : []);
+		const roleCompanies = role.assignedCompanies.length > 0
+			? role.assignedCompanies
+			: splitDelimitedValues(role.company || role.motherCompany);
+		const resolvedCompanies = resolveAssignedCompanyIds(roleCompanies, motherCompanies);
+		setAssignedCompanies(resolvedCompanies);
+
+		const primaryCompany = resolvedCompanies[0] ?? "";
 
 		// Denormalize userType: backend stores "ADMIN" but form needs "ADMINISTRATOR"
 		const userTypeForForm = role.userType === "ADMIN" ? "ADMINISTRATOR" : role.userType;
@@ -535,10 +647,7 @@ const UserRoles = () => {
 			costCentres: role.costCentres,
 		});
 
-		// Explicitly load cost centres for the selected company
-		if (primaryCompany) {
-			loadCostCentres(primaryCompany);
-		}
+
 
 		setActiveTab(userTypeForForm.trim().toUpperCase().startsWith("USER") ? "user" : "admin");
 	};
@@ -567,7 +676,7 @@ const UserRoles = () => {
 				body: JSON.stringify(buildRolePayload()),
 			});
 
-			const payload = await response.json();
+			const payload = await handleResponse(response);
 
 			if (payload?.errorMessage) {
 				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
@@ -611,9 +720,9 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
+				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}/update`,
 				{
-					method: "PUT",
+					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						...buildRolePayload(selectedRole.epfNo),
@@ -621,15 +730,23 @@ const UserRoles = () => {
 					}),
 				}
 			);
-			const payload = await response.json();
+			const payload = await handleResponse(response);
 
 			if (payload?.errorMessage) {
 				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
 			}
 
 			toast.success(payload?.data?.message ?? "Role updated successfully.");
-			await loadRoles(activeTab);
-			setSelectedRoleKey(normalizeRoleKey(form.epfNo, form.userType === "ADMINISTRATOR" ? "ADMIN" : form.userType));
+			const nextTab =
+				form.userType.trim().toUpperCase().startsWith("USER") ? "user" : "admin";
+			setActiveTab(nextTab);
+			await loadRoles(nextTab);
+			setSelectedRoleKey(
+				normalizeRoleKey(
+					form.epfNo,
+					form.userType === "ADMINISTRATOR" ? "ADMIN" : form.userType
+				)
+			);
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : "Failed to update role.";
@@ -648,10 +765,10 @@ const UserRoles = () => {
 
 		try {
 			const response = await fetch(
-				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}`,
-				{ method: "DELETE" }
+				`/misapi/api/roleinfo/${encodeURIComponent(selectedRole.epfNo)}/${encodeURIComponent(selectedRole.userType)}/delete`,
+				{ method: "POST" }
 			);
-			const payload = await response.json();
+			const payload = await handleResponse(response);
 
 			if (payload?.errorMessage) {
 				throw new Error(payload.errorDetails ? `${payload.errorMessage} Details: ${payload.errorDetails}` : payload.errorMessage);
@@ -672,9 +789,24 @@ const UserRoles = () => {
 	const selectedRole = selectedRoleKey
 		? roles.find((role) => getRoleKey(role) === selectedRoleKey) ?? null
 		: null;
-	const assignedCostCentres = Array.from(
-		new Set(form.costCentres.map((value) => normalizeText(value)).filter(Boolean))
-	);
+
+	useEffect(() => {
+		if (!selectedRole) {
+			return;
+		}
+
+		const roleCompanies = selectedRole.assignedCompanies.length > 0
+			? selectedRole.assignedCompanies
+			: splitDelimitedValues(selectedRole.company || selectedRole.motherCompany);
+		const resolvedCompanies = resolveAssignedCompanyIds(roleCompanies, motherCompanies);
+
+		setAssignedCompanies((current) => {
+			const currentKey = uniqueByNormalizedKey(current).map(normalizeKey).join("|");
+			const nextKey = resolvedCompanies.map(normalizeKey).join("|");
+			return currentKey === nextKey ? current : resolvedCompanies;
+		});
+	}, [motherCompanies, selectedRole]);
+
 	const filteredRoles = roles.filter((role) => {
 		const query = normalizeKey(tableSearch);
 
@@ -727,6 +859,13 @@ const UserRoles = () => {
 			.join(" ")
 			.includes(query);
 	});
+	const hasAllCompaniesSelected = assignedCompanies.some((companyId) => normalizeKey(companyId) === "ALL");
+	const isCompanySelected = (companyId: string): boolean =>
+		hasAllCompaniesSelected ||
+		assignedCompanies.some((selectedCompanyId) => normalizeKey(selectedCompanyId) === normalizeKey(companyId));
+	const selectedCompanyCount = hasAllCompaniesSelected
+		? motherCompanies.length
+		: motherCompanies.filter((company) => isCompanySelected(company.companyId)).length;
 
 	return (
 		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(122,0,0,0.08),_transparent_35%),linear-gradient(180deg,_#faf7f2_0%,_#f3efe7_100%)] px-2 py-4 text-stone-900">
@@ -771,7 +910,9 @@ const UserRoles = () => {
 								value={form.userType}
 								onChange={(value) => {
 									handleFieldChange("userType", value);
-									setActiveTab(value === "USER" ? "user" : "admin");
+									if (!selectedRole) {
+										setActiveTab(value === "USER" ? "user" : "admin");
+									}
 								}}
 							/>
 
@@ -807,9 +948,9 @@ const UserRoles = () => {
 											className={`${fieldBaseClass} flex items-center justify-between`}
 										>
 											<span className="truncate">
-												{assignedCompanies.length === 0
+												{selectedCompanyCount === 0
 													? "Select companies"
-													: `${assignedCompanies.length} companies selected`}
+													: `${selectedCompanyCount} companies selected`}
 											</span>
 											<ChevronDown className={`h-4 w-4 text-stone-500 transition-transform ${isCompanyDropdownOpen ? "rotate-180" : ""}`} />
 										</button>
@@ -880,7 +1021,7 @@ const UserRoles = () => {
 													) : (
 														<ul className="space-y-2">
 																{filteredMotherCompanies.map((company) => {
-																	const isChecked = assignedCompanies.includes(company.companyId);
+																	const isChecked = isCompanySelected(company.companyId);
 																	return (
 																		<li key={company.companyId} className="flex items-center gap-2 text-sm text-stone-800">
 																			<input
@@ -894,9 +1035,14 @@ const UserRoles = () => {
 																							if (!normalized || current.some((item) => normalizeKey(item) === normalized)) {
 																								return current;
 																							}
-																							return [...current, company.companyId];
+																							return uniqueByNormalizedKey([...current, company.companyId]);
 																						}
-																						return current.filter((id) => id !== company.companyId);
+																						if (current.some((id) => normalizeKey(id) === "ALL")) {
+																							return motherCompanies
+																								.map((item) => item.companyId)
+																								.filter((id) => normalizeKey(id) !== normalizeKey(company.companyId));
+																						}
+																						return current.filter((id) => normalizeKey(id) !== normalizeKey(company.companyId));
 																					});
 																					if (checked) {
 																						handleFieldChange("motherCompany", company.companyId);
@@ -917,36 +1063,6 @@ const UserRoles = () => {
 										</>
 									)}
 								</div>
-								{assignedCompanies.length > 0 && (
-									<div className="rounded-xl border border-stone-200 bg-stone-50 p-2.5">
-										<div className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-600">
-											Assigned Companies
-										</div>
-										<div className="flex flex-wrap gap-2">
-											{assignedCompanies.map((companyId) => {
-												const matchedCompany = motherCompanies.find(
-													(c) => normalizeKey(c.companyId) === normalizeKey(companyId)
-												);
-												return (
-													<span
-														key={companyId}
-														className="inline-flex items-center gap-1 rounded-full border border-stone-300 bg-white pl-2.5 pr-1.5 py-1 text-xs font-medium text-stone-700"
-													>
-														{companyId}
-														{matchedCompany ? ` - ${matchedCompany.companyName}` : ""}
-														<button
-															type="button"
-															onClick={() => setAssignedCompanies((current) => current.filter((id) => id !== companyId))}
-															className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-600 font-bold"
-														>
-															×
-														</button>
-													</span>
-												);
-											})}
-										</div>
-									</div>
-								)}
 							</div>
 
 							<div>
@@ -964,44 +1080,6 @@ const UserRoles = () => {
 									</button>
 								</div>
 
-								{/* User's Assigned Cost Centers */}
-								{assignedCostCentres.length > 0 && (
-									<div className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-3">
-										<div className="mb-2 text-xs font-semibold text-green-800 uppercase tracking-wide">
-											User's Assigned Cost Centers
-										</div>
-										<ul className="space-y-2">
-											{assignedCostCentres.map((assignedCostCentreId) => {
-												const idPart = assignedCostCentreId.split("-")[0].trim();
-												const matchedCostCentre = allCostCentres.find(
-													(item) => normalizeKey(item.costCentreId) === normalizeKey(idPart)
-												) || costCentres.find(
-													(item) => normalizeKey(item.costCentreId) === normalizeKey(idPart)
-												);
-
-												let displayName = assignedCostCentreId;
-												if (matchedCostCentre && (matchedCostCentre.departmentName || matchedCostCentre.costCentreName)) {
-													displayName = `${idPart} - ${matchedCostCentre.departmentName || matchedCostCentre.costCentreName}`;
-												}
-
-												return (
-													<li key={assignedCostCentreId} className="flex items-center gap-2 text-sm text-green-900">
-														<input
-															type="checkbox"
-															checked={true}
-															onChange={() => handleCostCentreToggle(assignedCostCentreId)}
-															className="h-4 w-4 rounded border-green-400 text-green-600 focus:ring-green-600"
-														/>
-														<span className="font-medium">
-															{displayName}
-														</span>
-													</li>
-												);
-											})}
-										</ul>
-									</div>
-								)}
-
 								{/* Available Departments */}
 								<div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
 									<div className="mb-2 text-xs font-semibold text-stone-700 uppercase tracking-wide">
@@ -1011,8 +1089,8 @@ const UserRoles = () => {
 										<div className="text-sm text-stone-500">Loading cost centres...</div>
 									) : costCentres.length === 0 ? (
 										<div className="text-sm text-stone-500">
-											{form.motherCompany
-												? "No departments or cost centres found for the selected company."
+											{assignedCompanies.length > 0
+												? "No departments or cost centres found for the selected companies."
 												: "Select a company to load departments and cost centres."}
 										</div>
 									) : (
@@ -1025,12 +1103,16 @@ const UserRoles = () => {
 											</div>
 											<ul className="space-y-2">
 												{costCentres
-													.filter((item) => !form.costCentres.includes(item.costCentreId))
-													.map((item) => (
+													.map((item) => {
+														const isChecked = form.costCentres.some(
+															(costCentreId) => normalizeKey(normalizeCostCentreId(costCentreId)) === normalizeKey(item.costCentreId)
+														);
+
+														return (
 														<li key={item.costCentreId} className="flex items-center gap-2 text-sm text-stone-800">
 															<input
 																type="checkbox"
-																checked={false}
+																checked={isChecked}
 																onChange={() => handleCostCentreToggle(item.costCentreId)}
 																className="h-4 w-4 rounded border-stone-400 text-[#7A0000] focus:ring-[#7A0000]"
 															/>
@@ -1038,7 +1120,8 @@ const UserRoles = () => {
 																{item.costCentreId} - {item.departmentName || item.costCentreName}
 															</span>
 														</li>
-													))}
+													);
+												})}
 											</ul>
 										</>
 									)}
@@ -1129,8 +1212,8 @@ const UserRoles = () => {
 											<th className="px-4 py-3">EPF No</th>
 											<th className="px-4 py-3">Role ID</th>
 											<th className="px-4 py-3">Role Name</th>
-											<th className="px-4 py-3">Company</th>
-											<th className="px-4 py-3">User Type</th>
+											<th className="px-4 py-3">Mother Company</th>
+											<th className="px-4 py-3">User Group</th>
 											<th className="px-4 py-3"></th>
 										</tr>
 									</thead>
@@ -1161,8 +1244,8 @@ const UserRoles = () => {
 														<td className="px-4 py-3">{role.epfNo || "-"}</td>
 														<td className="px-4 py-3 font-semibold text-stone-900">{role.roleId}</td>
 														<td className="px-4 py-3">{role.roleName || "-"}</td>
-														<td className="px-4 py-3">{role.company || "-"}</td>
-														<td className="px-4 py-3">{role.userType || "-"}</td>
+														<td className="px-4 py-3">{role.motherCompany || "-"}</td>
+														<td className="px-4 py-3">{role.userGroup || "-"}</td>
 														<td className="px-4 py-3">
 															<button
 																type="button"
@@ -1225,6 +1308,9 @@ const UserRoles = () => {
 									</div>
 									<div>
 										<span className="font-semibold text-stone-800">User Type:</span> {selectedRole.userType || "-"}
+									</div>
+									<div className="md:col-span-2">
+										<span className="font-semibold text-stone-800">Assigned Companies:</span> {selectedRole.company || "-"}
 									</div>
 								</div>
 							) : (

@@ -44,8 +44,8 @@ const normalizeKey = (value: unknown): string =>
 
 const pinnedStorageKey = "role-report-pins";
 
-const getRoleKey = (role: Pick<RoleRecord, "roleId">): string =>
-  normalizeKey(role.roleId);
+const getRoleKey = (role: Pick<RoleRecord, "epfNo" | "userType">): string =>
+  `${normalizeKey(role.epfNo)}-${normalizeKey(role.userType)}`;
 
 const RoleReport = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("category");
@@ -65,6 +65,8 @@ const RoleReport = () => {
   const [reports, setReports] = useState<ReportRecord[]>([]);
 
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+  const [selectedEpfNo, setSelectedEpfNo] = useState<string>("");
+  const [selectedUserType, setSelectedUserType] = useState<string>("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
 
@@ -149,8 +151,11 @@ const RoleReport = () => {
 
       const merged = [...users, ...admins].filter((role, index, arr) => {
         return (
-          arr.findIndex((r) => normalizeKey(r.roleId) === normalizeKey(role.roleId)) ===
-          index
+          arr.findIndex(
+            (r) =>
+              normalizeKey(r.epfNo) === normalizeKey(role.epfNo) &&
+              normalizeKey(r.userType) === normalizeKey(role.userType)
+          ) === index
         );
       });
 
@@ -244,10 +249,19 @@ const RoleReport = () => {
 
   const selectedRole = useMemo(
     () =>
-      roles.find((role) => normalizeKey(role.roleId) === normalizeKey(selectedRoleId)) ??
-      null,
-    [roles, selectedRoleId]
+      roles.find(
+        (role) =>
+          normalizeKey(role.epfNo) === normalizeKey(selectedEpfNo) &&
+          normalizeKey(role.userType) === normalizeKey(selectedUserType)
+      ) ?? null,
+    [roles, selectedEpfNo, selectedUserType]
   );
+
+  const handleSelectRole = (role: RoleRecord) => {
+    setSelectedRoleId(role.roleId);
+    setSelectedEpfNo(role.epfNo);
+    setSelectedUserType(role.userType);
+  };
 
   const filteredRoles = useMemo(() => {
     const query = normalizeText(roleSearch).toUpperCase();
@@ -610,6 +624,8 @@ const RoleReport = () => {
 
   const resetSelections = () => {
     setSelectedRoleId("");
+    setSelectedEpfNo("");
+    setSelectedUserType("");
     setEnteredName("");
     setEnteredUserName("");
     setSelectedCategories([]);
@@ -645,7 +661,7 @@ const RoleReport = () => {
           <div className="flex h-full min-h-[78vh] w-full flex-col rounded-[26px] border border-[#7A0000]/12 bg-white p-5 shadow-[0_12px_34px_rgba(122,0,0,0.08)] xl:order-2">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-semibold text-stone-900">Role Report Table</h2>
+                <h2 className="text-2xl font-semibold text-stone-900">User Role Table</h2>
                 <button
                   type="button"
                   onClick={loadRoles}
@@ -712,10 +728,11 @@ const RoleReport = () => {
                         sortedFilteredRoles.map((role) => {
                         return (
                           <tr
-                            key={role.roleId}
-                            onClick={() => setSelectedRoleId(role.roleId)}
+                            key={`${role.epfNo}-${role.userType}`}
+                            onClick={() => handleSelectRole(role)}
                             className={`cursor-pointer border-t border-stone-100 transition ${
-                              normalizeKey(selectedRoleId) === normalizeKey(role.roleId)
+                              normalizeKey(selectedEpfNo) === normalizeKey(role.epfNo) &&
+                              normalizeKey(selectedUserType) === normalizeKey(role.userType)
                                 ? "bg-[#7A0000]/8"
                                 : "bg-white hover:bg-stone-50"
                             }`}

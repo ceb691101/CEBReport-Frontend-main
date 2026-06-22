@@ -102,8 +102,8 @@ const normalizeAreaList = (list: unknown): Area[] => {
   if (!Array.isArray(list)) return [];
   return list
     .map((a: Record<string, string>) => ({
-      AreaCode: a.AreaCode ?? a.areaCode ?? "",
-      AreaName: a.AreaName ?? a.areaName ?? "",
+      AreaCode: (a.AreaCode ?? a.areaCode ?? a.area_code ?? a.AREA_CODE ?? "").trim(),
+      AreaName: (a.AreaName ?? a.areaName ?? a.area_name ?? a.AREA_NAME ?? "").trim(),
     }))
     .filter((a) => a.AreaCode);
 };
@@ -132,14 +132,12 @@ const ReceivablePosition: React.FC = () => {
 
   // ── Loading states ─────────────────────────────────────────────────────────
   const [isLoadingBillCycles, setIsLoadingBillCycles] = useState(false);
-  const [isLoadingBillTypes, setIsLoadingBillTypes] = useState(false);
   const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
   const [isLoadingRegions, setIsLoadingRegions] = useState(false);
   const [isLoadingAreas, setIsLoadingAreas] = useState(false);
 
   // ── Error states ───────────────────────────────────────────────────────────
   const [billCycleError, setBillCycleError] = useState<string | null>(null);
-  const [billTypeError, setBillTypeError] = useState<string | null>(null);
   const [provinceError, setProvinceError] = useState<string | null>(null);
   const [regionError, setRegionError] = useState<string | null>(null);
   const [areasError, setAreasError] = useState<string | null>(null);
@@ -184,14 +182,10 @@ const ReceivablePosition: React.FC = () => {
   };
 
   const loadBillCycleOptions = async (customerType: string) => {
-    const urls = customerType
-      ? [
-          `/misapi/api/receivable-position/billcycle/max?billType=${encodeURIComponent(customerType)}`,
-          ...(customerType === "B"
-            ? ["/misapi/api/bulk/mon_tot/billcycle/max"]
-            : []),
-        ]
-      : ["/misapi/api/receivable-position/billcycle/max"];
+    const urls = [
+      `/misapi/api/receivable-position/billcycle/max?billType=${encodeURIComponent(customerType)}`,
+      `/misapi/api/receivable-position/billcycle/max`, // fallback without billType filter
+    ];
 
     for (const url of urls) {
       try {
@@ -208,6 +202,14 @@ const ReceivablePosition: React.FC = () => {
 
   // ── 1. Bill cycles (reload when customer type changes) ─────────────────────
   useEffect(() => {
+    // Don't fetch until the user has selected a customer type
+    if (!billType) {
+      setBillCycleOptions([]);
+      setBillCycle("");
+      setBillCycleError(null);
+      return;
+    }
+
     const load = async () => {
       setIsLoadingBillCycles(true);
       setBillCycleError(null);
@@ -230,7 +232,7 @@ const ReceivablePosition: React.FC = () => {
           setBillCycleError(
             billType === "B"
               ? "No bill cycles available for Bulk customers."
-              : "Invalid bill cycle data format"
+              : "Failed to load bill cycles. Please try again."
           );
         }
       } catch (e: any) {
@@ -242,21 +244,12 @@ const ReceivablePosition: React.FC = () => {
     load();
   }, [billType]);
 
-  // ── 2. Bill types ──────────────────────────────────────────────────────────
+  // ── 2. Bill types — static values, no API call needed ─────────────────────
   useEffect(() => {
-    const load = async () => {
-      setIsLoadingBillTypes(true);
-      setBillTypeError(null);
-      try {
-        const res = await fetchJson(`/misapi/api/receivable-position/bill-types`);
-        setBillTypeOptions(res.data || []);
-      } catch (e: any) {
-        setBillTypeError(e.message || "Failed to load bill types");
-      } finally {
-        setIsLoadingBillTypes(false);
-      }
-    };
-    load();
+    setBillTypeOptions([
+      { BillType: "O", DisplayName: "Ordinary" },
+      { BillType: "B", DisplayName: "Bulk" },
+    ]);
   }, []);
 
   // ── 3. Provinces + Regions (when billType changes) ────────────────────────
@@ -337,7 +330,7 @@ const ReceivablePosition: React.FC = () => {
 
   // ── Guards ─────────────────────────────────────────────────────────────────
   const isCategoryValueDisabled = () => {
-    if (!billCycle || !billType) return true;
+    if (!billType || !billCycle) return true;
     if (category === "Province")
       return isLoadingProvinces || provinceError !== null;
     if (category === "Region")
@@ -347,9 +340,10 @@ const ReceivablePosition: React.FC = () => {
 
   const canSubmit = () => {
     if (!billCycle || !billType) return false;
-    if (isLoadingAreas) return false; // wait for areas to finish loading
-    if (category === "CEB Entire") return true;
-    return !!categoryValue;
+    if (category === "Province") return !!categoryValue && !isLoadingProvinces;
+    if (category === "Region") return !!categoryValue && !isLoadingRegions;
+    // CEB Entire needs all areas pre-loaded
+    return !isLoadingAreas && allAreas.length > 0;
   };
 
   // ── Totals ─────────────────────────────────────────────────────────────────
@@ -360,11 +354,16 @@ const ReceivablePosition: React.FC = () => {
   const fetchAreasForProvince = async (
     provinceCode: string
   ): Promise<Area[]> => {
+    // Pass billType + billCycle so the DAO first tries to find areas that
+    // actually have data for this cycle. If none found, the DAO falls back
+    // to all areas for the province from the areas table.
     const primaryUrl =
       `/misapi/api/receivable-position/areas-by-province` +
       `?provinceCode=${encodeURIComponent(provinceCode)}` +
-      `&billType=${encodeURIComponent(billType)}` +
-      `&billCycle=${encodeURIComponent(billCycle)}`;
+      `&billType=${encodeURIComponent(billType)}`;
+    // Intentionally omitting billCycle so the DAO's areas-table fallback
+    // always runs — this ensures Bulk areas are returned even when
+    // receive_position has no row for the exact cycle yet.
 
     try {
       const res = await fetchJson(primaryUrl);
@@ -374,6 +373,7 @@ const ReceivablePosition: React.FC = () => {
       console.warn("[ReceivablePosition] areas-by-province failed:", err);
     }
 
+    // Ordinary fallback: pos-areas endpoint
     if (billType !== "B") {
       try {
         const res = await fetchJson(
@@ -387,14 +387,20 @@ const ReceivablePosition: React.FC = () => {
       }
     }
 
+    // Last resort: filter from the preloaded allAreas list
     if (allAreas.length > 0) {
       const padded = provinceCode.padStart(2, "0");
+      const unpadded = provinceCode.replace(/^0+/, "") || "0";
       const fromPreload = allAreas.filter((a) => {
-        const prov =
-          a.ProvinceCode ?? a.Province ?? a.PROVINCE_CODE ?? "";
+        // Check every possible province field name the API might return
+        const prov = (
+          a.ProvinceCode ?? a.Province ?? a.PROVINCE_CODE ??
+          a.prov_code ?? a.provCode ?? a.ProvCode ?? ""
+        ).trim();
         return (
           prov === provinceCode ||
           prov === padded ||
+          prov === unpadded ||
           prov.padStart(2, "0") === padded
         );
       });
@@ -406,11 +412,11 @@ const ReceivablePosition: React.FC = () => {
 
   // ── Resolve areas for a region (with fallbacks) ───────────────────────────
   const fetchAreasForRegion = async (regionCode: string): Promise<Area[]> => {
+    // Omit billCycle so DAO always falls back to areas table for Bulk
     const primaryUrl =
       `/misapi/api/receivable-position/areas-by-region` +
       `?regionCode=${encodeURIComponent(regionCode)}` +
-      `&billType=${encodeURIComponent(billType)}` +
-      `&billCycle=${encodeURIComponent(billCycle)}`;
+      `&billType=${encodeURIComponent(billType)}`;
 
     try {
       const res = await fetchJson(primaryUrl);
@@ -418,6 +424,18 @@ const ReceivablePosition: React.FC = () => {
       if (areas.length > 0) return areas;
     } catch (err) {
       console.warn("[ReceivablePosition] areas-by-region failed:", err);
+    }
+
+    // Fallback: filter from the preloaded allAreas list by region field
+    if (allAreas.length > 0) {
+      const fromPreload = allAreas.filter((a) => {
+        const reg = (
+          a.RegionCode ?? a.Region ?? a.REGION_CODE ??
+          a.region_code ?? a.regCode ?? a.RegCode ?? ""
+        ).trim();
+        return reg === regionCode || reg.padStart(2, "0") === regionCode.padStart(2, "0");
+      });
+      if (fromPreload.length > 0) return fromPreload;
     }
 
     return [];
@@ -428,14 +446,14 @@ const ReceivablePosition: React.FC = () => {
     areaCode: string
   ): Promise<ReceivableRecord[]> => {
     try {
-      const url = `/misapi/api/receivable-position/report?billCycle=${billCycle}&areaCode=${areaCode}&billType=${billType}`;
+      const url = `/misapi/api/receivable-position/report?billCycle=${encodeURIComponent(billCycle)}&areaCode=${encodeURIComponent(areaCode)}&billType=${encodeURIComponent(billType)}`;
       const data = await fetchJson(url);
-      if (data.data && Array.isArray(data.data)) return data.data;
+      if (data.data && Array.isArray(data.data) && data.data.length > 0) return data.data;
+      // Some APIs return a single object instead of array
+      if (data.data && !Array.isArray(data.data) && data.data.AreaCode) return [data.data];
+      if (data.errorMessage) console.warn(`[RP] ${areaCode}: ${data.errorMessage} | ${data.errorDetails ?? ""}`);
     } catch (e) {
-      console.warn(
-        `[ReceivablePosition] Failed to fetch data for area ${areaCode}:`,
-        e
-      );
+      console.warn(`[RP] fetch failed for area ${areaCode}:`, e);
     }
     return [];
   };
@@ -450,75 +468,52 @@ const ReceivablePosition: React.FC = () => {
     setReportData([]);
 
     try {
-      let combined: ReceivableRecord[] = [];
-
+      let areas: Area[] = [];
       let areaLookup = new Map<string, string>();
 
+      // ── Resolve the area list ──────────────────────────────────────────────
       if (category === "Province") {
         setLoadingStatus("Fetching areas for province...");
-        const provinceAreas = await fetchAreasForProvince(categoryValue);
+        areas = await fetchAreasForProvince(categoryValue);
         const provinceName =
-          provinces.find((p) => p.ProvinceCode === categoryValue)?.ProvinceName ??
-          categoryValue;
-
-        if (provinceAreas.length === 0) {
-          setReportError(`No areas found for province "${provinceName}".`);
-          setLoading(false);
+          provinces.find((p) => p.ProvinceCode === categoryValue)?.ProvinceName ?? categoryValue;
+        if (areas.length === 0) {
+          setReportError(
+            `No areas found for province "${provinceName}" with bill cycle ${billCycle} and ` +
+            `type ${billType === "O" ? "Ordinary" : "Bulk"}. ` +
+            `Try a different month or check that data exists for this province.`
+          );
           return;
         }
-
-        areaLookup = buildAreaNameLookup(provinceAreas);
-
-        for (let i = 0; i < provinceAreas.length; i++) {
-          setLoadingStatus(`Fetching area ${i + 1} of ${provinceAreas.length}...`);
-          const rows = await fetchAreaData(provinceAreas[i].AreaCode);
-          combined = [...combined, ...rows];
-        }
-
-        const p = provinces.find((p) => p.ProvinceCode === categoryValue);
-        setSelectedCategoryName(p?.ProvinceName ?? categoryValue);
+        setSelectedCategoryName(provinceName);
 
       } else if (category === "Region") {
         setLoadingStatus("Fetching areas for region...");
-        const regionAreas = await fetchAreasForRegion(categoryValue);
+        areas = await fetchAreasForRegion(categoryValue);
         const regionName =
-          regions.find((r) => r.RegionCode === categoryValue)?.RegionName ??
-          categoryValue;
-
-        if (regionAreas.length === 0) {
-          setReportError(`No areas found for region "${regionName}".`);
-          setLoading(false);
+          regions.find((r) => r.RegionCode === categoryValue)?.RegionName ?? categoryValue;
+        if (areas.length === 0) {
+          setReportError(
+            `No areas found for region "${regionName}" with bill cycle ${billCycle} and ` +
+            `type ${billType === "O" ? "Ordinary" : "Bulk"}.`
+          );
           return;
         }
-
-        areaLookup = buildAreaNameLookup(regionAreas);
-
-        for (let i = 0; i < regionAreas.length; i++) {
-          setLoadingStatus(`Fetching area ${i + 1} of ${regionAreas.length}...`);
-          const rows = await fetchAreaData(regionAreas[i].AreaCode);
-          combined = [...combined, ...rows];
-        }
-
-        const r = regions.find((r) => r.RegionCode === categoryValue);
-        setSelectedCategoryName(r?.RegionName ?? categoryValue);
+        setSelectedCategoryName(regionName);
 
       } else {
-        if (allAreas.length === 0) {
-          setReportError(
-            "Area list is empty or still loading. Please wait a moment and try again."
-          );
-          setLoading(false);
-          return;
-        }
-
-        areaLookup = buildAreaNameLookup(allAreas);
-
-        for (let i = 0; i < allAreas.length; i++) {
-          setLoadingStatus(`Fetching area ${i + 1} of ${allAreas.length}...`);
-          const rows = await fetchAreaData(allAreas[i].AreaCode);
-          combined = [...combined, ...rows];
-        }
+        areas = allAreas;
         setSelectedCategoryName("CEB Entire");
+      }
+
+      areaLookup = buildAreaNameLookup(areas);
+
+      // ── Fetch report data for each area ───────────────────────────────────
+      let combined: ReceivableRecord[] = [];
+      for (let i = 0; i < areas.length; i++) {
+        setLoadingStatus(`Fetching data: area ${i + 1} of ${areas.length} (${areas[i].AreaName || areas[i].AreaCode})...`);
+        const rows = await fetchAreaData(areas[i].AreaCode);
+        combined = [...combined, ...rows];
       }
 
       setLoadingStatus("");
@@ -526,16 +521,18 @@ const ReceivablePosition: React.FC = () => {
       if (combined.length > 0) {
         setReportData(enrichAndSortRows(combined, areaLookup));
         setReportVisible(true);
+        setReportError(null);
         const bt = billTypeOptions.find((b) => b.BillType === billType);
         setSelectedBillTypeName(bt?.DisplayName ?? billType);
         const opt = billCycleOptions.find((o) => o.code === billCycle);
-        setSelectedBillCycleDisplay(
-          opt
-            ? formatLegacyBillCycle(opt.code, opt.display)
-            : billCycle
-        );
+        setSelectedBillCycleDisplay(opt ? formatLegacyBillCycle(opt.code, opt.display) : billCycle);
       } else {
-        setReportError("No data available for the selected criteria.");
+        setReportError(
+          `Found ${areas.length} area(s) but no records in receive_position for ` +
+          `bill cycle ${billCycle} (${billType === "O" ? "Ordinary" : "Bulk"}). ` +
+          `Bulk data may not be available for this month — try an earlier month, ` +
+          `or verify that the Bulk receive_position table has data for cycle ${billCycle}.`
+        );
       }
     } catch (e: any) {
       setReportError(e.message || "Failed to generate report.");
@@ -785,12 +782,36 @@ const ReceivablePosition: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Bill Cycle */}
+              {/* Customer Type — select first; bill cycles load after */}
               <div className="flex flex-col">
                 <label className={`text-xs font-medium mb-1 ${maroon}`}>
+                  Customer Type <span className="text-red-600">*</span>
+                </label>
+                <select
+                  value={billType}
+                  onChange={(e) => setBillType(e.target.value)}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  required
+                >
+                  <option value="">Select Customer Type</option>
+                  {billTypeOptions.map((b) => (
+                    <option key={b.BillType} value={b.BillType}>
+                      {b.DisplayName} Customers
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Month / Bill Cycle — enabled after Customer Type is chosen */}
+              <div className="flex flex-col">
+                <label className={`text-xs font-medium mb-1 ${!billType ? "text-gray-400" : maroon}`}>
                   Month <span className="text-red-600">*</span>
                 </label>
-                {isLoadingBillCycles ? (
+                {!billType ? (
+                  <select value="" disabled className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-gray-100 text-gray-400 cursor-not-allowed">
+                    <option value="">Select Customer Type first</option>
+                  </select>
+                ) : isLoadingBillCycles ? (
                   <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
                     Loading bill cycles...
                   </div>
@@ -809,45 +830,6 @@ const ReceivablePosition: React.FC = () => {
                     {billCycleOptions.map((o) => (
                       <option key={o.code} value={o.code}>
                         {o.display}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {/* Customer Type */}
-              <div className="flex flex-col">
-                <label
-                  className={`text-xs font-medium mb-1 ${
-                    !billCycle ? "text-gray-400" : maroon
-                  }`}
-                >
-                  Customer Type <span className="text-red-600">*</span>
-                </label>
-                {isLoadingBillTypes ? (
-                  <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                    Loading customer types...
-                  </div>
-                ) : billTypeError ? (
-                  <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
-                    {billTypeError}
-                  </div>
-                ) : (
-                  <select
-                    value={billType}
-                    onChange={(e) => setBillType(e.target.value)}
-                    disabled={!billCycle}
-                    className={`w-full px-2 py-1.5 text-xs border rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent ${
-                      !billCycle
-                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                        : "border-gray-300"
-                    }`}
-                    required
-                  >
-                    <option value="">Select Customer Type</option>
-                    {billTypeOptions.map((b) => (
-                      <option key={b.BillType} value={b.BillType}>
-                        {b.DisplayName} Customers
                       </option>
                     ))}
                   </select>
