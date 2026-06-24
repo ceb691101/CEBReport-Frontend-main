@@ -71,7 +71,7 @@ const CustomersHighestOutstanding: React.FC = () => {
       setIsLoadingProvinces(true);
       setProvinceError(null);
       try {
-        const res = await fetch("/api/ordinary/province", {
+        const res = await fetch("/misapi/api/ordinary/province", {
           headers: { Accept: "application/json" },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -94,7 +94,7 @@ const CustomersHighestOutstanding: React.FC = () => {
       setIsLoadingDivisions(true);
       setDivisionError(null);
       try {
-        const res = await fetch("/api/ordinary/region", {
+        const res = await fetch("/misapi/api/ordinary/region", {
           headers: { Accept: "application/json" },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -146,7 +146,7 @@ const CustomersHighestOutstanding: React.FC = () => {
         OutstandingBalance: Number(outstandingBalance),
       };
 
-      const response = await fetch("/api/collection/highest-outstanding", {
+      const response = await fetch("/misapi/api/collection/highest-outstanding", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
