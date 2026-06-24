@@ -11,6 +11,8 @@ interface Division {
 }
 
 interface CustomerOutstandingResult {
+  Province?: string;
+  province?: string;
   AreaName?: string;
   areaName?: string;
   AccountNumber?: string;
@@ -244,9 +246,15 @@ const CustomersHighestOutstanding: React.FC = () => {
     rows.push(`Min Months in Arrears: ${monthsInArrears}`);
     rows.push(`Min Outstanding Balance: ${outstandingBalance}`);
     rows.push("");
-    rows.push("Area Name,Account No,Name,Address,Telephone,Last Cash Date,Current Reading Date,Current Balance,kWh Charge,Current Balance - kWh Charge,Tariff,Months in Arrears,Units");
+    
+    if (scope === "Division") {
+      rows.push("Province,Area Name,Account No,Name,Address,Telephone,Last Cash Date,Current Reading Date,Current Balance,kWh Charge,Current Balance - kWh Charge,Tariff,Months in Arrears,Units");
+    } else {
+      rows.push("Area Name,Account No,Name,Address,Telephone,Last Cash Date,Current Reading Date,Current Balance,kWh Charge,Current Balance - kWh Charge,Tariff,Months in Arrears,Units");
+    }
 
     results.forEach((r) => {
+      const province = r.province || r.Province || "";
       const area = r.areaName || r.AreaName || "";
       const acct = r.accountNumber || r.AccountNumber || "";
       const name = r.customerName || r.CustomerName || "";
@@ -261,9 +269,15 @@ const CustomersHighestOutstanding: React.FC = () => {
       const months = r.arrearsMonths ?? r.ArrearsMonths ?? 0;
       const units = r.units ?? r.Units ?? 0;
 
-      rows.push(
-        `"${area.replace(/"/g, '""')}","${acct}","${name.replace(/"/g, '""')}","${address.replace(/"/g, '""')}","${tel}","${lastCash}","${readDate}",${balance},${charge},${netBalance},"${tariff}",${months.toFixed(1)},${units}`
-      );
+      if (scope === "Division") {
+        rows.push(
+          `"${province.replace(/"/g, '""')}","${area.replace(/"/g, '""')}","${acct}","${name.replace(/"/g, '""')}","${address.replace(/"/g, '""')}","${tel}","${lastCash}","${readDate}",${balance},${charge},${netBalance},"${tariff}",${months.toFixed(1)},${units}`
+        );
+      } else {
+        rows.push(
+          `"${area.replace(/"/g, '""')}","${acct}","${name.replace(/"/g, '""')}","${address.replace(/"/g, '""')}","${tel}","${lastCash}","${readDate}",${balance},${charge},${netBalance},"${tariff}",${months.toFixed(1)},${units}`
+        );
+      }
     });
 
     const csv = rows.join("\n");
@@ -286,6 +300,7 @@ const CustomersHighestOutstanding: React.FC = () => {
         className="font-bold border-b border-gray-300"
         style={{ backgroundColor: "#E2F0D9" }}
       >
+        {scope === "Division" && <td className="p-2 border border-gray-300"></td>}
         <td className="p-2 border border-gray-300 font-bold text-gray-900">Total</td>
         <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
@@ -324,6 +339,7 @@ const CustomersHighestOutstanding: React.FC = () => {
         className="font-bold border-b border-gray-300"
         style={{ backgroundColor: "#FFF2CC" }}
       >
+        {scope === "Division" && <td className="p-2 border border-gray-300"></td>}
         <td className="p-2 border border-gray-300 font-bold text-gray-900">Total</td>
         <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
@@ -355,7 +371,7 @@ const CustomersHighestOutstanding: React.FC = () => {
     if (!recordsToRender || recordsToRender.length === 0) {
       return (
         <tr>
-          <td colSpan={13} className="p-6 text-center text-gray-500 font-medium">
+          <td colSpan={scope === "Division" ? 14 : 13} className="p-6 text-center text-gray-500 font-medium">
             No records found matching the criteria.
           </td>
         </tr>
@@ -367,6 +383,7 @@ const CustomersHighestOutstanding: React.FC = () => {
     let lastAreaName = "";
 
     recordsToRender.forEach((r, idx) => {
+      const province = r.province || r.Province || "—";
       const area = r.areaName || r.AreaName || "";
       if (idx === 0) {
         lastAreaName = area;
@@ -403,11 +420,24 @@ const CustomersHighestOutstanding: React.FC = () => {
       const nextAreaName = (nextRow?.areaName || nextRow?.AreaName || "").trim().toLowerCase();
       const isLastOfArea = idx === recordsToRender.length - 1 || nextAreaName !== area.trim().toLowerCase();
 
+      // Province grouping logic
+      const showProvince = idx === 0 || province.trim().toLowerCase() !== (recordsToRender[idx - 1]?.province || recordsToRender[idx - 1]?.Province || "").trim().toLowerCase();
+      const nextProvinceName = (nextRow?.province || nextRow?.Province || "").trim().toLowerCase();
+      const isLastOfProvince = idx === recordsToRender.length - 1 || nextProvinceName !== province.trim().toLowerCase();
+
       rows.push(
         <tr
           key={`${accountNo}-${idx}`}
           className="bg-white hover:bg-gray-50 text-gray-900 border-b border-gray-300"
         >
+          {scope === "Division" && (
+            <td 
+              className="p-2 border border-gray-300 font-medium text-gray-700"
+              style={{ borderBottom: isLastOfProvince ? undefined : "hidden" }}
+            >
+              {showProvince ? province : ""}
+            </td>
+          )}
           <td 
             className="p-2 border border-gray-300 font-medium text-gray-700"
             style={{ borderBottom: isLastOfArea ? undefined : "hidden" }}
@@ -700,6 +730,9 @@ const CustomersHighestOutstanding: React.FC = () => {
             <table className="w-full text-xs border-collapse">
               <thead className="sticky top-0 z-10 bg-[#EAEAEA] text-gray-800 font-semibold border-b border-gray-300">
                 <tr>
+                  {scope === "Division" && (
+                    <th className="p-2 border border-gray-300 font-semibold text-left">Province</th>
+                  )}
                   <th className="p-2 border border-gray-300 font-semibold text-left">Area Name</th>
                   <th className="p-2 border border-gray-300 font-semibold text-left">Account No</th>
                   <th className="p-2 border border-gray-300 font-semibold text-left">Name</th>
@@ -736,6 +769,9 @@ const CustomersHighestOutstanding: React.FC = () => {
             <table ref={printTableRef} className="w-full text-xs border-collapse">
               <thead>
                 <tr>
+                  {scope === "Division" && (
+                    <th className="p-2 border border-gray-300 font-semibold text-left">Province</th>
+                  )}
                   <th className="p-2 border border-gray-300 font-semibold text-left">Area Name</th>
                   <th className="p-2 border border-gray-300 font-semibold text-left">Account No</th>
                   <th className="p-2 border border-gray-300 font-semibold text-left">Name</th>
