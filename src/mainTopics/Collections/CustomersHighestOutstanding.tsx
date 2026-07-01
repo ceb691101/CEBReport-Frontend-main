@@ -302,8 +302,8 @@ const CustomersHighestOutstanding: React.FC = () => {
       >
         {scope === "Division" && <td className="p-2 border border-gray-300"></td>}
         <td className="p-2 border border-gray-300 font-bold text-gray-900">Total</td>
-        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
         <td className="p-2 border border-gray-300"></td>
         <td className="p-2 border border-gray-300"></td>
@@ -341,8 +341,8 @@ const CustomersHighestOutstanding: React.FC = () => {
       >
         {scope === "Division" && <td className="p-2 border border-gray-300"></td>}
         <td className="p-2 border border-gray-300 font-bold text-gray-900">Total</td>
-        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
         <td className="p-2 border border-gray-300"></td>
         <td className="p-2 border border-gray-300"></td>
@@ -566,111 +566,110 @@ const CustomersHighestOutstanding: React.FC = () => {
           )}
 
           <div className="border border-gray-200 rounded-xl p-4 bg-white shadow mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              <div className="flex flex-col gap-4">
-                {/* Scope Radio Toggles */}
-                <div className="flex gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
-                    <input
-                      type="radio"
-                      name="scope"
-                      value="Province"
-                      checked={scope === "Province"}
-                      onChange={() => setScope("Province")}
-                      className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
-                    />
-                    <span className="font-medium">Province</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
-                    <input
-                      type="radio"
-                      name="scope"
-                      value="Division"
-                      checked={scope === "Division"}
-                      onChange={() => setScope("Division")}
-                      className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
-                    />
-                    <span className="font-medium">Division</span>
-                  </label>
-                </div>
+            {/* Scope Radio Toggles */}
+            <div className="flex gap-6 mb-4">
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
+                <input
+                  type="radio"
+                  name="scope"
+                  value="Province"
+                  checked={scope === "Province"}
+                  onChange={() => setScope("Province")}
+                  className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
+                />
+                <span className="font-medium">Province</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
+                <input
+                  type="radio"
+                  name="scope"
+                  value="Division"
+                  checked={scope === "Division"}
+                  onChange={() => setScope("Division")}
+                  className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
+                />
+                <span className="font-medium">Division</span>
+              </label>
+            </div>
 
-                {/* Dropdown for Province or Division */}
-                <div className="flex flex-col">
-                  <label className={`${maroon} text-xs font-medium mb-1`}>
-                    {scope === "Province" ? "Province" : "Division"}
-                  </label>
-                  {scope === "Province" ? (
-                    isLoadingProvinces ? (
-                      <div className="py-1 text-xs text-gray-500">Loading provinces...</div>
-                    ) : provinceError ? (
-                      <div className="text-red-600 text-xs py-1">{provinceError}</div>
-                    ) : (
-                      <select
-                        value={selectedCode}
-                        onChange={(e) => setSelectedCode(e.target.value)}
-                        className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                      >
-                        <option value="">— Select Province —</option>
-                        {provinces.map((p) => (
-                          <option key={p.ProvinceCode} value={p.ProvinceCode}>
-                            {p.ProvinceCode} - {p.ProvinceName}
-                          </option>
-                        ))}
-                      </select>
-                    )
-                  ) : isLoadingDivisions ? (
-                    <div className="py-1 text-xs text-gray-500">Loading divisions...</div>
-                  ) : divisionError ? (
-                    <div className="text-red-600 text-xs py-1">{divisionError}</div>
+            {/* Inputs Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              {/* Dropdown for Province or Division */}
+              <div className="flex flex-col">
+                <label className={`${maroon} text-xs font-medium mb-1`}>
+                  {scope === "Province" ? "Province" : "Division"}
+                </label>
+                {scope === "Province" ? (
+                  isLoadingProvinces ? (
+                    <div className="py-1 text-xs text-gray-500">Loading provinces...</div>
+                  ) : provinceError ? (
+                    <div className="text-red-600 text-xs py-1">{provinceError}</div>
                   ) : (
                     <select
                       value={selectedCode}
                       onChange={(e) => setSelectedCode(e.target.value)}
-                      className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
                     >
-                      <option value="">— Select Division —</option>
-                      {divisions.map((d) => (
-                        <option key={d.RegionCode} value={d.RegionCode}>
-                          {d.RegionCode}
+                      <option value="">— Select Province —</option>
+                      {provinces.map((p) => (
+                        <option key={p.ProvinceCode} value={p.ProvinceCode}>
+                          {p.ProvinceCode} - {p.ProvinceName}
                         </option>
                       ))}
                     </select>
-                  )}
-                </div>
+                  )
+                ) : isLoadingDivisions ? (
+                  <div className="py-1 text-xs text-gray-500">Loading divisions...</div>
+                ) : divisionError ? (
+                  <div className="text-red-600 text-xs py-1">{divisionError}</div>
+                ) : (
+                  <select
+                    value={selectedCode}
+                    onChange={(e) => setSelectedCode(e.target.value)}
+                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  >
+                    <option value="">— Select Division —</option>
+                    {divisions.map((d) => (
+                      <option key={d.RegionCode} value={d.RegionCode}>
+                        {d.RegionCode}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
-                {/* Months In Arrears */}
-                <div className="flex flex-col">
-                  <label className={`${maroon} text-xs font-medium mb-1`}>
-                    No of Months in Arrears
-                  </label>
-                  <input
-                    type="number"
-                    value={monthsInArrears}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setMonthsInArrears(val === "" ? "" : Number(val));
-                    }}
-                    min={0}
-                    className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                  />
-                </div>
+              {/* Months In Arrears */}
+              <div className="flex flex-col">
+                <label className={`${maroon} text-xs font-medium mb-1`}>
+                  No of Months in Arrears
+                </label>
+                <input
+                  type="number"
+                  value={monthsInArrears}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setMonthsInArrears(val === "" ? "" : Number(val));
+                  }}
+                  min={0}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                />
+              </div>
 
-                {/* Outstanding Balance */}
-                <div className="flex flex-col">
-                  <label className={`${maroon} text-xs font-medium mb-1`}>
-                    Outstanding Balance
-                  </label>
-                  <input
-                    type="number"
-                    value={outstandingBalance}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setOutstandingBalance(val === "" ? "" : Number(val));
-                    }}
-                    min={0}
-                    className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                  />
-                </div>
+              {/* Outstanding Balance */}
+              <div className="flex flex-col">
+                <label className={`${maroon} text-xs font-medium mb-1`}>
+                  Outstanding Balance
+                </label>
+                <input
+                  type="number"
+                  value={outstandingBalance}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setOutstandingBalance(val === "" ? "" : Number(val));
+                  }}
+                  min={0}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                />
               </div>
             </div>
 
