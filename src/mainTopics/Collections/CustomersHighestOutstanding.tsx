@@ -44,8 +44,8 @@ interface CustomerOutstandingResult {
 const CustomersHighestOutstanding: React.FC = () => {
   const [scope, setScope] = useState<"Province" | "Division">("Province");
   const [selectedCode, setSelectedCode] = useState<string>("");
-  const [monthsInArrears, setMonthsInArrears] = useState<number>(5);
-  const [outstandingBalance, setOutstandingBalance] = useState<number>(50000);
+  const [monthsInArrears, setMonthsInArrears] = useState<number | "">("");
+  const [outstandingBalance, setOutstandingBalance] = useState<number | "">("");
 
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
@@ -646,7 +646,10 @@ const CustomersHighestOutstanding: React.FC = () => {
                   <input
                     type="number"
                     value={monthsInArrears}
-                    onChange={(e) => setMonthsInArrears(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMonthsInArrears(val === "" ? "" : Number(val));
+                    }}
                     min={0}
                     className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
                   />
@@ -660,7 +663,10 @@ const CustomersHighestOutstanding: React.FC = () => {
                   <input
                     type="number"
                     value={outstandingBalance}
-                    onChange={(e) => setOutstandingBalance(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setOutstandingBalance(val === "" ? "" : Number(val));
+                    }}
                     min={0}
                     className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
                   />
