@@ -1,112 +1,84 @@
-import React, { useState, useEffect, useRef } from "react";
-import { FaFileDownload, FaPrint } from "react-icons/fa";
+import React, { useState, useEffect, useCallback } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
-interface BillCycleOption {
-  display: string;
-  code: string;
+interface AreaInfo {
+  areaCode: string;
+  areaName: string;
 }
-interface BillTypeOption {
-  BillType: string;
-  DisplayName: string;
+
+interface ProvinceInfo {
+  provinceCode: string;
+  provinceName: string;
 }
-interface Province {
-  ProvinceCode: string;
-  ProvinceName: string;
+
+interface RegionInfo {
+  regionCode: string;
+  regionName: string;
 }
-interface Region {
-  RegionCode: string;
-  RegionName: string;
+
+interface ReceivableRow {
+  areaCode: string;
+  areaName: string;
+  openingBalance: string;
+  monthlyCharge: string;
+  debits: string;
+  credits: string;
+  underCharge: string;
+  overCharge: string;
+  payments: string;
+  closingBalance: string;
+  closingBalanceWithoutFinAcc: string;
+  averageCharge: string;
+  noOfMonthsInArrears: string;
+  noOfMonthsInArrearsWithoutFinAcc: string;
+  rawOpeningBalance: number;
+  rawMonthlyCharge: number;
+  rawDebits: number;
+  rawCredits: number;
+  rawUnderCharge: number;
+  rawOverCharge: number;
+  rawPayments: number;
+  rawClosingBalance: number;
+  rawClosingBalanceWithoutFinAcc: number;
 }
-interface Area {
-  AreaCode: string;
-  AreaName: string;
-  // Support multiple possible field names from the API
-  ProvinceCode?: string;
-  Province?: string;
-  PROVINCE_CODE?: string;
-  RegionCode?: string;
-  Region?: string;
-  REGION_CODE?: string;
-  [key: string]: string | undefined; // allow arbitrary field access
-}
-interface ReceivableRecord {
-  AreaCode: string;
-  AreaName: string;
-  OpeningBalance: string;
-  MonthlyCharge: string;
-  Debits: string;
-  Credits: string;
-  UnderCharge: string;
-  OverCharge: string;
-  Payments: string;
-  ClosingBalance: string;
-  ClosingBalanceWithoutFinAcc: string;
-  AverageCharge: string;
-  NoOfMonthsInArrears: string;
-  NoOfMonthsInArrearsWithoutFinAcc: string;
-  BillCycle: string;
-  BillType: string;
-  ErrorMessage: string;
-}
+
+type ScopeType = "Province" | "Region" | "EntireCEB";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-const parseNum = (s: string): number => {
-  if (!s) return 0;
-  return parseFloat(s.replace(/,/g, "")) || 0;
-};
-const fmtNum = (n: number, decimals = 2): string =>
-  n.toLocaleString("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-
-/** Legacy bill-cycle label, e.g. "452-2026 Apr" */
-const formatLegacyBillCycle = (code: string, display: string): string => {
-  const parts = display.split(" - ");
-  if (parts.length === 2) {
-    const monthParts = parts[1].trim().split(" ");
-    if (monthParts.length >= 2) {
-      const [mon, yr2] = monthParts;
-      return `${code}-20${yr2} ${mon}`;
+async function apiFetch<T>(url: string): Promise<{ data: T | null; errorMessage: string | null }> {
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) {
+      if (res.status === 404) throw new Error("API endpoint not found (404). Please check if the backend is running.");
+      if (res.status === 500) throw new Error("Database error (500). Please check your database connection.");
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) throw new Error(`Expected JSON but got ${contentType}`);
+    return await res.json();
+  } catch (err: any) {
+    if (err.name === "AbortError") return { data: null, errorMessage: "Request timeout. Please check your connection." };
+    if (err.message?.includes("Failed to fetch"))
+      return { data: null, errorMessage: "Cannot connect to server. Please ensure the backend is running." };
+    return { data: null, errorMessage: err.message };
   }
-  return display.replace(" - ", "-");
+}
+
+const parseNumber = (value: any): number => {
+  if (value === undefined || value === null || value === "") return 0;
+  if (typeof value === "number") return value;
+  const num = parseFloat(String(value).replace(/,/g, ""));
+  return isNaN(num) ? 0 : num;
 };
 
-const displayAreaName = (name: string, code: string): string =>
-  (name || code).toUpperCase();
-
-const buildAreaNameLookup = (areas: Area[]): Map<string, string> =>
-  new Map(areas.map((a) => [a.AreaCode, a.AreaName]));
-
-const enrichAndSortRows = (
-  rows: ReceivableRecord[],
-  areaLookup: Map<string, string>
-): ReceivableRecord[] =>
-  rows
-    .map((r) => ({
-      ...r,
-      AreaName: displayAreaName(
-        r.AreaName || areaLookup.get(r.AreaCode) || "",
-        r.AreaCode
-      ),
-    }))
-    .sort((a, b) => a.AreaName.localeCompare(b.AreaName));
-
-const normalizeAreaList = (list: unknown): Area[] => {
-  if (!Array.isArray(list)) return [];
-  return list
-    .map((a: Record<string, string>) => ({
-      AreaCode: (a.AreaCode ?? a.areaCode ?? a.area_code ?? a.AREA_CODE ?? "").trim(),
-      AreaName: (a.AreaName ?? a.areaName ?? a.area_name ?? a.AREA_NAME ?? "").trim(),
-    }))
-    .filter((a) => a.AreaCode);
-};
+const fmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
@@ -115,439 +87,294 @@ const ReceivablePosition: React.FC = () => {
   const maroon = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
-  // ── Form state ─────────────────────────────────────────────────────────────
-  const [billCycle, setBillCycle] = useState<string>("");
-  const [billType, setBillType] = useState<string>("");
-  const [category, setCategory] = useState<string>("Province");
-  const [categoryValue, setCategoryValue] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState<string>("");
+  const selectCls =
+    "w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent";
+  const disabledCls = "w-full px-2 py-1.5 text-xs border rounded-md bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed";
 
-  // ── Dropdown data ──────────────────────────────────────────────────────────
-  const [billCycleOptions, setBillCycleOptions] = useState<BillCycleOption[]>([]);
-  const [billTypeOptions, setBillTypeOptions] = useState<BillTypeOption[]>([]);
-  const [provinces, setProvinces] = useState<Province[]>([]);
-  const [regions, setRegions] = useState<Region[]>([]);
-  const [allAreas, setAllAreas] = useState<Area[]>([]);
+  // ── Form state ──────────────────────────────────────────────────────────
+  const [billType, setBillType] = useState<"O" | "B">("O");
+  const [billCycleOptions, setBillCycleOptions] = useState<{ code: string; label: string }[]>([]);
+  const [selectedBillCycle, setSelectedBillCycle] = useState("");
 
-  // ── Loading states ─────────────────────────────────────────────────────────
-  const [isLoadingBillCycles, setIsLoadingBillCycles] = useState(false);
-  const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
-  const [isLoadingRegions, setIsLoadingRegions] = useState(false);
-  const [isLoadingAreas, setIsLoadingAreas] = useState(false);
+  const [scopeType, setScopeType] = useState<ScopeType>("Province");
+  const [provinces, setProvinces] = useState<ProvinceInfo[]>([]);
+  const [regions, setRegions] = useState<RegionInfo[]>([]);
+  const [scopeValue, setScopeValue] = useState("");
 
-  // ── Error states ───────────────────────────────────────────────────────────
-  const [billCycleError, setBillCycleError] = useState<string | null>(null);
-  const [provinceError, setProvinceError] = useState<string | null>(null);
-  const [regionError, setRegionError] = useState<string | null>(null);
-  const [areasError, setAreasError] = useState<string | null>(null);
+  // ── Loading / errors ────────────────────────────────────────────────────
+  const [loadingCycles, setLoadingCycles] = useState(false);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState("");
+
+  const [cycleError, setCycleError] = useState<string | null>(null);
+  const [scopeListError, setScopeListError] = useState<string | null>(null);
   const [reportError, setReportError] = useState<string | null>(null);
 
-  // ── Report state ───────────────────────────────────────────────────────────
-  const [reportData, setReportData] = useState<ReceivableRecord[]>([]);
-  const [reportVisible, setReportVisible] = useState(false);
-  const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
-  const [selectedBillCycleDisplay, setSelectedBillCycleDisplay] = useState<string>("");
-  const [selectedBillTypeName, setSelectedBillTypeName] = useState<string>("");
+  // ── Report state ────────────────────────────────────────────────────────
+  const [reportData, setReportData] = useState<ReceivableRow[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [resolvedBillCycle, setResolvedBillCycle] = useState("");
+  const [resolvedScopeLabel, setResolvedScopeLabel] = useState("");
 
-  const printRef = useRef<HTMLDivElement>(null);
-
-  // ── Generic fetch helper ───────────────────────────────────────────────────
-  const fetchJson = async (url: string) => {
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) {
-      let msg = `HTTP ${res.status}`;
-      try {
-        const j = await res.json();
-        if (j.errorMessage) msg = j.errorMessage;
-      } catch {}
-      throw new Error(msg);
-    }
-    return res.json();
-  };
-
-  const parseBillCyclePayload = (
-    payload: unknown
-  ): { cycles: string[]; maxCycle: string } | null => {
-    const data = (payload as { data?: Record<string, unknown> })?.data;
-    if (!data) return null;
-
-    const cycles = (data.BillCycles ?? data.billCycles) as string[] | undefined;
-    const maxCycle = (data.MaxBillCycle ?? data.maxBillCycle) as string | undefined;
-
-    if (cycles && Array.isArray(cycles) && cycles.length > 0 && maxCycle) {
-      return { cycles, maxCycle };
-    }
-    return null;
-  };
-
-  const loadBillCycleOptions = async (customerType: string) => {
-    const urls = [
-      `/misapi/api/receivable-position/billcycle/max?billType=${encodeURIComponent(customerType)}`,
-      `/misapi/api/receivable-position/billcycle/max`, // fallback without billType filter
-    ];
-
-    for (const url of urls) {
-      try {
-        const res = await fetchJson(url);
-        const parsed = parseBillCyclePayload(res);
-        if (parsed) return parsed;
-      } catch (err) {
-        console.warn(`[ReceivablePosition] Bill cycle fetch failed for ${url}:`, err);
-      }
-    }
-
-    return null;
-  };
-
-  // ── 1. Bill cycles (reload when customer type changes) ─────────────────────
+  // ── 1. Fetch bill cycles whenever billType changes ─────────────────────
   useEffect(() => {
-    // Don't fetch until the user has selected a customer type
-    if (!billType) {
+    const fetchCycles = async () => {
+      setLoadingCycles(true);
+      setCycleError(null);
+      setSelectedBillCycle("");
       setBillCycleOptions([]);
-      setBillCycle("");
-      setBillCycleError(null);
-      return;
-    }
-
-    const load = async () => {
-      setIsLoadingBillCycles(true);
-      setBillCycleError(null);
       try {
-        const parsed = await loadBillCycleOptions(billType);
-        if (parsed) {
-          const max = parseInt(parsed.maxCycle, 10);
-          const opts: BillCycleOption[] = parsed.cycles.map((c: string, i: number) => ({
-            display: `${max - i} - ${c}`,
-            code: String(max - i),
-          }));
-          setBillCycleOptions(opts);
-          setBillCycle((current) =>
-            current && opts.some((o) => o.code === current) ? current : ""
-          );
-          if (opts.length === 0) setBillCycleError("No bill cycles available");
-        } else {
-          setBillCycleOptions([]);
-          setBillCycle("");
-          setBillCycleError(
-            billType === "B"
-              ? "No bill cycles available for Bulk customers."
-              : "Failed to load bill cycles. Please try again."
-          );
+        const response = await apiFetch<any>(`/api/receivable-position/billcycle/max?billType=${billType}`);
+        if (response.errorMessage) {
+          setCycleError(response.errorMessage);
+          return;
         }
-      } catch (e: any) {
-        setBillCycleError(e.message || "Failed to load bill cycles");
+        const raw = response.data as any;
+        const cycles: string[] = raw?.BillCycles ?? raw?.billCycles ?? [];
+        const maxCycle: string = raw?.MaxBillCycle ?? raw?.maxBillCycle ?? "";
+        const maxNum = parseInt(maxCycle, 10);
+        if (!cycles.length || isNaN(maxNum)) {
+          setCycleError("No bill cycle data found.");
+          return;
+        }
+        const options = cycles.map((label, i) => ({ code: String(maxNum - i), label: `${maxNum - i}-${label}` }));
+        setBillCycleOptions(options);
+        setSelectedBillCycle(options[0].code);
+      } catch (err: any) {
+        setCycleError(err.message || "Failed to load bill cycles.");
       } finally {
-        setIsLoadingBillCycles(false);
+        setLoadingCycles(false);
       }
     };
-    load();
+    fetchCycles();
   }, [billType]);
 
-  // ── 2. Bill types — static values, no API call needed ─────────────────────
+  // ── 2. Fetch provinces + regions whenever billType changes ─────────────
   useEffect(() => {
-    setBillTypeOptions([
-      { BillType: "O", DisplayName: "Ordinary" },
-      { BillType: "B", DisplayName: "Bulk" },
-    ]);
-  }, []);
+    const provUrl = billType === "B" ? `/api/bulk/province` : `/api/ordinary/province`;
+    const regUrl = billType === "B" ? `/api/bulk/region` : `/api/ordinary/region`;
 
-  // ── 3. Provinces + Regions (when billType changes) ────────────────────────
-  // Areas are NOT pre-loaded here. Instead they are fetched on demand
-  // at submit time using province-specific or region-specific endpoints.
+    setProvinces([]);
+    setRegions([]);
+    setScopeListError(null);
+
+    (async () => {
+      const [provRes, regRes] = await Promise.all([apiFetch<any[]>(provUrl), apiFetch<any[]>(regUrl)]);
+
+      const errors: string[] = [];
+
+      if (provRes.errorMessage) {
+        errors.push(provRes.errorMessage);
+      } else if (provRes.data && Array.isArray(provRes.data)) {
+        setProvinces(
+          provRes.data.map((p: any) => ({
+            provinceCode: p.ProvinceCode ?? p.provinceCode ?? "",
+            provinceName: p.ProvinceName ?? p.provinceName ?? "",
+          }))
+        );
+      } else {
+        errors.push("Failed to load provinces.");
+      }
+
+      if (regRes.errorMessage) {
+        errors.push(regRes.errorMessage);
+      } else if (regRes.data && Array.isArray(regRes.data)) {
+        setRegions(
+          regRes.data
+            .map((r: any) => {
+              const code = r.RegionCode ?? r.regionCode ?? "";
+              const name = r.RegionName ?? r.regionName ?? code;
+              return { regionCode: code, regionName: name };
+            })
+            .filter((r) => r.regionCode)
+        );
+      } else {
+        errors.push("Failed to load regions.");
+      }
+
+      if (errors.length) {
+        setScopeListError(errors.join(" "));
+      }
+    })();
+  }, [billType]);
+
+  // ── Reset scope value when scope type changes ───────────────────────────
   useEffect(() => {
-    if (!billType) {
-      setProvinces([]);
-      setRegions([]);
-      setAllAreas([]);
+    setScopeValue("");
+    setScopeListError(null);
+  }, [scopeType, billType]);
+
+  // ── 3. Resolve area list for the current scope + billType + scopeValue ─
+  const resolveAreaList = useCallback(async (): Promise<AreaInfo[]> => {
+    if (scopeType === "EntireCEB") {
+      const url = billType === "B" ? `/api/bulk/areas` : `/api/ordinary/areas`;
+      const res = await apiFetch<any[]>(url);
+      if (res.errorMessage || !res.data) throw new Error(res.errorMessage || "Failed to load areas.");
+      return res.data.map((a: any) => ({
+        areaCode: a.AreaCode ?? a.areaCode ?? "",
+        areaName: a.AreaName ?? a.areaName ?? "",
+      }));
+    }
+
+    if (scopeType === "Province") {
+      const url = `/api/receivable-position/areas-by-province?provinceCode=${encodeURIComponent(scopeValue)}&billType=${billType}`;
+      const res = await apiFetch<any[]>(url);
+      if (res.errorMessage || !res.data) throw new Error(res.errorMessage || "Failed to load areas for province.");
+      return res.data.map((a: any) => ({
+        areaCode: a.AreaCode ?? a.areaCode ?? "",
+        areaName: a.AreaName ?? a.areaName ?? "",
+      }));
+    }
+
+    // Region
+    const url = `/api/receivable-position/areas-by-region?regionCode=${encodeURIComponent(scopeValue)}&billType=${billType}`;
+    const res = await apiFetch<any[]>(url);
+    if (res.errorMessage || !res.data) throw new Error(res.errorMessage || "Failed to load areas for region.");
+    return res.data.map((a: any) => ({
+      areaCode: a.AreaCode ?? a.areaCode ?? "",
+      areaName: a.AreaName ?? a.areaName ?? "",
+    }));
+  }, [scopeType, scopeValue, billType]);
+
+  // ── 4. Fetch report: resolve areas, then loop report calls per area ────
+  const fetchReport = useCallback(async () => {
+    if (!selectedBillCycle) return;
+    if (scopeType !== "EntireCEB" && !scopeValue) return;
+
+    setLoadingReport(true);
+    setReportError(null);
+    setLoadingStatus("Resolving area list...");
+
+    try {
+      const areaList = await resolveAreaList();
+
+      if (!areaList.length) {
+        setReportError("No areas found for the selected scope.");
+        return;
+      }
+
+      const rows: ReceivableRow[] = [];
+
+      for (let i = 0; i < areaList.length; i++) {
+        const area = areaList[i];
+        setLoadingStatus(`Loading area ${i + 1} of ${areaList.length} (${area.areaCode})...`);
+
+        const url = `/api/receivable-position/report?billCycle=${encodeURIComponent(
+          selectedBillCycle
+        )}&areaCode=${encodeURIComponent(area.areaCode)}&billType=${billType}`;
+
+        const res = await apiFetch<any>(url);
+        if (res.errorMessage || !res.data) continue; // skip areas with no data
+
+        const raw = res.data as any;
+        const arr: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
+        const item = arr[0];
+        if (!item) continue;
+
+        rows.push({
+          areaCode: item.AreaCode ?? item.areaCode ?? area.areaCode,
+          areaName: area.areaName,
+          openingBalance: String(item.OpeningBalance ?? item.openingBalance ?? "0.00"),
+          monthlyCharge: String(item.MonthlyCharge ?? item.monthlyCharge ?? "0.00"),
+          debits: String(item.Debits ?? item.debits ?? "0.00"),
+          credits: String(item.Credits ?? item.credits ?? "0.00"),
+          underCharge: String(item.UnderCharge ?? item.underCharge ?? "0.00"),
+          overCharge: String(item.OverCharge ?? item.overCharge ?? "0.00"),
+          payments: String(item.Payments ?? item.payments ?? "0.00"),
+          closingBalance: String(item.ClosingBalance ?? item.closingBalance ?? "0.00"),
+          closingBalanceWithoutFinAcc: String(item.ClosingBalanceWithoutFinAcc ?? item.closingBalanceWithoutFinAcc ?? "0.00"),
+          averageCharge: String(item.AverageCharge ?? item.averageCharge ?? "0.00"),
+          noOfMonthsInArrears: String(item.NoOfMonthsInArrears ?? item.noOfMonthsInArrears ?? "0.00"),
+          noOfMonthsInArrearsWithoutFinAcc: String(
+            item.NoOfMonthsInArrearsWithoutFinAcc ?? item.noOfMonthsInArrearsWithoutFinAcc ?? "0.00"
+          ),
+          rawOpeningBalance: parseNumber(item.RawOpeningBalance ?? item.rawOpeningBalance ?? item.OpeningBalance),
+          rawMonthlyCharge: parseNumber(item.RawMonthlyCharge ?? item.rawMonthlyCharge ?? item.MonthlyCharge),
+          rawDebits: parseNumber(item.RawDebits ?? item.rawDebits ?? item.Debits),
+          rawCredits: parseNumber(item.RawCredits ?? item.rawCredits ?? item.Credits),
+          rawUnderCharge: parseNumber(item.RawUnderCharge ?? item.rawUnderCharge ?? item.UnderCharge),
+          rawOverCharge: parseNumber(item.RawOverCharge ?? item.rawOverCharge ?? item.OverCharge),
+          rawPayments: parseNumber(item.RawPayments ?? item.rawPayments ?? item.Payments),
+          rawClosingBalance: parseNumber(item.RawClosingBalance ?? item.rawClosingBalance ?? item.ClosingBalance),
+          rawClosingBalanceWithoutFinAcc: parseNumber(
+            item.RawClosingBalanceWithoutFinAcc ?? item.rawClosingBalanceWithoutFinAcc ?? item.ClosingBalanceWithoutFinAcc
+          ),
+        });
+      }
+
+      if (!rows.length) {
+        setReportError("No data found for the selected criteria.");
+        return;
+      }
+
+      const cycleOpt = billCycleOptions.find((o) => o.code === selectedBillCycle);
+      setResolvedBillCycle(cycleOpt?.label ?? selectedBillCycle);
+
+      let scopeLabel = "Entire CEB";
+      if (scopeType === "Province") {
+        scopeLabel = provinces.find((p) => p.provinceCode === scopeValue)?.provinceName ?? scopeValue;
+      } else if (scopeType === "Region") {
+        scopeLabel = regions.find((r) => r.regionCode === scopeValue)?.regionName ?? scopeValue;
+      }
+      setResolvedScopeLabel(scopeLabel);
+
+      setReportData(rows);
+      setHasSearched(true);
+    } catch (err: any) {
+      setReportError(err.message || "Failed to fetch report data.");
+    } finally {
+      setLoadingReport(false);
+      setLoadingStatus("");
+    }
+  }, [selectedBillCycle, scopeType, scopeValue, billType, resolveAreaList, billCycleOptions, provinces, regions]);
+
+  // ── Totals ───────────────────────────────────────────────────────────────
+  const totals = reportData.reduce(
+    (acc, r) => {
+      acc.openingBalance += r.rawOpeningBalance;
+      acc.monthlyCharge += r.rawMonthlyCharge;
+      acc.debits += r.rawDebits;
+      acc.credits += r.rawCredits;
+      acc.underCharge += r.rawUnderCharge;
+      acc.overCharge += r.rawOverCharge;
+      acc.payments += r.rawPayments;
+      acc.closingBalance += r.rawClosingBalance;
+      acc.closingBalanceWithoutFinAcc += r.rawClosingBalanceWithoutFinAcc;
+      return acc;
+    },
+    {
+      openingBalance: 0,
+      monthlyCharge: 0,
+      debits: 0,
+      credits: 0,
+      underCharge: 0,
+      overCharge: 0,
+      payments: 0,
+      closingBalance: 0,
+      closingBalanceWithoutFinAcc: 0,
+    }
+  );
+
+  const handleBackToForm = () => {
+    setHasSearched(false);
+    setReportData([]);
+    setReportError(null);
+  };
+
+  // ── Export helpers ──────────────────────────────────────────────────────
+  const escapeCsv = (v: unknown) => {
+    const s = String(v ?? "");
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const handleExportCsv = () => {
+    if (!reportData.length) {
+      setReportError("No data to export.");
       return;
     }
-
-    const provinceUrl =
-      billType === "O"
-        ? `/misapi/api/ordinary/province`
-        : `/misapi/api/bulk/province`;
-    const regionUrl =
-      billType === "O"
-        ? `/misapi/api/ordinary/region`
-        : `/misapi/api/bulk/region`;
-    // All-areas endpoint — used ONLY for CEB Entire
-    const areasUrl =
-      billType === "O"
-        ? `/misapi/api/ordinary/areas`
-        : `/misapi/api/bulk/areas`;
-
-    // Provinces
-    setIsLoadingProvinces(true);
-    setProvinceError(null);
-    fetchJson(provinceUrl)
-      .then((res) => {
-        const list: Province[] = res.data || [];
-        list.sort((a, b) =>
-          (a.ProvinceName || "").localeCompare(b.ProvinceName || "")
-        );
-        setProvinces(list);
-      })
-      .catch((e: any) =>
-        setProvinceError(e.message || "Failed to load provinces")
-      )
-      .finally(() => setIsLoadingProvinces(false));
-
-    // Regions
-    setIsLoadingRegions(true);
-    setRegionError(null);
-    fetchJson(regionUrl)
-      .then((res) => setRegions(res.data || []))
-      .catch((e: any) =>
-        setRegionError(e.message || "Failed to load regions")
-      )
-      .finally(() => setIsLoadingRegions(false));
-
-    // Pre-load all areas only for CEB Entire support
-    setIsLoadingAreas(true);
-    setAreasError(null);
-    fetchJson(areasUrl)
-      .then((res) => {
-        const areas: Area[] = res.data || [];
-        setAllAreas(areas);
-        console.log(
-          `[ReceivablePosition] Loaded ${areas.length} areas. Keys:`,
-          areas.length > 0 ? Object.keys(areas[0]) : "none"
-        );
-      })
-      .catch((e: any) => {
-        setAreasError(e.message || "Failed to load areas");
-        setAllAreas([]);
-      })
-      .finally(() => setIsLoadingAreas(false));
-  }, [billType]);
-
-  // ── Reset category value on category or billType change ────────────────────
-  useEffect(() => {
-    setCategoryValue("");
-    setSelectedCategoryName("");
-  }, [category, billType]);
-
-  // ── Guards ─────────────────────────────────────────────────────────────────
-  const isCategoryValueDisabled = () => {
-    if (!billType || !billCycle) return true;
-    if (category === "Province")
-      return isLoadingProvinces || provinceError !== null;
-    if (category === "Region")
-      return isLoadingRegions || regionError !== null;
-    return false;
-  };
-
-  const canSubmit = () => {
-    if (!billCycle || !billType) return false;
-    if (category === "Province") return !!categoryValue && !isLoadingProvinces;
-    if (category === "Region") return !!categoryValue && !isLoadingRegions;
-    // CEB Entire needs all areas pre-loaded
-    return !isLoadingAreas && allAreas.length > 0;
-  };
-
-  // ── Totals ─────────────────────────────────────────────────────────────────
-  const sum = (field: keyof ReceivableRecord) =>
-    reportData.reduce((acc, r) => acc + parseNum(r[field] as string), 0);
-
-  // ── Resolve areas for a province (with fallbacks) ─────────────────────────
-  const fetchAreasForProvince = async (
-    provinceCode: string
-  ): Promise<Area[]> => {
-    // Pass billType + billCycle so the DAO first tries to find areas that
-    // actually have data for this cycle. If none found, the DAO falls back
-    // to all areas for the province from the areas table.
-    const primaryUrl =
-      `/misapi/api/receivable-position/areas-by-province` +
-      `?provinceCode=${encodeURIComponent(provinceCode)}` +
-      `&billType=${encodeURIComponent(billType)}`;
-    // Intentionally omitting billCycle so the DAO's areas-table fallback
-    // always runs — this ensures Bulk areas are returned even when
-    // receive_position has no row for the exact cycle yet.
-
-    try {
-      const res = await fetchJson(primaryUrl);
-      const areas = normalizeAreaList(res.data);
-      if (areas.length > 0) return areas;
-    } catch (err) {
-      console.warn("[ReceivablePosition] areas-by-province failed:", err);
-    }
-
-    // Ordinary fallback: pos-areas endpoint
-    if (billType !== "B") {
-      try {
-        const res = await fetchJson(
-          `/misapi/api/customerdetails/pos-areas?provCode=${encodeURIComponent(provinceCode)}`
-        );
-        const list = res.data?.areas ?? res.data?.Areas ?? res.data;
-        const areas = normalizeAreaList(list);
-        if (areas.length > 0) return areas;
-      } catch (err) {
-        console.warn("[ReceivablePosition] pos-areas fallback failed:", err);
-      }
-    }
-
-    // Last resort: filter from the preloaded allAreas list
-    if (allAreas.length > 0) {
-      const padded = provinceCode.padStart(2, "0");
-      const unpadded = provinceCode.replace(/^0+/, "") || "0";
-      const fromPreload = allAreas.filter((a) => {
-        // Check every possible province field name the API might return
-        const prov = (
-          a.ProvinceCode ?? a.Province ?? a.PROVINCE_CODE ??
-          a.prov_code ?? a.provCode ?? a.ProvCode ?? ""
-        ).trim();
-        return (
-          prov === provinceCode ||
-          prov === padded ||
-          prov === unpadded ||
-          prov.padStart(2, "0") === padded
-        );
-      });
-      if (fromPreload.length > 0) return fromPreload;
-    }
-
-    return [];
-  };
-
-  // ── Resolve areas for a region (with fallbacks) ───────────────────────────
-  const fetchAreasForRegion = async (regionCode: string): Promise<Area[]> => {
-    // Omit billCycle so DAO always falls back to areas table for Bulk
-    const primaryUrl =
-      `/misapi/api/receivable-position/areas-by-region` +
-      `?regionCode=${encodeURIComponent(regionCode)}` +
-      `&billType=${encodeURIComponent(billType)}`;
-
-    try {
-      const res = await fetchJson(primaryUrl);
-      const areas = normalizeAreaList(res.data);
-      if (areas.length > 0) return areas;
-    } catch (err) {
-      console.warn("[ReceivablePosition] areas-by-region failed:", err);
-    }
-
-    // Fallback: filter from the preloaded allAreas list by region field
-    if (allAreas.length > 0) {
-      const fromPreload = allAreas.filter((a) => {
-        const reg = (
-          a.RegionCode ?? a.Region ?? a.REGION_CODE ??
-          a.region_code ?? a.regCode ?? a.RegCode ?? ""
-        ).trim();
-        return reg === regionCode || reg.padStart(2, "0") === regionCode.padStart(2, "0");
-      });
-      if (fromPreload.length > 0) return fromPreload;
-    }
-
-    return [];
-  };
-
-  // ── Core: fetch one area's data ────────────────────────────────────────────
-  const fetchAreaData = async (
-    areaCode: string
-  ): Promise<ReceivableRecord[]> => {
-    try {
-      const url = `/misapi/api/receivable-position/report?billCycle=${encodeURIComponent(billCycle)}&areaCode=${encodeURIComponent(areaCode)}&billType=${encodeURIComponent(billType)}`;
-      const data = await fetchJson(url);
-      if (data.data && Array.isArray(data.data) && data.data.length > 0) return data.data;
-      // Some APIs return a single object instead of array
-      if (data.data && !Array.isArray(data.data) && data.data.AreaCode) return [data.data];
-      if (data.errorMessage) console.warn(`[RP] ${areaCode}: ${data.errorMessage} | ${data.errorDetails ?? ""}`);
-    } catch (e) {
-      console.warn(`[RP] fetch failed for area ${areaCode}:`, e);
-    }
-    return [];
-  };
-
-  // ── Submit ─────────────────────────────────────────────────────────────────
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSubmit()) return;
-
-    setLoading(true);
-    setReportError(null);
-    setReportData([]);
-
-    try {
-      let areas: Area[] = [];
-      let areaLookup = new Map<string, string>();
-
-      // ── Resolve the area list ──────────────────────────────────────────────
-      if (category === "Province") {
-        setLoadingStatus("Fetching areas for province...");
-        areas = await fetchAreasForProvince(categoryValue);
-        const provinceName =
-          provinces.find((p) => p.ProvinceCode === categoryValue)?.ProvinceName ?? categoryValue;
-        if (areas.length === 0) {
-          setReportError(
-            `No areas found for province "${provinceName}" with bill cycle ${billCycle} and ` +
-            `type ${billType === "O" ? "Ordinary" : "Bulk"}. ` +
-            `Try a different month or check that data exists for this province.`
-          );
-          return;
-        }
-        setSelectedCategoryName(provinceName);
-
-      } else if (category === "Region") {
-        setLoadingStatus("Fetching areas for region...");
-        areas = await fetchAreasForRegion(categoryValue);
-        const regionName =
-          regions.find((r) => r.RegionCode === categoryValue)?.RegionName ?? categoryValue;
-        if (areas.length === 0) {
-          setReportError(
-            `No areas found for region "${regionName}" with bill cycle ${billCycle} and ` +
-            `type ${billType === "O" ? "Ordinary" : "Bulk"}.`
-          );
-          return;
-        }
-        setSelectedCategoryName(regionName);
-
-      } else {
-        areas = allAreas;
-        setSelectedCategoryName("CEB Entire");
-      }
-
-      areaLookup = buildAreaNameLookup(areas);
-
-      // ── Fetch report data for each area ───────────────────────────────────
-      let combined: ReceivableRecord[] = [];
-      for (let i = 0; i < areas.length; i++) {
-        setLoadingStatus(`Fetching data: area ${i + 1} of ${areas.length} (${areas[i].AreaName || areas[i].AreaCode})...`);
-        const rows = await fetchAreaData(areas[i].AreaCode);
-        combined = [...combined, ...rows];
-      }
-
-      setLoadingStatus("");
-
-      if (combined.length > 0) {
-        setReportData(enrichAndSortRows(combined, areaLookup));
-        setReportVisible(true);
-        setReportError(null);
-        const bt = billTypeOptions.find((b) => b.BillType === billType);
-        setSelectedBillTypeName(bt?.DisplayName ?? billType);
-        const opt = billCycleOptions.find((o) => o.code === billCycle);
-        setSelectedBillCycleDisplay(opt ? formatLegacyBillCycle(opt.code, opt.display) : billCycle);
-      } else {
-        setReportError(
-          `Found ${areas.length} area(s) but no records in receive_position for ` +
-          `bill cycle ${billCycle} (${billType === "O" ? "Ordinary" : "Bulk"}). ` +
-          `Bulk data may not be available for this month — try an earlier month, ` +
-          `or verify that the Bulk receive_position table has data for cycle ${billCycle}.`
-        );
-      }
-    } catch (e: any) {
-      setReportError(e.message || "Failed to generate report.");
-    } finally {
-      setLoading(false);
-      setLoadingStatus("");
-    }
-  };
-
-  // ── CSV Export ─────────────────────────────────────────────────────────────
-  const downloadAsCSV = () => {
-    if (!reportData.length) return;
-    const headers = [
-      "#",
-      "Area",
+    const header = [
+      "Area Code",
+      "Area Name",
       "Opening Balance",
       "Monthly Charge",
       "Debits",
@@ -556,510 +383,344 @@ const ReceivablePosition: React.FC = () => {
       "Over Charge",
       "Payments",
       "Closing Balance",
-      "Closing Balance (Without Fin.Acc.)",
-      "Average Charge",
-      "No Of Months in Arrears",
-      "No of Months in Arrears (Without Fin.Acc.)",
+      "Closing Bal (W/O Fin Acc)",
+      "Avg Charge",
+      "No. Months Arrears",
+      "No. Months Arrears (W/O Fin Acc)",
     ];
-    const rows = reportData.map((r, i) => [
-      String(i + 1),
-      r.AreaName || r.AreaCode,
-      r.OpeningBalance,
-      r.MonthlyCharge,
-      r.Debits,
-      r.Credits,
-      r.UnderCharge,
-      r.OverCharge,
-      r.Payments,
-      r.ClosingBalance,
-      r.ClosingBalanceWithoutFinAcc,
-      r.AverageCharge,
-      r.NoOfMonthsInArrears,
-      r.NoOfMonthsInArrearsWithoutFinAcc,
+    const rows = reportData.map((r) => [
+      r.areaCode,
+      r.areaName,
+      r.openingBalance,
+      r.monthlyCharge,
+      r.debits,
+      r.credits,
+      r.underCharge,
+      r.overCharge,
+      r.payments,
+      r.closingBalance,
+      r.closingBalanceWithoutFinAcc,
+      r.averageCharge,
+      r.noOfMonthsInArrears,
+      r.noOfMonthsInArrearsWithoutFinAcc,
     ]);
-    const totalsRow = [
-      "",
-      "TOTAL",
-      fmtNum(sum("OpeningBalance")),
-      fmtNum(sum("MonthlyCharge")),
-      fmtNum(sum("Debits")),
-      fmtNum(sum("Credits")),
-      fmtNum(sum("UnderCharge")),
-      fmtNum(sum("OverCharge")),
-      fmtNum(sum("Payments")),
-      fmtNum(sum("ClosingBalance")),
-      fmtNum(sum("ClosingBalanceWithoutFinAcc")),
-      fmtNum(sum("AverageCharge")),
-      fmtNum(sum("NoOfMonthsInArrears"), 4),
-      fmtNum(sum("NoOfMonthsInArrearsWithoutFinAcc"), 4),
-    ];
-    const csv = [
-      [`Area wise receivable position for ${selectedCategoryName}`],
-      [`Month : ${selectedBillCycleDisplay}`],
-      [`Customer Category : ${selectedBillTypeName} Customers`],
-      [],
-      headers,
-      ...rows,
-      totalsRow,
-    ]
-      .map((row) => row.map((c) => `"${c}"`).join(","))
-      .join("\n");
-
+    const csv = [header, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\r\n");
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(
-      new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    );
-    link.download = `ReceivablePosition_${billCycle}_${billType}_${category}.csv`;
+    link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    link.download = `ReceivablePosition_${scopeValue || "EntireCEB"}_${selectedBillCycle}.csv`;
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // ── Print PDF ──────────────────────────────────────────────────────────────
-  const printPDF = () => {
-    if (!printRef.current) return;
+  const handleExportPdf = () => {
+    if (!reportData.length) {
+      setReportError("No data to export.");
+      return;
+    }
+    const title = "Receivable Position";
+    const rowsHtml = reportData
+      .map(
+        (r) => `<tr>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:center;font-size:9px">${escapeCsv(r.areaCode)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:left;font-size:9px">${escapeCsv(r.areaName)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.openingBalance}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.monthlyCharge}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.debits}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.credits}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.underCharge}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.overCharge}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.payments}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.closingBalance}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.closingBalanceWithoutFinAcc}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.averageCharge}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.noOfMonthsInArrears}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.noOfMonthsInArrearsWithoutFinAcc}</td>
+    </tr>`
+      )
+      .join("");
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>${title}</title>
+<style>
+  body{font-family:Arial,sans-serif;margin:8mm;color:#111}
+  h2{color:#7A0000;font-size:13px;margin-bottom:6px}
+  .meta{font-size:11px;margin-bottom:10px}
+  .meta span{font-weight:bold}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th{background:#b0e0e8;font-weight:bold;text-align:center;padding:4px 3px;border:1px solid #aaa;font-size:9px}
+  td{padding:3px;border:1px solid #ccc;font-size:9px;vertical-align:top}
+  tr:nth-child(even){background:#f5f5f5}
+  .total-row td{background:#d3d3d3;font-weight:bold}
+  @page{size:A4 landscape;margin:8mm}
+</style>
+</head><body>
+<h2>${title}</h2>
+<div class="meta">Scope : &nbsp;<span>${resolvedScopeLabel}</span> (${scopeType}) &nbsp;|&nbsp; Customer Type : &nbsp;<span>${
+      billType === "B" ? "Bulk" : "Ordinary"
+    }</span><br>Bill Cycle : &nbsp;<span>${resolvedBillCycle}</span></div>
+<table><thead><tr>
+  <th>Area</th><th>Area Name</th>
+  <th>Opening Bal</th><th>Monthly Chg</th><th>Debits</th><th>Credits</th>
+  <th>Under Chg</th><th>Over Chg</th><th>Payments</th>
+  <th>Closing Bal</th><th>Closing Bal (W/O Fin)</th><th>Avg Chg</th>
+  <th>Mths Arrears</th><th>Mths Arrears (W/O Fin)</th>
+</tr></thead>
+<tbody>${rowsHtml}</tbody>
+<tfoot><tr class="total-row">
+  <td colspan="2"><b>Total</b></td>
+  <td style="text-align:right"><b>${fmt(totals.openingBalance)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.monthlyCharge)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.debits)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.credits)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.underCharge)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.overCharge)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.payments)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.closingBalance)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.closingBalanceWithoutFinAcc)}</b></td>
+  <td></td><td></td><td></td>
+</tr></tfoot>
+</table></body></html>`;
     const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(`
-      <html><head>
-        <title>Area wise receivable position</title>
-        <style>
-          body  { font-family: Arial, sans-serif; font-size: 9px; margin: 8mm; }
-          h2    { color: #7A0000; font-size: 12px; margin-bottom: 4px; font-weight: bold; }
-          .meta { font-size: 10px; margin-bottom: 10px; line-height: 1.6; }
-          .meta span { font-weight: bold; }
-          table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-          th    { background: #b0e0e8; font-weight: bold; text-align: center;
-                  padding: 4px 3px; border: 1px solid #aaa; font-size: 8px; }
-          td    { padding: 3px 3px; border: 1px solid #ccc; font-size: 8px; }
-          tr.row-even td { background: #d6e8ff; }
-          tr.row-odd td { background: #e9dff5; }
-          tr.tr-total td { background: #d3d3d3; font-weight: bold; }
-          .r { text-align: right; }
-          .note { font-size: 9px; margin-top: 10px; color: #800080; }
-          @page { size: landscape; margin: 8mm;
-            @bottom-left  { content: "Generated: ${new Date().toLocaleString()} | Reporting@2026"; font-size:8px; color:#666; }
-            @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size:8px; color:#666; }
-          }
-        </style>
-      </head><body>
-        <h2>Area wise receivable position for ${selectedCategoryName}</h2>
-        <div class="meta">
-          Month : &nbsp;<span>${selectedBillCycleDisplay}</span><br/>
-          Customer Category : &nbsp;<span>${selectedBillTypeName} Customers</span>
-        </div>
-        ${printRef.current.innerHTML}
-        <div class="note">
-          Net bill = monthly charge + under charge - over charge<br/>
-          Monthly charge = kwh charge + fixed charge + fac
-        </div>
-      </body></html>
-    `);
+    if (!w) {
+      setReportError("Popup blocked. Please allow popups to export PDF.");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
     w.document.close();
     w.focus();
     setTimeout(() => {
       w.print();
-      w.close();
-    }, 500);
+      setTimeout(() => w.close(), 500);
+    }, 250);
   };
 
-  // ── Table ──────────────────────────────────────────────────────────────────
-  const renderTable = () => {
-    if (!reportData.length)
-      return (
-        <div className="text-center py-10 text-gray-500 text-sm">
-          No records found.
-        </div>
-      );
+  const canSubmit = !!selectedBillCycle && (scopeType === "EntireCEB" || !!scopeValue) && !loadingReport;
 
-    const cols: {
-      label: string;
-      key: keyof ReceivableRecord;
-      dec?: number;
-    }[] = [
-      { label: "Opening Balance", key: "OpeningBalance" },
-      { label: "Monthly Charge", key: "MonthlyCharge" },
-      { label: "Debits", key: "Debits" },
-      { label: "Credits", key: "Credits" },
-      { label: "Under Charge", key: "UnderCharge" },
-      { label: "Over Charge", key: "OverCharge" },
-      { label: "Payments", key: "Payments" },
-      { label: "Closing Balance", key: "ClosingBalance" },
-      {
-        label: "Closing Balance (Without Fin.Acc.)",
-        key: "ClosingBalanceWithoutFinAcc",
-      },
-      { label: "Average Charge", key: "AverageCharge" },
-      {
-        label: "No Of Months in Arrears",
-        key: "NoOfMonthsInArrears",
-        dec: 4,
-      },
-      {
-        label: "No of Months in Arrears (Without Fin.Acc.)",
-        key: "NoOfMonthsInArrearsWithoutFinAcc",
-        dec: 4,
-      },
-    ];
-
-    const rowBgColor = (i: number) => (i % 2 === 0 ? "#d6e8ff" : "#e9dff5");
-
-    return (
-      <table className="w-full border-collapse text-[11px]">
-        <thead>
-          <tr className="bg-[#b0e0e8] text-gray-800">
-            <th className="border border-gray-400 px-1 py-2 text-center font-bold w-8">
-              #
-            </th>
-            <th className="border border-gray-400 px-2 py-2 text-center font-bold whitespace-nowrap min-w-[140px]">
-              Area
-            </th>
-            {cols.map((c) => (
-              <th
-                key={c.key}
-                className="border border-gray-400 px-2 py-2 text-center font-bold whitespace-nowrap"
-              >
-                {c.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {reportData.map((r, i) => (
-            <tr
-              key={`${r.AreaCode}-${i}`}
-              style={{ backgroundColor: rowBgColor(i) }}
-            >
-              <td className="border border-gray-400 px-1 py-1 text-center">
-                {i + 1}
-              </td>
-              <td className="border border-gray-400 px-2 py-1 whitespace-nowrap font-medium">
-                {r.AreaName || r.AreaCode}
-              </td>
-              {cols.map((c) => (
-                <td
-                  key={c.key}
-                  className="border border-gray-400 px-2 py-1 text-right font-mono"
-                >
-                  {(r[c.key] as string) || "0.00"}
-                </td>
-              ))}
-            </tr>
-          ))}
-          <tr className="bg-[#d3d3d3] font-bold">
-            <td className="border border-gray-400 px-1 py-1" />
-            <td className="border border-gray-400 px-2 py-1 text-center font-bold">
-              TOTAL
-            </td>
-            {cols.map((c) => (
-              <td
-                key={c.key}
-                className="border border-gray-400 px-2 py-1 text-right font-mono font-bold"
-              >
-                {fmtNum(sum(c.key), c.dec ?? 2)}
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
-    );
-  };
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // JSX
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
-      {/* ── FORM ──────────────────────────────────────────────────────────── */}
-      {!reportVisible && (
+      {!hasSearched && (
         <>
           <div className="mb-6">
-            <h2 className={`text-xl font-bold ${maroon}`}>
-              Receivable Position
-            </h2>
+            <h2 className={`text-xl font-bold ${maroon}`}>Receivable Position</h2>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Customer Type — select first; bill cycles load after */}
-              <div className="flex flex-col">
-                <label className={`text-xs font-medium mb-1 ${maroon}`}>
-                  Customer Type <span className="text-red-600">*</span>
+          <div className="max-w-2xl space-y-4">
+              {/* Month */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                <label className={`text-xs font-medium mt-2 ${maroon}`}>
+                  Month: <span className="text-red-600">*</span>
                 </label>
-                <select
-                  value={billType}
-                  onChange={(e) => setBillType(e.target.value)}
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                  required
-                >
-                  <option value="">Select Customer Type</option>
-                  {billTypeOptions.map((b) => (
-                    <option key={b.BillType} value={b.BillType}>
-                      {b.DisplayName} Customers
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Month / Bill Cycle — enabled after Customer Type is chosen */}
-              <div className="flex flex-col">
-                <label className={`text-xs font-medium mb-1 ${!billType ? "text-gray-400" : maroon}`}>
-                  Month <span className="text-red-600">*</span>
-                </label>
-                {!billType ? (
-                  <select value="" disabled className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md bg-gray-100 text-gray-400 cursor-not-allowed">
-                    <option value="">Select Customer Type first</option>
-                  </select>
-                ) : isLoadingBillCycles ? (
-                  <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                    Loading bill cycles...
-                  </div>
-                ) : billCycleError ? (
+                {loadingCycles ? (
+                  <div className={selectCls + " bg-gray-50 text-gray-500"}>Loading bill cycles...</div>
+                ) : cycleError ? (
                   <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
-                    {billCycleError}
+                    {cycleError}
                   </div>
                 ) : (
-                  <select
-                    value={billCycle}
-                    onChange={(e) => setBillCycle(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                    required
-                  >
-                    <option value="">Select Month</option>
+                  <select value={selectedBillCycle} onChange={(e) => setSelectedBillCycle(e.target.value)} className={selectCls}>
                     {billCycleOptions.map((o) => (
                       <option key={o.code} value={o.code}>
-                        {o.display}
+                        {o.label}
                       </option>
                     ))}
                   </select>
                 )}
               </div>
 
-              {/* Province / Region / CEB Entire */}
-              <div className="flex flex-col">
-                <label
-                  className={`text-xs font-medium mb-1 ${
-                    !billType ? "text-gray-400" : maroon
-                  }`}
-                >
-                  Province / Region / CEB{" "}
-                  <span className="text-red-600">*</span>
+              {/* Customer Type */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                <label className={`text-xs font-medium mt-2 ${maroon}`}>
+                  Customer Type: <span className="text-red-600">*</span>
                 </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  disabled={!billType}
-                  className={`w-full px-2 py-1.5 text-xs border rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent ${
-                    !billType
-                      ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <option value="Province">Province</option>
-                  <option value="Region">Region</option>
-                  <option value="CEB Entire">CEB Entire</option>
+                <select value={billType} onChange={(e) => setBillType(e.target.value as "O" | "B")} className={selectCls}>
+                  <option value="O">Ordinary Customers</option>
+                  <option value="B">Bulk Customers</option>
                 </select>
               </div>
-            </div>
 
-            {/* Row 2 — Province / Region value */}
-            {category !== "CEB Entire" && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex flex-col">
-                  <label
-                    className={`text-xs font-medium mb-1 ${
-                      isCategoryValueDisabled() ? "text-gray-400" : maroon
-                    }`}
-                  >
-                    Select {category} <span className="text-red-600">*</span>
-                  </label>
+              {/* Province/Region/CEB */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                <label className={`text-xs font-medium mt-2 ${maroon}`}>
+                  Province/Region/CEB: <span className="text-red-600">*</span>
+                </label>
+                <div className="space-y-2">
+                  <select value={scopeType} onChange={(e) => setScopeType(e.target.value as ScopeType)} className={selectCls}>
+                    <option value="Province">Province</option>
+                    <option value="Region">Region</option>
+                    <option value="EntireCEB">Entire CEB</option>
+                  </select>
 
-                  {category === "Province" &&
-                    (isLoadingProvinces ? (
-                      <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                        Loading provinces...
-                      </div>
-                    ) : provinceError ? (
-                      <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
-                        {provinceError}
-                      </div>
-                    ) : (
-                      <select
-                        value={categoryValue}
-                        onChange={(e) => setCategoryValue(e.target.value)}
-                        disabled={isCategoryValueDisabled()}
-                        className={`w-full px-2 py-1.5 text-xs border rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent ${
-                          isCategoryValueDisabled()
-                            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                            : "border-gray-300"
-                        }`}
-                        required
-                      >
-                        <option value="">Select Province</option>
-                        {provinces.map((p) => (
-                          <option key={p.ProvinceCode} value={p.ProvinceCode}>
-                            {p.ProvinceName}
-                          </option>
-                        ))}
-                      </select>
-                    ))}
+                  {scopeType === "Province" && (
+                    <select value={scopeValue} onChange={(e) => setScopeValue(e.target.value)} className={selectCls}>
+                      <option value="">Select Province</option>
+                      {provinces.map((p) => (
+                        <option key={p.provinceCode} value={p.provinceCode}>
+                          {p.provinceName}
+                        </option>
+                      ))}
+                    </select>
+                  )}
 
-                  {category === "Region" &&
-                    (isLoadingRegions ? (
-                      <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                        Loading regions...
-                      </div>
-                    ) : regionError ? (
-                      <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
-                        {regionError}
-                      </div>
-                    ) : (
-                      <select
-                        value={categoryValue}
-                        onChange={(e) => setCategoryValue(e.target.value)}
-                        disabled={isCategoryValueDisabled()}
-                        className={`w-full px-2 py-1.5 text-xs border rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent ${
-                          isCategoryValueDisabled()
-                            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                            : "border-gray-300"
-                        }`}
-                        required
-                      >
-                        <option value="">Select Region</option>
-                        {regions.map((r) => (
-                          <option key={r.RegionCode} value={r.RegionCode}>
-                            {r.RegionCode} - {r.RegionName}
-                          </option>
-                        ))}
-                      </select>
-                    ))}
+                  {scopeType === "Region" && (
+                    <select value={scopeValue} onChange={(e) => setScopeValue(e.target.value)} className={selectCls}>
+                      <option value="">Select Region</option>
+                      {regions.map((r) => (
+                        <option key={r.regionCode} value={r.regionCode}>
+                          {r.regionName || r.regionCode}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {scopeType === "EntireCEB" && <div className={disabledCls}>All areas island-wide</div>}
                 </div>
               </div>
-            )}
 
-            {/* Areas loading indicator */}
-            {billType && isLoadingAreas && (
-              <p className="text-xs text-gray-400 italic">
-                Loading area list...
-              </p>
-            )}
-            {billType && areasError && (
-              <p className="text-xs text-red-500">
-                ⚠ Area list failed to load: {areasError}. Province/Region/CEB
-                Entire features may not work correctly.
-              </p>
-            )}
+              {/* Submit */}
+              <div className="w-full mt-6 flex justify-end">
+                <button
+                  onClick={fetchReport}
+                  disabled={!canSubmit}
+                  className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow
+                    ${maroonGrad} text-white
+                    ${!canSubmit ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"}`}
+                >
+                  {loadingReport ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      {loadingStatus || "Loading..."}
+                    </span>
+                  ) : (
+                    "Generate Report"
+                  )}
+                </button>
+              </div>
 
-            {/* Submit */}
-            <div className="w-full mt-6 flex justify-end">
-              <button
-                type="submit"
-                disabled={loading || !canSubmit()}
-                className={`px-6 py-2 rounded-md font-medium transition-opacity duration-300 shadow ${maroonGrad} text-white ${
-                  loading || !canSubmit()
-                    ? "opacity-70 cursor-not-allowed"
-                    : "hover:opacity-90"
-                }`}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg
-                      className="animate-spin h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    {loadingStatus || "Loading..."}
-                  </span>
-                ) : (
-                  "Generate Report"
-                )}
-              </button>
-            </div>
-          </form>
-
-          {reportError && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-              {reportError}
-            </div>
-          )}
+              {reportError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">{reportError}</div>
+              )}
+              {scopeListError && (
+                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">{scopeListError}</div>
+              )}
+          </div>
         </>
       )}
 
-      {/* ── REPORT ────────────────────────────────────────────────────────── */}
-      {reportVisible && (
+      {hasSearched && (
         <div className="mt-2">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
             <div>
-              <h2 className={`text-lg font-bold ${maroon}`}>
-                Area wise receivable position for {selectedCategoryName}
-              </h2>
-              <p className="text-sm text-gray-700 mt-2">
-                Month : <span className="font-semibold">{selectedBillCycleDisplay}</span>
-              </p>
-              <p className="text-sm text-gray-700">
-                Customer Category :{" "}
-                <span className="font-semibold">
-                  {selectedBillTypeName} Customers
-                </span>
+              <h2 className={`text-xl font-bold ${maroon}`}>Receivable Position</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Scope: <strong>{resolvedScopeLabel}</strong> ({scopeType}) | Customer Type:{" "}
+                <strong>{billType === "B" ? "Bulk" : "Ordinary"}</strong> | Bill Cycle: <strong>{resolvedBillCycle}</strong>
               </p>
             </div>
+
             <div className="flex space-x-2 mt-2 md:mt-0">
               <button
-                onClick={downloadAsCSV}
-                className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+                onClick={handleExportCsv}
+                disabled={!reportData.length}
+                className={`flex items-center gap-1 px-3 py-1.5 border border-blue-400 rounded-md text-xs font-medium shadow-sm
+                  focus:outline-none focus:ring-2 focus:ring-blue-200 transition
+                  ${!reportData.length ? "text-blue-300 bg-gray-50 cursor-not-allowed" : "text-blue-700 bg-white hover:bg-blue-50 hover:text-blue-800"}`}
               >
-                <FaFileDownload className="w-3 h-3" /> CSV
+                CSV
               </button>
               <button
-                onClick={printPDF}
-                className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
+                onClick={handleExportPdf}
+                disabled={!reportData.length}
+                className={`flex items-center gap-1 px-3 py-1.5 border border-green-400 rounded-md text-xs font-medium shadow-sm
+                  focus:outline-none focus:ring-2 focus:ring-green-200 transition
+                  ${!reportData.length ? "text-green-300 bg-gray-50 cursor-not-allowed" : "text-green-700 bg-white hover:bg-green-50 hover:text-green-800"}`}
               >
-                <FaPrint className="w-3 h-3" /> PDF
+                PDF
               </button>
               <button
-                onClick={() => {
-                  setReportVisible(false);
-                  setReportError(null);
-                  setReportData([]);
-                }}
-                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white"
+                onClick={handleBackToForm}
+                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white flex items-center"
               >
                 Back to Form
               </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-400">
-            <div ref={printRef} className="min-w-full">
-              {renderTable()}
+          <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg">
+            <div className="min-w-full py-4">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr className="bg-[#b0e0e8] text-gray-800 sticky top-0">
+                    <th className="border border-gray-300 px-2 py-2 text-center font-bold">Area</th>
+                    <th className="border border-gray-300 px-2 py-2 text-left font-bold">Area Name</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Opening Bal</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Monthly Chg</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Debits</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Credits</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Under Chg</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Over Chg</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Payments</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Closing Bal</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Closing Bal (W/O Fin)</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Avg Chg</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Mths Arrears</th>
+                    <th className="border border-gray-300 px-2 py-2 text-right font-bold">Mths Arrears (W/O Fin)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.map((r, i) => (
+                    <tr key={`${r.areaCode}-${i}`} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      <td className="border border-gray-300 px-2 py-1 text-center font-mono">{r.areaCode}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-left">{r.areaName}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.openingBalance}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.monthlyCharge}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.debits}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.credits}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.underCharge}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.overCharge}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.payments}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.closingBalance}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.closingBalanceWithoutFinAcc}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.averageCharge}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.noOfMonthsInArrears}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.noOfMonthsInArrearsWithoutFinAcc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-[#d3d3d3] font-bold sticky bottom-0">
+                    <td colSpan={2} className="border border-gray-300 px-2 py-2 text-center font-bold">
+                      TOTAL
+                    </td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.openingBalance)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.monthlyCharge)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.debits)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.credits)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.underCharge)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.overCharge)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.payments)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.closingBalance)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">
+                      {fmt(totals.closingBalanceWithoutFinAcc)}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">—</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">—</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">—</td>
+                  </tr>
+                </tfoot>
+              </table>
+              {reportData.length > 0 && (
+                <p className="text-xs text-gray-500 mt-2 text-right px-2">Total areas: {reportData.length.toLocaleString()}</p>
+              )}
             </div>
-          </div>
-
-          <div className="mt-3 text-xs text-purple-700 space-y-0.5">
-            <p>Net bill = monthly charge + under charge - over charge</p>
-            <p>Monthly charge = kwh charge + fixed charge + fac</p>
           </div>
 
           {reportError && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-              {reportError}
-            </div>
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">{reportError}</div>
           )}
         </div>
       )}
