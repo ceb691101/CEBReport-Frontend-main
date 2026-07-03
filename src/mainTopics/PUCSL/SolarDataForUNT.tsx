@@ -236,18 +236,11 @@ const SolarDataForUNT = () => {
     return val.toLocaleString("en-US", { maximumFractionDigits: 0 });
   };
 
-  // ── Formatter for Print Date ──────────────────────────────────────────────
-  const getFormattedPrintDate = () => {
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  };
+
 
   // ── Download CSV ──────────────────────────────────────────────────────────
   const downloadAsCSV = () => {
     if (!exportResult) return;
-
-    const printDate = getFormattedPrintDate();
 
     const headers = [
       "Category",
@@ -291,7 +284,6 @@ const SolarDataForUNT = () => {
     const csvContent = [
       `Solar Data for UNT Calculation - ${netType}`,
       selectedBillCycleDisplay,
-      `Printed On : ${printDate}`,
       "",
       headers,
       ...rows,
@@ -315,7 +307,6 @@ const SolarDataForUNT = () => {
     if (!printWindow) return;
 
     const title = `Solar Data for UNT Calculation - ${netType}`;
-    const printDate = getFormattedPrintDate();
 
     printWindow.document.write(`
       <html>
@@ -331,15 +322,26 @@ const SolarDataForUNT = () => {
             td:first-child { text-align: left; font-weight: bold; }
             tr.total-row { font-weight: bold; background-color: #f3f4f6; }
             @page {
-              margin-bottom: 15mm;
+              margin-bottom: 18mm;
+              @bottom-left {
+                content: "Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Reporting@2026";
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
+              @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9px;
+                color: #666;
+                font-family: Arial;
+              }
             }
           </style>
         </head>
         <body>
           <div class="header">Solar Data for UNT Calculation - ${netType}</div>
           <div class="subheader">
-            ${selectedBillCycleDisplay}<br>
-            Printed On : ${printDate}
+            ${selectedBillCycleDisplay}
           </div>
           ${content.innerHTML}
         </body>
