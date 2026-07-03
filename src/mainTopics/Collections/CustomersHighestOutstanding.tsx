@@ -566,34 +566,22 @@ const CustomersHighestOutstanding: React.FC = () => {
           )}
 
           <div className="border border-gray-200 rounded-xl p-4 bg-white shadow mb-6">
-            {/* Scope Radio Toggles */}
-            <div className="flex gap-6 mb-4">
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
-                <input
-                  type="radio"
-                  name="scope"
-                  value="Province"
-                  checked={scope === "Province"}
-                  onChange={() => setScope("Province")}
-                  className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
-                />
-                <span className="font-medium">Province</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
-                <input
-                  type="radio"
-                  name="scope"
-                  value="Division"
-                  checked={scope === "Division"}
-                  onChange={() => setScope("Division")}
-                  className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
-                />
-                <span className="font-medium">Division</span>
-              </label>
-            </div>
-
             {/* Inputs Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              {/* Scope Dropdown */}
+              <div className="flex flex-col">
+                <label className={`${maroon} text-xs font-medium mb-1`}>Select Scope:</label>
+                <select
+                  value={scope}
+                  onChange={(e) => setScope(e.target.value as "Province" | "Division")}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent bg-white text-gray-800"
+                  disabled={loading}
+                >
+                  <option value="Province">Province</option>
+                  <option value="Division">Division</option>
+                </select>
+              </div>
+
               {/* Dropdown for Province or Division */}
               <div className="flex flex-col">
                 <label className={`${maroon} text-xs font-medium mb-1`}>
@@ -608,7 +596,8 @@ const CustomersHighestOutstanding: React.FC = () => {
                     <select
                       value={selectedCode}
                       onChange={(e) => setSelectedCode(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent bg-white text-gray-800"
+                      disabled={loading}
                     >
                       <option value="">— Select Province —</option>
                       {provinces.map((p) => (
@@ -626,7 +615,8 @@ const CustomersHighestOutstanding: React.FC = () => {
                   <select
                     value={selectedCode}
                     onChange={(e) => setSelectedCode(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent bg-white text-gray-800"
+                    disabled={loading}
                   >
                     <option value="">— Select Division —</option>
                     {divisions.map((d) => (
@@ -652,6 +642,7 @@ const CustomersHighestOutstanding: React.FC = () => {
                   }}
                   min={0}
                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  disabled={loading}
                 />
               </div>
 
@@ -669,6 +660,7 @@ const CustomersHighestOutstanding: React.FC = () => {
                   }}
                   min={0}
                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  disabled={loading}
                 />
               </div>
             </div>
