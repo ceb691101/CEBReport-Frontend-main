@@ -15,8 +15,8 @@ interface UNTDataModel {
   Month: string;
   Accts: number;
   UnitsExpD: number;
-  UnitsExpP: string;
-  UnitsExpOffP: string;
+  UnitsExpP: number;
+  UnitsExpOffP: number;
   UnitsImpD: number;
   UnitsImpP: number;
   UnitsImpOffP: number;
@@ -186,13 +186,13 @@ const SolarDataForUNT = () => {
         reportCategory: getReportCategoryValue(reportCategory),
         typeCode: reportCategory !== "Entire CEB" ? typeCode : "",
         billCycle,
-        reportType: "RawDataForSolar", // Unused on new backend but kept for compatibility
+        reportType: "RawDataForSolar", 
         solarType: getSolarTypeValue(netType),
       };
 
       // API SOURCE COMMENT:
       // - Solar Data for UNT is fetched from: /misapi/api/pucsl/solarDataUNT
-      const response = await fetch("?misapi/api/pucsl/solarDataUNT", {
+      const response = await fetch("/misapi/api/pucsl/solarDataUNT", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(requestBody),
@@ -232,32 +232,40 @@ const SolarDataForUNT = () => {
   };
 
   // ── Formatter Helper ──────────────────────────────────────────────────────
-  const fmtVal = (val: number | string) => {
-    if (typeof val === "string") return val;
-    return val === 0 ? "" : val.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  const fmtVal = (val: number) => {
+    return val.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  };
+
+  // ── Formatter for Print Date ──────────────────────────────────────────────
+  const getFormattedPrintDate = () => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
 
   // ── Download CSV ──────────────────────────────────────────────────────────
   const downloadAsCSV = () => {
     if (!exportResult) return;
 
-    const locationText = reportCategory === "Entire CEB"
-        ? "Entire CEB"
-        : `${reportCategory}: ${selectedLocationLabel}`;
+    const printDate = getFormattedPrintDate();
 
     const headers = [
-      "Tariff Category",
-      "Accounts",
-      "Export Day",
-      "Export Peak",
-      "Export Off Peak",
-      "Import Day",
-      "Import Peak",
-      "Import Off Peak"
+      "Category",
+      "Year",
+      "Month",
+      "No of Accounts",
+      "units_exprt_DAY_kWh",
+      "units_exprt_PEAK_kWh",
+      "units_exprt_OFFPEAK_kWh",
+      "units_imprt_DAY_kWh",
+      "units_imprt_PEAK_kWh",
+      "units_imprt_OFFPEAK_kWh"
     ].join(",");
 
     const rows = exportResult.Data.map((row) => [
       row.Category,
+      row.Year,
+      row.Month,
       row.Accts,
       row.UnitsExpD,
       row.UnitsExpP,
@@ -269,6 +277,8 @@ const SolarDataForUNT = () => {
 
     const totalRow = [
       exportResult.Total.Category,
+      "",
+      "",
       exportResult.Total.Accts,
       exportResult.Total.UnitsExpD,
       exportResult.Total.UnitsExpP,
@@ -280,8 +290,8 @@ const SolarDataForUNT = () => {
 
     const csvContent = [
       `Solar Data for UNT Calculation - ${netType}`,
-      locationText,
-      `Bill Cycle: ${selectedBillCycleDisplay}`,
+      selectedBillCycleDisplay,
+      `Printed On : ${printDate}`,
       "",
       headers,
       ...rows,
@@ -305,9 +315,7 @@ const SolarDataForUNT = () => {
     if (!printWindow) return;
 
     const title = `Solar Data for UNT Calculation - ${netType}`;
-    const selectionInfo = reportCategory === "Entire CEB"
-      ? "Entire CEB"
-      : `${reportCategory}: ${selectedLocationLabel}`;
+    const printDate = getFormattedPrintDate();
 
     printWindow.document.write(`
       <html>
@@ -315,29 +323,23 @@ const SolarDataForUNT = () => {
           <title>${title}</title>
           <style>
             body { font-family: Arial, sans-serif; font-size: 11px; margin: 10mm; color: #333; }
-            .header { font-weight: bold; font-size: 14px; color: #7A0000; margin-bottom: 4px; }
-            .subheader { font-size: 11px; color: #555; margin-bottom: 16px; line-height: 1.4; }
-            .bold { font-weight: bold; }
+            .header { font-weight: bold; font-size: 14px; color: #000; margin-bottom: 2px; }
+            .subheader { font-size: 11px; color: #000; margin-bottom: 12px; line-height: 1.3; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border: 1px solid #d1d5db; padding: 6px 8px; font-size: 11px; text-align: right; }
+            th, td { border: 1px solid #d1d5db; padding: 5px 6px; font-size: 10px; text-align: right; }
             th { background-color: #f3f4f6; font-weight: bold; text-align: center; }
             td:first-child { text-align: left; font-weight: bold; }
             tr.total-row { font-weight: bold; background-color: #f3f4f6; }
             @page {
               margin-bottom: 15mm;
-              @bottom-left {
-                content: "Generated on: ${new Date().toLocaleDateString()} | Reporting System";
-                font-size: 8px;
-                color: #777;
-              }
             }
           </style>
         </head>
         <body>
-          <div class="header">SOLAR DATA FOR UNT CALCULATION - ${netType.toUpperCase()}</div>
+          <div class="header">Solar Data for UNT Calculation - ${netType}</div>
           <div class="subheader">
-            Location/Scope: <span class="bold">${selectionInfo}</span><br>
-            Bill Cycle: <span class="bold">${selectedBillCycleDisplay}</span>
+            ${selectedBillCycleDisplay}<br>
+            Printed On : ${printDate}
           </div>
           ${content.innerHTML}
         </body>
@@ -501,28 +503,28 @@ const SolarDataForUNT = () => {
               <table className="w-full border-collapse border border-gray-300 text-xs text-gray-700 font-sans">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="border border-gray-300 px-3 py-2 text-left font-bold" rowSpan={2}>Tariff Category</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold" rowSpan={2}>Accounts</th>
-                    <th className="border border-gray-300 px-3 py-2 text-center font-bold" colSpan={3}>Export</th>
-                    <th className="border border-gray-300 px-3 py-2 text-center font-bold" colSpan={3}>Import</th>
-                  </tr>
-                  <tr>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Day</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Peak</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Off Peak</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Day</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Peak</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Off Peak</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left font-bold">Category</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Year</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Month</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">No of Accounts</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_DAY_kWh</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_PEAK_kWh</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_OFFPEAK_kWh</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_DAY_kWh</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_PEAK_kWh</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_OFFPEAK_kWh</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {exportResult.Data.map((row, i) => (
                     <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                       <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-800 text-left">{row.Category}</td>
-                      <td className="border border-gray-300 px-3 py-2 font-medium text-right">{fmtVal(row.Accts)}</td>
+                      <td className="border border-gray-300 px-3 py-2 text-right">{row.Year}</td>
+                      <td className="border border-gray-300 px-3 py-2 text-right">{row.Month}</td>
+                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.Accts)}</td>
                       <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpD)}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{row.UnitsExpP}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{row.UnitsExpOffP}</td>
+                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpP)}</td>
+                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpOffP)}</td>
                       <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpD)}</td>
                       <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpP)}</td>
                       <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpOffP)}</td>
@@ -530,10 +532,12 @@ const SolarDataForUNT = () => {
                   ))}
                   <tr className="bg-gray-100 font-bold border-t-2 border-gray-300 total-row">
                     <td className="border border-gray-300 px-3 py-2 text-left">Total</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right"></td>
+                    <td className="border border-gray-300 px-3 py-2 text-right"></td>
                     <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.Accts)}</td>
                     <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpD)}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">{exportResult.Total.UnitsExpP}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">{exportResult.Total.UnitsExpOffP}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpP)}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpOffP)}</td>
                     <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpD)}</td>
                     <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpP)}</td>
                     <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpOffP)}</td>
