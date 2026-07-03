@@ -179,12 +179,35 @@ const TopCustomers: React.FC = () => {
   // ── Export CSV ────────────────────────────────────────────────────────────────
   const handleExportCsv = () => {
     if (!reportData.length) { setReportError("No data to export."); return; }
-    const header = ["#", "Account No.", "Customer Name", "Address Line 1", "Address Line 2", "City", "Consumption (kWh)", "Total Amount"];
-    const rows   = reportData.map((r, i) => [
-      i + 1, r.accountNumber, r.name, r.addressLine1, r.addressLine2, r.city,
-      r.kwh.toFixed(2), r.totalAmount.toFixed(2),
+
+    const totalKwh    = reportData.reduce((s, r) => s + r.kwh, 0);
+    const totalAmount = reportData.reduce((s, r) => s + r.totalAmount, 0);
+
+    const metaRows: (string | number)[][] = [
+      ["Largest 100 Customers - Consumption Wise"],
+      ["Bill Cycle :", resolvedBillCycle],
+      ["Customer Count :", reportData.length],
+      [],
+    ];
+
+    const header = ["Acct. Number", "Name", "Address Line 1", "Address Line 2", "City", "Total KWH", "Total Amount"];
+
+    const rows = reportData.map((r) => [
+      r.accountNumber,
+      r.name,
+      r.addressLine1,
+      r.addressLine2,
+      r.city,
+      r.kwh.toFixed(0),
+      r.totalAmount.toFixed(2),
     ]);
-    const csv = [header, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\r\n");
+
+    const totalRow = ["", "", "", "", "Total :", totalKwh.toFixed(0), totalAmount.toFixed(2)];
+
+    const csv = [...metaRows, header, ...rows, totalRow]
+      .map((row) => row.map(escapeCsv).join(","))
+      .join("\r\n");
+
     downloadTextFile(
       `top-customers_cycle-${resolvedBillCycle}_${new Date().toISOString().slice(0, 10)}.csv`,
       csv,
@@ -195,7 +218,7 @@ const TopCustomers: React.FC = () => {
   // ── Export PDF ────────────────────────────────────────────────────────────────
   const handleExportPdf = () => {
     if (!reportData.length) { setReportError("No data to export."); return; }
-    const title    = "Largest Customers by Consumption";
+    const title    = "Largest 100 Customers by Consumption";
     const subtitle = `Bill Cycle: ${resolvedBillCycle} &nbsp;|&nbsp; Top ${reportData.length} Customers`;
     const totalKwh    = reportData.reduce((s, r) => s + r.kwh, 0);
     const totalAmount = reportData.reduce((s, r) => s + r.totalAmount, 0);
@@ -206,7 +229,7 @@ const TopCustomers: React.FC = () => {
       <td style="border:1px solid #999;padding:4px 6px">${escapeCsv(r.name)}</td>
       <td style="border:1px solid #999;padding:4px 6px">${escapeCsv(r.addressLine1)}${r.addressLine2 ? ", " + escapeCsv(r.addressLine2) : ""}</td>
       <td style="border:1px solid #999;padding:4px 6px">${escapeCsv(r.city)}</td>
-      <td style="border:1px solid #999;padding:4px 6px;text-align:right;font-family:monospace">${fmt(r.kwh)}</td>
+      <td style="border:1px solid #999;padding:4px 6px;text-align:right;font-family:monospace">${fmt(r.kwh, 0)}</td>
       <td style="border:1px solid #999;padding:4px 6px;text-align:right;font-family:monospace">${fmt(r.totalAmount)}</td>
     </tr>`).join("");
 
@@ -233,7 +256,7 @@ const TopCustomers: React.FC = () => {
   <tbody>${rowsHtml}</tbody>
   <tfoot><tr>
     <td colspan="5" style="text-align:right">Total</td>
-    <td class="r">${fmt(totalKwh)}</td>
+    <td class="r">${fmt(totalKwh, 0)}</td>
     <td class="r">${fmt(totalAmount)}</td>
   </tr></tfoot>
 </table></body></html>`;
@@ -253,7 +276,7 @@ const TopCustomers: React.FC = () => {
         <>
           <div className="mb-6">
             <h2 className={`text-xl font-bold ${maroon}`}>
-              Largest Customers – Consumption Wise
+              Largest 100 Customers – Consumption Wise
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               Displays top customers for the latest bill cycle
@@ -432,7 +455,7 @@ const TopCustomers: React.FC = () => {
                       <td className="border border-gray-300 px-3 py-1">{r.addressLine1}</td>
                       <td className="border border-gray-300 px-3 py-1">{r.addressLine2}</td>
                       <td className="border border-gray-300 px-3 py-1">{r.city}</td>
-                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{fmt(r.kwh)}</td>
+                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{fmt(r.kwh, 0)}</td>
                       <td className="border border-gray-300 px-3 py-1 text-right font-mono">{fmt(r.totalAmount)}</td>
                     </tr>
                   ))
