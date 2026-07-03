@@ -89,7 +89,7 @@ const RegisteredConsumersForSMSAlerts = () => {
       try {
         const [cyclesRes, areaRes, provinceRes, divisionRes] = await Promise.all([
           fetchWithErrorHandling<{ data?: { BillCycles?: string[]; MaxBillCycle?: string } }>(
-            "/misapi/api/billcycle/max"
+            "/misapi/api/ordinary/areas/billcycle/min"
           ),
           fetchWithErrorHandling<{ data?: Area[] }>("/misapi/api/ordinary/areas"),
           fetchWithErrorHandling<{ data?: Province[] }>("/misapi/api/ordinary/province"),
