@@ -5,6 +5,11 @@ import ReportViewer from "../../components/utils/ReportViewer";
 import YearMonthDropdowns from "../../components/utils/YearMonthDropdowns";
 import ReusableCompanyList from "../../components/utils/ReusableCompanyList";
 
+type Company = {
+  compId: string;
+  CompName: string;
+};
+
 const AreaTrialBalance: React.FC = () => {
   const { user } = useUser();
   const epfNo = user?.Userno || "";
@@ -22,9 +27,8 @@ const AreaTrialBalance: React.FC = () => {
 
   // Style classes
   const maroon = "text-[#7A0000]";
-  const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
-  const handleViewReport = async (company: { compId: string; CompName: string }) => {
+  const handleViewReport = async (company: Company) => {
     if (!selectedYear || !selectedMonth) {
       toast.error("Please select both Year and Month first.");
       return;
@@ -205,11 +209,10 @@ const AreaTrialBalance: React.FC = () => {
             }
           }, [epfNo])}
           onViewItem={(company: { id: string; name: string }) => {
-            const typedCompany: Company = {
+            handleViewReport({
               compId: company.id,
               CompName: company.name,
-            };
-            handleViewReport(typedCompany);
+            });
           }}
           idColumnTitle="Company Code"
           nameColumnTitle="Company Name"

@@ -46,7 +46,9 @@ import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
 import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 import HeadOfficePOSCollection from "../mainTopics/Collections/HeadOfficePOSCollection";
+import SalesAndCollection from "../mainTopics/Collections/SalesAndCollection";
 import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHighestOutstanding";
+
 
 // Consumption Analysis reports
 //import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
@@ -67,6 +69,7 @@ import ListingofCustomers from "../mainTopics/general/ListingofCustomers";
 import LargestCus from "../mainTopics/general/LargestCus";
 import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
+import FinalizedAccounts from "../mainTopics/general/FinalizedAccounts";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -238,7 +241,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// Collections reports
 	"online counter collections": DishonouredCheques,
-	"sales and collection": DishonouredCheques,
+	"sales and collection": SalesAndCollection,
 	"stamp duty for payment collections": DishonouredCheques,
 	"monthly revenue collection of different channels": DishonouredCheques,
 	"kiosk payment collection": DishonouredCheques,
@@ -280,7 +283,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"shakthi led distribution summary": ActiveCustomersSalesByTariff,
 	"standing order report": ActiveCustomersSalesByTariff,
 	"registered consumers for sms alerts": RegisteredConsumersForSMSAlerts,
-	"finalized accounts": ActiveCustomersSalesByTariff,
+	"finalized accounts": FinalizedAccounts,
 	"outstanding dues": ActiveCustomersSalesByTariff,
 	"largest consumption": ActiveCustomersSalesByTariff,
 	"security deposit contract demand bulk": Securitydepositcontractdemandbulk,
@@ -430,14 +433,18 @@ export const getReportComponent = (normalizedReportName: string): ComponentType 
 	return reportComponentRegistry[normalizedReportName] || null;
 };
 
+const normalizeForLooseLookup = (value: string): string =>
+	value.replace(/[^a-z0-9]+/g, "").toLowerCase();
+
 export const getReportComponentLoose = (normalizedReportName: string): ComponentType | null => {
-	const query = normalizedReportName.trim();
+	const query = normalizeForLooseLookup(normalizedReportName);
 	if (!query) {
 		return null;
 	}
 
 	for (const [key, component] of Object.entries(reportComponentRegistry)) {
-		if (key.includes(query) || query.includes(key)) {
+		const normalizedKey = normalizeForLooseLookup(key);
+		if (normalizedKey.includes(query) || query.includes(normalizedKey)) {
 			return component;
 		}
 	}
