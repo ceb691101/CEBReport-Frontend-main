@@ -66,6 +66,14 @@ const billCycleToLabel = (cycle: number): string => {
   return `${cycle} - ${MONTHS[month]} ${yy}`;
 };
 
+// Short label used in report exports (CSV / PDF), e.g. "452-Apr"
+const billCycleToShortLabel = (cycle: number): string => {
+  const baseMonth = 8;
+  const totalMonths = baseMonth + (cycle - 1);
+  const month = totalMonths % 12;
+  return `${cycle}-${MONTHS[month]}`;
+};
+
 const AreasPosition: React.FC = () => {
   const maroon     = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
@@ -248,6 +256,11 @@ const AreasPosition: React.FC = () => {
   const totalBalance     = reportData.reduce((s, r) => s + parseNumber(r.totalBalance), 0);
   const totalAccounts    = reportData.reduce((s, r) => s + parseNumber(r.noOfAccounts), 0);
 
+  // Short bill-cycle label used in exports, e.g. "452-Apr"
+  const resolvedBillCycleShort = resolvedBillCycle
+    ? billCycleToShortLabel(parseInt(resolvedBillCycle, 10))
+    : "";
+
   const handleBackToForm = () => {
     setHasSearched(false);
     setReportData([]);
@@ -263,12 +276,25 @@ const AreasPosition: React.FC = () => {
 
   const handleExportCsv = () => {
     if (!reportData.length) { setReportError("No data to export."); return; }
+
+    const metaRows: (string | number)[][] = [
+      ["Arrears Position - Meter Reader Wise"],
+      ["Area :", selectedAreaName],
+      ["Bill Cycle :", resolvedBillCycleShort],
+      [],
+    ];
+
     const header = ["Reader Code", "Charge (Monthly Bill)", "Current Balance", "Ratio", "Reader Count"];
     const rows   = reportData.map((r) => [r.readerCode, r.monthlyBill, r.totalBalance, r.ratio, r.noOfAccounts]);
-    const csv    = [header, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\r\n");
+    const totalRow = ["Total", totalMonthlyBill.toFixed(2), totalBalance.toFixed(2), "", totalAccounts.toString()];
+
+    const csv = [...metaRows, header, ...rows, totalRow]
+      .map((row) => row.map(escapeCsv).join(","))
+      .join("\r\n");
+
     const link   = document.createElement("a");
     link.href    = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-    link.download = `ArrearsPosition_${selectedArea}_${resolvedBillCycle}.csv`;
+    link.download = `ArrearsPosition_${selectedArea}_${resolvedBillCycleShort || resolvedBillCycle}.csv`;
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -300,7 +326,7 @@ const AreasPosition: React.FC = () => {
 </style>
 </head><body>
 <h2>${title}</h2>
-<div class="meta">Area : &nbsp;<span>${selectedAreaName}</span><br>Bill Cycle : &nbsp;<span>${resolvedBillCycle}</span></div>
+<div class="meta">Area : &nbsp;<span>${selectedAreaName}</span><br>Bill Cycle : &nbsp;<span>${resolvedBillCycleShort}</span></div>
 <table><thead><tr>
   <th>Reader Code</th>
   <th style="text-align:right">Charge (Monthly Bill)</th>
@@ -457,8 +483,8 @@ const AreasPosition: React.FC = () => {
               </h2>
               <p className="text-sm text-gray-600 mt-1">
                 Area: <strong>{selectedAreaName}</strong>
-                {resolvedBillCycle && (
-                  <> | Bill Cycle: <strong>{resolvedBillCycle}</strong></>
+                {resolvedBillCycleShort && (
+                  <> | Bill Cycle: <strong>{resolvedBillCycleShort}</strong></>
                 )}
               </p>
             </div>
