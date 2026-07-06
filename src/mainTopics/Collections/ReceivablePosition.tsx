@@ -42,9 +42,18 @@ interface ReceivableRow {
   rawPayments: number;
   rawClosingBalance: number;
   rawClosingBalanceWithoutFinAcc: number;
+  rawAverageCharge: number;
+  rawNoOfMonthsInArrears: number;
+  rawNoOfMonthsInArrearsWithoutFinAcc: number;
 }
 
 type ScopeType = "Province" | "Region" | "EntireCEB";
+
+interface BillCycleOption {
+  code: string;
+  label: string;
+  shortLabel: string;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -80,6 +89,14 @@ const parseNumber = (value: any): number => {
 
 const fmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+// Reduce a raw cycle label like "Apr 26", "Apr-26", "Apr" down to just the
+// 3-letter month abbreviation, e.g. "Apr" — used to build the short
+// "452-Apr" style label used across reports (CSV / PDF / screenshots).
+const toMonthAbbrev = (rawLabel: string): string => {
+  const first = String(rawLabel).trim().split(/[\s-]+/)[0] ?? "";
+  return first.slice(0, 3);
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,7 +110,7 @@ const ReceivablePosition: React.FC = () => {
 
   // ── Form state ──────────────────────────────────────────────────────────
   const [billType, setBillType] = useState<"O" | "B">("O");
-  const [billCycleOptions, setBillCycleOptions] = useState<{ code: string; label: string }[]>([]);
+  const [billCycleOptions, setBillCycleOptions] = useState<BillCycleOption[]>([]);
   const [selectedBillCycle, setSelectedBillCycle] = useState("");
 
   const [scopeType, setScopeType] = useState<ScopeType>("Province");
@@ -124,7 +141,7 @@ const ReceivablePosition: React.FC = () => {
       setSelectedBillCycle("");
       setBillCycleOptions([]);
       try {
-        const response = await apiFetch<any>(`/api/receivable-position/billcycle/max?billType=${billType}`);
+        const response = await apiFetch<any>(`/misapi/api/receivable-position/billcycle/max?billType=${billType}`);
         if (response.errorMessage) {
           setCycleError(response.errorMessage);
           return;
@@ -137,7 +154,15 @@ const ReceivablePosition: React.FC = () => {
           setCycleError("No bill cycle data found.");
           return;
         }
-        const options = cycles.map((label, i) => ({ code: String(maxNum - i), label: `${maxNum - i}-${label}` }));
+        const options: BillCycleOption[] = cycles.map((rawLabel, i) => {
+          const code = String(maxNum - i);
+          const monthAbbrev = toMonthAbbrev(rawLabel);
+          return {
+            code,
+            label: `${code}-${rawLabel}`,
+            shortLabel: `${code}-${monthAbbrev}`,
+          };
+        });
         setBillCycleOptions(options);
         setSelectedBillCycle(options[0].code);
       } catch (err: any) {
@@ -151,8 +176,8 @@ const ReceivablePosition: React.FC = () => {
 
   // ── 2. Fetch provinces + regions whenever billType changes ─────────────
   useEffect(() => {
-    const provUrl = billType === "B" ? `/api/bulk/province` : `/api/ordinary/province`;
-    const regUrl = billType === "B" ? `/api/bulk/region` : `/api/ordinary/region`;
+    const provUrl = billType === "B" ? `/misapi/api/bulk/province` : `/misapi/api/ordinary/province`;
+    const regUrl = billType === "B" ? `/misapi/api/bulk/region` : `/misapi/api/ordinary/region`;
 
     setProvinces([]);
     setRegions([]);
@@ -207,7 +232,7 @@ const ReceivablePosition: React.FC = () => {
   // ── 3. Resolve area list for the current scope + billType + scopeValue ─
   const resolveAreaList = useCallback(async (): Promise<AreaInfo[]> => {
     if (scopeType === "EntireCEB") {
-      const url = billType === "B" ? `/api/bulk/areas` : `/api/ordinary/areas`;
+      const url = billType === "B" ? `/misapi/api/bulk/areas` : `/misapi/api/ordinary/areas`;
       const res = await apiFetch<any[]>(url);
       if (res.errorMessage || !res.data) throw new Error(res.errorMessage || "Failed to load areas.");
       return res.data.map((a: any) => ({
@@ -217,7 +242,7 @@ const ReceivablePosition: React.FC = () => {
     }
 
     if (scopeType === "Province") {
-      const url = `/api/receivable-position/areas-by-province?provinceCode=${encodeURIComponent(scopeValue)}&billType=${billType}`;
+      const url = `/misapi/api/receivable-position/areas-by-province?provinceCode=${encodeURIComponent(scopeValue)}&billType=${billType}`;
       const res = await apiFetch<any[]>(url);
       if (res.errorMessage || !res.data) throw new Error(res.errorMessage || "Failed to load areas for province.");
       return res.data.map((a: any) => ({
@@ -227,7 +252,7 @@ const ReceivablePosition: React.FC = () => {
     }
 
     // Region
-    const url = `/api/receivable-position/areas-by-region?regionCode=${encodeURIComponent(scopeValue)}&billType=${billType}`;
+    const url = `/misapi/api/receivable-position/areas-by-region?regionCode=${encodeURIComponent(scopeValue)}&billType=${billType}`;
     const res = await apiFetch<any[]>(url);
     if (res.errorMessage || !res.data) throw new Error(res.errorMessage || "Failed to load areas for region.");
     return res.data.map((a: any) => ({
@@ -259,7 +284,7 @@ const ReceivablePosition: React.FC = () => {
         const area = areaList[i];
         setLoadingStatus(`Loading area ${i + 1} of ${areaList.length} (${area.areaCode})...`);
 
-        const url = `/api/receivable-position/report?billCycle=${encodeURIComponent(
+        const url = `/misapi/api/receivable-position/report?billCycle=${encodeURIComponent(
           selectedBillCycle
         )}&areaCode=${encodeURIComponent(area.areaCode)}&billType=${billType}`;
 
@@ -299,6 +324,11 @@ const ReceivablePosition: React.FC = () => {
           rawClosingBalanceWithoutFinAcc: parseNumber(
             item.RawClosingBalanceWithoutFinAcc ?? item.rawClosingBalanceWithoutFinAcc ?? item.ClosingBalanceWithoutFinAcc
           ),
+          rawAverageCharge: parseNumber(item.RawAverageCharge ?? item.rawAverageCharge ?? item.AverageCharge),
+          rawNoOfMonthsInArrears: parseNumber(item.RawNoOfMonthsInArrears ?? item.rawNoOfMonthsInArrears ?? item.NoOfMonthsInArrears),
+          rawNoOfMonthsInArrearsWithoutFinAcc: parseNumber(
+            item.RawNoOfMonthsInArrearsWithoutFinAcc ?? item.rawNoOfMonthsInArrearsWithoutFinAcc ?? item.NoOfMonthsInArrearsWithoutFinAcc
+          ),
         });
       }
 
@@ -308,7 +338,7 @@ const ReceivablePosition: React.FC = () => {
       }
 
       const cycleOpt = billCycleOptions.find((o) => o.code === selectedBillCycle);
-      setResolvedBillCycle(cycleOpt?.label ?? selectedBillCycle);
+      setResolvedBillCycle(cycleOpt?.shortLabel ?? selectedBillCycle);
 
       let scopeLabel = "Entire CEB";
       if (scopeType === "Province") {
@@ -340,6 +370,9 @@ const ReceivablePosition: React.FC = () => {
       acc.payments += r.rawPayments;
       acc.closingBalance += r.rawClosingBalance;
       acc.closingBalanceWithoutFinAcc += r.rawClosingBalanceWithoutFinAcc;
+      acc.averageCharge += r.rawAverageCharge;
+      acc.noOfMonthsInArrears += r.rawNoOfMonthsInArrears;
+      acc.noOfMonthsInArrearsWithoutFinAcc += r.rawNoOfMonthsInArrearsWithoutFinAcc;
       return acc;
     },
     {
@@ -352,6 +385,9 @@ const ReceivablePosition: React.FC = () => {
       payments: 0,
       closingBalance: 0,
       closingBalanceWithoutFinAcc: 0,
+      averageCharge: 0,
+      noOfMonthsInArrears: 0,
+      noOfMonthsInArrearsWithoutFinAcc: 0,
     }
   );
 
@@ -372,6 +408,15 @@ const ReceivablePosition: React.FC = () => {
       setReportError("No data to export.");
       return;
     }
+
+    const metaRows: (string | number)[][] = [
+      ["Receivable Position"],
+      ["Scope :", `${resolvedScopeLabel} (${scopeType})`],
+      ["Customer Type :", billType === "B" ? "Bulk" : "Ordinary"],
+      ["Bill Cycle :", resolvedBillCycle],
+      [],
+    ];
+
     const header = [
       "Area Code",
       "Area Name",
@@ -404,10 +449,27 @@ const ReceivablePosition: React.FC = () => {
       r.noOfMonthsInArrears,
       r.noOfMonthsInArrearsWithoutFinAcc,
     ]);
-    const csv = [header, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\r\n");
+    const totalRow = [
+      "Total",
+      "",
+      fmt(totals.openingBalance),
+      fmt(totals.monthlyCharge),
+      fmt(totals.debits),
+      fmt(totals.credits),
+      fmt(totals.underCharge),
+      fmt(totals.overCharge),
+      fmt(totals.payments),
+      fmt(totals.closingBalance),
+      fmt(totals.closingBalanceWithoutFinAcc),
+      fmt(totals.averageCharge),
+      fmt(totals.noOfMonthsInArrears),
+      fmt(totals.noOfMonthsInArrearsWithoutFinAcc),
+    ];
+
+    const csv = [...metaRows, header, ...rows, totalRow].map((row) => row.map(escapeCsv).join(",")).join("\r\n");
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-    link.download = `ReceivablePosition_${scopeValue || "EntireCEB"}_${selectedBillCycle}.csv`;
+    link.download = `ReceivablePosition_${scopeValue || "EntireCEB"}_${resolvedBillCycle || selectedBillCycle}.csv`;
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -477,7 +539,9 @@ const ReceivablePosition: React.FC = () => {
   <td style="text-align:right"><b>${fmt(totals.payments)}</b></td>
   <td style="text-align:right"><b>${fmt(totals.closingBalance)}</b></td>
   <td style="text-align:right"><b>${fmt(totals.closingBalanceWithoutFinAcc)}</b></td>
-  <td></td><td></td><td></td>
+  <td style="text-align:right"><b>${fmt(totals.averageCharge)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.noOfMonthsInArrears)}</b></td>
+  <td style="text-align:right"><b>${fmt(totals.noOfMonthsInArrearsWithoutFinAcc)}</b></td>
 </tr></tfoot>
 </table></body></html>`;
     const w = window.open("", "_blank");
@@ -707,9 +771,11 @@ const ReceivablePosition: React.FC = () => {
                     <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">
                       {fmt(totals.closingBalanceWithoutFinAcc)}
                     </td>
-                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">—</td>
-                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">—</td>
-                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">—</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.averageCharge)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">{fmt(totals.noOfMonthsInArrears)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right font-mono font-bold">
+                      {fmt(totals.noOfMonthsInArrearsWithoutFinAcc)}
+                    </td>
                   </tr>
                 </tfoot>
               </table>
