@@ -390,7 +390,7 @@ const SolarDataForUNT = () => {
                 </select>
               </div>
 
-              {/* Net Type Select */}
+               {/* Net Type Select */}
               <div className="flex flex-col">
                 <label className={`${maroon} text-xs font-medium mb-1`}>
                   Net Type:
@@ -403,9 +403,9 @@ const SolarDataForUNT = () => {
                   required
                 >
                   <option value="Net Metering">Net Metering</option>
-                  <option value="Net Accounting">Net Accounting</option>
-                  <option value="Net Plus">Net Plus</option>
-                  <option value="Net Plus Plus">Net Plus Plus</option>
+                  <option value="Net Accounting" disabled>Net Accounting (Not Supported)</option>
+                  <option value="Net Plus" disabled>Net Plus (Not Supported)</option>
+                  <option value="Net Plus Plus" disabled>Net Plus Plus (Not Supported)</option>
                 </select>
               </div>
 
