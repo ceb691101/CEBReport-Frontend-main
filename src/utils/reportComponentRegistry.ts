@@ -116,6 +116,7 @@ import LastDocNo from "../mainTopics/PhysicalVerification/LastDocNo";
 
 // PUCSL/LISS reports
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
+import PUCSLSolarCustomers from "../mainTopics/PUCSL/PUCSLSolarCustomers";
 
 // Solar Information reports
 import SolarPVBilling from "../mainTopics/SolarInformation/SolarPVBilling";
@@ -380,6 +381,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"pucsl reports liss data": PUCSLSolarConnection,
 	"pucsl reports solar connections new": PUCSLSolarConnection,
 	"solar data for unt calculation": PUCSLSolarConnection,
+	"pucsl solar customers": PUCSLSolarCustomers,
 
 	// Solar Information reports
 	"solar pv billing information": SolarPVBilling,
