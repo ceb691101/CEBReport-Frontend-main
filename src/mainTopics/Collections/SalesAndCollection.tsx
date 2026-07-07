@@ -112,7 +112,7 @@ const SalesAndCollection: React.FC = () => {
       setIsLoadingDropdowns(true);
       setDropdownError(null);
       try {
-        const response = await fetchWithErrorHandling(`/api/sales-collection/dropdowns`);
+        const response = await fetchWithErrorHandling(`/misapi/api/sales-collection/dropdowns`);
         console.log("Dropdowns response:", response);
 
         // Bill cycles
@@ -177,7 +177,7 @@ const SalesAndCollection: React.FC = () => {
     setReportError(null);
 
     try {
-      let url = `/api/sales-collection/report?billCycle=${billCycle}&reportType=${reportType}`;
+      let url = `/misapi/api/sales-collection/report?billCycle=${billCycle}&reportType=${reportType}`;
       if (reportType === "Province") url += `&provinceName=${encodeURIComponent(provinceName)}`;
       if (reportType === "Region") url += `&regionCode=${encodeURIComponent(regionCode)}`;
 
