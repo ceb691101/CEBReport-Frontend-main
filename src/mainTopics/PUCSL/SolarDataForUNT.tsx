@@ -242,17 +242,18 @@ const SolarDataForUNT = () => {
   const downloadAsCSV = () => {
     if (!exportResult) return;
 
+    const isNetAccounting = netType === "Net Accounting";
     const headers = [
       "Category",
       "Year",
       "Month",
       "No of Accounts",
-      "units_exprt_DAY_kWh",
-      "units_exprt_PEAK_kWh",
-      "units_exprt_OFFPEAK_kWh",
-      "units_imprt_DAY_kWh",
-      "units_imprt_PEAK_kWh",
-      "units_imprt_OFFPEAK_kWh"
+      isNetAccounting ? "Export Units (kWh)" : "units_exprt_DAY_kWh",
+      isNetAccounting ? "Purchased Units (kWh)" : "units_exprt_PEAK_kWh",
+      isNetAccounting ? "Amount (Rs.)" : "units_exprt_OFFPEAK_kWh",
+      isNetAccounting ? "Import Units (kWh)" : "units_imprt_DAY_kWh",
+      isNetAccounting ? "Import Peak (kWh)" : "units_imprt_PEAK_kWh",
+      isNetAccounting ? "Import Off Peak (kWh)" : "units_imprt_OFFPEAK_kWh"
     ].join(",");
 
     const rows = exportResult.Data.map((row) => [
@@ -403,7 +404,7 @@ const SolarDataForUNT = () => {
                   required
                 >
                   <option value="Net Metering">Net Metering</option>
-                  <option value="Net Accounting" disabled>Net Accounting (Not Supported)</option>
+                  <option value="Net Accounting">Net Accounting</option>
                   <option value="Net Plus" disabled>Net Plus (Not Supported)</option>
                   <option value="Net Plus Plus" disabled>Net Plus Plus (Not Supported)</option>
                 </select>
@@ -509,12 +510,24 @@ const SolarDataForUNT = () => {
                     <th className="border border-gray-300 px-3 py-2 text-right font-bold">Year</th>
                     <th className="border border-gray-300 px-3 py-2 text-right font-bold">Month</th>
                     <th className="border border-gray-300 px-3 py-2 text-right font-bold">No of Accounts</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_DAY_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_PEAK_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_OFFPEAK_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_DAY_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_PEAK_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_OFFPEAK_kWh</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">
+                      {netType === "Net Accounting" ? "Export Units (kWh)" : "units_exprt_DAY_kWh"}
+                    </th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">
+                      {netType === "Net Accounting" ? "Purchased Units (kWh)" : "units_exprt_PEAK_kWh"}
+                    </th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">
+                      {netType === "Net Accounting" ? "Amount (Rs.)" : "units_exprt_OFFPEAK_kWh"}
+                    </th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">
+                      {netType === "Net Accounting" ? "Import Units (kWh)" : "units_imprt_DAY_kWh"}
+                    </th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">
+                      {netType === "Net Accounting" ? "Import Peak (kWh) [N/A]" : "units_imprt_PEAK_kWh"}
+                    </th>
+                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">
+                      {netType === "Net Accounting" ? "Import Off Peak (kWh) [N/A]" : "units_imprt_OFFPEAK_kWh"}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
