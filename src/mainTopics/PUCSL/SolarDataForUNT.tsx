@@ -245,7 +245,6 @@ const SolarDataForUNT = () => {
     const isNetAccounting = netType === "Net Accounting";
     let headers: string;
     let rows: string[];
-    let totalRow: string;
 
     if (isNetAccounting) {
       headers = [
@@ -269,17 +268,6 @@ const SolarDataForUNT = () => {
         row.UnitsImpD,
         row.UnitsExpOffP
       ].join(","));
-
-      totalRow = [
-        exportResult.Total.Category,
-        "",
-        "",
-        exportResult.Total.Accts,
-        exportResult.Total.UnitsExpP,
-        exportResult.Total.UnitsExpD,
-        exportResult.Total.UnitsImpD,
-        exportResult.Total.UnitsExpOffP
-      ].join(",");
     } else {
       headers = [
         "Category",
@@ -306,19 +294,6 @@ const SolarDataForUNT = () => {
         row.UnitsImpP,
         row.UnitsImpOffP
       ].join(","));
-
-      totalRow = [
-        exportResult.Total.Category,
-        "",
-        "",
-        exportResult.Total.Accts,
-        exportResult.Total.UnitsExpD,
-        exportResult.Total.UnitsExpP,
-        exportResult.Total.UnitsExpOffP,
-        exportResult.Total.UnitsImpD,
-        exportResult.Total.UnitsImpP,
-        exportResult.Total.UnitsImpOffP
-      ].join(",");
     }
 
     const csvContent = [
@@ -326,8 +301,7 @@ const SolarDataForUNT = () => {
       selectedBillCycleDisplay,
       "",
       headers,
-      ...rows,
-      totalRow
+      ...rows
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -570,16 +544,6 @@ const SolarDataForUNT = () => {
                           <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpOffP)}</td>
                         </tr>
                       ))}
-                      <tr className="bg-gray-100 font-bold border-t-2 border-gray-300 total-row">
-                        <td className="border border-gray-300 px-3 py-2 text-left">Total</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right"></td>
-                        <td className="border border-gray-300 px-3 py-2 text-right"></td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.Accts)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpP)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpD)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpD)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpOffP)}</td>
-                      </tr>
                     </tbody>
                   </>
                 ) : (
@@ -613,18 +577,6 @@ const SolarDataForUNT = () => {
                           <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpOffP)}</td>
                         </tr>
                       ))}
-                      <tr className="bg-gray-100 font-bold border-t-2 border-gray-300 total-row">
-                        <td className="border border-gray-300 px-3 py-2 text-left">Total</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right"></td>
-                        <td className="border border-gray-300 px-3 py-2 text-right"></td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.Accts)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpD)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpP)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpOffP)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpD)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpP)}</td>
-                        <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpOffP)}</td>
-                      </tr>
                     </tbody>
                   </>
                 )}
