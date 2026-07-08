@@ -242,52 +242,66 @@ const SolarDataForUNT = () => {
   const downloadAsCSV = () => {
     if (!exportResult) return;
 
-    const headers = [
-      "Category",
-      "Year",
-      "Month",
-      "No of Accounts",
-      "units_exprt_DAY_kWh",
-      "units_exprt_PEAK_kWh",
-      "units_exprt_OFFPEAK_kWh",
-      "units_imprt_DAY_kWh",
-      "units_imprt_PEAK_kWh",
-      "units_imprt_OFFPEAK_kWh"
-    ].join(",");
+    const isNetAccounting = netType === "Net Accounting";
+    let headers: string;
+    let rows: string[];
 
-    const rows = exportResult.Data.map((row) => [
-      row.Category,
-      row.Year,
-      row.Month,
-      row.Accts,
-      row.UnitsExpD,
-      row.UnitsExpP,
-      row.UnitsExpOffP,
-      row.UnitsImpD,
-      row.UnitsImpP,
-      row.UnitsImpOffP
-    ].join(","));
+    if (isNetAccounting) {
+      headers = [
+        "Category",
+        "Year",
+        "Month",
+        "No of Accounts",
+        "kWh_purchased",
+        "units_exprt_kWh",
+        "units_imprt_kWh",
+        "paid_amount"
+      ].join(",");
 
-    const totalRow = [
-      exportResult.Total.Category,
-      "",
-      "",
-      exportResult.Total.Accts,
-      exportResult.Total.UnitsExpD,
-      exportResult.Total.UnitsExpP,
-      exportResult.Total.UnitsExpOffP,
-      exportResult.Total.UnitsImpD,
-      exportResult.Total.UnitsImpP,
-      exportResult.Total.UnitsImpOffP
-    ].join(",");
+      rows = exportResult.Data.map((row) => [
+        row.Category,
+        row.Year,
+        row.Month,
+        row.Accts,
+        row.UnitsExpP,
+        row.UnitsExpD,
+        row.UnitsImpD,
+        row.UnitsExpOffP
+      ].join(","));
+    } else {
+      headers = [
+        "Category",
+        "Year",
+        "Month",
+        "No of Accounts",
+        "units_exprt_DAY_kWh",
+        "units_exprt_PEAK_kWh",
+        "units_exprt_OFFPEAK_kWh",
+        "units_imprt_DAY_kWh",
+        "units_imprt_PEAK_kWh",
+        "units_imprt_OFFPEAK_kWh"
+      ].join(",");
+
+      rows = exportResult.Data.map((row) => [
+        row.Category,
+        row.Year,
+        row.Month,
+        row.Accts,
+        row.UnitsExpD,
+        row.UnitsExpP,
+        row.UnitsExpOffP,
+        row.UnitsImpD,
+        row.UnitsImpP,
+        row.UnitsImpOffP
+      ].join(","));
+    }
 
     const csvContent = [
       `Solar Data for UNT Calculation - ${netType}`,
       selectedBillCycleDisplay,
       "",
       headers,
-      ...rows,
-      totalRow
+      ...rows
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -403,7 +417,7 @@ const SolarDataForUNT = () => {
                   required
                 >
                   <option value="Net Metering">Net Metering</option>
-                  <option value="Net Accounting" disabled>Net Accounting (Not Supported)</option>
+                  <option value="Net Accounting">Net Accounting</option>
                   <option value="Net Plus" disabled>Net Plus (Not Supported)</option>
                   <option value="Net Plus Plus" disabled>Net Plus Plus (Not Supported)</option>
                 </select>
@@ -503,48 +517,69 @@ const SolarDataForUNT = () => {
           <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg">
             <div ref={printRef} className="min-w-full p-4 bg-white">
               <table className="w-full border-collapse border border-gray-300 text-xs text-gray-700 font-sans">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border border-gray-300 px-3 py-2 text-left font-bold">Category</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Year</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Month</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">No of Accounts</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_DAY_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_PEAK_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_OFFPEAK_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_DAY_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_PEAK_kWh</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_OFFPEAK_kWh</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {exportResult.Data.map((row, i) => (
-                    <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-800 text-left">{row.Category}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{row.Year}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{row.Month}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.Accts)}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpD)}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpP)}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpOffP)}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpD)}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpP)}</td>
-                      <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpOffP)}</td>
-                    </tr>
-                  ))}
-                  <tr className="bg-gray-100 font-bold border-t-2 border-gray-300 total-row">
-                    <td className="border border-gray-300 px-3 py-2 text-left">Total</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right"></td>
-                    <td className="border border-gray-300 px-3 py-2 text-right"></td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.Accts)}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpD)}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpP)}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsExpOffP)}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpD)}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpP)}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(exportResult.Total.UnitsImpOffP)}</td>
-                  </tr>
-                </tbody>
+                {netType === "Net Accounting" ? (
+                  <>
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-bold">Category</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">Year</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">Month</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">No of Accounts</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">kWh_purchased</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">paid_amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {exportResult.Data.map((row, i) => (
+                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-800 text-left">{row.Category}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{row.Year}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{row.Month}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.Accts)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpP)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpD)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpD)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpOffP)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </>
+                ) : (
+                  <>
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-bold">Category</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">Year</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">Month</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">No of Accounts</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_DAY_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_PEAK_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_OFFPEAK_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_DAY_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_PEAK_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_OFFPEAK_kWh</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {exportResult.Data.map((row, i) => (
+                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-800 text-left">{row.Category}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{row.Year}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{row.Month}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.Accts)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpD)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpP)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpOffP)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpD)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpP)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpOffP)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </>
+                )}
               </table>
             </div>
           </div>
