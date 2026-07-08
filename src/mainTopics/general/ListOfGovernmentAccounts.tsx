@@ -571,17 +571,7 @@ const ListOfGovernmentAccounts: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-                {/* Totals row */}
-                <tr className="bg-[#d3d3d3] font-bold sticky bottom-0">
-                  <td className="border border-gray-300 px-2 py-1 text-center" colSpan={3}>TOTAL</td>
-                  <td className="border border-gray-300 px-2 py-1 text-right font-mono">
-                    {formatCurrency(totalBalance)}
-                  </td>
-                  <td className="border border-gray-300 px-2 py-1 text-right font-mono">
-                    {formatKwh(totalKwh)}
-                  </td>
-                  <td className="border border-gray-300 px-2 py-1" />
-                </tr>
+                
               </tbody>
             </table>
           </div>
