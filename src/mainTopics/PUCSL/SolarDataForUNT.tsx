@@ -192,7 +192,7 @@ const SolarDataForUNT = () => {
 
       // API SOURCE COMMENT:
       // - Solar Data for UNT is fetched from: /misapi/api/pucsl/solarDataUNT
-      const response = await fetch("/api/pucsl/solarDataUNT", {
+      const response = await fetch("/misapi/api/pucsl/solarDataUNT", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(requestBody),
