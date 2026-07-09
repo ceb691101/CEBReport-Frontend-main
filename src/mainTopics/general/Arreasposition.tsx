@@ -232,13 +232,24 @@ const AreasPosition: React.FC = () => {
         return;
       }
 
-      const mappedRows: AreasPositionRow[] = rows.map((item: any) => ({
-        readerCode:   String(item.ReaderCode    ?? item.readerCode    ?? ""),
-        monthlyBill:  String(item.Charge        ?? item.charge        ?? "0.00"),
-        totalBalance: String(item.CrntBalance   ?? item.crntBalance   ?? item.CurrentBalance ?? item.currentBalance ?? "0.00"),
-        ratio:        String(item.Ratio         ?? item.ratio         ?? "0.00"),
-        noOfAccounts: String(item.ReaderCount   ?? item.readerCount   ?? "0"),
-      }));
+      const mappedRows: AreasPositionRow[] = rows
+        .map((item: any) => ({
+          readerCode:   String(item.ReaderCode    ?? item.readerCode    ?? ""),
+          monthlyBill:  String(item.Charge        ?? item.charge        ?? "0.00"),
+          totalBalance: String(item.CrntBalance   ?? item.crntBalance   ?? item.CurrentBalance ?? item.currentBalance ?? "0.00"),
+          ratio:        String(item.Ratio         ?? item.ratio         ?? "0.00"),
+          noOfAccounts: String(item.ReaderCount   ?? item.readerCount   ?? "0"),
+        }))
+        // Defensive filter: drop phantom reader groups with zero charge AND
+        // zero balance (e.g. unassigned reader codes '0' / '01'). The backend
+        // already excludes these via a HAVING clause, but this client-side
+        // check guards against any dataset where that filter doesn't apply.
+        .filter((row) => parseNumber(row.monthlyBill) !== 0 || parseNumber(row.totalBalance) !== 0);
+
+      if (mappedRows.length === 0) {
+        setReportError("No data available for the selected area and bill cycle.");
+        return;
+      }
 
       setReportData(mappedRows);
       setResolvedBillCycle(returnedCycle);
