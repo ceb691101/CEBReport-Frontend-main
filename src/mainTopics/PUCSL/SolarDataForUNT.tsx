@@ -243,17 +243,18 @@ const SolarDataForUNT = () => {
     if (!exportResult) return;
 
     const isNetAccounting = netType === "Net Accounting";
+    const isNetPlus = netType === "Net Plus";
     let headers: string;
     let rows: string[];
 
-    if (isNetAccounting) {
+    if (isNetAccounting || isNetPlus) {
       headers = [
         "Category",
         "Year",
         "Month",
         "No of Accounts",
         "kWh_purchased",
-        "units_exprt_kWh",
+        isNetPlus ? "solar_import" : "units_exprt_kWh",
         "units_imprt_kWh",
         "paid_amount"
       ].join(",");
@@ -418,7 +419,7 @@ const SolarDataForUNT = () => {
                 >
                   <option value="Net Metering">Net Metering</option>
                   <option value="Net Accounting">Net Accounting</option>
-                  <option value="Net Plus" disabled>Net Plus (Not Supported)</option>
+                  <option value="Net Plus">Net Plus</option>
                   <option value="Net Plus Plus" disabled>Net Plus Plus (Not Supported)</option>
                 </select>
               </div>
@@ -517,7 +518,7 @@ const SolarDataForUNT = () => {
           <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg">
             <div ref={printRef} className="min-w-full p-4 bg-white">
               <table className="w-full border-collapse border border-gray-300 text-xs text-gray-700 font-sans">
-                {netType === "Net Accounting" ? (
+                {netType === "Net Accounting" || netType === "Net Plus" ? (
                   <>
                     <thead className="bg-gray-100">
                       <tr>
@@ -526,7 +527,9 @@ const SolarDataForUNT = () => {
                         <th className="border border-gray-300 px-3 py-2 text-right font-bold">Month</th>
                         <th className="border border-gray-300 px-3 py-2 text-right font-bold">No of Accounts</th>
                         <th className="border border-gray-300 px-3 py-2 text-right font-bold">kWh_purchased</th>
-                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_exprt_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">
+                          {netType === "Net Plus" ? "solar_import" : "units_exprt_kWh"}
+                        </th>
                         <th className="border border-gray-300 px-3 py-2 text-right font-bold">units_imprt_kWh</th>
                         <th className="border border-gray-300 px-3 py-2 text-right font-bold">paid_amount</th>
                       </tr>
