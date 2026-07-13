@@ -1,9 +1,9 @@
 // Area Wise SRP Application PIV (PIVI) To be Paid Report
 // File: AreaWiseSRPApplicationPIV.tsx
 
-import React, {useState, useRef, useCallback} from "react";
-import {useUser} from "../../contexts/UserContext";
-import {toast} from "react-toastify";
+import React, { useState, useRef, useCallback } from "react";
+import { useUser } from "../../contexts/UserContext";
+import { toast } from "react-toastify";
 import DateRangePicker from "../../components/utils/DateRangePicker";
 import ReusableCompanyList from "../../components/utils/ReusableCompanyList";
 import ReportViewer from "../../components/utils/ReportViewer";
@@ -65,7 +65,7 @@ const escapeHtml = (text: string | null | undefined): string => {
 };
 
 const AreaWiseSRPApplicationPIV: React.FC = () => {
-	const {user} = useUser();
+	const { user } = useUser();
 	const epfNo = user?.Userno || "";
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -95,7 +95,7 @@ const AreaWiseSRPApplicationPIV: React.FC = () => {
 		setShowReport(true);
 
 		try {
-			const url = `/srpapi/api/areawisesrpapplicationpiv/get?compId=${company.compId.trim()}&fromDate=${fromDate.replace(
+			const url = `/misapi/api/areawisesrpapplicationpiv/get?compId=${company.compId.trim()}&fromDate=${fromDate.replace(
 				/-/g,
 				""
 			)}&toDate=${toDate.replace(/-/g, "")}`;
@@ -308,7 +308,7 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 
 	return (
 		<div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow border border-gray-200 text-sm">
-			<iframe ref={iframeRef} style={{display: "none"}} />
+			<iframe ref={iframeRef} style={{ display: "none" }} />
 
 			<h2 className={`text-xl font-bold mb-4 ${maroon}`}>
 				Area Wise SRP Application PIV (PIVI) To be Paid Report
@@ -347,7 +347,7 @@ h3 { text-align: center; color: #7A0000; font-size: 14px; font-weight: bold; mar
 							return [];
 						}
 					}, [epfNo])}
-					onViewItem={(company: {id: string; name: string}) => {
+					onViewItem={(company: { id: string; name: string }) => {
 						const typedCompany: Company = {
 							compId: company.id,
 							CompName: company.name,

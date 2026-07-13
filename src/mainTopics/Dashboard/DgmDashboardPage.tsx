@@ -9,7 +9,6 @@ import {
   Search,
   ArrowUpDown,
   Info,
-  TrendingUp,
   ChevronDown,
   ChevronUp,
   Calendar,
