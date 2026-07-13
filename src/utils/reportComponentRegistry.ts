@@ -46,6 +46,7 @@ import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
 import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 import HeadOfficePOSCollection from "../mainTopics/Collections/HeadOfficePOSCollection";
+import SalesAndCollection from "../mainTopics/Collections/SalesAndCollection";
 import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHighestOutstanding";
 
 
@@ -115,6 +116,8 @@ import LastDocNo from "../mainTopics/PhysicalVerification/LastDocNo";
 
 // PUCSL/LISS reports
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
+import PUCSLSolarCustomers from "../mainTopics/PUCSL/PUCSLSolarCustomers";
+import SolarDataForUNT from "../mainTopics/PUCSL/SolarDataForUNT";
 
 // Solar Information reports
 import SolarPVBilling from "../mainTopics/SolarInformation/SolarPVBilling";
@@ -239,7 +242,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// Collections reports
 	"online counter collections": DishonouredCheques,
-	"sales and collection": DishonouredCheques,
+	"sales and collection": SalesAndCollection,
 	"stamp duty for payment collections": DishonouredCheques,
 	"monthly revenue collection of different channels": DishonouredCheques,
 	"kiosk payment collection": DishonouredCheques,
@@ -378,7 +381,8 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"liss submission retail journal adjustments": PUCSLSolarConnection,
 	"pucsl reports liss data": PUCSLSolarConnection,
 	"pucsl reports solar connections new": PUCSLSolarConnection,
-	"solar data for unt calculation": PUCSLSolarConnection,
+	"pucsl solar customers": PUCSLSolarCustomers,
+	"solar data for unt calculation": SolarDataForUNT,
 
 	// Solar Information reports
 	"solar pv billing information": SolarPVBilling,
@@ -431,14 +435,18 @@ export const getReportComponent = (normalizedReportName: string): ComponentType 
 	return reportComponentRegistry[normalizedReportName] || null;
 };
 
+const normalizeForLooseLookup = (value: string): string =>
+	value.replace(/[^a-z0-9]+/g, "").toLowerCase();
+
 export const getReportComponentLoose = (normalizedReportName: string): ComponentType | null => {
-	const query = normalizedReportName.trim();
+	const query = normalizeForLooseLookup(normalizedReportName);
 	if (!query) {
 		return null;
 	}
 
 	for (const [key, component] of Object.entries(reportComponentRegistry)) {
-		if (key.includes(query) || query.includes(key)) {
+		const normalizedKey = normalizeForLooseLookup(key);
+		if (normalizedKey.includes(query) || query.includes(normalizedKey)) {
 			return component;
 		}
 	}

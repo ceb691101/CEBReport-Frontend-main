@@ -38,6 +38,14 @@ const billCycleToLabel = (cycle: number): string => {
   return `${cycle} - ${MONTHS[month]} ${yy}`;
 };
 
+// Short form used for report headers/exports, e.g. "452-Apr" (matches Security Deposit report style)
+const billCycleToShortLabel = (cycle: number): string => {
+  const baseMonth = 8;
+  const totalMonths = baseMonth + (cycle - 1);
+  const month = totalMonths % 12;
+  return `${cycle}-${MONTHS[month]}`;
+};
+
 const FinalizedAccounts: React.FC = () => {
   const maroon     = 'text-[#7A0000]';
   const maroonGrad = 'bg-gradient-to-r from-[#7A0000] to-[#A52A2A]';
@@ -117,7 +125,14 @@ const FinalizedAccounts: React.FC = () => {
 
     setSnapProvName(provObj?.ProvName ?? province);
     setSnapAreaName(areaObj?.AreaName ?? (area || 'All Areas'));
-    setSnapMonth(month);
+
+    // Format the bill cycle with its month, e.g. "452-Apr", instead of the raw cycle number
+    const cycleNum = Number(month);
+    setSnapMonth(
+      month === '*** - All Months'
+        ? 'All Months'
+        : (isNaN(cycleNum) ? month : billCycleToShortLabel(cycleNum))
+    );
 
     setLoadingReport(true);
     setReportError(null);
@@ -189,6 +204,15 @@ const FinalizedAccounts: React.FC = () => {
 
   const handleExportCsv = () => {
     if (!records.length) return;
+
+    const metaRows: (string | number)[][] = [
+      ['Finalized Accounts'],
+      ['Province :', snapProvName],
+      ['Area :', snapAreaName],
+      ['Bill Cycle :', snapMonth],
+      [],
+    ];
+
     const header = [
       'Account No', 'Current Balance', 'Customer', 'Address',
       'Last Read Date', 'Finalized Date',
@@ -201,7 +225,13 @@ const FinalizedAccounts: React.FC = () => {
       r.MeterNo1, r.LastRead1, r.MeterNo2, r.LastRead2, r.MeterNo3, r.LastRead3,
       Number(r.SecurityDeposit).toFixed(2),
     ]);
-    const csv  = [header, ...rows].map(row => row.map(esc).join(',')).join('\r\n');
+
+    const totalRow = [
+      'TOTAL', totalBalance.toFixed(2), '', '', '', '', '', '', '', '', '', '',
+      totalDeposit.toFixed(2),
+    ];
+
+    const csv  = [...metaRows, header, ...rows, totalRow].map(row => row.map(esc).join(',')).join('\r\n');
     const link = document.createElement('a');
     link.href  = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     link.download = `FinalizedAccounts_${province}_${area || 'All'}.csv`;
@@ -248,8 +278,7 @@ const FinalizedAccounts: React.FC = () => {
 <div class="meta">
   Province : <span>${snapProvName}</span> &nbsp;|&nbsp;
   Area : <span>${snapAreaName}</span> &nbsp;|&nbsp;
-  Month : <span>${snapMonth}</span> &nbsp;|&nbsp;
-  Total Records : <span>${records.length}</span>
+  Bill Cycle : <span>${snapMonth}</span>
 </div>
 <table><thead><tr>
   <th>Account No</th><th>Current Balance</th><th>Customer</th><th>Address</th>
@@ -417,7 +446,7 @@ const FinalizedAccounts: React.FC = () => {
               <p className="text-sm text-gray-600 mt-1">
                 Province: <strong>{snapProvName}</strong>
                 {' '}&nbsp;|&nbsp; Area: <strong>{snapAreaName}</strong>
-                {' '}&nbsp;|&nbsp; Month: <strong>{snapMonth}</strong>
+                {' '}&nbsp;|&nbsp; Bill Cycle: <strong>{snapMonth}</strong>
               </p>
             </div>
             <div className="flex space-x-2 mt-2 md:mt-0">

@@ -173,58 +173,46 @@ const HeadOfficePOSCollection: React.FC = () => {
       )}
 
       <div className="border border-gray-200 rounded-xl p-4 bg-white shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-3">
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
-                <input 
-                  type="radio" 
-                  name="reportType" 
-                  value="Bulk" 
-                  checked={reportType === 'Bulk'} 
-                  onChange={() => setReportType('Bulk')}
-                  className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
-                />
-                <span className="font-medium">Bulk</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
-                <input 
-                  type="radio" 
-                  name="reportType" 
-                  value="Ordinary" 
-                  checked={reportType === 'Ordinary'} 
-                  onChange={() => setReportType('Ordinary')}
-                  className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
-                />
-                <span className="font-medium">Ordinary</span>
-              </label>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          <div className="flex flex-col">
+            <label className={`${maroon} text-xs font-medium mb-1`}>
+              Report Type:
+            </label>
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent bg-white text-gray-800"
+              disabled={loading}
+            >
+              <option value="Bulk">Bulk</option>
+              <option value="Ordinary">Ordinary</option>
+            </select>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                <label className={`${maroon} text-xs font-medium mb-1`}>
-                  From Date
-                </label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                />
-              </div>
+          <div className="flex flex-col">
+            <label className={`${maroon} text-xs font-medium mb-1`}>
+              From Date
+            </label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent bg-white text-gray-800"
+              disabled={loading}
+            />
+          </div>
 
-              <div className="flex flex-col">
-                <label className={`${maroon} text-xs font-medium mb-1`}>
-                  To Date
-                </label>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                />
-              </div>
-            </div>
+          <div className="flex flex-col">
+            <label className={`${maroon} text-xs font-medium mb-1`}>
+              To Date
+            </label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent bg-white text-gray-800"
+              disabled={loading}
+            />
           </div>
         </div>
 

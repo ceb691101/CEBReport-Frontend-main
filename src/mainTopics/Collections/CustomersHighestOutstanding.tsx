@@ -11,6 +11,8 @@ interface Division {
 }
 
 interface CustomerOutstandingResult {
+  Province?: string;
+  province?: string;
   AreaName?: string;
   areaName?: string;
   AccountNumber?: string;
@@ -42,8 +44,8 @@ interface CustomerOutstandingResult {
 const CustomersHighestOutstanding: React.FC = () => {
   const [scope, setScope] = useState<"Province" | "Division">("Province");
   const [selectedCode, setSelectedCode] = useState<string>("");
-  const [monthsInArrears, setMonthsInArrears] = useState<number>(5);
-  const [outstandingBalance, setOutstandingBalance] = useState<number>(50000);
+  const [monthsInArrears, setMonthsInArrears] = useState<number | "">("");
+  const [outstandingBalance, setOutstandingBalance] = useState<number | "">("");
 
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
@@ -244,9 +246,15 @@ const CustomersHighestOutstanding: React.FC = () => {
     rows.push(`Min Months in Arrears: ${monthsInArrears}`);
     rows.push(`Min Outstanding Balance: ${outstandingBalance}`);
     rows.push("");
-    rows.push("Area Name,Account No,Name,Address,Telephone,Last Cash Date,Current Reading Date,Current Balance,kWh Charge,Current Balance - kWh Charge,Tariff,Months in Arrears,Units");
+    
+    if (scope === "Division") {
+      rows.push("Province,Area Name,Account No,Name,Address,Telephone,Last Cash Date,Current Reading Date,Current Balance,kWh Charge,Current Balance - kWh Charge,Tariff,Months in Arrears,Units");
+    } else {
+      rows.push("Area Name,Account No,Name,Address,Telephone,Last Cash Date,Current Reading Date,Current Balance,kWh Charge,Current Balance - kWh Charge,Tariff,Months in Arrears,Units");
+    }
 
     results.forEach((r) => {
+      const province = r.province || r.Province || "";
       const area = r.areaName || r.AreaName || "";
       const acct = r.accountNumber || r.AccountNumber || "";
       const name = r.customerName || r.CustomerName || "";
@@ -261,9 +269,15 @@ const CustomersHighestOutstanding: React.FC = () => {
       const months = r.arrearsMonths ?? r.ArrearsMonths ?? 0;
       const units = r.units ?? r.Units ?? 0;
 
-      rows.push(
-        `"${area.replace(/"/g, '""')}","${acct}","${name.replace(/"/g, '""')}","${address.replace(/"/g, '""')}","${tel}","${lastCash}","${readDate}",${balance},${charge},${netBalance},"${tariff}",${months.toFixed(1)},${units}`
-      );
+      if (scope === "Division") {
+        rows.push(
+          `"${province.replace(/"/g, '""')}","${area.replace(/"/g, '""')}","${acct}","${name.replace(/"/g, '""')}","${address.replace(/"/g, '""')}","${tel}","${lastCash}","${readDate}",${balance},${charge},${netBalance},"${tariff}",${months.toFixed(1)},${units}`
+        );
+      } else {
+        rows.push(
+          `"${area.replace(/"/g, '""')}","${acct}","${name.replace(/"/g, '""')}","${address.replace(/"/g, '""')}","${tel}","${lastCash}","${readDate}",${balance},${charge},${netBalance},"${tariff}",${months.toFixed(1)},${units}`
+        );
+      }
     });
 
     const csv = rows.join("\n");
@@ -286,9 +300,10 @@ const CustomersHighestOutstanding: React.FC = () => {
         className="font-bold border-b border-gray-300"
         style={{ backgroundColor: "#E2F0D9" }}
       >
+        {scope === "Division" && <td className="p-2 border border-gray-300"></td>}
         <td className="p-2 border border-gray-300 font-bold text-gray-900">Total</td>
-        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
         <td className="p-2 border border-gray-300"></td>
         <td className="p-2 border border-gray-300"></td>
@@ -324,9 +339,10 @@ const CustomersHighestOutstanding: React.FC = () => {
         className="font-bold border-b border-gray-300"
         style={{ backgroundColor: "#FFF2CC" }}
       >
+        {scope === "Division" && <td className="p-2 border border-gray-300"></td>}
         <td className="p-2 border border-gray-300 font-bold text-gray-900">Total</td>
-        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
+        <td className="p-2 border border-gray-300 font-bold text-gray-900 text-center">{count}</td>
         <td className="p-2 border border-gray-300"></td>
         <td className="p-2 border border-gray-300"></td>
         <td className="p-2 border border-gray-300"></td>
@@ -355,7 +371,7 @@ const CustomersHighestOutstanding: React.FC = () => {
     if (!recordsToRender || recordsToRender.length === 0) {
       return (
         <tr>
-          <td colSpan={13} className="p-6 text-center text-gray-500 font-medium">
+          <td colSpan={scope === "Division" ? 14 : 13} className="p-6 text-center text-gray-500 font-medium">
             No records found matching the criteria.
           </td>
         </tr>
@@ -367,6 +383,7 @@ const CustomersHighestOutstanding: React.FC = () => {
     let lastAreaName = "";
 
     recordsToRender.forEach((r, idx) => {
+      const province = r.province || r.Province || "—";
       const area = r.areaName || r.AreaName || "";
       if (idx === 0) {
         lastAreaName = area;
@@ -403,11 +420,24 @@ const CustomersHighestOutstanding: React.FC = () => {
       const nextAreaName = (nextRow?.areaName || nextRow?.AreaName || "").trim().toLowerCase();
       const isLastOfArea = idx === recordsToRender.length - 1 || nextAreaName !== area.trim().toLowerCase();
 
+      // Province grouping logic
+      const showProvince = idx === 0 || province.trim().toLowerCase() !== (recordsToRender[idx - 1]?.province || recordsToRender[idx - 1]?.Province || "").trim().toLowerCase();
+      const nextProvinceName = (nextRow?.province || nextRow?.Province || "").trim().toLowerCase();
+      const isLastOfProvince = idx === recordsToRender.length - 1 || nextProvinceName !== province.trim().toLowerCase();
+
       rows.push(
         <tr
           key={`${accountNo}-${idx}`}
           className="bg-white hover:bg-gray-50 text-gray-900 border-b border-gray-300"
         >
+          {scope === "Division" && (
+            <td 
+              className="p-2 border border-gray-300 font-medium text-gray-700"
+              style={{ borderBottom: isLastOfProvince ? undefined : "hidden" }}
+            >
+              {showProvince ? province : ""}
+            </td>
+          )}
           <td 
             className="p-2 border border-gray-300 font-medium text-gray-700"
             style={{ borderBottom: isLastOfArea ? undefined : "hidden" }}
@@ -536,105 +566,102 @@ const CustomersHighestOutstanding: React.FC = () => {
           )}
 
           <div className="border border-gray-200 rounded-xl p-4 bg-white shadow mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              <div className="flex flex-col gap-4">
-                {/* Scope Radio Toggles */}
-                <div className="flex gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
-                    <input
-                      type="radio"
-                      name="scope"
-                      value="Province"
-                      checked={scope === "Province"}
-                      onChange={() => setScope("Province")}
-                      className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
-                    />
-                    <span className="font-medium">Province</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 w-fit">
-                    <input
-                      type="radio"
-                      name="scope"
-                      value="Division"
-                      checked={scope === "Division"}
-                      onChange={() => setScope("Division")}
-                      className="w-4 h-4 text-[#7A0000] focus:ring-[#7A0000] border-gray-300"
-                    />
-                    <span className="font-medium">Division</span>
-                  </label>
-                </div>
+            {/* Inputs Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              {/* Scope Dropdown */}
+              <div className="flex flex-col">
+                <label className={`${maroon} text-xs font-medium mb-1`}>Select Scope:</label>
+                <select
+                  value={scope}
+                  onChange={(e) => setScope(e.target.value as "Province" | "Division")}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent bg-white text-gray-800"
+                  disabled={loading}
+                >
+                  <option value="Province">Province</option>
+                  <option value="Division">Division</option>
+                </select>
+              </div>
 
-                {/* Dropdown for Province or Division */}
-                <div className="flex flex-col">
-                  <label className={`${maroon} text-xs font-medium mb-1`}>
-                    {scope === "Province" ? "Province" : "Division"}
-                  </label>
-                  {scope === "Province" ? (
-                    isLoadingProvinces ? (
-                      <div className="py-1 text-xs text-gray-500">Loading provinces...</div>
-                    ) : provinceError ? (
-                      <div className="text-red-600 text-xs py-1">{provinceError}</div>
-                    ) : (
-                      <select
-                        value={selectedCode}
-                        onChange={(e) => setSelectedCode(e.target.value)}
-                        className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                      >
-                        <option value="">— Select Province —</option>
-                        {provinces.map((p) => (
-                          <option key={p.ProvinceCode} value={p.ProvinceCode}>
-                            {p.ProvinceCode} - {p.ProvinceName}
-                          </option>
-                        ))}
-                      </select>
-                    )
-                  ) : isLoadingDivisions ? (
-                    <div className="py-1 text-xs text-gray-500">Loading divisions...</div>
-                  ) : divisionError ? (
-                    <div className="text-red-600 text-xs py-1">{divisionError}</div>
+              {/* Dropdown for Province or Division */}
+              <div className="flex flex-col">
+                <label className={`${maroon} text-xs font-medium mb-1`}>
+                  {scope === "Province" ? "Province" : "Division"}
+                </label>
+                {scope === "Province" ? (
+                  isLoadingProvinces ? (
+                    <div className="py-1 text-xs text-gray-500">Loading provinces...</div>
+                  ) : provinceError ? (
+                    <div className="text-red-600 text-xs py-1">{provinceError}</div>
                   ) : (
                     <select
                       value={selectedCode}
                       onChange={(e) => setSelectedCode(e.target.value)}
-                      className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                      className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent bg-white text-gray-800"
+                      disabled={loading}
                     >
-                      <option value="">— Select Division —</option>
-                      {divisions.map((d) => (
-                        <option key={d.RegionCode} value={d.RegionCode}>
-                          {d.RegionCode}
+                      <option value="">— Select Province —</option>
+                      {provinces.map((p) => (
+                        <option key={p.ProvinceCode} value={p.ProvinceCode}>
+                          {p.ProvinceCode} - {p.ProvinceName}
                         </option>
                       ))}
                     </select>
-                  )}
-                </div>
+                  )
+                ) : isLoadingDivisions ? (
+                  <div className="py-1 text-xs text-gray-500">Loading divisions...</div>
+                ) : divisionError ? (
+                  <div className="text-red-600 text-xs py-1">{divisionError}</div>
+                ) : (
+                  <select
+                    value={selectedCode}
+                    onChange={(e) => setSelectedCode(e.target.value)}
+                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent bg-white text-gray-800"
+                    disabled={loading}
+                  >
+                    <option value="">— Select Division —</option>
+                    {divisions.map((d) => (
+                      <option key={d.RegionCode} value={d.RegionCode}>
+                        {d.RegionCode}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
-                {/* Months In Arrears */}
-                <div className="flex flex-col">
-                  <label className={`${maroon} text-xs font-medium mb-1`}>
-                    No of Months in Arrears
-                  </label>
-                  <input
-                    type="number"
-                    value={monthsInArrears}
-                    onChange={(e) => setMonthsInArrears(Number(e.target.value))}
-                    min={0}
-                    className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                  />
-                </div>
+              {/* Months In Arrears */}
+              <div className="flex flex-col">
+                <label className={`${maroon} text-xs font-medium mb-1`}>
+                  No of Months in Arrears
+                </label>
+                <input
+                  type="number"
+                  value={monthsInArrears}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setMonthsInArrears(val === "" ? "" : Number(val));
+                  }}
+                  min={0}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  disabled={loading}
+                />
+              </div>
 
-                {/* Outstanding Balance */}
-                <div className="flex flex-col">
-                  <label className={`${maroon} text-xs font-medium mb-1`}>
-                    Outstanding Balance
-                  </label>
-                  <input
-                    type="number"
-                    value={outstandingBalance}
-                    onChange={(e) => setOutstandingBalance(Number(e.target.value))}
-                    min={0}
-                    className="w-full max-w-md px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                  />
-                </div>
+              {/* Outstanding Balance */}
+              <div className="flex flex-col">
+                <label className={`${maroon} text-xs font-medium mb-1`}>
+                  Outstanding Balance
+                </label>
+                <input
+                  type="number"
+                  value={outstandingBalance}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setOutstandingBalance(val === "" ? "" : Number(val));
+                  }}
+                  min={0}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  disabled={loading}
+                />
               </div>
             </div>
 
@@ -700,6 +727,9 @@ const CustomersHighestOutstanding: React.FC = () => {
             <table className="w-full text-xs border-collapse">
               <thead className="sticky top-0 z-10 bg-[#EAEAEA] text-gray-800 font-semibold border-b border-gray-300">
                 <tr>
+                  {scope === "Division" && (
+                    <th className="p-2 border border-gray-300 font-semibold text-left">Province</th>
+                  )}
                   <th className="p-2 border border-gray-300 font-semibold text-left">Area Name</th>
                   <th className="p-2 border border-gray-300 font-semibold text-left">Account No</th>
                   <th className="p-2 border border-gray-300 font-semibold text-left">Name</th>
@@ -736,6 +766,9 @@ const CustomersHighestOutstanding: React.FC = () => {
             <table ref={printTableRef} className="w-full text-xs border-collapse">
               <thead>
                 <tr>
+                  {scope === "Division" && (
+                    <th className="p-2 border border-gray-300 font-semibold text-left">Province</th>
+                  )}
                   <th className="p-2 border border-gray-300 font-semibold text-left">Area Name</th>
                   <th className="p-2 border border-gray-300 font-semibold text-left">Account No</th>
                   <th className="p-2 border border-gray-300 font-semibold text-left">Name</th>

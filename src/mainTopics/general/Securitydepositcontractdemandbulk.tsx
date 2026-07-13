@@ -424,18 +424,7 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
             </tr>
           ))}
 
-          {/* Totals row */}
-          <tr className="bg-[#d3d3d3] font-bold">
-            {showProvCols && <td className="border border-gray-300 px-2 py-1" colSpan={2} />}
-            <td className="border border-gray-300 px-2 py-1 text-center font-bold" colSpan={5}>TOTAL</td>
-            <td className="border border-gray-300 px-2 py-1 text-right font-mono font-bold">{fmt(totalContractDemand, 0)}</td>
-            <td className="border border-gray-300 px-2 py-1 text-right font-mono font-bold">{fmt(totalSecurityDeposit, 2)}</td>
-            <td className="border border-gray-300 px-2 py-1 text-right font-mono font-bold">{fmt(totalKWO, 0)}</td>
-            <td className="border border-gray-300 px-2 py-1 text-right font-mono font-bold">{fmt(totalKWD, 0)}</td>
-            <td className="border border-gray-300 px-2 py-1 text-right font-mono font-bold">{fmt(totalKWP, 0)}</td>
-            <td className="border border-gray-300 px-2 py-1 text-right font-mono font-bold">{fmt(totalKVA, 0)}</td>
-            <td className="border border-gray-300 px-2 py-1 text-right font-mono font-bold">{fmt(totalMonthlyCharge, 2)}</td>
-          </tr>
+          
         </tbody>
       </table>
     );
