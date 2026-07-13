@@ -57,6 +57,7 @@ import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHigh
 import CashBookDetailsReport from "../mainTopics/CashBook/CashBookDetailsReport";
 import CashBookCCReport from "../mainTopics/CashBook/CashBookCCReport";
 import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
+import ChequeDetailWPReport from "../mainTopics/CashBook/ChequeDetailsWP";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
@@ -85,6 +86,8 @@ import AverageConsumptionSelected from "../mainTopics/inventory/AverageConsumpti
 import QtyOnHandAllRegion from "../mainTopics/inventory/QtyOnHandAllRegions";
 import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
 import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuantityOnHand";
+import MaterialMasterAI from "../mainTopics/inventory/MateriallMasterAI";
+import CCWiseIssue from "../mainTopics/inventory/Ccwiseissue";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -267,6 +270,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"selected payee within date range": CashBookDetailsReport,
 	"cost center wise selected payee within date range": CashBookCCReport,
 	"cost center wise document inquiry cash book with cheque details": DocumentInquiry,
+	"cheque details within period" : ChequeDetailWPReport,
 
 	// General reports
 	"tariff block wise consumption": TariffBlockWiseConsumption,
@@ -300,6 +304,9 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise quantity on hand": CostCenterQuantityHnad,
 	"average consumptions all material codes": AverageConsumptions,
 	"average consumptions selected maerial codes": AverageConsumptionSelected,
+	"material master(both active and inactive)": MaterialMasterAI,
+	"c/c wise issue": CCWiseIssue,
+
 	// Province / Provincial quantity on hand variants
 	"province wise quantity on hand": ProvinceWiseQuantityOnHand,
 	"province wise quantity on hand provincial stores only": ProvinceWiseQuantityOnHand,
