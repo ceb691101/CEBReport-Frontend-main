@@ -1,4 +1,4 @@
-import { defineConfig 	} from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -42,15 +42,15 @@ export default defineConfig({
 				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
 
-/*
-
-			"/misapi/api/solarjobs/ccapplication": {
-				target: "http://localhost:44381",
-				changeOrigin: true,
-				secure: false,
-				rewrite: (path) => path.replace(/^\/misapi/, ""),
-			},
-*/
+			/*
+			
+						"/misapi/api/solarjobs/ccapplication": {
+							target: "http://localhost:44381",
+							changeOrigin: true,
+							secure: false,
+							rewrite: (path) => path.replace(/^\/misapi/, ""),
+						},
+			*/
 			"/misapi/api/dgm": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
@@ -100,6 +100,31 @@ export default defineConfig({
 				secure: false,
 				rewrite: (path) => path.replace(/^\/misapi/, ""),
 			},
+			/*
+			"/misapi/api/cashsheet": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+*/
+/*
+			"/misapi/api/cashsheetdaterangepayee": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+
+*/
+
+			"/misapi/api/chequedetailsexp": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+
 			"/misapi": {
 				target: "http://10.128.1.126",
 				changeOrigin: true,
@@ -110,6 +135,7 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 			},
+
 			// "/debtorsapi": {
 			//   target: "http://localhost:44381",
 			//   changeOrigin: true,

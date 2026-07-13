@@ -56,6 +56,9 @@ import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHigh
 import CashBookDetailsReport from "../mainTopics/CashBook/CashBookDetailsReport";
 import CashBookCCReport from "../mainTopics/CashBook/CashBookCCReport";
 import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
+import CashSheetReport from "../mainTopics/CashBook/CashSheetReport";
+import CashSheetDateRangePayeeReport from "../mainTopics/CashBook/CashSheetDateRangePayeeReport.tsx";
+import ChequeDetailsExp from "../mainTopics/CashBook/ChequeDetailsExp";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
@@ -264,6 +267,9 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"selected payee within date range": CashBookDetailsReport,
 	"cost center wise selected payee within date range": CashBookCCReport,
 	"cost center wise document inquiry cash book with cheque details": DocumentInquiry,
+	"cash sheet report": CashSheetReport,
+	"cash sheet within date range for selected payee": CashSheetDateRangePayeeReport,
+	"cheque details with expcode": ChequeDetailsExp,
 
 	// General reports
 	"tariff block wise consumption": TariffBlockWiseConsumption,
