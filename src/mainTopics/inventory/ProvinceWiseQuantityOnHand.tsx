@@ -7,21 +7,16 @@ interface Province {
   CompNm: string;
 }
 
-interface PivotRow {
-  MatCd: string;
-  MatNm: string;
-  UomCd: string;
-  depts: Map<string, number>;
-}
-
 interface ProvinceStockData {
+  DeptId: string;
+  WrhCd: string;
   MatCd: string;
   MatNm: string;
-  CommittedCost: number;
-  DeptInfo: string;
-  Area: string;
-  UomCd: string;
-  Region: string;
+  GradeCd: string;
+  Major: string;
+  QtyOnHand: number;
+  UnitPrice: number;
+  Value: number;
 }
 
 const ProvinceWiseQuantityOnHand: React.FC = () => {
@@ -54,36 +49,12 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
 
   const paginatedProvinces = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  // Build pivot (cross-tab) from flat report data
-  const buildPivot = (flatData: ProvinceStockData[]): { depts: string[]; rows: PivotRow[] } => {
-    const deptSet = new Set<string>();
-    const matMap = new Map<string, PivotRow>();
-    flatData.forEach((item) => {
-      const dept = item.DeptInfo?.trim() || "(Unknown)";
-      deptSet.add(dept);
-      const key = item.MatCd?.trim() || "";
-      if (!matMap.has(key)) {
-        matMap.set(key, {
-          MatCd: item.MatCd?.trim() || "",
-          MatNm: item.MatNm?.trim() || "",
-          UomCd: item.UomCd?.trim() || "",
-          depts: new Map(),
-        });
-      }
-      const row = matMap.get(key)!;
-      row.depts.set(dept, (row.depts.get(dept) || 0) + (item.CommittedCost || 0));
-    });
-    const depts = Array.from(deptSet).sort();
-    const rows = Array.from(matMap.values()).sort((a, b) => a.MatCd.localeCompare(b.MatCd));
-    return { depts, rows };
-  };
-
   // Fetch provinces
   useEffect(() => {
     const fetchProvinces = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/committedstock/api/materialcommittedstock/provinces`);
+        const res = await fetch(`/misapi/api/materialcommittedstock/provinces`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const txt = await res.text();
         const parsed = JSON.parse(txt);
@@ -132,7 +103,7 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
     setReportLoading(true);
     setReportError(null);
     try {
-      let apiUrl = `/committedstock/api/materialcommittedstock/get?compId=${encodeURIComponent(selectedProvince.compId)}`;
+      let apiUrl = `/misapi/api/materialcommittedstock/get?compId=${encodeURIComponent(selectedProvince.compId)}`;
       if (materialSelectionType === "specific" && materialCode.trim()) {
         apiUrl += `&matCode=${encodeURIComponent(materialCode.trim())}`;
       }
@@ -150,10 +121,22 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
       }
 
       const jsonData = await res.json();
-      let arr: ProvinceStockData[] = [];
-      if (Array.isArray(jsonData)) arr = jsonData;
-      else if (jsonData.data && Array.isArray(jsonData.data)) arr = jsonData.data;
-      else if (jsonData.result && Array.isArray(jsonData.result)) arr = jsonData.result;
+      let rawData: any[] = [];
+      if (Array.isArray(jsonData)) rawData = jsonData;
+      else if (jsonData.data && Array.isArray(jsonData.data)) rawData = jsonData.data;
+      else if (jsonData.result && Array.isArray(jsonData.result)) rawData = jsonData.result;
+
+      const arr: ProvinceStockData[] = rawData.map((item: any) => ({
+        DeptId: item.DeptId ?? item.deptId ?? "",
+        WrhCd: item.WrhCd ?? item.wrhCd ?? "",
+        MatCd: item.MatCd ?? item.matCd ?? "",
+        MatNm: item.MatNm ?? item.matNm ?? "",
+        GradeCd: item.GradeCd ?? item.gradeCd ?? "",
+        Major: item.Major ?? item.major ?? "",
+        QtyOnHand: Number(item.QtyOnHand ?? item.qtyOnHand ?? 0),
+        UnitPrice: Number(item.UnitPrice ?? item.unitPrice ?? 0),
+        Value: Number(item.Value ?? item.value ?? 0),
+      }));
 
       setReportData(arr);
       setShowMaterialSelection(false);
@@ -187,34 +170,33 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
     }).format(num);
   };
 
-  // CSV Export (pivot/cross-tab format)
+  // CSV Export (flat format)
   const downloadAsCSV = () => {
     if (!reportData || reportData.length === 0) return;
-    const { depts, rows } = buildPivot(reportData);
 
-    const deptTotals = depts.map((d) => rows.reduce((s, r) => s + (r.depts.get(d) || 0), 0));
-    const grandTotal = deptTotals.reduce((s, v) => s + v, 0);
+    const totalQty = reportData.reduce((s, r) => s + r.QtyOnHand, 0);
+    const totalValue = reportData.reduce((s, r) => s + r.Value, 0);
 
     const csvRows = [
       [`Province Wise Quantity on Hand (Provincial Stores Only)`],
-      [`Province : ${selectedProvince?.compId} / ${selectedProvince?.CompNm?.toUpperCase()}${
-        materialSelectionType === "specific" && materialCode ? ` / Material Code - ${materialCode}` : ""
-      }`],
+      [`Province : ${selectedProvince?.compId} / ${selectedProvince?.CompNm?.toUpperCase()}${materialSelectionType === "specific" && materialCode ? ` / Material Code - ${materialCode}` : ""
+        }`],
       [`Consider only Status=2 (Active) and Grade Code NEW Materials`],
       [],
-      ["Mat_cd", "Material Name", "Unit of Measure", ...depts, "Total"],
-      ...rows.map((row) => {
-        const total = depts.reduce((s, d) => s + (row.depts.get(d) || 0), 0);
-        return [
-          row.MatCd,
-          `"${row.MatNm.replace(/"/g, '""')}"`,
-          row.UomCd,
-          ...depts.map((d) => (row.depts.get(d) || 0).toFixed(2)),
-          total.toFixed(2),
-        ];
-      }),
+      ["Dept Id", "Warehouse Code", "MatCode", "Material Name", "Grade", "UOM", "Qty On Hand", "UnitPrice", "Value"],
+      ...reportData.map((row) => [
+        row.DeptId,
+        row.WrhCd,
+        row.MatCd,
+        `"${row.MatNm.replace(/"/g, '""')}"`,
+        row.GradeCd,
+        row.Major,
+        row.QtyOnHand.toFixed(2),
+        row.UnitPrice.toFixed(2),
+        row.Value.toFixed(2),
+      ]),
       [],
-      ["", "", "TOTAL", ...deptTotals.map((v) => v.toFixed(2)), grandTotal.toFixed(2)],
+      ["", "", "", "", "", "TOTAL", totalQty.toFixed(2), "", totalValue.toFixed(2)],
       [],
       [`Generated: ${new Date().toLocaleString()}`],
       [`CEB@${new Date().getFullYear()}`],
@@ -234,39 +216,30 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // PDF Export — window.open print approach (same as all other report pages)
+  // PDF Export — window.open print approach
   const printPDF = () => {
     if (!reportData || reportData.length === 0) return;
-    const { depts, rows } = buildPivot(reportData);
 
-    const deptTotals = depts.map((d) => rows.reduce((s, r) => s + (r.depts.get(d) || 0), 0));
-    const grandTotal = deptTotals.reduce((s, v) => s + v, 0);
+    const totalQty = reportData.reduce((s, r) => s + r.QtyOnHand, 0);
+    const totalValue = reportData.reduce((s, r) => s + r.Value, 0);
 
-    const thCells = ["Mat_cd", "Material Name", "Unit of\nMeasure", ...depts, "Total"]
-      .map((h) => `<th>${h.replace(/\n/g, "<br/>")}</th>`)
-      .join("");
+    const headers = ["Dept Id", "Warehouse Code", "MatCode", "Material Name", "Grade", "UOM", "Qty On Hand", "UnitPrice", "Value"];
+    const thCells = headers.map((h) => `<th>${h}</th>`).join("");
 
-    const bodyRows = rows
-      .map((row) => {
-        const total = depts.reduce((s, d) => s + (row.depts.get(d) || 0), 0);
-        const deptTds = depts
-          .map((d) => {
-            const v = row.depts.get(d);
-            return `<td class="num">${v ? formatNumber(v) : ""}</td>`;
-          })
-          .join("");
-        return `<tr>
+    const bodyRows = reportData
+      .map((row, idx) => {
+        return `<tr class="${idx % 2 === 0 ? "" : "alt"}">
+          <td class="mono">${row.DeptId}</td>
+          <td class="mono">${row.WrhCd}</td>
           <td class="mono">${row.MatCd}</td>
           <td>${row.MatNm}</td>
-          <td class="center">${row.UomCd}</td>
-          ${deptTds}
-          <td class="num bold">${formatNumber(total)}</td>
+          <td class="center">${row.GradeCd}</td>
+          <td class="center">${row.Major}</td>
+          <td class="num">${formatNumber(row.QtyOnHand)}</td>
+          <td class="num">${formatNumber(row.UnitPrice)}</td>
+          <td class="num bold">${formatNumber(row.Value)}</td>
         </tr>`;
       })
-      .join("");
-
-    const totalTds = deptTotals
-      .map((v) => `<td class="num bold">${formatNumber(v)}</td>`)
       .join("");
 
     const printWindow = window.open("", "_blank");
@@ -285,7 +258,7 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
             th { background-color: #7A0000; color: #fff; font-weight: bold; text-align: center;
                  padding: 3px 4px; border: 1px solid #600000; font-size: 8px; white-space: pre-line; }
             td { padding: 2px 4px; border: 1px solid #ccc; font-size: 8px; }
-            tr:nth-child(even) td { background-color: #fafafa; }
+            tr.alt td { background-color: #fafafa; }
             .num { text-align: right; font-family: monospace; }
             .center { text-align: center; }
             .mono { font-family: monospace; font-weight: bold; }
@@ -308,20 +281,21 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
         </head>
         <body>
           <h2>PROVINCE WISE QUANTITY ON HAND (PROVINCIAL STORES ONLY)</h2>
-          <div class="subtitle">Province : ${selectedProvince?.compId} / ${selectedProvince?.CompNm}${
-            materialSelectionType === "specific" && materialCode
-              ? `&nbsp;&nbsp;|&nbsp;&nbsp;Material Code : ${materialCode}`
-              : ""
-          }</div>
+          <div class="subtitle">Province : ${selectedProvince?.compId} / ${selectedProvince?.CompNm}${materialSelectionType === "specific" && materialCode
+        ? `&nbsp;&nbsp;|&nbsp;&nbsp;Material Code : ${materialCode}`
+        : ""
+      }</div>
           <div class="note">Consider only Status=2 (Active) and Grade Code NEW Materials &nbsp;&nbsp;|&nbsp;&nbsp; Date: ${new Date().toLocaleDateString()}</div>
           <table>
             <thead><tr>${thCells}</tr></thead>
             <tbody>
               ${bodyRows}
               <tr class="total-row">
-                <td></td><td></td><td class="bold center">TOTAL</td>
-                ${totalTds}
-                <td class="num bold">${formatNumber(grandTotal)}</td>
+                <td></td><td></td><td></td><td></td><td></td>
+                <td class="bold center">TOTAL</td>
+                <td class="num bold">${formatNumber(totalQty)}</td>
+                <td></td>
+                <td class="num bold">${formatNumber(totalValue)}</td>
               </tr>
             </tbody>
           </table>
@@ -363,11 +337,10 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
                   {(["all", "specific"] as const).map((type) => (
                     <label
                       key={type}
-                      className={`flex items-center cursor-pointer p-2 rounded-lg border-2 transition-all ${
-                        materialSelectionType === type
-                          ? "border-[#7A0000] bg-red-50 shadow-sm"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
+                      className={`flex items-center cursor-pointer p-2 rounded-lg border-2 transition-all ${materialSelectionType === type
+                        ? "border-[#7A0000] bg-red-50 shadow-sm"
+                        : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
                     >
                       <input
                         type="radio"
@@ -458,12 +431,12 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
     );
   };
 
-  // ── Results Modal (Pivot / Cross-tab) ────────────────────────────────────
+  // ── Results Modal (Flat Detail Table) ─────────────────────────────────────
   const ReportModal = () => {
     if (!reportModalOpen || !selectedProvince) return null;
-    const { depts, rows } = buildPivot(reportData);
-    const deptTotals = depts.map((d) => rows.reduce((s, r) => s + (r.depts.get(d) || 0), 0));
-    const grandTotal = deptTotals.reduce((s, v) => s + v, 0);
+
+    const totalQty = reportData.reduce((s, r) => s + r.QtyOnHand, 0);
+    const totalValue = reportData.reduce((s, r) => s + r.Value, 0);
 
     return (
       <div className="fixed inset-0 bg-white flex items-start justify-end z-50 pt-24 pb-8 pl-64">
@@ -510,23 +483,19 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
             {/* Summary stats */}
             <div className="mt-3 flex gap-4">
               <div className="bg-blue-50 rounded-lg px-4 py-2 text-center border border-blue-200">
-                <div className="text-lg font-bold text-blue-700">{rows.length}</div>
-                <div className="text-xs text-blue-600">Total Materials</div>
+                <div className="text-lg font-bold text-blue-700">{reportData.length}</div>
+                <div className="text-xs text-blue-600">Total Records</div>
               </div>
               <div className="bg-purple-50 rounded-lg px-4 py-2 text-center border border-purple-200">
-                <div className="text-lg font-bold text-purple-700">{depts.length}</div>
-                <div className="text-xs text-purple-600">Departments</div>
-              </div>
-              <div className="bg-green-50 rounded-lg px-4 py-2 text-center border border-green-200">
-                <div className="text-lg font-bold text-green-700">{formatNumber(grandTotal)}</div>
-                <div className="text-xs text-green-600">Total Qty on Hand</div>
+                <div className="text-lg font-bold text-purple-700">{formatNumber(totalValue)}</div>
+                <div className="text-xs text-purple-600">Total Value</div>
               </div>
             </div>
           </div>
 
-          {/* Pivot Table */}
+          {/* Detail Table */}
           <div className="overflow-auto flex-1">
-            {rows.length === 0 ? (
+            {reportData.length === 0 ? (
               <div className="flex items-center justify-center h-40 text-gray-500 text-sm">
                 No data found for the selected province{materialSelectionType === "specific" && materialCode ? ` and material code "${materialCode}"` : ""}.
               </div>
@@ -535,64 +504,78 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-[#7A0000] text-white">
                     <th className="px-3 py-3 text-left font-semibold border border-[#600000] whitespace-nowrap sticky left-0 bg-[#7A0000] z-20">
-                      Mat_cd
+                      Dept Id
+                    </th>
+                    <th className="px-3 py-3 text-left font-semibold border border-[#600000] whitespace-nowrap">
+                      Warehouse Code
+                    </th>
+                    <th className="px-3 py-3 text-left font-semibold border border-[#600000] whitespace-nowrap">
+                      MatCode
                     </th>
                     <th className="px-3 py-3 text-left font-semibold border border-[#600000] min-w-[200px]">
                       Material Name
                     </th>
                     <th className="px-3 py-3 text-center font-semibold border border-[#600000] whitespace-nowrap">
-                      Unit of Measure
+                      Grade
                     </th>
-                    {depts.map((dept) => (
-                      <th
-                        key={dept}
-                        className="px-3 py-3 text-right font-semibold border border-[#600000] whitespace-nowrap min-w-[120px]"
-                        title={dept}
-                      >
-                        {dept}
-                      </th>
-                    ))}
+                    <th className="px-3 py-3 text-center font-semibold border border-[#600000] whitespace-nowrap">
+                      UOM
+                    </th>
+                    <th className="px-3 py-3 text-right font-semibold border border-[#600000] whitespace-nowrap">
+                      Qty On Hand
+                    </th>
+                    <th className="px-3 py-3 text-right font-semibold border border-[#600000] whitespace-nowrap">
+                      UnitPrice
+                    </th>
                     <th className="px-3 py-3 text-right font-semibold border border-[#600000] whitespace-nowrap bg-[#5A0000]">
-                      Total
+                      Value
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, idx) => {
-                    const rowTotal = depts.reduce((s, d) => s + (row.depts.get(d) || 0), 0);
-                    return (
-                      <tr
-                        key={row.MatCd}
-                        className={idx % 2 === 0 ? "bg-white hover:bg-red-50" : "bg-gray-50 hover:bg-red-50"}
-                      >
-                        <td className="px-3 py-2 font-mono font-semibold border border-gray-200 whitespace-nowrap sticky left-0 bg-inherit">
-                          {row.MatCd}
-                        </td>
-                        <td className="px-3 py-2 border border-gray-200">{row.MatNm}</td>
-                        <td className="px-3 py-2 text-center border border-gray-200 whitespace-nowrap">{row.UomCd}</td>
-                        {depts.map((d) => (
-                          <td key={d} className="px-3 py-2 text-right font-mono border border-gray-200 whitespace-nowrap">
-                            {row.depts.get(d) ? formatNumber(row.depts.get(d)) : "—"}
-                          </td>
-                        ))}
-                        <td className="px-3 py-2 text-right font-mono font-bold border border-gray-200 whitespace-nowrap text-[#7A0000]">
-                          {formatNumber(rowTotal)}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {reportData.map((row, idx) => (
+                    <tr
+                      key={`${row.DeptId}-${row.WrhCd}-${row.MatCd}-${idx}`}
+                      className={idx % 2 === 0 ? "bg-white hover:bg-red-50" : "bg-gray-50 hover:bg-red-50"}
+                    >
+                      <td className="px-3 py-2 font-mono font-semibold border border-gray-200 whitespace-nowrap sticky left-0 bg-inherit">
+                        {row.DeptId}
+                      </td>
+                      <td className="px-3 py-2 font-mono border border-gray-200 whitespace-nowrap">
+                        {row.WrhCd}
+                      </td>
+                      <td className="px-3 py-2 font-mono font-semibold border border-gray-200 whitespace-nowrap">
+                        {row.MatCd}
+                      </td>
+                      <td className="px-3 py-2 border border-gray-200">{row.MatNm}</td>
+                      <td className="px-3 py-2 text-center border border-gray-200 whitespace-nowrap">
+                        {row.GradeCd}
+                      </td>
+                      <td className="px-3 py-2 text-center border border-gray-200 whitespace-nowrap">
+                        {row.Major}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono border border-gray-200 whitespace-nowrap">
+                        {formatNumber(row.QtyOnHand)}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono border border-gray-200 whitespace-nowrap">
+                        {formatNumber(row.UnitPrice)}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono font-bold border border-gray-200 whitespace-nowrap text-[#7A0000]">
+                        {formatNumber(row.Value)}
+                      </td>
+                    </tr>
+                  ))}
                   {/* Grand total row */}
                   <tr className="bg-[#f9f0f0] font-bold border-t-2 border-[#7A0000]">
-                    <td className="px-3 py-2 border border-gray-300 sticky left-0 bg-[#f9f0f0] text-xs">TOTAL</td>
+                    <td className="px-3 py-2 border border-gray-300 sticky left-0 bg-[#f9f0f0] text-xs" colSpan={6}>
+                      TOTAL
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono border border-gray-300 whitespace-nowrap text-xs">
+                      {formatNumber(totalQty)}
+                    </td>
                     <td className="px-3 py-2 border border-gray-300" />
-                    <td className="px-3 py-2 border border-gray-300" />
-                    {deptTotals.map((total, i) => (
-                      <td key={i} className="px-3 py-2 text-right font-mono border border-gray-300 whitespace-nowrap text-xs">
-                        {formatNumber(total)}
-                      </td>
-                    ))}
                     <td className="px-3 py-2 text-right font-mono border border-gray-300 whitespace-nowrap text-xs text-[#7A0000]">
-                      {formatNumber(grandTotal)}
+                      {formatNumber(totalValue)}
                     </td>
                   </tr>
                 </tbody>
@@ -682,9 +665,8 @@ const ProvinceWiseQuantityOnHand: React.FC = () => {
                   paginatedProvinces.map((province, idx) => (
                     <tr
                       key={province.compId}
-                      className={`cursor-pointer transition-colors ${
-                        idx % 2 === 0 ? "bg-white hover:bg-red-50" : "bg-gray-50 hover:bg-red-50"
-                      }`}
+                      className={`cursor-pointer transition-colors ${idx % 2 === 0 ? "bg-white hover:bg-red-50" : "bg-gray-50 hover:bg-red-50"
+                        }`}
                       onClick={() => handleProvinceSelect(province)}
                     >
                       <td className="px-4 py-2.5 font-mono font-semibold text-xs border border-gray-200">
