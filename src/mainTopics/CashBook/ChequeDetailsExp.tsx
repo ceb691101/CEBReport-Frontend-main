@@ -126,9 +126,8 @@ const ChequeExpDetailsTable: React.FC<{
 
     const rows: string[] = [];
     sortedCodes.forEach((key) => {
-      const { display: expCode, items } = sortedGrouped[key];
+      const { items } = sortedGrouped[key];
       const expTotalDr = items.reduce((s, r) => s + (r.DrAmt || 0), 0);
-      rows.push(`Expense Code: ${expCode}`);
       rows.push(headers.join(","));
       items.forEach((it) => {
         rows.push(
@@ -148,7 +147,7 @@ const ChequeExpDetailsTable: React.FC<{
           ].join(",")
         );
       });
-      rows.push(`Total for Expense Code,,,,,${csvEscape(formatNumber(expTotalDr))},`);
+      rows.push(`Total,,,,,${csvEscape(formatNumber(expTotalDr))},`);
       rows.push("");
     });
     rows.push(`Grand Total Amount,,,,,${csvEscape(formatNumber(totalDrAmt))},`);
@@ -167,50 +166,50 @@ const ChequeExpDetailsTable: React.FC<{
   const printPDF = () => {
     let tablesHTML = "";
     sortedCodes.forEach((key) => {
-      const { display: expCode, items } = sortedGrouped[key];
+      const { items } = sortedGrouped[key];
       const expTotalDr = items.reduce((s, r) => s + (r.DrAmt || 0), 0);
       let rows = "";
       items.forEach((it, i) => {
         rows += `
           <tr class="${i % 2 ? "bg-white" : "bg-gray-50"}">
-            <td class="px-3 py-2 border-l border-r border-gray-300 text-center text-xs">${formatDate(it.ChqDt)}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs font-mono">${it.ChqNo || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.PymtDocNo || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${it.Payee || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(it.DrAmt)}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(it.ChqAmt)}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.Remarks || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.Ref1 || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.Ref2 || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.Ref3 || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.Ref4 || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.CctName || ""}</td>
+            <td class="px-1 py-2 border-l border-r border-gray-300 text-center text-xs">${formatDate(it.ChqDt)}</td>
+            <td class="px-1 py-2 border-r border-gray-300 text-left text-xs font-mono">${it.ChqNo || ""}</td>
+            <td class="px-1 py-2 border-r border-gray-300 text-left text-xs">${it.PymtDocNo || ""}</td>
+            <td class="px-1 py-2 border-r border-gray-300 text-left text-xs break-words">${it.Payee || ""}</td>
+            <td class="px-1 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(it.DrAmt)}</td>
+            <td class="px-1 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(it.ChqAmt)}</td>
+            <td class="px-2 py-2 border-r border-gray-300 text-left text-xs break-words">${it.Remarks || ""}</td>
+            <td class="px-1 py-1 border-r border-gray-300 text-center text-xs break-words">${it.Ref1 || ""}</td>
+            <td class="px-1 py-1 border-r border-gray-300 text-center text-xs break-words">${it.Ref2 || ""}</td>
+            <td class="px-1 py-1 border-r border-gray-300 text-center text-xs break-words">${it.Ref3 || ""}</td>
+            <td class="px-1 py-1 border-r border-gray-300 text-center text-xs break-words">${it.Ref4 || ""}</td>
+            <td class="px-1 py-2 border-r border-gray-300 text-left text-xs">${it.CctName || ""}</td>
           </tr>`;
       });
 
       tablesHTML += `
         <div style="margin-bottom:20px;">
-          <table style="width:100%; border-collapse:collapse; font-size:8.5px; border:1px solid #d1d5db;">
+          <table style="width:100%; table-layout:fixed; border-collapse:collapse; font-size:8.5px; border:1px solid #d1d5db;">
             <thead>
               <tr style="background:linear-gradient(to right,#7A0000,#A52A2A); color:white;">
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:8%;">Date</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:10%;">Cheque No</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:10%;">Payment Doc No</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:12%;">Payee</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:8%; text-align:right;">Amount</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:8%; text-align:right;">Cheque Amt</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:18%;">Remarks</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:4%;">Ref 1</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:4%;">Ref 2</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:4%;">Ref 3</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:4%;">Ref 4</th>
-                <th style="padding:6px 8px; border:1px solid #d1d5db; width:10%;">Cost Center</th>
+                <th style="padding:6px 4px; border:1px solid #d1d5db; width:5%;">Date</th>
+                <th style="padding:6px 4px; border:1px solid #d1d5db; width:5%;">Cheque No</th>
+                <th style="padding:6px 4px; border:1px solid #d1d5db; width:7%;">Payment Doc No</th>
+                <th style="padding:6px 4px; border:1px solid #d1d5db; width:9%;">Payee</th>
+                <th style="padding:6px 4px; border:1px solid #d1d5db; width:7%; text-align:right;">Amount</th>
+                <th style="padding:6px 4px; border:1px solid #d1d5db; width:7%; text-align:right;">Cheque Amt</th>
+                <th style="padding:6px 6px; border:1px solid #d1d5db; width:32%;">Remarks</th>
+                <th style="padding:6px 2px; border:1px solid #d1d5db; width:5%; text-align:center;">Ref 1</th>
+                <th style="padding:6px 2px; border:1px solid #d1d5db; width:5%; text-align:center;">Ref 2</th>
+                <th style="padding:6px 2px; border:1px solid #d1d5db; width:5%; text-align:center;">Ref 3</th>
+                <th style="padding:6px 2px; border:1px solid #d1d5db; width:5%; text-align:center;">Ref 4</th>
+                <th style="padding:6px 4px; border:1px solid #d1d5db; width:8%;">Cost Center</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
             <tfoot>
               <tr style="background:#f3f4f6; font-weight:bold; font-size:9px;">
-                <td colspan="4" class="px-3 py-2 text-right border border-gray-300">Total for Expense Code</td>
+                <td colspan="4" class="px-3 py-2 text-right border border-gray-300">Total</td>
                 <td class="px-3 py-2 text-right font-mono border border-gray-300">${formatNumber(expTotalDr)}</td>
                 <td colspan="7" class="px-3 py-2 border border-gray-300"></td>
               </tr>
@@ -230,8 +229,8 @@ const ChequeExpDetailsTable: React.FC<{
       .title { margin: 10px 8px 20px; text-align:center; font-weight:bold; color:#7A0000; font-size:13px; }
       .info  { margin:6px 8px; font-size:9px; display:flex; justify-content:space-between; }
       .costCenter { font-size: 11px; margin-left: 0px; font-weight: 500; } 
-      table { border-collapse:collapse; width:100%; font-size:8.5px; }
-      th, td { border:1px solid #d1d5db; padding:6px 8px; word-wrap:break-word; }
+      table { border-collapse:collapse; width:100%; table-layout:fixed; font-size:8.5px; }
+      th, td { border:1px solid #d1d5db; padding:6px 8px; word-wrap:break-word; overflow-wrap:break-word; }
       th { background:linear-gradient(to right,#7A0000,#A52A2A); color:white; text-align:center; font-weight:bold; }
       .font-mono { font-family:monospace; }
       @page {
@@ -301,7 +300,7 @@ const ChequeExpDetailsTable: React.FC<{
           </div>
 
           <h2 className={`text-lg md:text-xl font-bold text-center md:mb-6 ${maroon}`}>
-            Cheque Expense Details from {fromDate} To {toDate}
+            Cheque Expense Details From {fromDate} To {toDate}
           </h2>
           <div className="flex justify-between text-sm mb-3 ml-5 mr-12">
             <div>
@@ -314,52 +313,49 @@ const ChequeExpDetailsTable: React.FC<{
           <div className="ml-5 mt-1 border border-gray-200 rounded-lg overflow-x-auto print:ml-12 print:mt-12 print:overflow-visible">
             <div className="min-w-[1200px]">
               {sortedCodes.map((key) => {
-                const { display: expCode, items } = sortedGrouped[key];
+                const { items } = sortedGrouped[key];
                 const expTotalDr = items.reduce((s, r) => s + (r.DrAmt || 0), 0);
                 return (
                   <div key={key} className="mb-6 last:mb-0">
-                    <div className="bg-gradient-to-r from-gray-100 to-gray-50 px-4 py-2 font-bold text-sm text-gray-800 border-b border-gray-300">
-                      Expense Code: {expCode}
-                    </div>
-                    <table className="w-full text-xs border-collapse">
+                    <table className="w-full table-fixed text-xs border-collapse">
                       <thead className={`${maroonGrad} text-white`}>
                         <tr>
-                          <th className="px-4 py-2 text-center border border-gray-300" style={{ width: "8%" }}>Date</th>
-                          <th className="px-4 py-2 text-left border border-gray-300" style={{ width: "10%" }}>Cheque No</th>
-                          <th className="px-4 py-2 text-left border border-gray-300" style={{ width: "10%" }}>Payment Doc No</th>
-                          <th className="px-4 py-2 text-left border border-gray-300" style={{ width: "12%" }}>Payee</th>
-                          <th className="px-4 py-2 text-right border border-gray-300" style={{ width: "8%" }}>Amount</th>
-                          <th className="px-4 py-2 text-right border border-gray-300" style={{ width: "8%" }}>Cheque Amt</th>
-                          <th className="px-4 py-2 text-left border border-gray-300" style={{ width: "18%" }}>Remarks</th>
-                          <th className="px-4 py-2 text-left border border-gray-300" style={{ width: "4%" }}>Ref 1</th>
-                          <th className="px-4 py-2 text-left border border-gray-300" style={{ width: "4%" }}>Ref 2</th>
-                          <th className="px-4 py-2 text-left border border-gray-300" style={{ width: "4%" }}>Ref 3</th>
-                          <th className="px-4 py-2 text-left border border-gray-300" style={{ width: "4%" }}>Ref 4</th>
-                          <th className="px-4 py-2 text-left border border-gray-300" style={{ width: "10%" }}>Cost Center</th>
+                          <th className="px-2 py-2 text-center border border-gray-300" style={{ width: "5%" }}>Date</th>
+                          <th className="px-2 py-2 text-left border border-gray-300" style={{ width: "5%" }}>Cheque No</th>
+                          <th className="px-2 py-2 text-left border border-gray-300" style={{ width: "7%" }}>Payment Doc No</th>
+                          <th className="px-2 py-2 text-left border border-gray-300" style={{ width: "9%" }}>Payee</th>
+                          <th className="px-2 py-2 text-right border border-gray-300" style={{ width: "7%" }}>Amount</th>
+                          <th className="px-2 py-2 text-right border border-gray-300" style={{ width: "7%" }}>Cheque Amt</th>
+                          <th className="px-3 py-2 text-left border border-gray-300" style={{ width: "32%" }}>Remarks</th>
+                          <th className="px-1 py-2 text-center border border-gray-300" style={{ width: "5%" }}>Ref 1</th>
+                          <th className="px-1 py-2 text-center border border-gray-300" style={{ width: "5%" }}>Ref 2</th>
+                          <th className="px-1 py-2 text-center border border-gray-300" style={{ width: "5%" }}>Ref 3</th>
+                          <th className="px-1 py-2 text-center border border-gray-300" style={{ width: "5%" }}>Ref 4</th>
+                          <th className="px-2 py-2 text-left border border-gray-300" style={{ width: "8%" }}>Cost Center</th>
                         </tr>
                       </thead>
                       <tbody>
                         {items.map((it, i) => (
                           <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                            <td className="px-4 py-2 text-center border-l border-r border-gray-300">{formatDate(it.ChqDt)}</td>
-                            <td className="px-4 py-2 font-mono border-r border-gray-300">{it.ChqNo || ""}</td>
-                            <td className="px-4 py-2 border-r border-gray-300">{it.PymtDocNo || ""}</td>
-                            <td className="px-4 py-2 border-r border-gray-300 break-words">{it.Payee || ""}</td>
-                            <td className="px-4 py-2 text-right font-mono border-r border-gray-300">{formatNumber(it.DrAmt)}</td>
-                            <td className="px-4 py-2 text-right font-mono border-r border-gray-300">{formatNumber(it.ChqAmt)}</td>
-                            <td className="px-4 py-2 border-r border-gray-300">{it.Remarks || ""}</td>
-                            <td className="px-4 py-2 border-r border-gray-300">{it.Ref1 || ""}</td>
-                            <td className="px-4 py-2 border-r border-gray-300">{it.Ref2 || ""}</td>
-                            <td className="px-4 py-2 border-r border-gray-300">{it.Ref3 || ""}</td>
-                            <td className="px-4 py-2 border-r border-gray-300">{it.Ref4 || ""}</td>
-                            <td className="px-4 py-2 border-r border-gray-300">{it.CctName || ""}</td>
+                            <td className="px-2 py-2 text-center border-l border-r border-gray-300 break-words">{formatDate(it.ChqDt)}</td>
+                            <td className="px-2 py-2 font-mono border-r border-gray-300 break-words">{it.ChqNo || ""}</td>
+                            <td className="px-2 py-2 border-r border-gray-300 break-words">{it.PymtDocNo || ""}</td>
+                            <td className="px-2 py-2 border-r border-gray-300 break-words">{it.Payee || ""}</td>
+                            <td className="px-2 py-2 text-right font-mono border-r border-gray-300">{formatNumber(it.DrAmt)}</td>
+                            <td className="px-2 py-2 text-right font-mono border-r border-gray-300">{formatNumber(it.ChqAmt)}</td>
+                            <td className="px-3 py-2 border-r border-gray-300 break-words whitespace-pre-line">{it.Remarks || ""}</td>
+                            <td className="px-1 py-2 text-center border-r border-gray-300 break-words">{it.Ref1 || ""}</td>
+                            <td className="px-1 py-2 text-center border-r border-gray-300 break-words">{it.Ref2 || ""}</td>
+                            <td className="px-1 py-2 text-center border-r border-gray-300 break-words">{it.Ref3 || ""}</td>
+                            <td className="px-1 py-2 text-center border-r border-gray-300 break-words">{it.Ref4 || ""}</td>
+                            <td className="px-2 py-2 border-r border-gray-300 break-words">{it.CctName || ""}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr className="bg-gray-100 font-bold">
                           <td colSpan={4} className="px-4 py-2 text-right border border-gray-300">
-                            Total for Expense Code
+                            Total
                           </td>
                           <td className="px-4 py-2 text-right font-mono border border-gray-300">{formatNumber(expTotalDr)}</td>
                           <td colSpan={7} className="px-4 py-2 border border-gray-300"></td>
