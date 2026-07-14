@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
 					changeOrigin: true,
 					secure: false,
 				},
-
+/*
 				"/misapi/api/phv-obsolete-idle-fifo": {
 					target: env.VITE_LOCAL_API,
 					changeOrigin: true,
@@ -59,7 +59,7 @@ export default defineConfig(({ mode }) => {
 					secure: false,
 					rewrite: (path) => path.replace(/^\/misapi/, ""),
 				},
-
+*/
 				"/misapi": {
 					target: env.VITE_SERVER_API,
 					changeOrigin: true,
