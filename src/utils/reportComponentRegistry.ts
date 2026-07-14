@@ -88,6 +88,7 @@ import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
 import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuantityOnHand";
 import MaterialMasterAI from "../mainTopics/inventory/MateriallMasterAI";
 import CCWiseIssue from "../mainTopics/inventory/Ccwiseissue";
+import IssueReceiptWPReport from "../mainTopics/inventory/IssueReceiptWPreport";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -306,6 +307,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"average consumptions selected maerial codes": AverageConsumptionSelected,
 	"material master(both active and inactive)": MaterialMasterAI,
 	"c/c wise issue": CCWiseIssue,
+	"issue receipt within period": IssueReceiptWPReport,
 
 	// Province / Provincial quantity on hand variants
 	"province wise quantity on hand": ProvinceWiseQuantityOnHand,
