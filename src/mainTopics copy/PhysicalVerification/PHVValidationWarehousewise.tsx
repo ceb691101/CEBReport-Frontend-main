@@ -144,8 +144,8 @@ const PHVValidationWarehousewise: React.FC = () => {
         const errorMessage = e.message.includes("JSON.parse")
           ? "Invalid data format received from server."
           : e.message.includes("Failed to fetch")
-          ? "Failed to connect to the server. Please check if the server is running."
-          : e.message;
+            ? "Failed to connect to the server. Please check if the server is running."
+            : e.message;
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -173,18 +173,18 @@ const PHVValidationWarehousewise: React.FC = () => {
       setSelectedWarehouse("");
 
       if (!selectedDept || !epfNo) {
-      
+
         return;
       }
 
       setLoading(true);
       try {
-        const url = `pivapi/api/inventoryaverageconsumption/warehouses/epfNo/${encodeURIComponent(epfNo)}?costCenterId=${encodeURIComponent(
+        const url = `misapi/api/inventoryaverageconsumption/warehouses/epfNo/${encodeURIComponent(epfNo)}?costCenterId=${encodeURIComponent(
           selectedDept.DeptId
         )}&t=${Date.now()}`;
         console.log("Fetching warehouses from:", url);
         console.log("Selected Cost Center ID:", selectedDept.DeptId);
-       
+
         const response = await fetch(url, {
           method: "GET",
           headers: {
@@ -266,7 +266,7 @@ const PHVValidationWarehousewise: React.FC = () => {
 
         setWarehouses(filteredData);
         if (filteredData.length === 0) {
-         
+
           toast.warn(
             `No warehouses found for cost center ${selectedDept.DeptId}.`
           );
@@ -368,7 +368,7 @@ const PHVValidationWarehousewise: React.FC = () => {
       const row = [
         idx + 1,
         item.WarehouseCode || "",
-        `\t${item.MaterialCode || ""}`,      
+        `\t${item.MaterialCode || ""}`,
         item.MaterialName || "",
         item.GradeCode || "",
         item.UomCode || "",
@@ -395,12 +395,12 @@ const PHVValidationWarehousewise: React.FC = () => {
   //pdf generation
 
   const printPDF = () => {
-  if (reportData.length === 0 || !iframeRef.current || !selectedDept) {
-    toast.error("No data available to print");
-    return;
-  }
+    if (reportData.length === 0 || !iframeRef.current || !selectedDept) {
+      toast.error("No data available to print");
+      return;
+    }
 
-  const tableStyle = `
+    const tableStyle = `
     table { width: 100%; border-collapse: collapse; font-size: 10px; }
     th, td { border: 1px solid #000; padding: 5px; word-wrap: break-word; }
     th { background-color: #ffffff; color: #000000; font-weight: bold; text-align: center; }
@@ -408,9 +408,9 @@ const PHVValidationWarehousewise: React.FC = () => {
     .center { text-align: center; }
   `;
 
-  let bodyHTML = "";
-  reportData.forEach((item, idx) => {
-    bodyHTML += `<tr>
+    let bodyHTML = "";
+    reportData.forEach((item, idx) => {
+      bodyHTML += `<tr>
       <td class="center">${idx + 1}</td>
       <td>${escapeHtml(item.WarehouseCode || "")}</td>
       <td>${escapeHtml(item.MaterialCode || "")}</td>
@@ -422,9 +422,9 @@ const PHVValidationWarehousewise: React.FC = () => {
       <td class="right">${formatNumber(item.CountedQty)}</td>
       <td>${escapeHtml(item.Reason || "")}</td>
     </tr>`;
-  });
+    });
 
-  const fullHTML = `<!DOCTYPE html>
+    const fullHTML = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -466,33 +466,33 @@ h2 { text-align: center; color: #7A0000; margin: 5px 0; }
 </body>
 </html>`;
 
-  const doc = iframeRef.current.contentDocument;
-  if (!doc) {
-    toast.error("Failed to access print frame");
-    return;
-  }
-
-  doc.open();
-  doc.write(fullHTML);
-  doc.close();
-
-  setTimeout(() => {
-    if (iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.focus();
-      iframeRef.current.contentWindow.print();
-    } else {
-      toast.error("Print window not available");
+    const doc = iframeRef.current.contentDocument;
+    if (!doc) {
+      toast.error("Failed to access print frame");
+      return;
     }
-  }, 800);
-};
+
+    doc.open();
+    doc.write(fullHTML);
+    doc.close();
+
+    setTimeout(() => {
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.focus();
+        iframeRef.current.contentWindow.print();
+      } else {
+        toast.error("Print window not available");
+      }
+    }, 800);
+  };
 
   return (
     <div className="max-w-[95%] mx-auto p-2 md:p-4 bg-white rounded-xl shadow border border-gray-200 text-sm md:text-base font-sans">
-      <iframe 
-      ref={iframeRef} 
-      style={{ display: "none" }} 
-      title="print-frame" 
-    />
+      <iframe
+        ref={iframeRef}
+        style={{ display: "none" }}
+        title="print-frame"
+      />
       <h2 className={`text-lg md:text-xl font-bold mb-4 ${maroon}`}>
         PHV Validation Warehousewise
       </h2>
@@ -532,13 +532,12 @@ h2 { text-align: center; color: #7A0000; margin: 5px 0; }
             disabled={
               !selectedDept || !selectedWarehouse || loading
             }
-            className={`px-2 md:px-3 py-1 md:py-1 ${maroonGrad} text-white rounded-md text-xs md:text-sm font-medium hover:brightness-110 transition shadow ${
-              !selectedDept || !selectedWarehouse || loading
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }`}
+            className={`px-2 md:px-3 py-1 md:py-1 ${maroonGrad} text-white rounded-md text-xs md:text-sm font-medium hover:brightness-110 transition shadow ${!selectedDept || !selectedWarehouse || loading
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+              }`}
           >
-            <Eye className="inline-block mr-1 w-3 md:w-3 h-3 md:h-3" /> 
+            <Eye className="inline-block mr-1 w-3 md:w-3 h-3 md:h-3" />
             View
           </button>
         </div>
@@ -621,13 +620,12 @@ h2 { text-align: center; color: #7A0000; margin: 5px 0; }
                     <tr
                       key={`${department.DeptId}-${i}`}
                       onClick={() => setSelectedDept(department)}
-                      className={`cursor-pointer ${
-                        selectedDept?.DeptId === department.DeptId
-                          ? "bg-[#7A0000] text-white"
-                          : i % 2
+                      className={`cursor-pointer ${selectedDept?.DeptId === department.DeptId
+                        ? "bg-[#7A0000] text-white"
+                        : i % 2
                           ? "bg-white hover:bg-gray-100"
                           : "bg-gray-50 hover:bg-gray-100"
-                      }`}
+                        }`}
                     >
                       <td className="px-2 md:px-4 py-1 md:py-2 truncate min-w-0">
                         {department.DeptId}

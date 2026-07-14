@@ -46,6 +46,7 @@ import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
 import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 import HeadOfficePOSCollection from "../mainTopics/Collections/HeadOfficePOSCollection";
+import SalesAndCollection from "../mainTopics/Collections/SalesAndCollection";
 import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHighestOutstanding";
 
 
@@ -59,6 +60,7 @@ import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
 import CashSheetReport from "../mainTopics/CashBook/CashSheetReport";
 import CashSheetDateRangePayeeReport from "../mainTopics/CashBook/CashSheetDateRangePayeeReport.tsx";
 import ChequeDetailsExp from "../mainTopics/CashBook/ChequeDetailsExp";
+import ChequeDetailWPReport from "../mainTopics/CashBook/ChequeDetailsWP";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
@@ -87,6 +89,8 @@ import AverageConsumptionSelected from "../mainTopics/inventory/AverageConsumpti
 import QtyOnHandAllRegion from "../mainTopics/inventory/QtyOnHandAllRegions";
 import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
 import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuantityOnHand";
+import MaterialMasterAI from "../mainTopics/inventory/MateriallMasterAI";
+import CCWiseIssue from "../mainTopics/inventory/Ccwiseissue";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -118,6 +122,8 @@ import LastDocNo from "../mainTopics/PhysicalVerification/LastDocNo";
 
 // PUCSL/LISS reports
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
+import PUCSLSolarCustomers from "../mainTopics/PUCSL/PUCSLSolarCustomers";
+import SolarDataForUNT from "../mainTopics/PUCSL/SolarDataForUNT";
 
 // Solar Information reports
 import SolarPVBilling from "../mainTopics/SolarInformation/SolarPVBilling";
@@ -242,7 +248,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// Collections reports
 	"online counter collections": DishonouredCheques,
-	"sales and collection": DishonouredCheques,
+	"sales and collection": SalesAndCollection,
 	"stamp duty for payment collections": DishonouredCheques,
 	"monthly revenue collection of different channels": DishonouredCheques,
 	"kiosk payment collection": DishonouredCheques,
@@ -270,6 +276,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cash sheet report": CashSheetReport,
 	"cash sheet within date range for selected payee": CashSheetDateRangePayeeReport,
 	"cheque details with expcode": ChequeDetailsExp,
+	"cheque details within period" : ChequeDetailWPReport,
 
 	// General reports
 	"tariff block wise consumption": TariffBlockWiseConsumption,
@@ -303,6 +310,9 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise quantity on hand": CostCenterQuantityHnad,
 	"average consumptions all material codes": AverageConsumptions,
 	"average consumptions selected maerial codes": AverageConsumptionSelected,
+	"material master(both active and inactive)": MaterialMasterAI,
+	"c/c wise issue": CCWiseIssue,
+
 	// Province / Provincial quantity on hand variants
 	"province wise quantity on hand": ProvinceWiseQuantityOnHand,
 	"province wise quantity on hand provincial stores only": ProvinceWiseQuantityOnHand,
@@ -384,7 +394,8 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"liss submission retail journal adjustments": PUCSLSolarConnection,
 	"pucsl reports liss data": PUCSLSolarConnection,
 	"pucsl reports solar connections new": PUCSLSolarConnection,
-	"solar data for unt calculation": PUCSLSolarConnection,
+	"pucsl solar customers": PUCSLSolarCustomers,
+	"solar data for unt calculation": SolarDataForUNT,
 
 	// Solar Information reports
 	"solar pv billing information": SolarPVBilling,
@@ -437,14 +448,18 @@ export const getReportComponent = (normalizedReportName: string): ComponentType 
 	return reportComponentRegistry[normalizedReportName] || null;
 };
 
+const normalizeForLooseLookup = (value: string): string =>
+	value.replace(/[^a-z0-9]+/g, "").toLowerCase();
+
 export const getReportComponentLoose = (normalizedReportName: string): ComponentType | null => {
-	const query = normalizedReportName.trim();
+	const query = normalizeForLooseLookup(normalizedReportName);
 	if (!query) {
 		return null;
 	}
 
 	for (const [key, component] of Object.entries(reportComponentRegistry)) {
-		if (key.includes(query) || query.includes(key)) {
+		const normalizedKey = normalizeForLooseLookup(key);
+		if (normalizedKey.includes(query) || query.includes(normalizedKey)) {
 			return component;
 		}
 	}
