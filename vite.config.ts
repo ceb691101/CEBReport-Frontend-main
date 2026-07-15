@@ -53,6 +53,86 @@ export default defineConfig(({ mode }) => {
 					rewrite: (path) => path.replace(/^\/misapi/, ""),
 				},
 
+			"/misapi/api/divisionwise-srp-estimation": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/area-wise-srp-piv-pending": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/area-wise-srp-piv-paid": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/area-wise-srp-estimation-piv-paid": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/areawisesrpestimationpiv": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/areawisesrpapplicationpiv": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			"/misapi/api/areawisesrpapplicationpivstatus": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+			/*
+			"/misapi/api/cashsheet": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+*/
+/*
+			"/misapi/api/cashsheetdaterangepayee": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+
+*/
+
+			"/misapi/api/PriceVaWH": {
+							target: "http://localhost:44381",
+							changeOrigin: true,
+							secure: false,
+							rewrite: (path) => path.replace(/^\/misapi/, ""),
+						},
+
+			/*"/misapi/api/chequedetailsexp": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},*/
+
+			"/misapi/api/priceva": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
 				"/misapi/api/solarjobs/pending-jobs": {
 					target: env.VITE_LOCAL_API,
 					changeOrigin: true,
