@@ -89,6 +89,7 @@ import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuan
 import MaterialMasterAI from "../mainTopics/inventory/MateriallMasterAI";
 import CCWiseIssue from "../mainTopics/inventory/Ccwiseissue";
 import IssueReceiptWPReport from "../mainTopics/inventory/IssueReceiptWPreport";
+import IssuesRaisedForJobsReport from "../mainTopics/inventory/Issuesraisedforjobsreport";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -308,6 +309,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"material master(both active and inactive)": MaterialMasterAI,
 	"c/c wise issue": CCWiseIssue,
 	"issue receipt within period": IssueReceiptWPReport,
+	"issues raised by edl for jobs": IssuesRaisedForJobsReport,
 
 	// Province / Provincial quantity on hand variants
 	"province wise quantity on hand": ProvinceWiseQuantityOnHand,
