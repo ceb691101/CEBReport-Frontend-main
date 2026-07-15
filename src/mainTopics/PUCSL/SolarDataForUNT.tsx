@@ -242,11 +242,32 @@ const SolarDataForUNT = () => {
   const downloadAsCSV = () => {
     if (!exportResult) return;
 
-    const isNetAccounting = netType === "Net Accounting";
     let headers: string;
     let rows: string[];
 
-    if (isNetAccounting) {
+    if (netType === "Net Plus") {
+      headers = [
+        "cust_cat",
+        "year",
+        "submit_month",
+        "no_cus",
+        "Solar meter_export_kWh",
+        "Solar meter_import_kWh",
+        "paid_amount",
+        "Import units"
+      ].join(",");
+
+      rows = exportResult.Data.map((row) => [
+        row.Category,
+        row.Year,
+        row.Month,
+        row.Accts,
+        row.UnitsExpP,
+        row.UnitsExpD,
+        row.UnitsExpOffP,
+        row.UnitsImpD
+      ].join(","));
+    } else if (netType === "Net Accounting") {
       headers = [
         "Category",
         "Year",
@@ -418,7 +439,7 @@ const SolarDataForUNT = () => {
                 >
                   <option value="Net Metering">Net Metering</option>
                   <option value="Net Accounting">Net Accounting</option>
-                  <option value="Net Plus" disabled>Net Plus (Not Supported)</option>
+                  <option value="Net Plus">Net Plus</option>
                   <option value="Net Plus Plus" disabled>Net Plus Plus (Not Supported)</option>
                 </select>
               </div>
@@ -517,7 +538,36 @@ const SolarDataForUNT = () => {
           <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg">
             <div ref={printRef} className="min-w-full p-4 bg-white">
               <table className="w-full border-collapse border border-gray-300 text-xs text-gray-700 font-sans">
-                {netType === "Net Accounting" ? (
+                {netType === "Net Plus" ? (
+                  <>
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="border border-gray-300 px-3 py-2 text-left font-bold">cust_cat</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">year</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">submit_month</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">no_cus</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">Solar meter_export_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">Solar meter_import_kWh</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">paid_amount</th>
+                        <th className="border border-gray-300 px-3 py-2 text-right font-bold">Import units</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {exportResult.Data.map((row, i) => (
+                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td className="border border-gray-300 px-3 py-2 font-semibold text-gray-800 text-left">{row.Category}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{row.Year}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{row.Month}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.Accts)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpP)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpD)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsExpOffP)}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right">{fmtVal(row.UnitsImpD)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </>
+                ) : netType === "Net Accounting" ? (
                   <>
                     <thead className="bg-gray-100">
                       <tr>
