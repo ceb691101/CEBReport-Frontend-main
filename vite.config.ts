@@ -67,6 +67,20 @@ export default defineConfig(({ mode }) => {
 					rewrite: (path) => path.replace(/^\/misapi/, ""),
 				},
 
+				"/misapi/api/issuesraisedforjobs/report": {
+					target: env.VITE_LOCAL_API,
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+
+				"/misapi/api/grnraisedforpurchasing/report": {
+					target: env.VITE_LOCAL_API,
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+
 				"/misapi": {
 					target: env.VITE_SERVER_API,
 					changeOrigin: true,
