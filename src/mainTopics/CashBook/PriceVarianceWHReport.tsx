@@ -366,9 +366,9 @@ const PriceVarianceWHReport: React.FC = () => {
 			rows += `
           <tr class="${i % 2 ? "bg-white" : "bg-gray-50"}">
             <td class="px-3 py-2 border-l border-r border-gray-300 text-center text-xs">${i + 1}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs font-mono">${it.WrhCd || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs font-mono">${it.MatCd || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.GradeCd || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${it.WrhCd || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${it.MatCd || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs">${it.GradeCd || ""}</td>
             <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(it.UnitPrice)}</td>
             <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(it.NewPrice)}</td>
             <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(it.NetChange)}</td>
