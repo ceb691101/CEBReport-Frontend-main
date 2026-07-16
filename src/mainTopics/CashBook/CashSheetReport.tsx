@@ -93,6 +93,7 @@ const CashSheetReportTable: React.FC<{
     const maroon = "text-[#7A0000]";
 
     const monthLabel = MONTHS.find((m) => m.value === repMonth)?.label || repMonth;
+    const reportTitle = `Cash Sheet for the Month of ${monthLabel} ${repYear}`;
 
     // Sort by Cheque Run, Cheque No, Cheque Date
     const sortedData = [...data].sort((a, b) => {
@@ -111,34 +112,45 @@ const CashSheetReportTable: React.FC<{
         return dateA.localeCompare(dateB);
     });
 
+    const totalAmount = summary?.totalAmount ?? sortedData.reduce((sum, it) => sum + (Number(it.ChqAmt) || 0), 0);
+    const totalRecords = summary?.totalRecords ?? sortedData.length;
+
     /* ────── CSV Download ────── */
     const downloadCSV = () => {
         const titleRows = [
-            `Cash Sheet Report - ${monthLabel} ${repYear}`,
+            reportTitle,
             `Cost Center: ${costCenter}/${departmentName}`,
-            `Total Records: ${summary?.totalRecords || sortedData.length}`,
-            `Total Amount (LKR): ${formatAmount(summary?.totalAmount || 0)}`,
+            `Total Records: ${totalRecords}`,
+            `Total Amount (LKR): ${formatAmount(totalAmount)}`,
             "",
         ];
         const headers = [
             "Cheque Run",
+            "Cheque No.",
+            "Payslips No",
             "Cheque Date",
             "Payee",
-            "Payment Doc No.",
-            "Cheque Amount",
-            "Cheque No.",
+            "Amount (LKR)",
         ];
         const rows = sortedData.map((it) =>
             [
                 csvEscape(it.ChqRun),
+                csvEscape(it.ChqNo),
+                csvEscape(it.PymtDocNo),
                 csvEscape(formatDate(it.ChqDt)),
                 csvEscape(it.Payee),
-                csvEscape(it.PymtDocNo),
                 csvEscape(it.ChqAmt),
-                csvEscape(it.ChqNo),
             ].join(",")
         );
-        const csv = [...titleRows, headers.join(","), ...rows].join("\n");
+        const totalRow = [
+            "TOTAL",
+            "",
+            "",
+            "",
+            "",
+            csvEscape(formatAmount(totalAmount)),
+        ].join(",");
+        const csv = [...titleRows, headers.join(","), ...rows, totalRow].join("\n");
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -150,28 +162,24 @@ const CashSheetReportTable: React.FC<{
 
     /* ────── Print PDF ────── */
     const printPDF = () => {
-        const totalAmount = summary?.totalAmount ?? sortedData.reduce((sum, it) => sum + (Number(it.ChqAmt) || 0), 0);
-        const totalRecords = summary?.totalRecords ?? sortedData.length;
-
         let rowsHTML = "";
         sortedData.forEach((it, i) => {
             rowsHTML += `
         <tr class="${i % 2 ? "bg-white" : "bg-gray-50"}">
           <td class="px-3 py-2 border-l border-r border-gray-300 text-left text-xs">${it.ChqRun || ""}</td>
+          <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.ChqNo || ""}</td>
+          <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.PymtDocNo || ""}</td>
           <td class="px-3 py-2 border-r border-gray-300 text-center text-xs">${formatDate(it.ChqDt)}</td>
           <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${it.Payee || ""}</td>
-          <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.PymtDocNo || ""}</td>
           <td class="px-3 py-2 border-r border-gray-300 text-right text-xs">${formatAmount(it.ChqAmt)}</td>
-          <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.ChqNo || ""}</td>
         </tr>`;
         });
 
         // Add total row
         rowsHTML += `
         <tr style="background:#d3d3d3; font-weight:bold;">
-          <td colspan="4" style="padding:6px 8px; border:1px solid #d1d5db; text-align:right; font-size:9px;">TOTAL</td>
+          <td colspan="5" style="padding:6px 8px; border:1px solid #d1d5db; text-align:right; font-size:9px;">TOTAL</td>
           <td style="padding:6px 8px; border:1px solid #d1d5db; text-align:right; font-size:9px;">${formatAmount(totalAmount)}</td>
-          <td style="padding:6px 8px; border:1px solid #d1d5db; text-align:center; font-size:9px;">${totalRecords}</td>
         </tr>
       `;
 
@@ -197,7 +205,7 @@ const CashSheetReportTable: React.FC<{
   </style>
 </head>
 <body>
-  <div class="title">Cash Sheet Report - ${monthLabel} ${repYear}</div>
+  <div class="title">${reportTitle}</div>
   <div class="info">
     <div><strong>Cost Center:</strong> ${costCenter} / ${departmentName}</div>
     <div style="font-weight:600; color:#4B5563;">Currency : LKR</div>
@@ -206,11 +214,11 @@ const CashSheetReportTable: React.FC<{
     <thead>
       <tr style="background:#7A0000; color:#1f2937;">
         <th style="padding:6px 8px; width:12%;">Cheque Run</th>
+        <th style="padding:6px 8px; width:10%;">Cheque No.</th>
+        <th style="padding:6px 8px; width:14%;">Payslips No</th>
         <th style="padding:6px 8px; width:12%;">Cheque Date</th>
         <th style="padding:6px 8px; width:30%;">Payee</th>
-        <th style="padding:6px 8px; width:14%;">Payment Doc No.</th>
-        <th style="padding:6px 8px; width:12%;">Cheque Amount</th>
-        <th style="padding:6px 8px; width:10%;">Cheque No.</th>
+        <th style="padding:6px 8px; width:12%;">Amount (LKR)</th>
       </tr>
     </thead>
     <tbody>${rowsHTML}</tbody>
@@ -258,15 +266,15 @@ const CashSheetReportTable: React.FC<{
                         </button>
                     </div>
                     <h2 className={`text-lg md:text-xl font-bold text-center md:mb-6 ${maroon}`}>
-                        Cash Sheet Report - {monthLabel} {repYear}
+                        {reportTitle}
                     </h2>
                     <div className="flex flex-col sm:flex-row justify-between text-sm mb-4 gap-2 px-2">
                         <div>
                             <span className="font-bold">Cost Center:</span> {costCenter} / {departmentName}
                         </div>
                         <div className="flex gap-4 font-semibold text-gray-600">
-                            <div>Records: {summary?.totalRecords ?? sortedData.length}</div>
-                            <div>Total Amount: LKR {formatAmount(summary?.totalAmount ?? 0)}</div>
+                            <div>Records: {totalRecords}</div>
+                            <div>Total Amount: LKR {formatAmount(totalAmount)}</div>
                         </div>
                     </div>
                     <div className="mt-1 mb-5 border border-gray-200 rounded-lg overflow-x-auto print:ml-12 print:mt-12 print:overflow-visible">
@@ -275,33 +283,30 @@ const CashSheetReportTable: React.FC<{
                                 <thead>
                                     <tr className="bg-[#7A0000] text-white sticky top-0">
                                         <th className="px-4 py-2 border border-gray-300 text-center font-bold">Cheque Run</th>
+                                        <th className="px-4 py-2 border border-gray-300 text-center font-bold">Cheque No.</th>
+                                        <th className="px-4 py-2 border border-gray-300 text-center font-bold">Payslips No</th>
                                         <th className="px-4 py-2 border border-gray-300 text-center font-bold">Cheque Date</th>
                                         <th className="px-4 py-2 border border-gray-300 text-center font-bold">Payee</th>
-                                        <th className="px-4 py-2 border border-gray-300 text-center font-bold">Payment Doc No.</th>
-                                        <th className="px-4 py-2 border border-gray-300 text-right font-bold">Cheque Amount (LKR)</th>
-                                        <th className="px-4 py-2 border border-gray-300 text-center font-bold">Cheque No.</th>
+                                        <th className="px-4 py-2 border border-gray-300 text-right font-bold">Amount (LKR)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {sortedData.map((it, i) => (
                                         <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                                             <td className="px-4 py-2 border-l border-r border-gray-300 font-mono">{it.ChqRun}</td>
+                                            <td className="px-4 py-2 border-r border-gray-300 font-mono">{it.ChqNo}</td>
+                                            <td className="px-4 py-2 border-r border-gray-300 font-mono">{it.PymtDocNo}</td>
                                             <td className="px-4 py-2 text-center border-r border-gray-300 font-mono">{formatDate(it.ChqDt)}</td>
                                             <td className="px-4 py-2 border-r border-gray-300 break-words max-w-[250px]">{it.Payee}</td>
-                                            <td className="px-4 py-2 border-r border-gray-300 font-mono">{it.PymtDocNo}</td>
                                             <td className="px-4 py-2 text-right border-r border-gray-300 font-mono">{formatAmount(it.ChqAmt)}</td>
-                                            <td className="px-4 py-2 border-r border-gray-300 font-mono">{it.ChqNo}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                                 <tfoot>
                                     <tr className="bg-[#d3d3d3] font-bold sticky bottom-0">
-                                        <td colSpan={4} className="px-4 py-2 border border-gray-300 text-right">TOTAL</td>
+                                        <td colSpan={5} className="px-4 py-2 border border-gray-300 text-right">TOTAL</td>
                                         <td className="px-4 py-2 border border-gray-300 text-right font-mono">
-                                            {formatAmount(summary?.totalAmount ?? 0)}
-                                        </td>
-                                        <td className="px-4 py-2 border border-gray-300 text-center font-mono">
-                                            {summary?.totalRecords ?? sortedData.length}
+                                            {formatAmount(totalAmount)}
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -340,8 +345,6 @@ const CashSheetReport: React.FC = () => {
     const epfNo = user?.Userno || "";
     const maroon = "text-[#7A0000]";
     const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
-    const selectCls =
-        "w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent";
 
     // Generate list of years for selection (current year down to 10 years back)
     const yearsList = Array.from({ length: 11 }, (_, i) => String(currentYear - i));
@@ -470,35 +473,42 @@ const CashSheetReport: React.FC = () => {
                 Cash Sheet Report
             </h2>
 
-            <div className="flex flex-wrap gap-4 items-center mb-6">
-                <div className="flex flex-col">
-                    <label className={`text-xs font-medium mb-1 ${maroon}`}>Year:</label>
-                    <select
-                        value={repYear}
-                        onChange={(e) => setRepYear(e.target.value)}
-                        className={selectCls}
-                    >
-                        {yearsList.map((y) => (
-                            <option key={y} value={y}>
-                                {y}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+            {/* ────── Year / Month filters (widened, matches Price Variance Report style) ────── */}
+            <div className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <div className="flex items-center gap-2">
+                        <label className={`text-xs font-bold ${maroon} whitespace-nowrap`}>
+                            Year:
+                        </label>
+                        <select
+                            value={repYear}
+                            onChange={(e) => setRepYear(e.target.value)}
+                            className="pl-3 pr-3 py-1.5 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
+                        >
+                            {yearsList.map((y) => (
+                                <option key={y} value={y}>
+                                    {y}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                <div className="flex flex-col">
-                    <label className={`text-xs font-medium mb-1 ${maroon}`}>Month:</label>
-                    <select
-                        value={repMonth}
-                        onChange={(e) => setRepMonth(e.target.value)}
-                        className={selectCls}
-                    >
-                        {MONTHS.map((m) => (
-                            <option key={m.value} value={m.value}>
-                                {m.label}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="flex items-center gap-2">
+                        <label className={`text-xs font-bold ${maroon} whitespace-nowrap`}>
+                            Month:
+                        </label>
+                        <select
+                            value={repMonth}
+                            onChange={(e) => setRepMonth(e.target.value)}
+                            className="pl-3 pr-3 py-1.5 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
+                        >
+                            {MONTHS.map((m) => (
+                                <option key={m.value} value={m.value}>
+                                    {m.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
