@@ -48,6 +48,7 @@ import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 import HeadOfficePOSCollection from "../mainTopics/Collections/HeadOfficePOSCollection";
 import SalesAndCollection from "../mainTopics/Collections/SalesAndCollection";
 import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHighestOutstanding";
+import SuspensePaymentDetails from "../mainTopics/Collections/SuspensePaymentDetails";
 
 
 // Consumption Analysis reports
@@ -249,7 +250,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"payment collection": DishonouredCheques,
 	"head office collection total": HeadOfficeCollectionTotal,
 	"head office pos collection": HeadOfficePOSCollection,
-	"suspense payment details": DishonouredCheques,
+	"suspense payment details": SuspensePaymentDetails,
 	"finalized account details": DishonouredCheques,
 	"written off account details": DishonouredCheques,
 	"receivable position": ReceivablePosition,
