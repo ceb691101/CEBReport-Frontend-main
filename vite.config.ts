@@ -120,14 +120,21 @@ export default defineConfig(({ mode }) => {
 							rewrite: (path) => path.replace(/^\/misapi/, ""),
 						},
 
-			/*"/misapi/api/chequedetailsexp": {
+			"/misapi/api/chequedetailsexp": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path) => path.replace(/^\/misapi/, ""),
-			},*/
+			},
 
 			"/misapi/api/priceva": {
+				target: "http://localhost:44381",
+				changeOrigin: true,
+				secure: false,
+				rewrite: (path) => path.replace(/^\/misapi/, ""),
+			},
+
+			"/misapi/api/chequesummary": {
 				target: "http://localhost:44381",
 				changeOrigin: true,
 				secure: false,
