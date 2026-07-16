@@ -297,7 +297,7 @@ const ChequeSummaryReport: React.FC = () => {
             <td class="px-3 py-2 border-r border-gray-300 text-center text-xs">${formatDate(
 					it.ChqDt
 				)}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs font-mono">${
+            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${
 					it.ChqNo || ""
 				}</td>
             <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(
