@@ -57,6 +57,9 @@ import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHigh
 import CashBookDetailsReport from "../mainTopics/CashBook/CashBookDetailsReport";
 import CashBookCCReport from "../mainTopics/CashBook/CashBookCCReport";
 import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
+import CashSheetReport from "../mainTopics/CashBook/CashSheetReport";
+import CashSheetDateRangePayeeReport from "../mainTopics/CashBook/CashSheetDateRangePayeeReport.tsx";
+import ChequeDetailsExp from "../mainTopics/CashBook/ChequeDetailsExp";
 import ChequeDetailWPReport from "../mainTopics/CashBook/ChequeDetailsWP";
 
 // General reports
@@ -88,6 +91,7 @@ import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
 import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuantityOnHand";
 import MaterialMasterAI from "../mainTopics/inventory/MateriallMasterAI";
 import CCWiseIssue from "../mainTopics/inventory/Ccwiseissue";
+import IssueReceiptWPReport from "../mainTopics/inventory/IssueReceiptWPreport";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -270,6 +274,9 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"selected payee within date range": CashBookDetailsReport,
 	"cost center wise selected payee within date range": CashBookCCReport,
 	"cost center wise document inquiry cash book with cheque details": DocumentInquiry,
+	"cash sheet report": CashSheetReport,
+	"cash sheet within date range for selected payee": CashSheetDateRangePayeeReport,
+	"cheque details with expcode": ChequeDetailsExp,
 	"cheque details within period" : ChequeDetailWPReport,
 
 	// General reports
@@ -306,6 +313,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"average consumptions selected maerial codes": AverageConsumptionSelected,
 	"material master(both active and inactive)": MaterialMasterAI,
 	"c/c wise issue": CCWiseIssue,
+	"issue receipt within period": IssueReceiptWPReport,
 
 	// Province / Provincial quantity on hand variants
 	"province wise quantity on hand": ProvinceWiseQuantityOnHand,

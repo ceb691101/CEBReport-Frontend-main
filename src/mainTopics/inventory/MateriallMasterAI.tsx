@@ -100,11 +100,6 @@ const MaterialMasterAI: React.FC = () => {
 
       const raw = reportResponse.data as any;
 
-      console.log("reportResponse =", reportResponse);
-      console.log("raw =", raw);
-      console.log("raw.data =", raw?.data);
-      console.log("rows =", raw?.data ?? []);
-
       const rows = raw?.data ?? [];
 
       if (!rows || rows.length === 0) {
