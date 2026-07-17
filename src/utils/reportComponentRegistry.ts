@@ -46,6 +46,9 @@ import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
 import HeadOfficeCollectionTotal from "../mainTopics/Collections/CollectionTot";
 import ReceivablePosition from "../mainTopics/Collections/ReceivablePosition";
 import HeadOfficePOSCollection from "../mainTopics/Collections/HeadOfficePOSCollection";
+import SalesAndCollection from "../mainTopics/Collections/SalesAndCollection";
+import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHighestOutstanding";
+import SuspensePaymentDetails from "../mainTopics/Collections/SuspensePaymentDetails";
 
 
 // Consumption Analysis reports
@@ -55,6 +58,13 @@ import HeadOfficePOSCollection from "../mainTopics/Collections/HeadOfficePOSColl
 import CashBookDetailsReport from "../mainTopics/CashBook/CashBookDetailsReport";
 import CashBookCCReport from "../mainTopics/CashBook/CashBookCCReport";
 import DocumentInquiry from "../mainTopics/CashBook/DocumentInquiry";
+import CashSheetReport from "../mainTopics/CashBook/CashSheetReport";
+import CashSheetDateRangePayeeReport from "../mainTopics/CashBook/CashSheetDateRangePayeeReport.tsx";
+import ChequeDetailsExp from "../mainTopics/CashBook/ChequeDetailsExp";
+import PriceVarianceReport from "../mainTopics/CashBook/PriceVarianceReport";
+import ChequeDetailWPReport from "../mainTopics/CashBook/ChequeDetailsWP";
+import PriceVarianceWHReport from "../mainTopics/CashBook/PriceVarianceWHReport";
+import ChequeSummaryReport from "../mainTopics/CashBook/ChequeSummaryReport";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
@@ -83,6 +93,13 @@ import AverageConsumptionSelected from "../mainTopics/inventory/AverageConsumpti
 import QtyOnHandAllRegion from "../mainTopics/inventory/QtyOnHandAllRegions";
 import ProvincialQtyHand from "../mainTopics/inventory/provincialQtyHand";
 import ProvinceWiseQuantityOnHand from "../mainTopics/inventory/ProvinceWiseQuantityOnHand";
+import MaterialMasterAI from "../mainTopics/inventory/MateriallMasterAI";
+import CCWiseIssue from "../mainTopics/inventory/Ccwiseissue";
+import IssueReceiptWPReport from "../mainTopics/inventory/IssueReceiptWPreport";
+import IssuesRaisedForJobsReport from "../mainTopics/inventory/Issuesraisedforjobsreport";
+import GrnRaisedForPurchasingReport from "../mainTopics/inventory/Grnraisedforpurchasingreport";
+import CcGrnNotGenReport from "../mainTopics/inventory/Ccgrnnotgenreport";
+import BranchGrnNotGenReport from "../mainTopics/inventory/Branchgrnnotgenreport";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -114,6 +131,8 @@ import LastDocNo from "../mainTopics/PhysicalVerification/LastDocNo";
 
 // PUCSL/LISS reports
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
+import PUCSLSolarCustomers from "../mainTopics/PUCSL/PUCSLSolarCustomers";
+import SolarDataForUNT from "../mainTopics/PUCSL/SolarDataForUNT";
 
 // Solar Information reports
 import SolarPVBilling from "../mainTopics/SolarInformation/SolarPVBilling";
@@ -238,19 +257,20 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// Collections reports
 	"online counter collections": DishonouredCheques,
-	"sales and collection": DishonouredCheques,
+	"sales and collection": SalesAndCollection,
 	"stamp duty for payment collections": DishonouredCheques,
 	"monthly revenue collection of different channels": DishonouredCheques,
 	"kiosk payment collection": DishonouredCheques,
 	"payment collection": DishonouredCheques,
 	"head office collection total": HeadOfficeCollectionTotal,
 	"head office pos collection": HeadOfficePOSCollection,
-	"suspense payment details": DishonouredCheques,
+	"suspense payment details": SuspensePaymentDetails,
 	"finalized account details": DishonouredCheques,
 	"written off account details": DishonouredCheques,
 	"receivable position": ReceivablePosition,
 	"unload loan information": DishonouredCheques,
 	"dishonoured cheques": DishonouredCheques,
+	"customers with highest outstanding balance": CustomersHighestOutstanding,
 
 	// Consumption Analysis reports
 	"tariff block wise consumption report": TariffBlockWiseConsumption,
@@ -262,6 +282,13 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"selected payee within date range": CashBookDetailsReport,
 	"cost center wise selected payee within date range": CashBookCCReport,
 	"cost center wise document inquiry cash book with cheque details": DocumentInquiry,
+	"cash sheet report": CashSheetReport,
+	"cash sheet within date range for selected payee": CashSheetDateRangePayeeReport,
+	"cheque details with expcode": ChequeDetailsExp,
+	"price variance" : PriceVarianceReport,
+	"cheque details within period" : ChequeDetailWPReport,
+	"price variance wh wise" : PriceVarianceWHReport,
+	"cheque summary" : ChequeSummaryReport, 
 
 	// General reports
 	"tariff block wise consumption": TariffBlockWiseConsumption,
@@ -295,6 +322,14 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise quantity on hand": CostCenterQuantityHnad,
 	"average consumptions all material codes": AverageConsumptions,
 	"average consumptions selected maerial codes": AverageConsumptionSelected,
+	"material master(both active and inactive)": MaterialMasterAI,
+	"c/c wise issue": CCWiseIssue,
+	"issue receipt within period": IssueReceiptWPReport,
+	"issues raised by edl for jobs": IssuesRaisedForJobsReport,
+	"grn raised by edl for purchasing": GrnRaisedForPurchasingReport,
+	"c/c grn value tv not generated by own cost center": CcGrnNotGenReport,
+	"branch wise grn not generated issues": BranchGrnNotGenReport,
+
 	// Province / Provincial quantity on hand variants
 	"province wise quantity on hand": ProvinceWiseQuantityOnHand,
 	"province wise quantity on hand provincial stores only": ProvinceWiseQuantityOnHand,
@@ -376,7 +411,8 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"liss submission retail journal adjustments": PUCSLSolarConnection,
 	"pucsl reports liss data": PUCSLSolarConnection,
 	"pucsl reports solar connections new": PUCSLSolarConnection,
-	"solar data for unt calculation": PUCSLSolarConnection,
+	"pucsl solar customers": PUCSLSolarCustomers,
+	"solar data for unt calculation": SolarDataForUNT,
 
 	// Solar Information reports
 	"solar pv billing information": SolarPVBilling,
@@ -429,14 +465,18 @@ export const getReportComponent = (normalizedReportName: string): ComponentType 
 	return reportComponentRegistry[normalizedReportName] || null;
 };
 
+const normalizeForLooseLookup = (value: string): string =>
+	value.replace(/[^a-z0-9]+/g, "").toLowerCase();
+
 export const getReportComponentLoose = (normalizedReportName: string): ComponentType | null => {
-	const query = normalizedReportName.trim();
+	const query = normalizeForLooseLookup(normalizedReportName);
 	if (!query) {
 		return null;
 	}
 
 	for (const [key, component] of Object.entries(reportComponentRegistry)) {
-		if (key.includes(query) || query.includes(key)) {
+		const normalizedKey = normalizeForLooseLookup(key);
+		if (normalizedKey.includes(query) || query.includes(normalizedKey)) {
 			return component;
 		}
 	}

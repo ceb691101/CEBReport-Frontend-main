@@ -126,7 +126,8 @@ const TransactionHistoryOrdinary: React.FC = () => {
                 font-family: Arial;
               }
               @bottom-right {
-                content: "Page " counter(page) " of " counter(pages);
+   
+              content: "Page " counter(page) " of " counter(pages);
                 font-size: 9px;
                 color: #666;
                 font-family: Arial;

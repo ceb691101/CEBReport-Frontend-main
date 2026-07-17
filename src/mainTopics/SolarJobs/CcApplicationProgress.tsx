@@ -207,59 +207,50 @@ const CcApplicationProgress: React.FC = () => {
 				<h2 className={`text-xl font-bold ${maroon}`}>C/C Solar Application Progress</h2>
 			</div>
 
-			{/* Filters */}
-			<div className="bg-gray-50 p-4 rounded-lg mb-4 flex flex-col xl:flex-row gap-4 xl:items-end xl:justify-between">
-				<div className="flex flex-col sm:flex-row gap-4 flex-1">
-					{/* Search by ID */}
-					<div className="relative w-full max-w-[200px]">
-						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-						<input
-							type="text"
-							value={searchId}
-							placeholder="Search by Dept ID"
-							onChange={(e) => setSearchId(e.target.value)}
-							className="pl-10 pr-3 py-2 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
-							autoComplete="off"
-						/>
-					</div>
+			{/* Date Range - Right aligned */}
+			<div className="flex justify-end mb-4">
+				<DateRangePicker
+					fromDate={fromDate}
+					toDate={toDate}
+					onFromChange={setFromDate}
+					onToChange={setToDate}
+				/>
+			</div>
 
-					{/* Search by Name */}
-					<div className="relative w-full max-w-[200px]">
-						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-						<input
-							type="text"
-							value={searchName}
-							placeholder="Search by Name"
-							onChange={(e) => setSearchName(e.target.value)}
-							className="pl-10 pr-3 py-2 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
-							autoComplete="off"
-						/>
-					</div>
+			{/* Search Inputs */}
+			<div className="flex flex-wrap items-center gap-3 mb-4">
+				<div className="relative">
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+					<input
+						type="text"
+						value={searchId}
+						placeholder="Search by ID"
+						onChange={(e) => setSearchId(e.target.value)}
+						className="pl-10 pr-4 py-1.5 w-48 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
+						autoComplete="off"
+					/>
 				</div>
 
-				<div className="flex items-center gap-4 flex-wrap">
-					{/* DateRangePicker */}
-					<div className="mt-2 mb-0">
-						<DateRangePicker
-							fromDate={fromDate}
-							toDate={toDate}
-							onFromChange={setFromDate}
-							onToChange={setToDate}
-						/>
-					</div>
-
-					{/* Clear filters */}
-					<div className="flex gap-2">
-						{(searchId || searchName || fromDate || toDate) && (
-							<button
-								onClick={() => { setSearchId(""); setSearchName(""); setFromDate(""); setToDate(""); }}
-								className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-100 text-gray-700 text-sm transition"
-							>
-								<RotateCcw className="w-4 h-4" /> Clear
-							</button>
-						)}
-					</div>
+				<div className="relative">
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+					<input
+						type="text"
+						value={searchName}
+						placeholder="Search by Name"
+						onChange={(e) => setSearchName(e.target.value)}
+						className="pl-10 pr-4 py-1.5 w-48 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
+						autoComplete="off"
+					/>
 				</div>
+
+				{(searchId || searchName) && (
+					<button
+						onClick={() => { setSearchId(""); setSearchName(""); }}
+						className="flex items-center gap-1.5 px-4 py-1.5 bg-gray-100 hover:bg-gray-200 rounded border text-xs font-medium"
+					>
+						<RotateCcw className="w-3.5 h-3.5" /> Clear
+					</button>
+				)}
 			</div>
 
 			{/* Department list */}
@@ -309,7 +300,7 @@ const CcApplicationProgress: React.FC = () => {
 														}`}
 												>
 													<Eye className="w-3 h-3" />
-													View Report
+													View
 												</button>
 											</td>
 										</tr>
@@ -351,7 +342,7 @@ const CcApplicationProgress: React.FC = () => {
 							<div>
 								<h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
 									<FileText className="w-4 h-4 text-[#7A0000]" />
-									C/C Solar Application Progress — Jasper Report
+									C/C Solar Application Progress
 								</h2>
 								<p className="text-xs text-gray-500 mt-0.5">
 									Cost Center:{" "}
@@ -400,7 +391,7 @@ const CcApplicationProgress: React.FC = () => {
 							{pdfLoading && (
 								<div className="flex flex-col items-center justify-center h-full gap-4">
 									<div className="animate-spin rounded-full h-12 w-12 border-4 border-[#7A0000] border-t-transparent"></div>
-									<p className="text-[#7A0000] font-medium text-sm">Generating Jasper Report...</p>
+									<p className="text-[#7A0000] font-medium text-sm">Generating Report...</p>
 									<p className="text-gray-500 text-xs">This may take a moment</p>
 								</div>
 							)}
