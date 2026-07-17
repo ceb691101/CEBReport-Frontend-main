@@ -17,8 +17,6 @@ const Sidebar = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [billMap, setBillMap] = useState<string | null>(null);
-  const [levelNo, setLevelNo] = useState<string | null>(null);
 
   const handleClick = (id: number, path: string, subtopics: Subtopic[]) => {
     setActiveId(id);
@@ -39,8 +37,6 @@ const Sidebar = () => {
 
       setSidebarData(result.data);
       setMessage(result.message);
-      setBillMap(result.billMap);
-      setLevelNo(result.levelNo);
       setLoading(false);
     };
 
@@ -88,11 +84,7 @@ const Sidebar = () => {
   }, [location.pathname, sidebarData, activeId]);
 
   return (
-    <div
-      className="w-full bg-gradient-to-b from-gray-50 to-white border-r border-gray-100 p-2 sm:p-3 text-gray-700 font-normal cursor-pointer overflow-y-auto h-full"
-      data-bill-map={billMap ?? ""}
-      data-level-no={levelNo ?? ""}
-    >
+    <div className="w-full bg-gradient-to-b from-gray-50 to-white border-r border-gray-100 p-2 sm:p-3 text-gray-700 font-normal cursor-pointer overflow-y-auto h-full">
       <div className="pt-12">
         <div className="px-4 mb-6">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">

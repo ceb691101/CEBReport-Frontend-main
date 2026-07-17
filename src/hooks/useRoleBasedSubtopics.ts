@@ -31,8 +31,6 @@ export const useRoleBasedSubtopics = (categoryNames: string[]) => {
   const epfNo = user?.Userno ?? "";
   const state = (location.state as SidebarLocationState | null) ?? null;
   const [dynamicSubtopics, setDynamicSubtopics] = useState<RoleSubtopic[]>([]);
-  const [billMap, setBillMap] = useState<string | null>(null);
-  const [levelNo, setLevelNo] = useState<string | null>(null);
 
   const selectedSubtopicId =
     typeof state?.selectedSubtopicId === "number" ? state.selectedSubtopicId : null;
@@ -71,8 +69,6 @@ export const useRoleBasedSubtopics = (categoryNames: string[]) => {
       }));
 
       setDynamicSubtopics(subtopics);
-      setBillMap(result.billMap);
-      setLevelNo(result.levelNo);
     };
 
     void loadFallbackSubtopics();
@@ -96,7 +92,5 @@ export const useRoleBasedSubtopics = (categoryNames: string[]) => {
   return {
     subtopics: routeStateSubtopics ?? fallbackSubtopics,
     selectedSubtopicId,
-    billMap,
-    levelNo,
   };
 };
