@@ -338,6 +338,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// Physical Verification FIFO reports
 	"1. physical verification obsolete idle - av/7a (fifo)": PHVObsoleteIdleFIFO,
+	"2. physical verification damage - av/7b (fifo)": PHVDamageFIFO,
 
 	// Physical Verification reports
 	"1 phv entry form": PHVEntryForm,
