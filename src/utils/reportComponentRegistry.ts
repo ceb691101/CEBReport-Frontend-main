@@ -336,6 +336,9 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"ledger card subaccounts total": LedgerCardSubAccountTotal,
 	"sub accounts transactions for account code within selected company": DivisionalLedgerCard,
 
+	// Physical Verification FIFO reports
+	"1. physical verification obsolete idle - av/7a (fifo)": PHVObsoleteIdleFIFO,
+
 	// Physical Verification reports
 	"1 phv entry form": PHVEntryForm,
 	"phv entry form": PHVEntryForm,
@@ -358,7 +361,6 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"physical verification obsolete idle fifo": PHVObsoleteIdleFIFO,
 	"fifo damage": PHVDamageFIFO,
 	"phv damage fifo": PHVDamageFIFO,
-	"phv damage (fifo)": PHVDamageFIFO,
 	"physical verification damage fifo": PHVDamageFIFO,
 	"physical verification fifo obsolete idle": PHVObsoleteIdleFIFO,
 	// Additional aliases to match backend/report-catalog variations
