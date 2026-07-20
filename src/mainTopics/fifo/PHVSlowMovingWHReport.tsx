@@ -1,4 +1,4 @@
-// PHVDamageFIFO.tsx
+// PHVSlowMovingWHReport.tsx
 import React, { useEffect, useState } from "react";
 import { Download, Printer, X, RotateCcw, Eye, Search } from "lucide-react";
 import { toast } from "react-toastify";
@@ -14,16 +14,16 @@ interface Warehouse {
   CostCenterId?: string;
 }
 
-interface FIFOItem {
-  DocumentNo: string | null;
-  MaterialCode: string | null;
-  MaterialName: string | null;
-  GradeCode: string | null;
-  PhvDate: string | null;
+interface SlowMovingItem {
+  DocNo: string | null;
+  MatCd: string | null;
+  MatNm: string | null;
+  GradeCd: string | null;
+  PhvDt: string | null;
   QtyOnHand: number | null;
   StockBook: number | null;
   Reason: string | null;
-  CostCentreName: string | null;
+  CctName: string | null;
 }
 
 /* ────── Constants ────── */
@@ -43,15 +43,15 @@ const formatNumber = (num: number | string | null | undefined): string => {
   return n < 0 ? `(${formatted})` : formatted;
 };
 
-// Matches PHV Obsolete/Idle sample: DD/MM/YYYY
-const formatDateDMY = (dateStr: string | null): string => {
+// Matches Slow Moving sample: YYYY.MM.DD
+const formatDateDot = (dateStr: string | null): string => {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return "";
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return `${day}/${month}/${year}`;
+  return `${year}.${month}.${day}`;
 };
 
 const csvEscape = (val: string | number | null | undefined): string => {
@@ -86,7 +86,7 @@ const parseApiResponse = (response: any): any[] => {
 };
 
 /* ────── MAIN COMPONENT ────── */
-const PHVDamageFIFO: React.FC = () => {
+const PHVSlowMovingWHReport: React.FC = () => {
   const { user } = useUser();
   const epfNo = user?.Userno || "";
 
@@ -113,7 +113,7 @@ const PHVDamageFIFO: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
   /* ── Report state ── */
-  const [reportData, setReportData] = useState<FIFOItem[]>([]);
+  const [reportData, setReportData] = useState<SlowMovingItem[]>([]);
   const [reportLoading, setReportLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
 
@@ -267,8 +267,9 @@ const PHVDamageFIFO: React.FC = () => {
   };
 
   /* ────── Fetch report data (plain JSON, no Jasper) ──────
-     Matches PHVDamageFIFOController.GetPHVDamageFIFO(deptId, warehouseCode, repYear)
-     exactly -- no repMonth is sent, since the endpoint doesn't accept or use it. */
+     Matches SlowMovingWHController.GetReport(repYear, whCode) exactly --
+     the cost center is only used client-side to filter the warehouse list;
+     it is not sent to the endpoint, since the SQL itself doesn't filter by it. */
   const handleViewReport = async () => {
     if (!validateInputs()) return;
 
@@ -280,13 +281,11 @@ const PHVDamageFIFO: React.FC = () => {
     setShowReport(true);
 
     try {
-      const params = new URLSearchParams({
-        deptId: selectedDept!.DeptId,
-        warehouseCode: selectedWarehouse,
-        repYear: selectedYear.toString(),
-      });
+      const repYearParam = selectedYear.toString();
+      const whCodeParam = encodeURIComponent(selectedWarehouse);
+      const url = `/misapi/api/phvslowmovingwh/report/${repYearParam}/${whCodeParam}`;
 
-      const res = await fetch(`/misapi/api/phv-damage-fifo/list?${params.toString()}`, {
+      const res = await fetch(url, {
         credentials: "include",
         signal: controller.signal,
       });
@@ -298,7 +297,9 @@ const PHVDamageFIFO: React.FC = () => {
       }
 
       const json = await res.json();
-      const items: FIFOItem[] = Array.isArray(json) ? json : json.data || [];
+      if (!json.success) throw new Error(json.message || "Failed to load data");
+
+      const items: SlowMovingItem[] = json.data || [];
 
       if (items.length > MAX_RECORDS) {
         throw new Error(`Too many records (${items.length}). Please refine your search.`);
@@ -351,24 +352,24 @@ const PHVDamageFIFO: React.FC = () => {
     toast.info("Filters cleared.");
   };
 
-  /* ────── Single flat table, sorted by material / document ────── */
+  /* ────── Single flat table, sorted per SQL: doc_no, mat_cd ────── */
   const sortedData = [...reportData].sort(
     (a, b) =>
-      (a.MaterialCode || "").localeCompare(b.MaterialCode || "") ||
-      (a.DocumentNo || "").localeCompare(b.DocumentNo || "")
+      (a.DocNo || "").localeCompare(b.DocNo || "") ||
+      (a.MatCd || "").localeCompare(b.MatCd || "")
   );
 
-  const grandTotalCost = reportData.reduce((s, r) => s + (r.StockBook || 0), 0);
+  const grandTotalStockBook = reportData.reduce((s, r) => s + (r.StockBook || 0), 0);
   const costCtrDisplay =
     selectedDept ? `${selectedDept.DeptId} - ${selectedDept.DeptName} - ${selectedWarehouse}` : "";
-  const verificationDate = formatDateDMY(reportData.find((r) => r.PhvDate)?.PhvDate || null);
+  const verificationDate = formatDateDot(reportData.find((r) => r.PhvDt)?.PhvDt || null);
 
   /* ────── CSV download ────── */
   const downloadCSV = () => {
     if (reportData.length === 0) return;
 
     const titleRows = [
-      `STATEMENT OF DAMAGED MATERIALS IN STOCKS -${selectedYear} AV/7B`,
+      `Statement of Slow Moving Materials in Stocks -${selectedYear} AV/6A`,
       `Cost Center : ${costCtrDisplay}`,
       `Date of Verification : ${verificationDate}`,
       "",
@@ -376,9 +377,10 @@ const PHVDamageFIFO: React.FC = () => {
 
     const headers = [
       "Serial",
+      "Document No",
       "Code No",
       "Description",
-      "Document No",
+      "Grade Code",
       "Quantity (Stock Book)",
       "Cost (Rs.) (Stock Book)",
       "Reasons",
@@ -390,9 +392,10 @@ const PHVDamageFIFO: React.FC = () => {
       rows.push(
         [
           csvEscape(i + 1),
-          csvEscape(it.MaterialCode),
-          csvEscape(it.MaterialName),
-          csvEscape(it.DocumentNo),
+          csvEscape(it.DocNo),
+          csvEscape(it.MatCd),
+          csvEscape(it.MatNm),
+          csvEscape(it.GradeCd),
           csvEscape(formatNumber(it.QtyOnHand)),
           csvEscape(formatNumber(it.StockBook)),
           csvEscape(it.Reason),
@@ -401,14 +404,14 @@ const PHVDamageFIFO: React.FC = () => {
       );
     });
 
-    rows.push(`Total of Damaged Stocks,,,,,${csvEscape(formatNumber(grandTotalCost))},,`);
+    rows.push(`Total of Slow Moving Stocks,,,,,,${csvEscape(formatNumber(grandTotalStockBook))},,`);
 
     const csv = [...titleRows, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `PHV_Damage_FIFO_${selectedDept?.DeptId}_${selectedWarehouse}_${selectedYear}.csv`;
+    a.download = `SlowMoving_${selectedDept?.DeptId}_${selectedWarehouse}_${selectedYear}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -429,9 +432,10 @@ const PHVDamageFIFO: React.FC = () => {
           (it, i) => `
           <tr class="${i % 2 ? "bg-white" : "bg-gray-50"}">
             <td class="cell center">${start + i + 1}</td>
-            <td class="cell">${it.MaterialCode || ""}</td>
-            <td class="cell">${it.MaterialName || ""}</td>
-            <td class="cell mono">${it.DocumentNo || ""}</td>
+            <td class="cell mono">${it.DocNo || ""}</td>
+            <td class="cell">${it.MatCd || ""}</td>
+            <td class="cell">${it.MatNm || ""}</td>
+            <td class="cell center">${it.GradeCd || ""}</td>
             <td class="cell right mono">${formatNumber(it.QtyOnHand)}</td>
             <td class="cell right mono">${formatNumber(it.StockBook)}</td>
             <td class="cell">${it.Reason || ""}</td>
@@ -442,7 +446,7 @@ const PHVDamageFIFO: React.FC = () => {
     };
 
     const buildHeader = () => `
-    <div class="title">STATEMENT OF DAMAGED MATERIALS IN STOCKS -${selectedYear} AV/7B</div>
+    <div class="title">Statement of Slow Moving Materials in Stocks -${selectedYear} AV/6A</div>
     <div class="header-row">
       <div class="header-left">
         <div><strong>Cost Center :</strong> ${costCtrDisplay}</div>
@@ -490,13 +494,14 @@ const PHVDamageFIFO: React.FC = () => {
           <thead>
             <tr>
               <th style="width:4%;">Serial</th>
-              <th style="width:10%;">Code No</th>
-              <th style="width:20%;">Description</th>
-              <th style="width:12%;">Document No</th>
+              <th style="width:11%;">Document No</th>
+              <th style="width:9%;">Code No</th>
+              <th style="width:17%;">Description</th>
+              <th style="width:8%;">Grade Code</th>
               <th style="width:12%;">Quantity<br/>(Stock Book)</th>
               <th style="width:12%;">Cost (Rs.)<br/>(Stock Book)</th>
-              <th style="width:15%;">Reasons</th>
-              <th style="width:15%;">Recommended action<br/>to be taken</th>
+              <th style="width:13%;">Reasons</th>
+              <th style="width:14%;">Recommended action<br/>to be taken</th>
             </tr>
           </thead>
           <tbody>${buildRows(p)}</tbody>
@@ -504,8 +509,8 @@ const PHVDamageFIFO: React.FC = () => {
             isLastPage
               ? `<tfoot>
                   <tr>
-                    <td colspan="5" class="right">Total of Damaged Stocks</td>
-                    <td class="right mono">${formatNumber(grandTotalCost)}</td>
+                    <td colspan="6" class="right">Total of Slow Moving Stocks</td>
+                    <td class="right mono">${formatNumber(grandTotalStockBook)}</td>
                     <td colspan="2"></td>
                   </tr>
                 </tfoot>`
@@ -520,7 +525,7 @@ const PHVDamageFIFO: React.FC = () => {
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Statement of Damaged Materials in Stocks - ${selectedYear} AV/7B</title>
+  <title>Statement of Slow Moving Materials in Stocks - ${selectedYear} AV/6A</title>
   <style>
     @media print {
       @page { margin: 10mm 8mm 14mm 8mm; }
@@ -577,7 +582,9 @@ const PHVDamageFIFO: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
       <div className="flex justify-between items-center mb-4">
-        <h2 className={`text-xl font-bold ${maroon}`}>Physical Verification Damage AV/7A (FIFO)</h2>
+        <h2 className={`text-xl font-bold ${maroon}`}>
+          Physical Verification Slow Moving WH Wise - AV/6 (FIFO)
+        </h2>
       </div>
 
       <div className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
@@ -751,7 +758,7 @@ const PHVDamageFIFO: React.FC = () => {
               <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center gap-4">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#7A0000]"></div>
                 <p className="text-xl font-bold text-[#7A0000]">Loading Report...</p>
-                <p className="text-sm text-gray-600">Fetching damaged material records from server</p>
+                <p className="text-sm text-gray-600">Fetching slow moving material records from server</p>
               </div>
             )}
             {!reportLoading && reportData.length > 0 && (
@@ -778,7 +785,7 @@ const PHVDamageFIFO: React.FC = () => {
                 </div>
 
                 <h2 className={`text-lg md:text-xl font-bold text-center md:mb-4 ${maroon}`}>
-                  STATEMENT OF DAMAGED MATERIALS IN STOCKS -{selectedYear} AV/7B
+                  Statement of Slow Moving Materials in Stocks -{selectedYear} AV/6A
                 </h2>
                 <div className="flex justify-between text-xs md:text-sm mb-4 ml-5 mr-12">
                   <div>
@@ -804,14 +811,17 @@ const PHVDamageFIFO: React.FC = () => {
                           <th className="px-4 py-2 border border-gray-300" style={{ width: "4%" }}>
                             Serial
                           </th>
-                          <th className="px-4 py-2 border border-gray-300" style={{ width: "10%" }}>
+                          <th className="px-4 py-2 border border-gray-300" style={{ width: "11%" }}>
+                            Document No
+                          </th>
+                          <th className="px-4 py-2 border border-gray-300" style={{ width: "9%" }}>
                             Code No
                           </th>
-                          <th className="px-4 py-2 border border-gray-300" style={{ width: "20%" }}>
+                          <th className="px-4 py-2 border border-gray-300" style={{ width: "17%" }}>
                             Description
                           </th>
-                          <th className="px-4 py-2 border border-gray-300" style={{ width: "12%" }}>
-                            Document No
+                          <th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
+                            Grade Code
                           </th>
                           <th className="px-4 py-2 border border-gray-300 text-right" style={{ width: "12%" }}>
                             Quantity (Stock Book)
@@ -819,10 +829,10 @@ const PHVDamageFIFO: React.FC = () => {
                           <th className="px-4 py-2 border border-gray-300 text-right" style={{ width: "12%" }}>
                             Cost (Rs.) (Stock Book)
                           </th>
-                          <th className="px-4 py-2 border border-gray-300" style={{ width: "15%" }}>
+                          <th className="px-4 py-2 border border-gray-300" style={{ width: "13%" }}>
                             Reasons
                           </th>
-                          <th className="px-4 py-2 border border-gray-300" style={{ width: "15%" }}>
+                          <th className="px-4 py-2 border border-gray-300" style={{ width: "14%" }}>
                             Recommended action to be taken
                           </th>
                         </tr>
@@ -831,9 +841,10 @@ const PHVDamageFIFO: React.FC = () => {
                         {sortedData.map((it, i) => (
                           <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                             <td className="px-4 py-2 border-l border-r border-gray-300 text-center">{i + 1}</td>
-                            <td className="px-4 py-2 border-r border-gray-300">{it.MaterialCode || ""}</td>
-                            <td className="px-4 py-2 border-r border-gray-300 break-words">{it.MaterialName || ""}</td>
-                            <td className="px-4 py-2 font-mono border-r border-gray-300">{it.DocumentNo || ""}</td>
+                            <td className="px-4 py-2 font-mono border-r border-gray-300">{it.DocNo || ""}</td>
+                            <td className="px-4 py-2 border-r border-gray-300">{it.MatCd || ""}</td>
+                            <td className="px-4 py-2 border-r border-gray-300 break-words">{it.MatNm || ""}</td>
+                            <td className="px-4 py-2 text-center border-r border-gray-300">{it.GradeCd || ""}</td>
                             <td className="px-4 py-2 text-right font-mono border-r border-gray-300">
                               {formatNumber(it.QtyOnHand)}
                             </td>
@@ -847,11 +858,11 @@ const PHVDamageFIFO: React.FC = () => {
                       </tbody>
                       <tfoot>
                         <tr className="bg-[#d3d3d3] font-bold">
-                          <td colSpan={5} className="px-4 py-2 text-right border border-gray-300">
-                            Total of Damaged Stocks
+                          <td colSpan={6} className="px-4 py-2 text-right border border-gray-300">
+                            Total of Slow Moving Stocks
                           </td>
                           <td className="px-4 py-2 text-right font-mono border border-gray-300">
-                            {formatNumber(grandTotalCost)}
+                            {formatNumber(grandTotalStockBook)}
                           </td>
                           <td colSpan={2} className="px-4 py-2 border border-gray-300"></td>
                         </tr>
@@ -896,4 +907,4 @@ const PHVDamageFIFO: React.FC = () => {
   );
 };
 
-export default PHVDamageFIFO;
+export default PHVSlowMovingWHReport;

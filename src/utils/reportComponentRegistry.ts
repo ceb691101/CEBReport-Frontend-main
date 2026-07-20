@@ -99,7 +99,7 @@ import IssueReceiptWPReport from "../mainTopics/inventory/IssueReceiptWPreport";
 import IssuesRaisedForJobsReport from "../mainTopics/inventory/Issuesraisedforjobsreport";
 import GrnRaisedForPurchasingReport from "../mainTopics/inventory/Grnraisedforpurchasingreport";
 import CcGrnNotGenReport from "../mainTopics/inventory/Ccgrnnotgenreport";
-import BranchGrnNotGenReport from "../mainTopics/inventory/Branchgrnnotgenreport";
+import BranchGrnNotGenReport from "../mainTopics/inventory/BranchGrnNotGenReport";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -128,6 +128,9 @@ import PHVNonMovingWHwiseBOS from "../mainTopics/PhysicalVerification/PHVNonMovi
 import PHVObsoleteIdleBOS from "../mainTopics/PhysicalVerification/PHVObsoleteIdleBOS";
 import PHVDamageBOS from "../mainTopics/PhysicalVerification/PHVDamageBOS";
 import LastDocNo from "../mainTopics/PhysicalVerification/LastDocNo";
+
+// Phisical Verification FIFO reports
+import PHVSlowMovingWHReport from "../mainTopics/fifo/PHVSlowMovingWHReport";
 
 // PUCSL/LISS reports
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
@@ -351,6 +354,8 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 
 	// Physical Verification FIFO reports
 	"1. physical verification obsolete idle - av/7a (fifo)": PHVObsoleteIdleFIFO,
+	"2. physical verification damage - av/7b (fifo)": PHVDamageFIFO,
+	"3. physical verification slow moving wh wise - av/6 (fifo)": PHVSlowMovingWHReport,
 
 	// Physical Verification reports
 	"1 phv entry form": PHVEntryForm,
