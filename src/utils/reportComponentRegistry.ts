@@ -131,6 +131,7 @@ import LastDocNo from "../mainTopics/PhysicalVerification/LastDocNo";
 
 // Phisical Verification FIFO reports
 import PHVSlowMovingWHReport from "../mainTopics/fifo/PHVSlowMovingWHReport";
+import PHVNonMovingWHReport from "../mainTopics/fifo/PHVNonMovingWHReport";
 
 // PUCSL/LISS reports
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
@@ -356,6 +357,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"1. physical verification obsolete idle - av/7a (fifo)": PHVObsoleteIdleFIFO,
 	"2. physical verification damage - av/7b (fifo)": PHVDamageFIFO,
 	"3. physical verification slow moving wh wise - av/6 (fifo)": PHVSlowMovingWHReport,
+	"4. physical verification non moving wh wise - av/6b (fifo)": PHVNonMovingWHReport,
 
 	// Physical Verification reports
 	"1 phv entry form": PHVEntryForm,
