@@ -1,44 +1,50 @@
-import React, { useState, useEffect } from "react";
-import { Download, Printer, X, RotateCcw, Eye, Search } from "lucide-react";
-import { toast } from "react-toastify";
-import { useUser } from "../../contexts/UserContext";
+// CcGrnNotGenReport.tsx
+import React, {useEffect, useState} from "react";
+import {Download, Printer, X, RotateCcw, Eye, Search} from "lucide-react";
+import {toast} from "react-toastify";
+import {useUser} from "../../contexts/UserContext";
 
 interface Department {
 	DeptId: string;
 	DeptName: string;
 }
 
-interface CCWiseIssueRow {
-	type: string;
-	yrInd: string;
-	mthInd: string;
-	trxType: string;
-	trxDt: string;
-	docPf: string;
-	docNo: string;
-	ref1: string;
-	ref2: string;
-	ref3: string;
-	ref4: string;
-	total: string;
-	remarks: string;
-	isRef: string;
-	cctName: string;
+interface CcGrnNotGenItem {
+	DocNo: string | null;
+	TrxDt: string | null;
+	DeptId: string | null;
+	DesDeptId: string | null;
+	WrhCd: string | null;
+	Ref1: string | null;
+	TrxnVal: number | null;
+	CctName: string | null;
 }
 
 /* ────── Constants ────── */
+const MAX_RECORDS = 5000;
+const FETCH_TIMEOUT_MS = 120000;
 const PAGE_SIZE = 9;
-const FETCH_TIMEOUT_MS = 30000;
 
-/* ────── Helpers ────── */
-const parseNumber = (value: any): number => {
-	if (value === undefined || value === null || value === "") return 0;
-	if (typeof value === "number") return value;
-	const num = parseFloat(String(value).replace(/,/g, ""));
-	return isNaN(num) ? 0 : num;
+/* ────── Formatting helpers ────── */
+const formatNumber = (num: number | string | null | undefined): string => {
+	const n = num === null || num === undefined ? NaN : Number(num);
+	if (isNaN(n)) return "0.00";
+	const abs = Math.abs(n);
+	const formatted = abs.toLocaleString("en-US", {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	});
+	return n < 0 ? `(${formatted})` : formatted;
 };
 
-const displayType = (type: string) => type.replace(/^\d/, "");
+const formatDate = (dateStr: string | null): string => {
+	if (!dateStr) return "";
+	const d = new Date(dateStr);
+	const year = d.getFullYear();
+	const month = String(d.getMonth() + 1).padStart(2, "0");
+	const day = String(d.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+};
 
 const csvEscape = (val: string | number | null | undefined): string => {
 	if (val == null) return "";
@@ -47,30 +53,19 @@ const csvEscape = (val: string | number | null | undefined): string => {
 	return str;
 };
 
-const MONTHS = [
-	{ value: "1", label: "January" },
-	{ value: "2", label: "February" },
-	{ value: "3", label: "March" },
-	{ value: "4", label: "April" },
-	{ value: "5", label: "May" },
-	{ value: "6", label: "June" },
-	{ value: "7", label: "July" },
-	{ value: "8", label: "August" },
-	{ value: "9", label: "September" },
-	{ value: "10", label: "October" },
-	{ value: "11", label: "November" },
-	{ value: "12", label: "December" },
-];
+const today = new Date();
+const currentYear = today.getFullYear();
+const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
+const currentDay = String(today.getDate()).padStart(2, "0");
+const maxDate = `${currentYear}-${currentMonth}-${currentDay}`;
+
+const minYear = currentYear - 20;
+const minDate = `${minYear}-${currentMonth}-${currentDay}`;
 
 /* ────── MAIN COMPONENT ────── */
-const CCWiseIssue: React.FC = () => {
-	const { user } = useUser();
+const CcGrnNotGenReport: React.FC = () => {
+	const {user} = useUser();
 	const epfNo = user?.Userno || "";
-
-	const maroon = "text-[#7A0000]";
-	const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
-
-	const currentYear = new Date().getFullYear();
 
 	/* ── Cost Center list state ── */
 	const [departments, setDepartments] = useState<Department[]>([]);
@@ -82,13 +77,15 @@ const CCWiseIssue: React.FC = () => {
 	const [deptError, setDeptError] = useState<string | null>(null);
 
 	/* ── Report state ── */
-	const [yearInput, setYearInput] = useState(String(currentYear));
-	const [monthInput, setMonthInput] = useState(String(new Date().getMonth() + 1));
+	const [fromDate, setFromDate] = useState("");
+	const [toDate, setToDate] = useState("");
 	const [selectedDept, setSelectedDept] = useState<Department | null>(null);
-	const [reportData, setReportData] = useState<CCWiseIssueRow[]>([]);
+	const [reportData, setReportData] = useState<CcGrnNotGenItem[]>([]);
 	const [reportLoading, setReportLoading] = useState(false);
 	const [showReport, setShowReport] = useState(false);
-	const [, setReportError] = useState<string | null>(null);
+
+	const maroon = "text-[#7A0000]";
+	const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
 	/* ────── Fetch Departments ────── */
 	useEffect(() => {
@@ -141,16 +138,16 @@ const CCWiseIssue: React.FC = () => {
 
 	/* ────── Input validation ────── */
 	const validateInputs = (): boolean => {
-		if (!yearInput) {
-			toast.error("Please enter Year");
+		if (!fromDate) {
+			toast.error("Please select 'From Date'");
 			return false;
 		}
-		if (!/^\d{4}$/.test(yearInput)) {
-			toast.error("Year must be a 4-digit number.");
+		if (!toDate) {
+			toast.error("Please select 'To Date'");
 			return false;
 		}
-		if (!monthInput) {
-			toast.error("Please select a month.");
+		if (new Date(toDate) < new Date(fromDate)) {
+			toast.error("'To Date' cannot be earlier than 'From Date'");
 			return false;
 		}
 		return true;
@@ -167,11 +164,10 @@ const CCWiseIssue: React.FC = () => {
 		setReportLoading(true);
 		setReportData([]);
 		setShowReport(true);
-		setReportError(null);
 
 		try {
 			const costCtrParam = encodeURIComponent(dept.DeptId);
-			const url = `/misapi/api/ccwiseissue/report?repYear=${encodeURIComponent(yearInput)}&repMonth=${encodeURIComponent(monthInput)}&costCtr=${costCtrParam}`;
+			const url = `/misapi/api/ccgrnnotgen/report/${fromDate}/${toDate}/${costCtrParam}`;
 
 			const res = await fetch(url, {
 				credentials: "include",
@@ -188,34 +184,21 @@ const CCWiseIssue: React.FC = () => {
 			if (!json.success)
 				throw new Error(json.message || "Failed to load data");
 
-			const raw = json.data || [];
-			if (!Array.isArray(raw) || raw.length === 0) {
+			const items: CcGrnNotGenItem[] = json.data || [];
+			if (items.length > MAX_RECORDS)
+				throw new Error(
+					`Too many records (${items.length}). Please refine your search.`
+				);
+
+			if (items.length === 0) {
 				toast.warn("No records found for the selected criteria.");
 				setShowReport(false);
 				setSelectedDept(null);
 				return;
 			}
 
-			const mappedRows: CCWiseIssueRow[] = raw.map((item: any) => ({
-				type: String(item.Type ?? item.type ?? ""),
-				yrInd: String(item.YrInd ?? item.yrInd ?? ""),
-				mthInd: String(item.MthInd ?? item.mthInd ?? ""),
-				trxType: String(item.TrxType ?? item.trxType ?? ""),
-				trxDt: String(item.TrxDt ?? item.trxDt ?? ""),
-				docPf: String(item.DocPf ?? item.docPf ?? ""),
-				docNo: String(item.DocNo ?? item.docNo ?? ""),
-				ref1: String(item.Ref1 ?? item.ref1 ?? ""),
-				ref2: String(item.Ref2 ?? item.ref2 ?? ""),
-				ref3: String(item.Ref3 ?? item.ref3 ?? ""),
-				ref4: String(item.Ref4 ?? item.ref4 ?? ""),
-				total: String(item.Total ?? item.total ?? "0.00"),
-				remarks: String(item.Remarks ?? item.remarks ?? ""),
-				isRef: String(item.IsRef ?? item.isRef ?? ""),
-				cctName: String(item.CctName ?? item.cctName ?? ""),
-			}));
-
-			setReportData(mappedRows);
-			toast.success(`${mappedRows.length} records loaded successfully.`);
+			setReportData(items);
+			toast.success(`${items.length} records loaded successfully.`);
 		} catch (e: any) {
 			if (e.name === "AbortError") {
 				toast.error("Request timed out.");
@@ -224,7 +207,6 @@ const CCWiseIssue: React.FC = () => {
 					? "Server unreachable. Please check your connection."
 					: e.message;
 				toast.error(msg);
-				setReportError(msg);
 			}
 			setReportData([]);
 			setShowReport(false);
@@ -240,14 +222,13 @@ const CCWiseIssue: React.FC = () => {
 	};
 
 	const clearAll = () => {
-		setYearInput(String(currentYear));
-		setMonthInput(String(new Date().getMonth() + 1));
+		setFromDate("");
+		setToDate("");
 		setSearchId("");
 		setSearchName("");
 		setShowReport(false);
 		setReportData([]);
 		setSelectedDept(null);
-		setReportError(null);
 		toast.info("Filters cleared.");
 	};
 
@@ -256,99 +237,95 @@ const CCWiseIssue: React.FC = () => {
 		setReportData([]);
 		setSelectedDept(null);
 		setReportLoading(false);
-		setReportError(null);
 	};
 
-	const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+	/* ────── Single flat table, sorted chronologically ────── */
+	const sortedData = [...reportData].sort(
+		(a, b) =>
+			(a.TrxDt || "").localeCompare(b.TrxDt || "") ||
+			(a.DocNo || "").localeCompare(b.DocNo || "")
+	);
 
-	/* ────── Derived totals ───────────────────────────────────────────────────────── */
-	const totalAmount = reportData.reduce((s, r) => s + parseNumber(r.total), 0);
-	const cctName = reportData.find((r) => r.cctName)?.cctName || selectedDept?.DeptName || "";
+	const grandTotalTrxnVal = reportData.reduce((s, r) => s + (r.TrxnVal || 0), 0);
+	const cctName = reportData.find((r) => r.CctName)?.CctName || selectedDept?.DeptName || "";
 	const costCtrDisplay = selectedDept?.DeptId || "";
 
 	/* ────── CSV download ────── */
 	const downloadCSV = () => {
-		if (reportData.length === 0) {
-			toast.error("No data to export.");
-			return;
-		}
+		if (reportData.length === 0) return;
 
 		const titleRows = [
-			`C/C Wise Issue & Issue Cancellation`,
-			`Cost Center: ${costCtrDisplay} | ${cctName}`,
-			`Year: ${yearInput} | Month: ${MONTHS.find((m) => m.value === monthInput)?.label ?? monthInput}`,
+			`Cost center wise GRN not generated issues - ${fromDate} To ${toDate}`,
+			`Cost center: ${costCtrDisplay}/${cctName}`,
 			"",
 		];
 
 		const headers = [
-			"Type",
-			"Transaction Type",
-			"Transaction Date",
-			"Document Profile",
-			"Document No",
+			"No",
+			"Document Number",
+			"Transaction",
+			"Dept ID",
 			"Reference 1",
-			"Reference 2",
-			"Reference 3",
-			"Reference 4",
+			"Warehouse Code",
 			"Total",
-			"Remarks",
-			"Is Ref",
 		];
+		const rows: string[] = [headers.join(",")];
 
-		const rows = reportData.map((r) => [
-			csvEscape(displayType(r.type)),
-			csvEscape(r.trxType),
-			csvEscape(r.trxDt),
-			csvEscape(r.docPf),
-			csvEscape(r.docNo),
-			csvEscape(r.ref1),
-			csvEscape(r.ref2),
-			csvEscape(r.ref3),
-			csvEscape(r.ref4),
-			csvEscape(r.total),
-			csvEscape(r.remarks),
-			csvEscape(r.isRef),
-		]);
+		sortedData.forEach((it, i) => {
+			rows.push(
+				[
+					csvEscape(i + 1),
+					csvEscape(it.DocNo),
+					csvEscape(formatDate(it.TrxDt)),
+					csvEscape(it.DeptId),
+					csvEscape(it.Ref1),
+					csvEscape(it.WrhCd),
+					csvEscape(formatNumber(it.TrxnVal)),
+				].join(",")
+			);
+		});
 
-		const csv = [
-			...titleRows,
-			headers.join(","),
-			...rows.map((row) => row.join(",")),
-			`Total,,,,,,,,,${csvEscape(totalAmount.toFixed(2))},,`,
-		].join("\n");
+		rows.push(`Total,,,,,,${csvEscape(formatNumber(grandTotalTrxnVal))}`);
 
-		const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+		const csv = [...titleRows, ...rows].join("\n");
+		const blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = `CCWiseIssue_${costCtrDisplay}_${yearInput}_${monthInput}.csv`;
+		a.download = `CcGrnNotGen_${fromDate}_${toDate}.csv`;
 		a.click();
 		URL.revokeObjectURL(url);
 	};
 
 	/* ────── PDF print ────── */
 	const printPDF = () => {
-		if (reportData.length === 0) {
-			toast.error("No data to export.");
-			return;
-		}
+		if (reportData.length === 0) return;
 
 		let rows = "";
-		reportData.forEach((r, i) => {
+		sortedData.forEach((it, i) => {
 			rows += `
           <tr class="${i % 2 ? "bg-white" : "bg-gray-50"}">
-            <td class="px-3 py-2 border-l border-r border-gray-300 text-center text-xs">${displayType(r.type)}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs">${r.trxType}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.trxDt}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.docPf}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.docNo}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.ref1}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.ref2}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.ref3}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.ref4}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${parseNumber(r.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${r.remarks}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.isRef}</td>
+            <td class="px-3 py-2 border-l border-r border-gray-300 text-center text-xs">${
+					i + 1
+				}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs font-mono">${
+					it.DocNo || ""
+				}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs">${formatDate(
+					it.TrxDt
+				)}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${
+					it.DeptId || ""
+				}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${
+					it.Ref1 || ""
+				}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs font-mono">${
+					it.WrhCd || ""
+				}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(
+					it.TrxnVal
+				)}</td>
           </tr>`;
 		});
 
@@ -370,7 +347,7 @@ const CCWiseIssue: React.FC = () => {
       @page {
         @bottom-left  { content:"Printed on: ${new Date().toLocaleString(
 				"en-US",
-				{ timeZone: "Asia/Colombo" }
+				{timeZone: "Asia/Colombo"}
 			)}"; font-size:7px; color:gray; }
         @bottom-right { content:"Page " counter(page) " of " counter(pages); font-size:7px; color:gray; }
       }
@@ -378,34 +355,30 @@ const CCWiseIssue: React.FC = () => {
   </style>
 </head>
 <body>
-  <div class="title">C/C Wise Issue & Issue Cancellation</div>
+  <div class="title">Cost center wise GRN not generated issues - ${fromDate} To ${toDate}</div>
   <div class="info">
-    <div><strong>Cost Center:</strong> ${costCtrDisplay} / ${cctName}</div>
-    <div style="font-weight:600; color:#4B5563;">Year: ${yearInput} | Month: ${MONTHS.find((m) => m.value === monthInput)?.label ?? monthInput}</div>
+    <div><strong>Cost center:</strong> ${costCtrDisplay}/${cctName}</div>
+    <div style="font-weight:600; color:#4B5563;">Currency : LKR</div>
   </div>
   <table style="width:100%; border-collapse:collapse; font-size:8.5px; border:1px solid #d1d5db;">
     <thead>
       <tr style="background:linear-gradient(to right,#7A0000,#A52A2A); color:white;">
-        <th style="padding:6px 8px; width:6%;">Type</th>
-        <th style="padding:6px 8px; width:8%;">Transaction Type</th>
-        <th style="padding:6px 8px; width:8%;">Transaction Date</th>
-        <th style="padding:6px 8px; width:7%;">Document Profile</th>
-        <th style="padding:6px 8px; width:9%;">Document No</th>
-        <th style="padding:6px 8px; width:8%;">Reference 1</th>
-        <th style="padding:6px 8px; width:8%;">Reference 2</th>
-        <th style="padding:6px 8px; width:8%;">Reference 3</th>
-        <th style="padding:6px 8px; width:8%;">Reference 4</th>
-        <th style="padding:6px 8px; width:10%; text-align:right;">Total</th>
-        <th style="padding:6px 8px; width:12%;">Remarks</th>
-        <th style="padding:6px 8px; width:8%;">Is Ref</th>
+        <th style="padding:6px 8px; width:5%;">No</th>
+        <th style="padding:6px 8px; width:17%;">Document Number</th>
+        <th style="padding:6px 8px; width:12%;">Transaction</th>
+        <th style="padding:6px 8px; width:12%;">Dept ID</th>
+        <th style="padding:6px 8px; width:22%;">Reference 1</th>
+        <th style="padding:6px 8px; width:14%;">Warehouse Code</th>
+        <th style="padding:6px 8px; width:18%; text-align:right;">Total</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>
     <tfoot>
       <tr>
-        <td colspan="9" style="text-align:right; padding:6px 8px; border:1px solid #d1d5db;">Total</td>
-        <td style="text-align:right; padding:6px 8px; border:1px solid #d1d5db; font-family:monospace; font-weight:bold;">${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-        <td colspan="2" style="padding:6px 8px; border:1px solid #d1d5db;"></td>
+        <td colspan="6" style="text-align:right; padding:6px 8px; border:1px solid #d1d5db;">Total</td>
+        <td style="text-align:right; padding:6px 8px; border:1px solid #d1d5db; font-family:monospace;">${formatNumber(
+			grandTotalTrxnVal
+		)}</td>
       </tr>
     </tfoot>
   </table>
@@ -428,58 +401,51 @@ const CCWiseIssue: React.FC = () => {
 		win.onafterprint = () => win.close();
 	};
 
+	const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
 	/* ────── RENDER ────── */
 	return (
 		<div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
 			<div className="flex justify-between items-center mb-4">
 				<h2 className={`text-xl font-bold ${maroon}`}>
-					C/C Wise Issue & Issue Cancellation
+					Cost Center Wise GRN Not Generated Issues
 				</h2>
 			</div>
 
 			<div className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-					{/* Year */}
+					{/* From Date */}
 					<div className="flex items-center gap-2">
 						<label
 							className={`text-xs font-bold ${maroon} whitespace-nowrap`}
 						>
-							Year: <span className="text-red-600">*</span>
+							From Date:
 						</label>
 						<input
-							type="text"
-							value={yearInput}
-							onChange={(e) => {
-								setYearInput(e.target.value);
-								setReportError(null);
-							}}
-							placeholder="e.g. 2022"
-							maxLength={4}
+							type="date"
+							value={fromDate}
+							onChange={(e) => setFromDate(e.target.value)}
+							min={minDate}
+							max={maxDate}
 							className="pl-3 pr-3 py-1.5 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
 						/>
 					</div>
 
-					{/* Month */}
+					{/* To Date */}
 					<div className="flex items-center gap-2">
 						<label
 							className={`text-xs font-bold ${maroon} whitespace-nowrap`}
 						>
-							Month: <span className="text-red-600">*</span>
+							To Date:
 						</label>
-						<select
-							value={monthInput}
-							onChange={(e) => {
-								setMonthInput(e.target.value);
-								setReportError(null);
-							}}
+						<input
+							type="date"
+							value={toDate}
+							onChange={(e) => setToDate(e.target.value)}
+							min={minDate}
+							max={maxDate}
 							className="pl-3 pr-3 py-1.5 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
-						>
-							{MONTHS.map((m) => (
-								<option key={m.value} value={m.value}>
-									{m.label}
-								</option>
-							))}
-						</select>
+						/>
 					</div>
 				</div>
 
@@ -575,7 +541,7 @@ const CCWiseIssue: React.FC = () => {
 											<td className="px-4 py-2 text-center">
 												<button
 													onClick={() => fetchReport(dept)}
-													disabled={!yearInput || !monthInput}
+													disabled={!fromDate || !toDate}
 													className={`px-3 py-1 rounded text-xs font-medium hover:brightness-110 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 mx-auto
                             ${
 											selectedDept?.DeptId === dept.DeptId &&
@@ -642,7 +608,7 @@ const CCWiseIssue: React.FC = () => {
 									Loading Report...
 								</p>
 								<p className="text-sm text-gray-600">
-									Fetching issue details from server
+									Fetching GRN data from server
 								</p>
 							</div>
 						)}
@@ -670,67 +636,52 @@ const CCWiseIssue: React.FC = () => {
 								</div>
 
 								<h2
-									className={`text-lg md:text-xl font-bold text-center md:mb-6 ${maroon}`}
+									className={`text-lg md:text-xl font-bold text-center md:mb-2 ${maroon}`}
 								>
-									C/C Wise Issue & Issue Cancellation 
+									Cost center wise GRN not generated issues - {fromDate} To {toDate}
 								</h2>
 								<div className="flex justify-between text-sm mb-3 ml-5 mr-12">
 									<div>
-										<span className="font-bold">Cost Center:</span>{" "}
-										{costCtrDisplay} / {cctName}
+										<span className="font-bold">Cost center:</span>{" "}
+										{costCtrDisplay}/{cctName}
 									</div>
 									<div className="font-semibold text-gray-600">
-										Year: {yearInput} | Month: {MONTHS.find((m) => m.value === monthInput)?.label ?? monthInput}
+										Currency : LKR
 									</div>
 								</div>
 
 								<div className="ml-5 mt-1 mb-5 border border-gray-200 rounded-lg overflow-x-auto print:ml-12 print:mt-12 print:overflow-visible">
-									<div className="min-w-[1400px]">
+									<div className="min-w-[1100px]">
 										<table className="w-full text-xs border-collapse">
 											<thead className={`${maroonGrad} text-white`}>
 												<tr>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "6%" }}>
-														Type
+													<th className="px-4 py-2 border border-gray-300" style={{width: "5%"}}>
+														No
 													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Transaction Type
+													<th className="px-4 py-2 border border-gray-300" style={{width: "17%"}}>
+														Document Number
 													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Transaction Date
+													<th className="px-4 py-2 border border-gray-300" style={{width: "12%"}}>
+														Transaction
 													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "7%" }}>
-														Document Profile
+													<th className="px-4 py-2 border border-gray-300" style={{width: "12%"}}>
+														Dept ID
 													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "9%" }}>
-														Document No
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
+													<th className="px-4 py-2 border border-gray-300" style={{width: "22%"}}>
 														Reference 1
 													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Reference 2
+													<th className="px-4 py-2 border border-gray-300" style={{width: "14%"}}>
+														Warehouse Code
 													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Reference 3
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Reference 4
-													</th>
-													<th className="px-4 py-2 border border-gray-300 text-right" style={{ width: "10%" }}>
+													<th className="px-4 py-2 border border-gray-300 text-right" style={{width: "18%"}}>
 														Total
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "12%" }}>
-														Remarks
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Is Ref
 													</th>
 												</tr>
 											</thead>
 											<tbody>
-												{reportData.map((r, i) => (
+												{sortedData.map((it, i) => (
 													<tr
-														key={`${r.docNo}-${i}`}
+														key={i}
 														className={
 															i % 2 === 0
 																? "bg-white"
@@ -738,40 +689,25 @@ const CCWiseIssue: React.FC = () => {
 														}
 													>
 														<td className="px-4 py-2 border-l border-r border-gray-300 text-center">
-															{displayType(r.type)}
+															{i + 1}
+														</td>
+														<td className="px-4 py-2 font-mono border-r border-gray-300">
+															{it.DocNo || ""}
 														</td>
 														<td className="px-4 py-2 text-center border-r border-gray-300">
-															{r.trxType}
+															{formatDate(it.TrxDt)}
 														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.trxDt}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.docPf}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.docNo}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.ref1}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.ref2}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.ref3}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.ref4}
-														</td>
-														<td className="px-4 py-2 text-right font-mono border-r border-gray-300">
-															{parseNumber(r.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+														<td className="px-4 py-2 border-r border-gray-300">
+															{it.DeptId || ""}
 														</td>
 														<td className="px-4 py-2 border-r border-gray-300 break-words">
-															{r.remarks}
+															{it.Ref1 || ""}
 														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.isRef}
+														<td className="px-4 py-2 font-mono border-r border-gray-300">
+															{it.WrhCd || ""}
+														</td>
+														<td className="px-4 py-2 text-right font-mono border-r border-gray-300">
+															{formatNumber(it.TrxnVal)}
 														</td>
 													</tr>
 												))}
@@ -779,18 +715,14 @@ const CCWiseIssue: React.FC = () => {
 											<tfoot>
 												<tr className="bg-[#d3d3d3] font-bold">
 													<td
-														colSpan={9}
+														colSpan={6}
 														className="px-4 py-2 text-right border border-gray-300"
 													>
-														TOTAL
+														Total
 													</td>
 													<td className="px-4 py-2 text-right font-mono border border-gray-300">
-														{totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+														{formatNumber(grandTotalTrxnVal)}
 													</td>
-													<td
-														colSpan={2}
-														className="px-4 py-2 border border-gray-300"
-													></td>
 												</tr>
 											</tfoot>
 										</table>
@@ -808,4 +740,4 @@ const CCWiseIssue: React.FC = () => {
 	);
 };
 
-export default CCWiseIssue;
+export default CcGrnNotGenReport;

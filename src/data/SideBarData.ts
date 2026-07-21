@@ -24,6 +24,18 @@ type RoleLikeObject = {
   EpfNo?: unknown;
   epfNo?: unknown;
   epfno?: unknown;
+  BillMap?: unknown;
+  billMap?: unknown;
+  bill_map?: unknown;
+  LevelNo?: unknown;
+  levelNo?: unknown;
+  level_no?: unknown;
+};
+
+type UserRoleInfo = {
+  roleId: string;
+  billMap: string | null;
+  levelNo: string | null;
 };
 
 type RoleReportApiItem = {
@@ -62,6 +74,8 @@ export type Topic = {
 export type SidebarResult = {
   data: Topic[];
   message: string | null;
+  billMap: string | null;
+  levelNo: string | null;
 };
 
 const USER_ROLE_ENDPOINTS = [
@@ -175,6 +189,60 @@ const readRoleIdFromObject = (value: RoleLikeObject): string | null => {
 
   const roleId = String(raw).trim();
   return roleId.length > 0 ? roleId : null;
+};
+
+const readBillMapFromObject = (value: RoleLikeObject): string | null => {
+  const raw = value.BillMap ?? value.billMap ?? value.bill_map;
+  if (raw === undefined || raw === null) {
+    return null;
+  }
+  const billMap = String(raw).trim();
+  return billMap.length > 0 ? billMap : null;
+};
+
+const readLevelNoFromObject = (value: RoleLikeObject): string | null => {
+  const raw = value.LevelNo ?? value.levelNo ?? value.level_no;
+  if (raw === undefined || raw === null) {
+    return null;
+  }
+  const levelNo = String(raw).trim();
+  return levelNo.length > 0 ? levelNo : null;
+};
+
+const extractRoleInfoList = (value: unknown, epfNo?: string): UserRoleInfo[] => {
+  const infos: UserRoleInfo[] = [];
+  const normalizedEpfNo = epfNo ? normalizeId(epfNo) : "";
+
+  const tryAdd = (item: RoleLikeObject) => {
+    const userId = readUserIdFromObject(item);
+    const isMatchingUser =
+      !normalizedEpfNo ||
+      !userId ||
+      normalizeId(userId) === normalizedEpfNo;
+
+    if (!isMatchingUser) return;
+
+    const roleId = readRoleIdFromObject(item);
+    if (!roleId) return;
+
+    infos.push({
+      roleId,
+      billMap: readBillMapFromObject(item),
+      levelNo: readLevelNoFromObject(item),
+    });
+  };
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (item && typeof item === "object") {
+        tryAdd(item as RoleLikeObject);
+      }
+    }
+  } else if (value && typeof value === "object") {
+    tryAdd(value as RoleLikeObject);
+  }
+
+  return infos;
 };
 
 const extractRoleIds = (value: unknown, epfNo?: string): string[] => {
@@ -423,14 +491,22 @@ export const loadRoleBasedSidebarData = async (epfNo: string): Promise<SidebarRe
       return {
         data: [],
         message: roleResponse.errorMessage,
+        billMap: null,
+        levelNo: null,
       };
     }
 
-    const roleIds = extractRoleIds(roleResponse.data, trimmedEpfNo);
+    const roleInfoList = extractRoleInfoList(roleResponse.data, trimmedEpfNo);
+    const roleIds = roleInfoList.map((r) => r.roleId);
+    const billMap = roleInfoList.find((r) => r.billMap)?.billMap ?? null;
+    const levelNo = roleInfoList.find((r) => r.levelNo)?.levelNo ?? null;
+
     if (roleIds.length === 0) {
       return {
         data: [],
         message: "No role was assigned to this user.",
+        billMap: null,
+        levelNo: null,
       };
     }
 
@@ -472,24 +548,24 @@ export const loadRoleBasedSidebarData = async (epfNo: string): Promise<SidebarRe
 
     const reports = Array.from(reportsByKey.values());
 
-    // Inject the FIFO report under Physical Verification (as an accordion item) and under FIFO category
-    const hasFifoReport = reports.some(
-      (r) =>
-        getReportRepId(r) === "fifo-obsolete-idle" ||
-        getReportName(r).toLowerCase().includes("fifo")
-    );
-    if (!hasFifoReport) {
-      reports.push({
-        RepIdNo: "fifo-obsolete-idle",
-        CategoryName: "Physical Verification",
-        ReportName: "PHV Obsolete / Idle (FIFO)",
-      });
-      reports.push({
-        RepIdNo: "fifo-obsolete-idle-cat",
-        CategoryName: "Physical Verification - FIFO",
-        ReportName: "PHV Obsolete / Idle (FIFO)",
-      });
-    }
+    // // Inject the FIFO report under Physical Verification (as an accordion item) and under FIFO category
+    // const hasFifoReport = reports.some(
+    //   (r) =>
+    //     getReportRepId(r) === "fifo-obsolete-idle" ||
+    //     getReportName(r).toLowerCase().includes("fifo")
+    // );
+    // if (!hasFifoReport) {
+    //   reports.push({
+    //     RepIdNo: "fifo-obsolete-idle",
+    //     CategoryName: "Physical Verification",
+    //     ReportName: "PHV Obsolete / Idle (FIFO)",
+    //   });
+    //   reports.push({
+    //     RepIdNo: "fifo-obsolete-idle-cat",
+    //     CategoryName: "Physical Verification - FIFO",
+    //     ReportName: "PHV Obsolete / Idle (FIFO)",
+    //   });
+    // }
 
     const topics = buildTopics(reports);
 
@@ -497,17 +573,23 @@ export const loadRoleBasedSidebarData = async (epfNo: string): Promise<SidebarRe
       return {
         data: [],
         message: "No reports are available for your role.",
+        billMap,
+        levelNo,
       };
     }
 
     return {
       data: topics,
       message: null,
+      billMap,
+      levelNo,
     };
   } catch {
     return {
       data: [],
       message: "Failed to load sidebar reports. Please try again in a moment.",
+      billMap: null,
+      levelNo: null,
     };
   }
 };

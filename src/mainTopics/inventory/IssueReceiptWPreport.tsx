@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Download, Printer, X, RotateCcw, Eye, Search } from "lucide-react";
 import { toast } from "react-toastify";
 import { useUser } from "../../contexts/UserContext";
@@ -8,37 +8,46 @@ interface Department {
 	DeptName: string;
 }
 
-interface CCWiseIssueRow {
-	type: string;
-	yrInd: string;
-	mthInd: string;
-	trxType: string;
-	trxDt: string;
-	docPf: string;
-	docNo: string;
-	ref1: string;
-	ref2: string;
-	ref3: string;
-	ref4: string;
-	total: string;
-	remarks: string;
-	isRef: string;
-	cctName: string;
+interface IssueReceiptWPItem {
+	DocPf: string | null;
+	WrhCd: string | null;
+	DocNo: string | null;
+	Ref1: string | null;
+	Ref2: string | null;
+	Ref3: string | null;
+	Ref4: string | null;
+	TrxDt: string | null;
+	Total: number | null;
+	DesDeptId: string | null;
+	CctName: string | null;
 }
 
 /* ────── Constants ────── */
+const MAX_RECORDS = 5000;
+const FETCH_TIMEOUT_MS = 120000;
 const PAGE_SIZE = 9;
-const FETCH_TIMEOUT_MS = 30000;
 
-/* ────── Helpers ────── */
-const parseNumber = (value: any): number => {
-	if (value === undefined || value === null || value === "") return 0;
-	if (typeof value === "number") return value;
-	const num = parseFloat(String(value).replace(/,/g, ""));
-	return isNaN(num) ? 0 : num;
+/* ────── Formatting helpers ────── */
+const formatNumber = (num: number | string | null | undefined): string => {
+	const n = num === null || num === undefined ? NaN : Number(num);
+	if (isNaN(n)) return "0.00";
+	const abs = Math.abs(n);
+	const formatted = abs.toLocaleString("en-US", {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	});
+	return n < 0 ? `(${formatted})` : formatted;
 };
 
-const displayType = (type: string) => type.replace(/^\d/, "");
+const formatDate = (dateStr: string | null): string => {
+	if (!dateStr) return "";
+	const d = new Date(dateStr);
+	if (isNaN(d.getTime())) return "";
+	const year = d.getFullYear();
+	const month = String(d.getMonth() + 1).padStart(2, "0");
+	const day = String(d.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+};
 
 const csvEscape = (val: string | number | null | undefined): string => {
 	if (val == null) return "";
@@ -47,30 +56,18 @@ const csvEscape = (val: string | number | null | undefined): string => {
 	return str;
 };
 
-const MONTHS = [
-	{ value: "1", label: "January" },
-	{ value: "2", label: "February" },
-	{ value: "3", label: "March" },
-	{ value: "4", label: "April" },
-	{ value: "5", label: "May" },
-	{ value: "6", label: "June" },
-	{ value: "7", label: "July" },
-	{ value: "8", label: "August" },
-	{ value: "9", label: "September" },
-	{ value: "10", label: "October" },
-	{ value: "11", label: "November" },
-	{ value: "12", label: "December" },
-];
+const today = new Date();
+const currentYear = today.getFullYear();
+const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
+const currentDay = String(today.getDate()).padStart(2, "0");
+const maxDate = `${currentYear}-${currentMonth}-${currentDay}`;
+const minYear = currentYear - 20;
+const minDate = `${minYear}-${currentMonth}-${currentDay}`;
 
 /* ────── MAIN COMPONENT ────── */
-const CCWiseIssue: React.FC = () => {
+const IssueReceiptWPReport: React.FC = () => {
 	const { user } = useUser();
 	const epfNo = user?.Userno || "";
-
-	const maroon = "text-[#7A0000]";
-	const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
-
-	const currentYear = new Date().getFullYear();
 
 	/* ── Cost Center list state ── */
 	const [departments, setDepartments] = useState<Department[]>([]);
@@ -82,13 +79,15 @@ const CCWiseIssue: React.FC = () => {
 	const [deptError, setDeptError] = useState<string | null>(null);
 
 	/* ── Report state ── */
-	const [yearInput, setYearInput] = useState(String(currentYear));
-	const [monthInput, setMonthInput] = useState(String(new Date().getMonth() + 1));
+	const [fromDate, setFromDate] = useState("");
+	const [toDate, setToDate] = useState("");
 	const [selectedDept, setSelectedDept] = useState<Department | null>(null);
-	const [reportData, setReportData] = useState<CCWiseIssueRow[]>([]);
+	const [reportData, setReportData] = useState<IssueReceiptWPItem[]>([]);
 	const [reportLoading, setReportLoading] = useState(false);
 	const [showReport, setShowReport] = useState(false);
-	const [, setReportError] = useState<string | null>(null);
+
+	const maroon = "text-[#7A0000]";
+	const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
 	/* ────── Fetch Departments ────── */
 	useEffect(() => {
@@ -141,16 +140,16 @@ const CCWiseIssue: React.FC = () => {
 
 	/* ────── Input validation ────── */
 	const validateInputs = (): boolean => {
-		if (!yearInput) {
-			toast.error("Please enter Year");
+		if (!fromDate) {
+			toast.error("Please select 'From Date'");
 			return false;
 		}
-		if (!/^\d{4}$/.test(yearInput)) {
-			toast.error("Year must be a 4-digit number.");
+		if (!toDate) {
+			toast.error("Please select 'To Date'");
 			return false;
 		}
-		if (!monthInput) {
-			toast.error("Please select a month.");
+		if (new Date(toDate) < new Date(fromDate)) {
+			toast.error("'To Date' cannot be earlier than 'From Date'");
 			return false;
 		}
 		return true;
@@ -167,11 +166,10 @@ const CCWiseIssue: React.FC = () => {
 		setReportLoading(true);
 		setReportData([]);
 		setShowReport(true);
-		setReportError(null);
 
 		try {
 			const costCtrParam = encodeURIComponent(dept.DeptId);
-			const url = `/misapi/api/ccwiseissue/report?repYear=${encodeURIComponent(yearInput)}&repMonth=${encodeURIComponent(monthInput)}&costCtr=${costCtrParam}`;
+			const url = `/misapi/api/issuereceiptwp/report/${fromDate}/${toDate}/${costCtrParam}`;
 
 			const res = await fetch(url, {
 				credentials: "include",
@@ -188,34 +186,49 @@ const CCWiseIssue: React.FC = () => {
 			if (!json.success)
 				throw new Error(json.message || "Failed to load data");
 
-			const raw = json.data || [];
-			if (!Array.isArray(raw) || raw.length === 0) {
+			const items: IssueReceiptWPItem[] = json.data || [];
+			if (items.length > MAX_RECORDS)
+				throw new Error(
+					`Too many records (${items.length}). Please refine your search.`
+				);
+
+			if (items.length === 0) {
 				toast.warn("No records found for the selected criteria.");
 				setShowReport(false);
 				setSelectedDept(null);
 				return;
 			}
 
-			const mappedRows: CCWiseIssueRow[] = raw.map((item: any) => ({
-				type: String(item.Type ?? item.type ?? ""),
-				yrInd: String(item.YrInd ?? item.yrInd ?? ""),
-				mthInd: String(item.MthInd ?? item.mthInd ?? ""),
-				trxType: String(item.TrxType ?? item.trxType ?? ""),
-				trxDt: String(item.TrxDt ?? item.trxDt ?? ""),
-				docPf: String(item.DocPf ?? item.docPf ?? ""),
-				docNo: String(item.DocNo ?? item.docNo ?? ""),
-				ref1: String(item.Ref1 ?? item.ref1 ?? ""),
-				ref2: String(item.Ref2 ?? item.ref2 ?? ""),
-				ref3: String(item.Ref3 ?? item.ref3 ?? ""),
-				ref4: String(item.Ref4 ?? item.ref4 ?? ""),
-				total: String(item.Total ?? item.total ?? "0.00"),
-				remarks: String(item.Remarks ?? item.remarks ?? ""),
-				isRef: String(item.IsRef ?? item.isRef ?? ""),
-				cctName: String(item.CctName ?? item.cctName ?? ""),
+			// Trim string values
+			const trimStr = (v: any): string | null => {
+				if (v === undefined || v === null) return null;
+				const s = String(v).trim();
+				return s.length ? s : null;
+			};
+
+			const mapped: IssueReceiptWPItem[] = items.map((item: any) => ({
+				DocPf: trimStr(item.DocPf),
+				WrhCd: trimStr(item.WrhCd),
+				DocNo: trimStr(item.DocNo),
+				Ref1: trimStr(item.Ref1),
+				Ref2: trimStr(item.Ref2),
+				Ref3: trimStr(item.Ref3),
+				Ref4: trimStr(item.Ref4),
+				TrxDt: item.TrxDt ?? null,
+				Total: item.Total !== undefined && item.Total !== null ? Number(item.Total) : null,
+				DesDeptId: trimStr(item.DesDeptId),
+				CctName: trimStr(item.CctName),
 			}));
 
-			setReportData(mappedRows);
-			toast.success(`${mappedRows.length} records loaded successfully.`);
+			// Sort by transaction date, then document no
+			mapped.sort((a, b) => {
+				const dateCmp = (a.TrxDt || "").localeCompare(b.TrxDt || "");
+				if (dateCmp !== 0) return dateCmp;
+				return (a.DocNo || "").localeCompare(b.DocNo || "", undefined, { numeric: true });
+			});
+
+			setReportData(mapped);
+			toast.success(`${mapped.length} records loaded successfully.`);
 		} catch (e: any) {
 			if (e.name === "AbortError") {
 				toast.error("Request timed out.");
@@ -224,7 +237,6 @@ const CCWiseIssue: React.FC = () => {
 					? "Server unreachable. Please check your connection."
 					: e.message;
 				toast.error(msg);
-				setReportError(msg);
 			}
 			setReportData([]);
 			setShowReport(false);
@@ -240,14 +252,13 @@ const CCWiseIssue: React.FC = () => {
 	};
 
 	const clearAll = () => {
-		setYearInput(String(currentYear));
-		setMonthInput(String(new Date().getMonth() + 1));
+		setFromDate("");
+		setToDate("");
 		setSearchId("");
 		setSearchName("");
 		setShowReport(false);
 		setReportData([]);
 		setSelectedDept(null);
-		setReportError(null);
 		toast.info("Filters cleared.");
 	};
 
@@ -256,100 +267,168 @@ const CCWiseIssue: React.FC = () => {
 		setReportData([]);
 		setSelectedDept(null);
 		setReportLoading(false);
-		setReportError(null);
 	};
 
-	const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+	/* ────── Group data by document type (DocPf), sorted chronologically within each group ────── */
+	const sortedData = [...reportData].sort(
+		(a, b) =>
+			(a.TrxDt || "").localeCompare(b.TrxDt || "") ||
+			(a.DocNo || "").localeCompare(b.DocNo || "", undefined, { numeric: true })
+	);
 
-	/* ────── Derived totals ───────────────────────────────────────────────────────── */
-	const totalAmount = reportData.reduce((s, r) => s + parseNumber(r.total), 0);
-	const cctName = reportData.find((r) => r.cctName)?.cctName || selectedDept?.DeptName || "";
+	type DocTypeGroup = {
+		docType: string;
+		items: IssueReceiptWPItem[];
+		subtotal: number;
+	};
+
+	const groupedByDocType: DocTypeGroup[] = (() => {
+		const order: string[] = [];
+		const buckets: Record<string, IssueReceiptWPItem[]> = {};
+		sortedData.forEach((item) => {
+			const key = item.DocPf || "Uncategorized";
+			if (!buckets[key]) {
+				buckets[key] = [];
+				order.push(key);
+			}
+			buckets[key].push(item);
+		});
+		return order.map((docType) => {
+			const items = buckets[docType];
+			const subtotal = items.reduce((s, r) => s + (r.Total || 0), 0);
+			return { docType, items, subtotal };
+		});
+	})();
+
+	const docTypesTitle = groupedByDocType.map((g) => g.docType).join(", ");
+	const cctName = reportData.find((r) => r.CctName)?.CctName || selectedDept?.DeptName || "";
 	const costCtrDisplay = selectedDept?.DeptId || "";
 
 	/* ────── CSV download ────── */
 	const downloadCSV = () => {
-		if (reportData.length === 0) {
-			toast.error("No data to export.");
-			return;
-		}
+		if (reportData.length === 0) return;
 
 		const titleRows = [
-			`C/C Wise Issue & Issue Cancellation`,
-			`Cost Center: ${costCtrDisplay} | ${cctName}`,
-			`Year: ${yearInput} | Month: ${MONTHS.find((m) => m.value === monthInput)?.label ?? monthInput}`,
+			`Issue, Issue Cancellation, Receipt - From ${fromDate} To ${toDate}`,
+			`Cost Centre: ${costCtrDisplay} | ${cctName}`,
 			"",
 		];
 
 		const headers = [
-			"Type",
-			"Transaction Type",
 			"Transaction Date",
 			"Document Profile",
+			"Warehouse Code",
 			"Document No",
 			"Reference 1",
 			"Reference 2",
 			"Reference 3",
 			"Reference 4",
+			"Designation Department",
 			"Total",
-			"Remarks",
-			"Is Ref",
 		];
 
-		const rows = reportData.map((r) => [
-			csvEscape(displayType(r.type)),
-			csvEscape(r.trxType),
-			csvEscape(r.trxDt),
-			csvEscape(r.docPf),
-			csvEscape(r.docNo),
-			csvEscape(r.ref1),
-			csvEscape(r.ref2),
-			csvEscape(r.ref3),
-			csvEscape(r.ref4),
-			csvEscape(r.total),
-			csvEscape(r.remarks),
-			csvEscape(r.isRef),
-		]);
+		const rows: string[] = [];
 
-		const csv = [
-			...titleRows,
-			headers.join(","),
-			...rows.map((row) => row.join(",")),
-			`Total,,,,,,,,,${csvEscape(totalAmount.toFixed(2))},,`,
-		].join("\n");
+		groupedByDocType.forEach((group, gIdx) => {
+			if (gIdx > 0) rows.push("");
+			rows.push(csvEscape(group.docType));
+			rows.push(headers.join(","));
 
+			group.items.forEach((it) => {
+				rows.push(
+					[
+						csvEscape(formatDate(it.TrxDt)),
+						csvEscape(it.DocPf),
+						csvEscape(it.WrhCd),
+						csvEscape(it.DocNo),
+						csvEscape(it.Ref1),
+						csvEscape(it.Ref2),
+						csvEscape(it.Ref3),
+						csvEscape(it.Ref4),
+						csvEscape(it.DesDeptId),
+						csvEscape(formatNumber(it.Total)),
+					].join(",")
+				);
+			});
+
+			rows.push(
+				[
+					`${group.docType} Total`,
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+					csvEscape(formatNumber(group.subtotal)),
+				].join(",")
+			);
+		});
+
+		const csv = [...titleRows, ...rows].join("\n");
 		const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = `CCWiseIssue_${costCtrDisplay}_${yearInput}_${monthInput}.csv`;
+		a.download = `IssueReceiptDetails_${fromDate}_${toDate}.csv`;
 		a.click();
 		URL.revokeObjectURL(url);
 	};
 
 	/* ────── PDF print ────── */
 	const printPDF = () => {
-		if (reportData.length === 0) {
-			toast.error("No data to export.");
-			return;
-		}
+		if (reportData.length === 0) return;
 
-		let rows = "";
-		reportData.forEach((r, i) => {
-			rows += `
+		let groupsHtml = "";
+		groupedByDocType.forEach((group) => {
+			let rows = "";
+			group.items.forEach((it, i) => {
+				rows += `
           <tr class="${i % 2 ? "bg-white" : "bg-gray-50"}">
-            <td class="px-3 py-2 border-l border-r border-gray-300 text-center text-xs">${displayType(r.type)}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs">${r.trxType}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.trxDt}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.docPf}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.docNo}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.ref1}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.ref2}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.ref3}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.ref4}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${parseNumber(r.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${r.remarks}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs font-mono">${r.isRef}</td>
+            <td class="px-3 py-2 border-l border-r border-gray-300 text-center text-xs">${formatDate(it.TrxDt)}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs">${it.DocPf || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs">${it.WrhCd || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs font-mono">${it.DocNo || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${it.Ref1 || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${it.Ref2 || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${it.Ref3 || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${it.Ref4 || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-center text-xs">${it.DesDeptId || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs font-mono">${formatNumber(it.Total)}</td>
           </tr>`;
+			});
+
+			groupsHtml += `
+  <table style="width:100%; border-collapse:collapse; font-size:8.5px; border:1px solid #d1d5db; margin-bottom:14px;">
+    <thead>
+      <tr style="background:linear-gradient(to right,#7A0000,#A52A2A); color:white;">
+        <th colspan="10" style="padding:6px 8px; text-align:left; font-size:9.5px;">${group.docType}</th>
+      </tr>
+      <tr style="background:#eee; color:#333;">
+        <th style="padding:6px 8px; width:8%;">Transaction Date</th>
+        <th style="padding:6px 8px; width:9%;">Doc Profile</th>
+        <th style="padding:6px 8px; width:8%;">Warehouse</th>
+        <th style="padding:6px 8px; width:9%;">Doc No</th>
+        <th style="padding:6px 8px; width:13%;">Ref 1</th>
+        <th style="padding:6px 8px; width:13%;">Ref 2</th>
+        <th style="padding:6px 8px; width:13%;">Ref 3</th>
+        <th style="padding:6px 8px; width:13%;">Ref 4</th>
+        <th style="padding:6px 8px; width:6%;">Dept</th>
+        <th style="padding:6px 8px; width:10%; text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="9" style="text-align:right; padding:6px 8px; border:1px solid #d1d5db; background:#d3d3d3; font-weight:bold;">${group.docType} Total</td>
+        <td style="text-align:right; padding:6px 8px; border:1px solid #d1d5db; background:#d3d3d3; font-weight:bold; font-family:monospace;">${formatNumber(
+			group.subtotal
+		)}</td>
+      </tr>
+    </tfoot>
+  </table>`;
 		});
 
 		const html = `
@@ -364,8 +443,6 @@ const CCWiseIssue: React.FC = () => {
       .info { margin:6px 8px; font-size:9px; display:flex; justify-content:space-between; }
       table { border-collapse:collapse; width:100%; font-size:8.5px; }
       th, td { border:1px solid #d1d5db; padding:6px 8px; word-wrap:break-word; }
-      th { background:linear-gradient(to right,#7A0000,#A52A2A); color:white; text-align:center; font-weight:bold; }
-      tfoot td { background:#d3d3d3; font-weight:bold; }
       .font-mono { font-family:monospace; }
       @page {
         @bottom-left  { content:"Printed on: ${new Date().toLocaleString(
@@ -378,37 +455,12 @@ const CCWiseIssue: React.FC = () => {
   </style>
 </head>
 <body>
-  <div class="title">C/C Wise Issue & Issue Cancellation</div>
+  <div class="title">Issue, Issue Cancellation, Receipt - From ${fromDate} To ${toDate}</div>
   <div class="info">
     <div><strong>Cost Center:</strong> ${costCtrDisplay} / ${cctName}</div>
-    <div style="font-weight:600; color:#4B5563;">Year: ${yearInput} | Month: ${MONTHS.find((m) => m.value === monthInput)?.label ?? monthInput}</div>
+    <div style="font-weight:600; color:#4B5563;">Currency : LKR</div>
   </div>
-  <table style="width:100%; border-collapse:collapse; font-size:8.5px; border:1px solid #d1d5db;">
-    <thead>
-      <tr style="background:linear-gradient(to right,#7A0000,#A52A2A); color:white;">
-        <th style="padding:6px 8px; width:6%;">Type</th>
-        <th style="padding:6px 8px; width:8%;">Transaction Type</th>
-        <th style="padding:6px 8px; width:8%;">Transaction Date</th>
-        <th style="padding:6px 8px; width:7%;">Document Profile</th>
-        <th style="padding:6px 8px; width:9%;">Document No</th>
-        <th style="padding:6px 8px; width:8%;">Reference 1</th>
-        <th style="padding:6px 8px; width:8%;">Reference 2</th>
-        <th style="padding:6px 8px; width:8%;">Reference 3</th>
-        <th style="padding:6px 8px; width:8%;">Reference 4</th>
-        <th style="padding:6px 8px; width:10%; text-align:right;">Total</th>
-        <th style="padding:6px 8px; width:12%;">Remarks</th>
-        <th style="padding:6px 8px; width:8%;">Is Ref</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-    <tfoot>
-      <tr>
-        <td colspan="9" style="text-align:right; padding:6px 8px; border:1px solid #d1d5db;">Total</td>
-        <td style="text-align:right; padding:6px 8px; border:1px solid #d1d5db; font-family:monospace; font-weight:bold;">${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-        <td colspan="2" style="padding:6px 8px; border:1px solid #d1d5db;"></td>
-      </tr>
-    </tfoot>
-  </table>
+  ${groupsHtml}
 
   <div style="margin-top:20px; display:flex; justify-content:space-between; padding:0 15px; font-size:9px;">
     <div>Prepared By: ____________________</div>
@@ -428,58 +480,51 @@ const CCWiseIssue: React.FC = () => {
 		win.onafterprint = () => win.close();
 	};
 
+	const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
 	/* ────── RENDER ────── */
 	return (
 		<div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
 			<div className="flex justify-between items-center mb-4">
 				<h2 className={`text-xl font-bold ${maroon}`}>
-					C/C Wise Issue & Issue Cancellation
+					Issue/Receipt Details Within Period
 				</h2>
 			</div>
 
 			<div className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-					{/* Year */}
+					{/* From Date */}
 					<div className="flex items-center gap-2">
 						<label
 							className={`text-xs font-bold ${maroon} whitespace-nowrap`}
 						>
-							Year: <span className="text-red-600">*</span>
+							From Date:
 						</label>
 						<input
-							type="text"
-							value={yearInput}
-							onChange={(e) => {
-								setYearInput(e.target.value);
-								setReportError(null);
-							}}
-							placeholder="e.g. 2022"
-							maxLength={4}
+							type="date"
+							value={fromDate}
+							onChange={(e) => setFromDate(e.target.value)}
+							min={minDate}
+							max={maxDate}
 							className="pl-3 pr-3 py-1.5 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
 						/>
 					</div>
 
-					{/* Month */}
+					{/* To Date */}
 					<div className="flex items-center gap-2">
 						<label
 							className={`text-xs font-bold ${maroon} whitespace-nowrap`}
 						>
-							Month: <span className="text-red-600">*</span>
+							To Date:
 						</label>
-						<select
-							value={monthInput}
-							onChange={(e) => {
-								setMonthInput(e.target.value);
-								setReportError(null);
-							}}
+						<input
+							type="date"
+							value={toDate}
+							onChange={(e) => setToDate(e.target.value)}
+							min={minDate}
+							max={maxDate}
 							className="pl-3 pr-3 py-1.5 w-full rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A0000] transition text-sm"
-						>
-							{MONTHS.map((m) => (
-								<option key={m.value} value={m.value}>
-									{m.label}
-								</option>
-							))}
-						</select>
+						/>
 					</div>
 				</div>
 
@@ -575,24 +620,21 @@ const CCWiseIssue: React.FC = () => {
 											<td className="px-4 py-2 text-center">
 												<button
 													onClick={() => fetchReport(dept)}
-													disabled={!yearInput || !monthInput}
+													disabled={!fromDate || !toDate}
 													className={`px-3 py-1 rounded text-xs font-medium hover:brightness-110 transition shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 mx-auto
-                            ${
-											selectedDept?.DeptId === dept.DeptId &&
-											reportLoading
-												? "bg-green-600 text-white"
-												: selectedDept?.DeptId === dept.DeptId
-												? "bg-green-600 text-white"
-												: `${maroonGrad} text-white`
-										}`}
+															${selectedDept?.DeptId === dept.DeptId && reportLoading
+																? "bg-green-600 text-white"
+																: selectedDept?.DeptId === dept.DeptId
+																	? "bg-green-600 text-white"
+																	: `${maroonGrad} text-white`
+															}`}
 												>
 													<Eye className="w-3 h-3" />
-													{selectedDept?.DeptId === dept.DeptId &&
-													reportLoading
+													{selectedDept?.DeptId === dept.DeptId && reportLoading
 														? "Viewing"
 														: selectedDept?.DeptId === dept.DeptId
-														? "Viewing"
-														: "View"}
+															? "Viewing"
+															: "View"}
 												</button>
 											</td>
 										</tr>
@@ -642,7 +684,7 @@ const CCWiseIssue: React.FC = () => {
 									Loading Report...
 								</p>
 								<p className="text-sm text-gray-600">
-									Fetching issue details from server
+									Fetching issue/receipt details from server
 								</p>
 							</div>
 						)}
@@ -672,7 +714,7 @@ const CCWiseIssue: React.FC = () => {
 								<h2
 									className={`text-lg md:text-xl font-bold text-center md:mb-6 ${maroon}`}
 								>
-									C/C Wise Issue & Issue Cancellation 
+									Issue, Issue Cancellation, Receipt - From {fromDate} To {toDate}
 								</h2>
 								<div className="flex justify-between text-sm mb-3 ml-5 mr-12">
 									<div>
@@ -680,120 +722,117 @@ const CCWiseIssue: React.FC = () => {
 										{costCtrDisplay} / {cctName}
 									</div>
 									<div className="font-semibold text-gray-600">
-										Year: {yearInput} | Month: {MONTHS.find((m) => m.value === monthInput)?.label ?? monthInput}
+										Currency : LKR
 									</div>
 								</div>
 
 								<div className="ml-5 mt-1 mb-5 border border-gray-200 rounded-lg overflow-x-auto print:ml-12 print:mt-12 print:overflow-visible">
 									<div className="min-w-[1400px]">
-										<table className="w-full text-xs border-collapse">
-											<thead className={`${maroonGrad} text-white`}>
-												<tr>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "6%" }}>
-														Type
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Transaction Type
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Transaction Date
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "7%" }}>
-														Document Profile
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "9%" }}>
-														Document No
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Reference 1
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Reference 2
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Reference 3
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Reference 4
-													</th>
-													<th className="px-4 py-2 border border-gray-300 text-right" style={{ width: "10%" }}>
-														Total
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "12%" }}>
-														Remarks
-													</th>
-													<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
-														Is Ref
-													</th>
-												</tr>
-											</thead>
-											<tbody>
-												{reportData.map((r, i) => (
-													<tr
-														key={`${r.docNo}-${i}`}
-														className={
-															i % 2 === 0
-																? "bg-white"
-																: "bg-gray-50"
-														}
-													>
-														<td className="px-4 py-2 border-l border-r border-gray-300 text-center">
-															{displayType(r.type)}
+										{groupedByDocType.map((group, gi) => (
+											<table
+												key={group.docType + gi}
+												className="w-full text-xs border-collapse mb-4"
+											>
+												<thead>
+													<tr className={`${maroonGrad} text-white`}>
+														<th
+															colSpan={10}
+															className="px-4 py-2 border border-gray-300 text-left"
+														>
+															{group.docType}
+														</th>
+													</tr>
+													<tr className="bg-gray-200 text-gray-700">
+														<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
+															Transaction Date
+														</th>
+														<th className="px-4 py-2 border border-gray-300" style={{ width: "9%" }}>
+															Document Profile
+														</th>
+														<th className="px-4 py-2 border border-gray-300" style={{ width: "8%" }}>
+															Warehouse Code
+														</th>
+														<th className="px-4 py-2 border border-gray-300" style={{ width: "9%" }}>
+															Document No
+														</th>
+														<th className="px-4 py-2 border border-gray-300" style={{ width: "13%" }}>
+															Reference 1
+														</th>
+														<th className="px-4 py-2 border border-gray-300" style={{ width: "13%" }}>
+															Reference 2
+														</th>
+														<th className="px-4 py-2 border border-gray-300" style={{ width: "13%" }}>
+															Reference 3
+														</th>
+														<th className="px-4 py-2 border border-gray-300" style={{ width: "13%" }}>
+															Reference 4
+														</th>
+														<th className="px-4 py-2 border border-gray-300" style={{ width: "6%" }}>
+															Designation Department
+														</th>
+														<th className="px-4 py-2 border border-gray-300 text-right" style={{ width: "10%" }}>
+															Total
+														</th>
+													</tr>
+												</thead>
+												<tbody>
+													{group.items.map((it, i) => (
+														<tr
+															key={i}
+															className={
+																i % 2 === 0
+																	? "bg-white"
+																	: "bg-gray-50"
+															}
+														>
+															<td className="px-4 py-2 text-center border-l border-r border-gray-300">
+																{formatDate(it.TrxDt)}
+															</td>
+															<td className="px-4 py-2 text-center border-r border-gray-300">
+																{it.DocPf || ""}
+															</td>
+															<td className="px-4 py-2 text-center border-r border-gray-300">
+																{it.WrhCd || ""}
+															</td>
+															<td className="px-4 py-2 font-mono border-r border-gray-300">
+																{it.DocNo || ""}
+															</td>
+															<td className="px-4 py-2 border-r border-gray-300 break-words">
+																{it.Ref1 || ""}
+															</td>
+															<td className="px-4 py-2 border-r border-gray-300 break-words">
+																{it.Ref2 || ""}
+															</td>
+															<td className="px-4 py-2 border-r border-gray-300 break-words">
+																{it.Ref3 || ""}
+															</td>
+															<td className="px-4 py-2 border-r border-gray-300 break-words">
+																{it.Ref4 || ""}
+															</td>
+															<td className="px-4 py-2 text-center border-r border-gray-300">
+																{it.DesDeptId || ""}
+															</td>
+															<td className="px-4 py-2 text-right font-mono border-r border-gray-300">
+																{formatNumber(it.Total)}
+															</td>
+														</tr>
+													))}
+												</tbody>
+												<tfoot>
+													<tr className="bg-[#d3d3d3] font-bold">
+														<td
+															colSpan={9}
+															className="px-4 py-2 text-right border border-gray-300"
+														>
+															{group.docType} Total
 														</td>
-														<td className="px-4 py-2 text-center border-r border-gray-300">
-															{r.trxType}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.trxDt}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.docPf}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.docNo}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.ref1}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.ref2}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.ref3}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.ref4}
-														</td>
-														<td className="px-4 py-2 text-right font-mono border-r border-gray-300">
-															{parseNumber(r.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-														</td>
-														<td className="px-4 py-2 border-r border-gray-300 break-words">
-															{r.remarks}
-														</td>
-														<td className="px-4 py-2 text-center font-mono border-r border-gray-300">
-															{r.isRef}
+														<td className="px-4 py-2 text-right font-mono border border-gray-300">
+															{formatNumber(group.subtotal)}
 														</td>
 													</tr>
-												))}
-											</tbody>
-											<tfoot>
-												<tr className="bg-[#d3d3d3] font-bold">
-													<td
-														colSpan={9}
-														className="px-4 py-2 text-right border border-gray-300"
-													>
-														TOTAL
-													</td>
-													<td className="px-4 py-2 text-right font-mono border border-gray-300">
-														{totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-													</td>
-													<td
-														colSpan={2}
-														className="px-4 py-2 border border-gray-300"
-													></td>
-												</tr>
-											</tfoot>
-										</table>
+												</tfoot>
+											</table>
+										))}
 										<p className="text-xs text-gray-500 mt-2 text-right px-2">
 											Total records: {reportData.length.toLocaleString()}
 										</p>
@@ -808,4 +847,4 @@ const CCWiseIssue: React.FC = () => {
 	);
 };
 
-export default CCWiseIssue;
+export default IssueReceiptWPReport;
