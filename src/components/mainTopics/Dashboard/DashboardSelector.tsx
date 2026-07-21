@@ -20,7 +20,7 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
   const dashboards = [
     { id: "default", label: "Default", icon: Home },
     { id: "financial", label: "Financial", icon: DollarSign },
-    { id: "dgm", label: "DGM Dashboard", icon: Users },
+    { id: "dgm", label: "Construction Progress Dashboard", icon: Users },
     /* { id: "operations", label: "Operations/Field", icon: Briefcase },
      { id: "analytics", label: "Analytics", icon: BarChart3 },
      { id: "solar", label: "Solar Operations", icon: Sun },
