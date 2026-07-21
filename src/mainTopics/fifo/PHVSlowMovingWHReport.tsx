@@ -583,7 +583,7 @@ const PHVSlowMovingWHReport: React.FC = () => {
     <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
       <div className="flex justify-between items-center mb-4">
         <h2 className={`text-xl font-bold ${maroon}`}>
-          Physical Verification Slow Moving WH Wise - AV/6 (FIFO)
+          3. Physical Verification Slow Moving WH Wise - AV/6 (FIFO)
         </h2>
       </div>
 
