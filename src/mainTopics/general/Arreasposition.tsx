@@ -13,8 +13,6 @@ interface AreasPositionRow {
   noOfAccounts: string;
 }
 
-// Removed unused interface: AreasPositionApiResult (ts6196)
-
 async function apiFetch<T>(
   url: string
 ): Promise<{ data: T | null; errorMessage: string | null }> {
@@ -316,28 +314,29 @@ const AreasPosition: React.FC = () => {
     if (!reportData.length) { setReportError("No data to export."); return; }
     const title    = "Arrears Position \u2013 Meter Reader Wise";
     const rowsHtml = reportData.map((r) => `<tr>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:center;font-size:10px">${escapeCsv(r.readerCode)}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:10px">${r.monthlyBill}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:10px">${r.totalBalance}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:10px">${r.ratio}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:10px">${r.noOfAccounts}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;text-align:center;font-size:10px">${escapeCsv(r.readerCode)}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;font-size:10px">${r.monthlyBill}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;font-size:10px">${r.totalBalance}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;font-size:10px">${r.ratio}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;text-align:right;font-size:10px">${r.noOfAccounts}</td>
     </tr>`).join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"/><title>${title}</title>
 <style>
-  body{font-family:Arial,sans-serif;margin:10mm;color:#111}
-  h2{color:#7A0000;font-size:13px;margin-bottom:6px}
-  .meta{font-size:11px;margin-bottom:12px}
-  .meta span{font-weight:bold}
+  body{font-family:Arial,sans-serif;margin:10mm;font-size:10px;color:#111}
+  .header{font-weight:bold;color:#7A0000;font-size:12px;margin-bottom:5px}
+  .subheader{font-size:11px;margin-bottom:2px}
   table{width:100%;border-collapse:collapse;margin-top:8px}
-  th{background:#b0e0e8;font-weight:bold;text-align:center;padding:5px 4px;border:1px solid #aaa;font-size:10px}
-  td{padding:3px 4px;border:1px solid #ccc;font-size:10px;vertical-align:top}
-  tr:nth-child(even){background:#f5f5f5}
-  .total-row td{background:#d3d3d3;font-weight:bold}
+  th{background:#d3d3d3;font-weight:bold;text-align:center;padding:4px 6px;border:1px solid #ddd;font-size:10px}
+  td{padding:4px 6px;border:1px solid #ddd;font-size:10px;vertical-align:top}
+  tr:nth-child(even){background:#f9f9f9}
+  .total-row td{background:#e8e8e8;font-weight:bold}
   @page{size:A4 landscape;margin:12mm}
 </style>
 </head><body>
-<h2>${title}</h2>
-<div class="meta">Area : &nbsp;<span>${selectedAreaName}</span><br>Bill Cycle : &nbsp;<span>${resolvedBillCycleShort}</span></div>
+<div class="header">${title}</div>
+<div class="subheader"><strong>Area: ${selectedAreaName}</strong></div>
+<div class="subheader"><strong>Bill Cycle: ${resolvedBillCycleShort}</strong></div>
+<br/>
 <table><thead><tr>
   <th>Reader Code</th>
   <th style="text-align:right">Charge (Monthly Bill)</th>
@@ -362,16 +361,14 @@ const AreasPosition: React.FC = () => {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
+    <div className="p-4 bg-white rounded-lg shadow-sm">
 
       {/* ── FORM ──────────────────────────────────────────────────────────── */}
       {!hasSearched && (
         <>
-          <div className="mb-6">
-            <h2 className={`text-xl font-bold ${maroon}`}>
-              Arrears Position – Meter Reader Wise
-            </h2>
-          </div>
+          <h1 className={`text-xl font-bold ${maroon} mb-4`}>
+            Arrears Position – Meter Reader Wise
+          </h1>
 
           <div className="space-y-4">
 
@@ -401,22 +398,20 @@ const AreasPosition: React.FC = () => {
                     <option value="">Select Area</option>
                     {areas.map((area) => (
                       <option key={area.areaCode} value={area.areaCode}>
-                        {area.areaCode} – {area.areaName}
+                        {area.areaCode} - {area.areaName}
                       </option>
                     ))}
                   </select>
                 )}
               </div>
-            </div>
 
-            {/* Row 2 – Bill Cycle */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Row 1 – Bill Cycle (aligned alongside Area, mirroring RoofTop layout) */}
               <div className="flex flex-col">
                 <label className={`text-xs font-medium mb-1 ${!selectedArea ? "text-gray-400" : maroon}`}>
                   Select Bill Cycle: <span className="text-red-600">*</span>
                 </label>
                 {!selectedArea ? (
-                  <div className={`w-full px-2 py-1.5 text-xs border rounded-md bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed`}>
+                  <div className="w-full px-2 py-1.5 text-xs border rounded-md bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed">
                     Please select an area first
                   </div>
                 ) : loadingCycles ? (
@@ -486,16 +481,16 @@ const AreasPosition: React.FC = () => {
 
       {/* ── REPORT ────────────────────────────────────────────────────────── */}
       {hasSearched && (
-        <div className="mt-6">
+        <div className="mt-2">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
             <div>
-              <h2 className={`text-xl font-bold ${maroon}`}>
+              <h2 className={`text-lg font-bold ${maroon}`}>
                 Arrears Position – Meter Reader Wise
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                Area: <strong>{selectedAreaName}</strong>
+                Area: {selectedAreaName}
                 {resolvedBillCycleShort && (
-                  <> | Bill Cycle: <strong>{resolvedBillCycleShort}</strong></>
+                  <> | Bill Cycle: {resolvedBillCycleShort}</>
                 )}
               </p>
             </div>
@@ -549,37 +544,37 @@ const AreasPosition: React.FC = () => {
           <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg">
             <div className="min-w-full py-4">
               <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr className="bg-[#b0e0e8] text-gray-800 sticky top-0">
-                    <th className="border border-gray-300 px-3 py-2 text-center font-bold">Reader Code</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Charge (Monthly Bill)</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Current Balance</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Ratio</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right font-bold">Reader Count</th>
+                <thead className="bg-gray-100 sticky top-0">
+                  <tr>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Reader Code</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Charge (Monthly Bill)</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Current Balance</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Ratio</th>
+                    <th className="border border-gray-300 px-2 py-1 text-center">Reader Count</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportData.map((r, i) => (
                     <tr key={`${r.readerCode}-${i}`} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="border border-gray-300 px-3 py-1 text-center font-mono">{r.readerCode}</td>
-                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.monthlyBill}</td>
-                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.totalBalance}</td>
-                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.ratio}</td>
-                      <td className="border border-gray-300 px-3 py-1 text-right font-mono">{r.noOfAccounts}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-center">{r.readerCode}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">{r.monthlyBill}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">{r.totalBalance}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">{r.ratio}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">{r.noOfAccounts}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-[#d3d3d3] font-bold sticky bottom-0">
-                    <td className="border border-gray-300 px-3 py-2 text-center font-bold">TOTAL</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right font-mono font-bold">
+                  <tr className="bg-gray-200 font-bold sticky bottom-0">
+                    <td className="border border-gray-300 px-2 py-1 text-center">TOTAL</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">
                       {totalMonthlyBill.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-right font-mono font-bold">
+                    <td className="border border-gray-300 px-2 py-1 text-right">
                       {totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-right font-mono font-bold">—</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right font-mono font-bold">
+                    <td className="border border-gray-300 px-2 py-1 text-right">—</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">
                       {totalAccounts.toLocaleString("en-US")}
                     </td>
                   </tr>
