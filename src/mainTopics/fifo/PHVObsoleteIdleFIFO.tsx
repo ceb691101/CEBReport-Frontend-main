@@ -787,7 +787,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
                       <span className="font-bold">Date of Verification :</span> {verificationDate}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left">
                     <div>1.ORIGINAL : Deputy General Manager</div>
                     <div>2.DUPLICATE : Engineer-in-charge</div>
                     <div>3.TRIPLICATE : Store-keeper/E.S.(C.S.C)</div>
