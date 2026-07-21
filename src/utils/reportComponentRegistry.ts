@@ -65,6 +65,7 @@ import PriceVarianceReport from "../mainTopics/CashBook/PriceVarianceReport";
 import ChequeDetailWPReport from "../mainTopics/CashBook/ChequeDetailsWP";
 import PriceVarianceWHReport from "../mainTopics/CashBook/PriceVarianceWHReport";
 import ChequeSummaryReport from "../mainTopics/CashBook/ChequeSummaryReport";
+import RegionPeriodStatusReport from "../mainTopics/CashBook/Regionperiodstatusreport";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
@@ -128,6 +129,10 @@ import PHVNonMovingWHwiseBOS from "../mainTopics/PhysicalVerification/PHVNonMovi
 import PHVObsoleteIdleBOS from "../mainTopics/PhysicalVerification/PHVObsoleteIdleBOS";
 import PHVDamageBOS from "../mainTopics/PhysicalVerification/PHVDamageBOS";
 import LastDocNo from "../mainTopics/PhysicalVerification/LastDocNo";
+
+// Phisical Verification FIFO reports
+import PHVSlowMovingWHReport from "../mainTopics/fifo/PHVSlowMovingWHReport";
+import PHVNonMovingWHReport from "../mainTopics/fifo/PHVNonMovingWHReport";
 
 // PUCSL/LISS reports
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
@@ -289,6 +294,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cheque details within period" : ChequeDetailWPReport,
 	"price variance wh wise" : PriceVarianceWHReport,
 	"cheque summary" : ChequeSummaryReport, 
+	"region wise period status": RegionPeriodStatusReport,
 
 	// General reports
 	"tariff block wise consumption": TariffBlockWiseConsumption,
@@ -349,6 +355,12 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"ledger card subaccounts total": LedgerCardSubAccountTotal,
 	"sub accounts transactions for account code within selected company": DivisionalLedgerCard,
 
+	// Physical Verification FIFO reports
+	"1. physical verification obsolete idle - av/7a (fifo)": PHVObsoleteIdleFIFO,
+	"2. physical verification damage - av/7b (fifo)": PHVDamageFIFO,
+	"3. physical verification slow moving wh wise - av/6 (fifo)": PHVSlowMovingWHReport,
+	"4. physical verification non moving wh wise - av/6b (fifo)": PHVNonMovingWHReport,
+
 	// Physical Verification reports
 	"1 phv entry form": PHVEntryForm,
 	"phv entry form": PHVEntryForm,
@@ -371,7 +383,6 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"physical verification obsolete idle fifo": PHVObsoleteIdleFIFO,
 	"fifo damage": PHVDamageFIFO,
 	"phv damage fifo": PHVDamageFIFO,
-	"phv damage (fifo)": PHVDamageFIFO,
 	"physical verification damage fifo": PHVDamageFIFO,
 	"physical verification fifo obsolete idle": PHVObsoleteIdleFIFO,
 	// Additional aliases to match backend/report-catalog variations

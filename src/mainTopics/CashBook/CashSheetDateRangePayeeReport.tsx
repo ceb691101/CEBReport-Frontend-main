@@ -76,6 +76,7 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
   onClose: () => void;
 }> = ({ data, fromDate, toDate, payee, costCenter, departmentName, onClose }) => {
   const maroon = "text-[#7A0000]";
+  const reportTitle = `Cheque Details From ${formatDate(fromDate)} To ${formatDate(toDate)}`;
 
   // Sort by Payee, Cheque Date, Cheque No (matches backend ORDER BY)
   const sortedData = [...data].sort((a, b) => {
@@ -123,35 +124,43 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
     groups.push({ payee: currentPayee, items: currentItems, total: currentTotal });
   }
 
-  /* ────── CSV Download (flat, without Payee column) ────── */
+  /* ────── CSV Download (grouped, with Payee subtotals + month total) ────── */
   const downloadCSV = () => {
     const titleRows = [
-      `Cash Sheet Date Range Payee Report - ${formatDate(fromDate)} to ${formatDate(toDate)}`,
+      reportTitle,
       `Cost Center: ${costCenter}/${departmentName}`,
       `Payee: ${payee || "All"}`,
       `Total Records: ${sortedData.length}`,
       `Total Amount (LKR): ${formatAmount(totalAmount)}`,
       "",
     ];
-    // Headers without Payee column
     const headers = [
       "Cheque Run",
       "Cheque Date",
-      "Payment Doc No.",
-      "Cheque Amount",
+      "Payslips No",
       "Cheque No.",
-      "Cost Center Name",
+      "Payee",
+      "Amount (LKR)",
     ];
-    const rows = sortedData.map((it) =>
-      [
-        csvEscape(it.ChqRun),
-        csvEscape(formatDate(it.ChqDt)),
-        csvEscape(it.PymtDocNo),
-        csvEscape(it.ChqAmt),
-        csvEscape(it.ChqNo),
-        csvEscape(it.CctName),
-      ].join(",")
-    );
+
+    const rows: string[] = [];
+    groups.forEach((group) => {
+      group.items.forEach((it) => {
+        rows.push(
+          [
+            csvEscape(it.ChqRun),
+            csvEscape(formatDate(it.ChqDt)),
+            csvEscape(it.PymtDocNo),
+            csvEscape(it.ChqNo),
+            csvEscape(it.Payee),
+            csvEscape(it.ChqAmt),
+          ].join(",")
+        );
+      });
+      rows.push(`,,,,Total for ${group.payee},${csvEscape(formatAmount(group.total))}`);
+    });
+    rows.push(`,,,,Total for the Month,${csvEscape(formatAmount(totalAmount))}`);
+
     const csv = [...titleRows, headers.join(","), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -166,7 +175,7 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
   const printPDF = () => {
     let rowsHTML = "";
 
-    groups.forEach((group, gi) => {
+    groups.forEach((group) => {
       // Group header
       rowsHTML += `
         <tr style="background:#f0f0f0; font-weight:bold;">
@@ -183,9 +192,9 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
             <td class="px-3 py-2 border-l border-r border-gray-300 text-left text-xs">${it.ChqRun || ""}</td>
             <td class="px-3 py-2 border-r border-gray-300 text-center text-xs">${formatDate(it.ChqDt)}</td>
             <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.PymtDocNo || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs">${formatAmount(it.ChqAmt)}</td>
             <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.ChqNo || ""}</td>
-            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs">${it.CctName || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-left text-xs break-words">${it.Payee || ""}</td>
+            <td class="px-3 py-2 border-r border-gray-300 text-right text-xs">${formatAmount(it.ChqAmt)}</td>
           </tr>
         `;
       });
@@ -203,11 +212,11 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
       `;
     });
 
-    // Grand total
+    // Month total (last row of the report)
     rowsHTML += `
       <tr style="background:#d3d3d3; font-weight:bold;">
         <td colspan="5" style="padding:6px 8px; border:1px solid #d1d5db; text-align:right; font-size:9px;">
-          GRAND TOTAL
+          Total for the Month
         </td>
         <td style="padding:6px 8px; border:1px solid #d1d5db; text-align:right; font-size:9px;">
           ${formatAmount(totalAmount)}
@@ -237,7 +246,7 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
   </style>
 </head>
 <body>
-  <div class="title">Cash Sheet Date Range Payee Report - From ${formatDate(fromDate)} to ${formatDate(toDate)}</div>
+  <div class="title">${reportTitle}</div>
   <div class="info">
     <div><strong>Cost Center:</strong> ${costCenter} / ${departmentName}</div>
     <div><strong>Payee:</strong> ${payee || "All"}</div>
@@ -247,11 +256,11 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
     <thead>
       <tr style="background:white; color:#1f2937;">
         <th style="padding:6px 8px; width:12%;">Cheque Run</th>
-        <th style="padding:6px 8px; width:10%;">Cheque Date</th>
-        <th style="padding:6px 8px; width:12%;">Payment Doc No.</th>
-        <th style="padding:6px 8px; width:12%;">Cheque Amount</th>
+        <th style="padding:6px 8px; width:12%;">Cheque Date</th>
+        <th style="padding:6px 8px; width:14%;">Payslips No</th>
         <th style="padding:6px 8px; width:10%;">Cheque No.</th>
-        <th style="padding:6px 8px; width:44%;">Cost Center Name</th>
+        <th style="padding:6px 8px; width:32%;">Payee</th>
+        <th style="padding:6px 8px; width:20%;">Amount (LKR)</th>
       </tr>
     </thead>
     <tbody>${rowsHTML}</tbody>
@@ -299,7 +308,7 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
             </button>
           </div>
           <h2 className={`text-lg md:text-xl font-bold text-center md:mb-6 ${maroon}`}>
-            Cash Sheet Date Range Payee Report - {formatDate(fromDate)} to {formatDate(toDate)}
+            {reportTitle}
           </h2>
           <div className="flex flex-col sm:flex-row justify-between text-sm mb-4 gap-2 px-2">
             <div>
@@ -317,16 +326,16 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
             </div>
           </div>
           <div className="mt-1 mb-5 border border-gray-200 rounded-lg overflow-x-auto print:ml-12 print:mt-12 print:overflow-visible">
-            <div className="min-w-[800px]">
+            <div className="min-w-[900px]">
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr className="bg-[#7A0000] text-white sticky top-0">
                     <th className="px-4 py-2 border border-gray-300 text-center font-bold">Cheque Run</th>
                     <th className="px-4 py-2 border border-gray-300 text-center font-bold">Cheque Date</th>
-                    <th className="px-4 py-2 border border-gray-300 text-center font-bold">Payment Doc No.</th>
-                    <th className="px-4 py-2 border border-gray-300 text-right font-bold">Cheque Amount (LKR)</th>
+                    <th className="px-4 py-2 border border-gray-300 text-center font-bold">Payslips No</th>
                     <th className="px-4 py-2 border border-gray-300 text-center font-bold">Cheque No.</th>
-                    <th className="px-4 py-2 border border-gray-300 text-center font-bold">Cost Center Name</th>
+                    <th className="px-4 py-2 border border-gray-300 text-center font-bold">Payee</th>
+                    <th className="px-4 py-2 border border-gray-300 text-right font-bold">Amount (LKR)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -344,9 +353,9 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
                           <td className="px-4 py-2 border-l border-r border-gray-300 font-mono">{it.ChqRun}</td>
                           <td className="px-4 py-2 text-center border-r border-gray-300 font-mono">{formatDate(it.ChqDt)}</td>
                           <td className="px-4 py-2 border-r border-gray-300 font-mono">{it.PymtDocNo}</td>
-                          <td className="px-4 py-2 text-right border-r border-gray-300 font-mono">{formatAmount(it.ChqAmt)}</td>
                           <td className="px-4 py-2 border-r border-gray-300 font-mono">{it.ChqNo}</td>
-                          <td className="px-4 py-2 border-r border-gray-300 truncate max-w-[150px]">{it.CctName}</td>
+                          <td className="px-4 py-2 border-r border-gray-300 break-words max-w-[220px]">{it.Payee}</td>
+                          <td className="px-4 py-2 text-right border-r border-gray-300 font-mono">{formatAmount(it.ChqAmt)}</td>
                         </tr>
                       ))}
                       {/* Group total row */}
@@ -363,7 +372,7 @@ const CashSheetDateRangePayeeReportTable: React.FC<{
                 </tbody>
                 <tfoot>
                   <tr className="bg-[#d3d3d3] font-bold sticky bottom-0">
-                    <td colSpan={5} className="px-4 py-2 border border-gray-300 text-right">GRAND TOTAL</td>
+                    <td colSpan={5} className="px-4 py-2 border border-gray-300 text-right">Total for the Month</td>
                     <td className="px-4 py-2 border border-gray-300 text-right font-mono">
                       {formatAmount(totalAmount)}
                     </td>

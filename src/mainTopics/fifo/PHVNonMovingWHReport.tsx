@@ -1,4 +1,4 @@
-// PHVObsoleteIdleFIFO.tsx
+// PHVNonMovingWHReport.tsx
 import React, { useEffect, useState } from "react";
 import { Download, Printer, X, RotateCcw, Eye, Search } from "lucide-react";
 import { toast } from "react-toastify";
@@ -14,16 +14,16 @@ interface Warehouse {
   CostCenterId?: string;
 }
 
-interface FIFOItem {
-  DocumentNo: string | null;
-  MaterialCode: string | null;
-  MaterialName: string | null;
-  GradeCode: string | null;
-  PhvDate: string | null;
+interface NonMovingItem {
+  DocNo: string | null;
+  MatCd: string | null;
+  MatNm: string | null;
+  GradeCd: string | null;
+  PhvDt: string | null;
   QtyOnHand: number | null;
   StockBook: number | null;
   Reason: string | null;
-  CostCentreName: string | null;
+  CctName: string | null;
 }
 
 /* ────── Constants ────── */
@@ -43,7 +43,7 @@ const formatNumber = (num: number | string | null | undefined): string => {
   return n < 0 ? `(${formatted})` : formatted;
 };
 
-// Sample report uses DD/MM/YYYY
+// Matches PHVDamage: DD/MM/YYYY
 const formatDateDMY = (dateStr: string | null): string => {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -86,7 +86,7 @@ const parseApiResponse = (response: any): any[] => {
 };
 
 /* ────── MAIN COMPONENT ────── */
-const PHVObsoleteIdleFIFO: React.FC = () => {
+const PHVNonMovingWHReport: React.FC = () => {
   const { user } = useUser();
   const epfNo = user?.Userno || "";
 
@@ -113,7 +113,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
   /* ── Report state ── */
-  const [reportData, setReportData] = useState<FIFOItem[]>([]);
+  const [reportData, setReportData] = useState<NonMovingItem[]>([]);
   const [reportLoading, setReportLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
 
@@ -266,7 +266,10 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
     return true;
   };
 
-  /* ────── Fetch report data (plain JSON, no Jasper) ────── */
+  /* ────── Fetch report data (plain JSON, no Jasper) ──────
+     Matches PHVNonMovingWHController.GetReport(repYear, whCode) exactly --
+     the cost center is only used client-side to filter the warehouse list;
+     it is not sent to the endpoint, since the SQL itself doesn't filter by it. */
   const handleViewReport = async () => {
     if (!validateInputs()) return;
 
@@ -278,13 +281,11 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
     setShowReport(true);
 
     try {
-      const params = new URLSearchParams({
-        deptId: selectedDept!.DeptId,
-        warehouseCode: selectedWarehouse,
-        repYear: selectedYear.toString(),
-      });
+      const repYearParam = selectedYear.toString();
+      const whCodeParam = encodeURIComponent(selectedWarehouse);
+      const url = `/misapi/api/phvnonmovingwh/report/${repYearParam}/${whCodeParam}`;
 
-      const res = await fetch(`/misapi/api/phv-obsolete-idle-fifo/list?${params.toString()}`, {
+      const res = await fetch(url, {
         credentials: "include",
         signal: controller.signal,
       });
@@ -296,7 +297,9 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
       }
 
       const json = await res.json();
-      const items: FIFOItem[] = Array.isArray(json) ? json : json.data || [];
+      if (!json.success) throw new Error(json.message || "Failed to load data");
+
+      const items: NonMovingItem[] = json.data || [];
 
       if (items.length > MAX_RECORDS) {
         throw new Error(`Too many records (${items.length}). Please refine your search.`);
@@ -349,25 +352,25 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
     toast.info("Filters cleared.");
   };
 
-  /* ────── Single flat table, sorted by material / document ────── */
+  /* ────── Single flat table, sorted per SQL: doc_no, mat_cd ────── */
   const sortedData = [...reportData].sort(
     (a, b) =>
-      (a.MaterialCode || "").localeCompare(b.MaterialCode || "") ||
-      (a.DocumentNo || "").localeCompare(b.DocumentNo || "")
+      (a.DocNo || "").localeCompare(b.DocNo || "") ||
+      (a.MatCd || "").localeCompare(b.MatCd || "")
   );
 
-  const grandTotalCost = reportData.reduce((s, r) => s + (r.StockBook || 0), 0);
+  const grandTotalStockBook = reportData.reduce((s, r) => s + (r.StockBook || 0), 0);
   const costCtrDisplay =
-    selectedDept ? `${selectedDept.DeptId} - ${selectedDept.DeptName} - ${selectedWarehouse}` : "";
-  const verificationDate = formatDateDMY(reportData.find((r) => r.PhvDate)?.PhvDate || null);
+    selectedDept ? `${selectedDept.DeptId} ${selectedDept.DeptName} - ${selectedWarehouse}` : "";
+  const verificationDate = formatDateDMY(reportData.find((r) => r.PhvDt)?.PhvDt || null);
 
   /* ────── CSV download ────── */
   const downloadCSV = () => {
     if (reportData.length === 0) return;
 
     const titleRows = [
-      `STATEMENT OF OBSOLETE AND IDLE MATERIALS IN STOCKS -${selectedYear} AV/7A`,
-      `Cost Center : ${costCtrDisplay}`,
+      `Statement of Non Moving Materials in Stocks - ${selectedYear}`,
+      `Cost Center: ${costCtrDisplay}`,
       `Date of Verification : ${verificationDate}`,
       "",
     ];
@@ -388,9 +391,9 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
       rows.push(
         [
           csvEscape(i + 1),
-          csvEscape(it.MaterialCode),
-          csvEscape(it.MaterialName),
-          csvEscape(it.DocumentNo),
+          csvEscape(it.MatCd),
+          csvEscape(it.MatNm),
+          csvEscape(it.DocNo),
           csvEscape(formatNumber(it.QtyOnHand)),
           csvEscape(formatNumber(it.StockBook)),
           csvEscape(it.Reason),
@@ -399,14 +402,14 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
       );
     });
 
-    rows.push(`Total of Damaged Stocks,,,,,${csvEscape(formatNumber(grandTotalCost))},,`);
+    rows.push(`Total of Non Moving Stocks,,,,,${csvEscape(formatNumber(grandTotalStockBook))},,`);
 
     const csv = [...titleRows, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `PHV_Obsolete_Idle_FIFO_${selectedDept?.DeptId}_${selectedWarehouse}_${selectedYear}.csv`;
+    a.download = `PHV_NonMoving_${selectedDept?.DeptId}_${selectedWarehouse}_${selectedYear}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -427,9 +430,9 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
           (it, i) => `
           <tr class="${i % 2 ? "bg-white" : "bg-gray-50"}">
             <td class="cell center">${start + i + 1}</td>
-            <td class="cell">${it.MaterialCode || ""}</td>
-            <td class="cell">${it.MaterialName || ""}</td>
-            <td class="cell mono">${it.DocumentNo || ""}</td>
+            <td class="cell">${it.MatCd || ""}</td>
+            <td class="cell">${it.MatNm || ""}</td>
+            <td class="cell mono">${it.DocNo || ""}</td>
             <td class="cell right mono">${formatNumber(it.QtyOnHand)}</td>
             <td class="cell right mono">${formatNumber(it.StockBook)}</td>
             <td class="cell">${it.Reason || ""}</td>
@@ -440,10 +443,10 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
     };
 
     const buildHeader = () => `
-    <div class="title">STATEMENT OF OBSOLETE AND IDLE MATERIALS IN STOCKS -${selectedYear} AV/7A</div>
+    <div class="title">Statement of Non Moving Materials in Stocks - ${selectedYear}</div>
     <div class="header-row">
       <div class="header-left">
-        <div><strong>Cost Center :</strong> ${costCtrDisplay}</div>
+        <div><strong>Cost Center:</strong> ${costCtrDisplay}</div>
         <div><strong>Date of Verification :</strong> ${verificationDate}</div>
       </div>
       <div class="header-right">
@@ -502,8 +505,8 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
             isLastPage
               ? `<tfoot>
                   <tr>
-                    <td colspan="5" class="right">Total of Damaged Stocks</td>
-                    <td class="right mono">${formatNumber(grandTotalCost)}</td>
+                    <td colspan="5" class="right">Total of Non Moving Stocks</td>
+                    <td class="right mono">${formatNumber(grandTotalStockBook)}</td>
                     <td colspan="2"></td>
                   </tr>
                 </tfoot>`
@@ -518,7 +521,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Statement of Obsolete and Idle Materials in Stocks - ${selectedYear} AV/7A</title>
+  <title>Statement of Non Moving Materials in Stocks - ${selectedYear}</title>
   <style>
     @media print {
       @page { margin: 10mm 8mm 14mm 8mm; }
@@ -575,7 +578,9 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
       <div className="flex justify-between items-center mb-4">
-        <h2 className={`text-xl font-bold ${maroon}`}>1. Physical Verification Obsolete Idle AV/7A (FIFO)</h2>
+        <h2 className={`text-xl font-bold ${maroon}`}>
+          4. Physical Verification Non Moving WH Wise - AV/6B (FIFO)
+        </h2>
       </div>
 
       <div className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
@@ -749,7 +754,7 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
               <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center gap-4">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#7A0000]"></div>
                 <p className="text-xl font-bold text-[#7A0000]">Loading Report...</p>
-                <p className="text-sm text-gray-600">Fetching obsolete/idle material records from server</p>
+                <p className="text-sm text-gray-600">Fetching non moving material records from server</p>
               </div>
             )}
             {!reportLoading && reportData.length > 0 && (
@@ -776,12 +781,12 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
                 </div>
 
                 <h2 className={`text-lg md:text-xl font-bold text-center md:mb-4 ${maroon}`}>
-                  STATEMENT OF OBSOLETE AND IDLE MATERIALS IN STOCKS -{selectedYear} AV/7A
+                  Statement of Non Moving Materials in Stocks - {selectedYear}
                 </h2>
                 <div className="flex justify-between text-xs md:text-sm mb-4 ml-5 mr-12">
                   <div>
                     <div>
-                      <span className="font-bold">Cost Center :</span> {costCtrDisplay}
+                      <span className="font-bold">Cost Center:</span> {costCtrDisplay}
                     </div>
                     <div>
                       <span className="font-bold">Date of Verification :</span> {verificationDate}
@@ -811,16 +816,10 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
                           <th className="px-4 py-2 border border-gray-300" style={{ width: "12%" }}>
                             Document No
                           </th>
-                          <th
-                            className="px-4 py-2 border border-gray-300 text-right"
-                            style={{ width: "12%" }}
-                          >
+                          <th className="px-4 py-2 border border-gray-300 text-right" style={{ width: "12%" }}>
                             Quantity (Stock Book)
                           </th>
-                          <th
-                            className="px-4 py-2 border border-gray-300 text-right"
-                            style={{ width: "12%" }}
-                          >
+                          <th className="px-4 py-2 border border-gray-300 text-right" style={{ width: "12%" }}>
                             Cost (Rs.) (Stock Book)
                           </th>
                           <th className="px-4 py-2 border border-gray-300" style={{ width: "15%" }}>
@@ -834,38 +833,28 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
                       <tbody>
                         {sortedData.map((it, i) => (
                           <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                            <td className="px-4 py-2 border-l border-r border-gray-300 text-center">
-                              {i + 1}
-                            </td>
-                            <td className="px-4 py-2 border-r border-gray-300">{it.MaterialCode || ""}</td>
-                            <td className="px-4 py-2 border-r border-gray-300 break-words">
-                              {it.MaterialName || ""}
-                            </td>
-                            <td className="px-4 py-2 font-mono border-r border-gray-300">
-                              {it.DocumentNo || ""}
-                            </td>
+                            <td className="px-4 py-2 border-l border-r border-gray-300 text-center">{i + 1}</td>
+                            <td className="px-4 py-2 border-r border-gray-300">{it.MatCd || ""}</td>
+                            <td className="px-4 py-2 border-r border-gray-300 break-words">{it.MatNm || ""}</td>
+                            <td className="px-4 py-2 font-mono border-r border-gray-300">{it.DocNo || ""}</td>
                             <td className="px-4 py-2 text-right font-mono border-r border-gray-300">
                               {formatNumber(it.QtyOnHand)}
                             </td>
                             <td className="px-4 py-2 text-right font-mono border-r border-gray-300">
                               {formatNumber(it.StockBook)}
                             </td>
-                            <td className="px-4 py-2 border-r border-gray-300 break-words">
-                              {it.Reason || ""}
-                            </td>
-                            <td className="px-4 py-2 border-r border-gray-300 break-words">
-                              {""}
-                            </td>
+                            <td className="px-4 py-2 border-r border-gray-300 break-words">{it.Reason || ""}</td>
+                            <td className="px-4 py-2 border-r border-gray-300 break-words">{""}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr className="bg-[#d3d3d3] font-bold">
                           <td colSpan={5} className="px-4 py-2 text-right border border-gray-300">
-                            Total of Damaged Stocks
+                            Total of Non Moving Stocks
                           </td>
                           <td className="px-4 py-2 text-right font-mono border border-gray-300">
-                            {formatNumber(grandTotalCost)}
+                            {formatNumber(grandTotalStockBook)}
                           </td>
                           <td colSpan={2} className="px-4 py-2 border border-gray-300"></td>
                         </tr>
@@ -910,4 +899,4 @@ const PHVObsoleteIdleFIFO: React.FC = () => {
   );
 };
 
-export default PHVObsoleteIdleFIFO;
+export default PHVNonMovingWHReport;
