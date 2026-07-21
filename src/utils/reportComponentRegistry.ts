@@ -64,6 +64,7 @@ import PriceVarianceReport from "../mainTopics/CashBook/PriceVarianceReport";
 import ChequeDetailWPReport from "../mainTopics/CashBook/ChequeDetailsWP";
 import PriceVarianceWHReport from "../mainTopics/CashBook/PriceVarianceWHReport";
 import ChequeSummaryReport from "../mainTopics/CashBook/ChequeSummaryReport";
+import ChequeDetailsExpRegionReport from "../mainTopics/CashBook/ChequeDetailsExpRegionReport";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
@@ -279,10 +280,12 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cash sheet report": CashSheetReport,
 	"cash sheet within date range for selected payee": CashSheetDateRangePayeeReport,
 	"cheque details with expcode": ChequeDetailsExp,
+	"cheque details with exp code region": ChequeDetailsExpRegionReport,
+	"cheque details with exp code (region)": ChequeDetailsExpRegionReport,
 	"price variance" : PriceVarianceReport,
 	"cheque details within period" : ChequeDetailWPReport,
 	"price variance wh wise" : PriceVarianceWHReport,
-	"cheque summary" : ChequeSummaryReport, 
+	"cheque summary" : ChequeSummaryReport,
 
 	// General reports
 	"tariff block wise consumption": TariffBlockWiseConsumption,
@@ -463,12 +466,22 @@ export const getReportComponentLoose = (normalizedReportName: string): Component
 		return null;
 	}
 
-	for (const [key, component] of Object.entries(reportComponentRegistry)) {
+	const matches = Object.entries(reportComponentRegistry).filter(([key]) => {
 		const normalizedKey = normalizeForLooseLookup(key);
-		if (normalizedKey.includes(query) || query.includes(normalizedKey)) {
-			return component;
-		}
+		return normalizedKey === query || normalizedKey.includes(query) || query.includes(normalizedKey);
+	});
+
+	if (matches.length === 0) {
+		return null;
 	}
 
-	return null;
+	matches.sort((a, b) => {
+		const aKey = normalizeForLooseLookup(a[0]);
+		const bKey = normalizeForLooseLookup(b[0]);
+		const aScore = aKey === query ? 1000 : aKey.length;
+		const bScore = bKey === query ? 1000 : bKey.length;
+		return bScore - aScore;
+	});
+
+	return matches[0][1];
 };
