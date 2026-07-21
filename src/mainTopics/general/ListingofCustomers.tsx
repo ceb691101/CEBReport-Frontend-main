@@ -364,18 +364,18 @@ const ListingOfCustomers: React.FC = () => {
     const w = window.open("", "_blank"); if (!w) return;
     w.document.write(`<html><head><title>Listing of Customers</title>
       <style>
-        body { font-family: Arial; font-size: 9px; margin: 10mm; }
-        h2   { color: #7A0000; font-size: 12px; }
-        .m   { font-size: 10px; margin-bottom: 8px; }
+        body { font-family: Arial; font-size: 10px; margin: 10mm; }
+        .header { font-weight: bold; color: #7A0000; font-size: 12px; margin-bottom: 5px; }
+        .subheader { font-size: 11px; margin-bottom: 8px; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #b0e0e8; padding: 4px 3px; border: 1px solid #aaa; text-align: center; }
-        td { padding: 2px 3px; border: 1px solid #ccc; }
-        tr:nth-child(even) { background: #f5f5f5; }
-        .t td { background: #d3d3d3; font-weight: bold; }
+        th { background: #d3d3d3; font-weight: bold; padding: 4px 6px; border: 1px solid #ddd; text-align: center; font-size: 10px; }
+        td { padding: 4px 6px; border: 1px solid #ddd; font-size: 10px; vertical-align: top; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .t td { background: #e8e8e8; font-weight: bold; }
         .r { text-align: right; } .c { text-align: center; }
       </style></head><body>
-      <h2>Listing of Customers</h2>
-      <div class="m">Area: <b>${selectedAreaName}</b> &nbsp;|&nbsp; Bill Cycle: <b>${billCycle}</b></div>
+      <div class="header">Listing of Customers</div>
+      <div class="subheader">Area: <b>${selectedAreaName}</b> &nbsp;|&nbsp; Bill Cycle: <b>${billCycle}</b></div>
       ${printRef.current.innerHTML}
     </body></html>`);
     w.document.close(); w.focus();
@@ -483,44 +483,44 @@ const ListingOfCustomers: React.FC = () => {
   // Render
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
+    <div className="p-4 bg-white rounded-lg shadow-sm">
 
       {/* ══════════════════════════ FORM ══════════════════════════════════════ */}
       {!reportVisible && (
         <>
-          <div className="mb-6">
-            <h2 className={`text-xl font-bold ${maroon}`}>Listing of Customers</h2>
-          </div>
+          <h1 className={`text-xl font-bold ${maroon} mb-4`}>Listing of Customers</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
 
             {/* Select Area */}
-            <div className="flex flex-col">
-              <label className={`text-xs font-medium mb-1 ${maroon}`}>
-                Select Area: <span className="text-red-600">*</span>
-              </label>
-              {isLoadingAreas ? (
-                <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                  Loading areas...
-                </div>
-              ) : areaError ? (
-                <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
-                  {areaError}
-                </div>
-              ) : (
-                <select
-                  value={areaCode}
-                  onChange={e => { setAreaCode(e.target.value); setReportError(null); }}
-                  required
-                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md
-                             focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                >
-                  <option value="">Select Area</option>
-                  {areas.map(a => (
-                    <option key={a.AreaCode} value={a.AreaCode}>{a.AreaName}</option>
-                  ))}
-                </select>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col">
+                <label className={`text-xs font-medium mb-1 ${maroon}`}>
+                  Select Area: <span className="text-red-600">*</span>
+                </label>
+                {isLoadingAreas ? (
+                  <div className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                    Loading areas...
+                  </div>
+                ) : areaError ? (
+                  <div className="w-full px-2 py-1.5 text-xs border border-red-300 rounded-md bg-red-50 text-red-600">
+                    {areaError}
+                  </div>
+                ) : (
+                  <select
+                    value={areaCode}
+                    onChange={e => { setAreaCode(e.target.value); setReportError(null); }}
+                    required
+                    className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md
+                               focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  >
+                    <option value="">Select Area</option>
+                    {areas.map(a => (
+                      <option key={a.AreaCode} value={a.AreaCode}>{a.AreaName}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
             {/* Status messages */}
@@ -535,7 +535,7 @@ const ListingOfCustomers: React.FC = () => {
             )}
 
             {/* ── Filter rows ────────────────────────────────────────────── */}
-            <div style={{ borderTop: "1px solid #3a3a52" }}>
+            <div className="border-t border-gray-200">
 
               {/* Tariff — dropdown active only when checkbox is checked */}
               <Row label="Tariff" checked={useTariff}
@@ -674,46 +674,48 @@ const ListingOfCustomers: React.FC = () => {
 
       {/* ══════════════════════════ REPORT ════════════════════════════════════ */}
       {reportVisible && (
-        <div className="w-full">
+        <div className="mt-2">
 
           {/* Header + action buttons */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
             <div>
-              <h2 className="text-xl font-bold text-[#7A0000]">Listing of Customers</h2>
+              <h2 className={`text-lg font-bold ${maroon}`}>Listing of Customers</h2>
               <p className="text-sm text-gray-600 mt-1">
-                Area: {selectedAreaName} &nbsp;|&nbsp; Bill Cycle: {billCycle}
+                Area: {selectedAreaName} | Bill Cycle: {billCycle}
               </p>
             </div>
             <div className="flex gap-2 mt-2 md:mt-0">
               <button onClick={downloadCSV}
                 className="flex items-center gap-1 px-3 py-1.5 border border-blue-400
-                           text-blue-700 bg-white rounded text-xs font-medium shadow-sm
-                           hover:bg-blue-50 transition">
+                           text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm
+                           hover:bg-blue-50 hover:text-blue-800 focus:outline-none
+                           focus:ring-2 focus:ring-blue-200 transition">
                 <FaFileDownload className="w-3 h-3" /> CSV
               </button>
               <button onClick={printPDF}
                 className="flex items-center gap-1 px-3 py-1.5 border border-green-400
-                           text-green-700 bg-white rounded text-xs font-medium shadow-sm
-                           hover:bg-green-50 transition">
+                           text-green-700 bg-white rounded-md text-xs font-medium shadow-sm
+                           hover:bg-green-50 hover:text-green-800 focus:outline-none
+                           focus:ring-2 focus:ring-green-200 transition">
                 <FaPrint className="w-3 h-3" /> PDF
               </button>
               <button
                 onClick={() => { setReportVisible(false); setReportError(null); }}
-                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded text-white">
+                className="px-4 py-1.5 bg-[#7A0000] hover:bg-[#A52A2A] text-xs rounded-md text-white">
                 Back to Form
               </button>
             </div>
           </div>
 
           {/* Scrollable table */}
-          <div className="overflow-x-auto max-h-[calc(100vh-220px)] border border-gray-300 rounded-lg bg-white">
-            <div ref={printRef} className="min-w-full p-2">
+          <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg">
+            <div ref={printRef} className="min-w-full py-4">
               {reportData.length === 0 ? (
                 <p className="text-center py-10 text-gray-500 text-sm">No records found.</p>
               ) : (
                 <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-[#b0e0e8] text-gray-800">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
                       {[
                         "Acct. Number","Meter Numbers","Customer Name","Address",
                         "Tariff","Current Depot","Transformer","Reader Code",
@@ -721,8 +723,7 @@ const ListingOfCustomers: React.FC = () => {
                         "Connection Type","Daily Pack No.","Walk Seq","KVA Rating",
                       ].map(h => (
                         <th key={h}
-                          className="border border-gray-300 px-2 py-2 text-center
-                                     font-bold whitespace-nowrap">
+                          className="border border-gray-300 px-2 py-1 text-center whitespace-nowrap">
                           {h}
                         </th>
                       ))}
@@ -732,7 +733,7 @@ const ListingOfCustomers: React.FC = () => {
                     {reportData.map((r, i) => (
                       <tr key={`${r.AccountNumber}-${i}`}
                         className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <td className="border border-gray-300 px-2 py-1 font-mono whitespace-nowrap">{r.AccountNumber}</td>
+                        <td className="border border-gray-300 px-2 py-1 whitespace-nowrap">{r.AccountNumber}</td>
                         <td className="border border-gray-300 px-2 py-1 whitespace-nowrap">{r.MeterNumbers || "—"}</td>
                         <td className="border border-gray-300 px-2 py-1 max-w-[120px] truncate" title={r.CustomerName}>{r.CustomerName}</td>
                         <td className="border border-gray-300 px-2 py-1 max-w-[130px] truncate" title={r.Address}>{r.Address || "—"}</td>
@@ -740,8 +741,8 @@ const ListingOfCustomers: React.FC = () => {
                         <td className="border border-gray-300 px-2 py-1 text-center">{r.CurrentDepot || "—"}</td>
                         <td className="border border-gray-300 px-2 py-1 text-center">{r.Transformer || "—"}</td>
                         <td className="border border-gray-300 px-2 py-1 text-center">{r.ReaderCode || "—"}</td>
-                        <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.KwhCharge || "—"}</td>
-                        <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.CurrentBalance || "—"}</td>
+                        <td className="border border-gray-300 px-2 py-1 text-right">{r.KwhCharge || "—"}</td>
+                        <td className="border border-gray-300 px-2 py-1 text-right">{r.CurrentBalance || "—"}</td>
                         <td className="border border-gray-300 px-2 py-1 text-center">{r.NoOfPhase || "—"}</td>
                         <td className="border border-gray-300 px-2 py-1 text-center">{r.ConnectionType || "—"}</td>
                         <td className="border border-gray-300 px-2 py-1 text-center">{r.DailyPackNo || "—"}</td>
@@ -749,10 +750,10 @@ const ListingOfCustomers: React.FC = () => {
                         <td className="border border-gray-300 px-2 py-1 text-center">{r.KvaRating || "—"}</td>
                       </tr>
                     ))}
-                    <tr className="bg-[#d3d3d3] font-bold" key="total">
-                      <td className="border border-gray-300 px-2 py-1 text-center font-bold" colSpan={8}>TOTAL</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{fmt(totalKwh)}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{fmt(totalBal)}</td>
+                    <tr className="bg-gray-200 font-bold" key="total">
+                      <td className="border border-gray-300 px-2 py-1 text-center" colSpan={8}>TOTAL</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">{fmt(totalKwh)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">{fmt(totalBal)}</td>
                       <td className="border border-gray-300 px-2 py-1" colSpan={5} />
                     </tr>
                   </tbody>
@@ -771,6 +772,13 @@ const ListingOfCustomers: React.FC = () => {
               {reportError}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Error (form view) */}
+      {!reportVisible && reportError && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+          {reportError}
         </div>
       )}
     </div>

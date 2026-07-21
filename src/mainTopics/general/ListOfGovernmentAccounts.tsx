@@ -344,20 +344,28 @@ const ListOfGovernmentAccounts: React.FC = () => {
     const title    = `List of Government Accounts — ${activeReportMode === "area" ? "Area Report" : "Department Report"}`;
     const subtitle = `Area: ${selectedAreaName}${activeReportMode === "department" && selectedDeptName ? ` | Department: ${selectedDeptName}` : ""}`;
     const rowsHtml = reportData.map(r => `<tr>
-      <td>${escapeCsv(r.accountNumber)}</td>
-      <td>${escapeCsv(r.customerName)}</td>
-      <td>${escapeCsv(r.address)}</td>
-      <td style="text-align:right">${r.currentBalance}</td>
-      <td style="text-align:right">${r.kwhCharge}</td>
-      <td style="text-align:right">${r.averageConsumption}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px">${escapeCsv(r.accountNumber)}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px">${escapeCsv(r.customerName)}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px">${escapeCsv(r.address)}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px;text-align:right">${r.currentBalance}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px;text-align:right">${r.kwhCharge}</td>
+      <td style="border:1px solid #ddd;padding:4px 6px;font-size:10px;text-align:right">${r.averageConsumption}</td>
     </tr>`).join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"/><title>${title}</title>
-      <style>body{font-family:Arial;margin:24px;font-size:11px}h1{font-size:14px;margin:0 0 4px}
-      .sub{font-size:11px;color:#444;margin:0 0 12px}table{width:100%;border-collapse:collapse}
-      th,td{border:1px solid #999;padding:5px 7px;vertical-align:top}th{background:#eef6f8}
-      .tot{margin-top:10px}@page{size:A4 landscape;margin:12mm}</style>
+      <style>
+        body{font-family:Arial,sans-serif;margin:10mm;font-size:10px;color:#111}
+        .header{font-weight:bold;color:#7A0000;font-size:12px;margin-bottom:5px}
+        .subheader{font-size:11px;margin-bottom:8px}
+        table{width:100%;border-collapse:collapse;margin-top:8px}
+        th{background:#d3d3d3;font-weight:bold;text-align:center;padding:4px 6px;border:1px solid #ddd;font-size:10px}
+        td{padding:4px 6px;border:1px solid #ddd;font-size:10px;vertical-align:top}
+        tr:nth-child(even){background:#f9f9f9}
+        .tot{margin-top:10px;font-size:11px}
+        @page{size:A4 landscape;margin:12mm}
+      </style>
       </head><body>
-      <h1>${title}</h1><p class="sub">${subtitle}</p>
+      <div class="header">${title}</div>
+      <div class="subheader">${subtitle}</div>
       <table><thead><tr><th>Account No</th><th>Customer Name</th><th>Address</th>
       <th>Current Balance</th><th>kWh Charge</th><th>Avg Consumption</th></tr></thead>
       <tbody>${rowsHtml}</tbody></table>
@@ -379,17 +387,15 @@ const ListOfGovernmentAccounts: React.FC = () => {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
+    <div className="p-4 bg-white rounded-lg shadow-sm">
 
       {/* ══════════════════════════ FORM ══════════════════════════════════════ */}
       {!hasSearched && (
         <>
-          <div className="mb-6">
-            <h2 className={`text-xl font-bold ${maroon}`}>List of Government Accounts</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              View and export government customer accounts with current balances and consumption details
-            </p>
-          </div>
+          <h1 className={`text-xl font-bold ${maroon} mb-4`}>List of Government Accounts</h1>
+          <p className="text-sm text-gray-500 -mt-2 mb-4">
+            View and export government customer accounts with current balances and consumption details
+          </p>
 
           <div className="space-y-5">
 
@@ -487,18 +493,18 @@ const ListOfGovernmentAccounts: React.FC = () => {
 
       {/* ══════════════════════════ REPORT ════════════════════════════════════ */}
       {hasSearched && (
-        <div>
+        <div className="mt-2">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
             <div>
-              <h2 className={`text-xl font-bold ${maroon}`}>
+              <h2 className={`text-lg font-bold ${maroon}`}>
                 List of Government Accounts —{" "}
                 {activeReportMode === "area" ? "Area Report" : "Department Report"}
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                Area: <strong>{selectedAreaName}</strong>
+                Area: {selectedAreaName}
                 {activeReportMode === "department" && selectedDeptName && (
-                  <> | Department: <strong>{selectedDeptName}</strong></>
+                  <> | Department: {selectedDeptName}</>
                 )}
               </p>
             </div>
@@ -507,7 +513,8 @@ const ListOfGovernmentAccounts: React.FC = () => {
                 onClick={handleExportCsv}
                 disabled={!reportData.length}
                 className={`flex items-center gap-1 px-3 py-1.5 border border-blue-400 rounded-md text-xs font-medium shadow-sm
-                  ${!reportData.length ? "text-blue-300 bg-gray-50 cursor-not-allowed" : "text-blue-700 bg-white hover:bg-blue-50"}`}
+                  focus:outline-none focus:ring-2 focus:ring-blue-200 transition
+                  ${!reportData.length ? "text-blue-300 bg-gray-50 cursor-not-allowed" : "text-blue-700 bg-white hover:bg-blue-50 hover:text-blue-800"}`}
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -519,7 +526,8 @@ const ListOfGovernmentAccounts: React.FC = () => {
                 onClick={handleExportPdf}
                 disabled={!reportData.length}
                 className={`flex items-center gap-1 px-3 py-1.5 border border-green-400 rounded-md text-xs font-medium shadow-sm
-                  ${!reportData.length ? "text-green-300 bg-gray-50 cursor-not-allowed" : "text-green-700 bg-white hover:bg-green-50"}`}
+                  focus:outline-none focus:ring-2 focus:ring-green-200 transition
+                  ${!reportData.length ? "text-green-300 bg-gray-50 cursor-not-allowed" : "text-green-700 bg-white hover:bg-green-50 hover:text-green-800"}`}
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -538,49 +546,57 @@ const ListOfGovernmentAccounts: React.FC = () => {
 
           {/* Table */}
           <div className="overflow-x-auto max-h-[calc(100vh-300px)] border border-gray-300 rounded-lg">
-            <table className="w-full border-collapse text-xs">
-              <thead>
-                <tr className="bg-[#b0e0e8] text-gray-800 sticky top-0">
-                  {["Account No", "Customer", "Address", "Current Balance", "kWh Charge", "Average Consumption"].map(h => (
-                    <th key={h}
-                      className="border border-gray-300 px-2 py-2 text-center font-bold whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {reportData.map((r, i) => (
-                  <tr key={`${r.accountNumber}-${i}`}
-                    className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td className="border border-gray-300 px-2 py-1 font-mono text-center whitespace-nowrap">
-                      {r.accountNumber}
-                    </td>
-                    <td className="border border-gray-300 px-2 py-1 max-w-[180px] truncate"
-                      title={r.customerName}>{r.customerName}</td>
-                    <td className="border border-gray-300 px-2 py-1 max-w-[200px] truncate"
-                      title={r.address}>{r.address}</td>
-                    <td className="border border-gray-300 px-2 py-1 text-right font-mono">
-                      {r.currentBalance}
-                    </td>
-                    <td className="border border-gray-300 px-2 py-1 text-right font-mono">
-                      {r.kwhCharge}
-                    </td>
-                    <td className="border border-gray-300 px-2 py-1 text-right font-mono">
-                      {r.averageConsumption}
-                    </td>
+            <div className="min-w-full py-4">
+              <table className="w-full border-collapse text-xs">
+                <thead className="bg-gray-100 sticky top-0">
+                  <tr>
+                    {["Account No", "Customer", "Address", "Current Balance", "kWh Charge", "Average Consumption"].map(h => (
+                      <th key={h}
+                        className="border border-gray-300 px-2 py-1 text-center whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-                
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {reportData.map((r, i) => (
+                    <tr key={`${r.accountNumber}-${i}`}
+                      className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      <td className="border border-gray-300 px-2 py-1 text-center whitespace-nowrap">
+                        {r.accountNumber}
+                      </td>
+                      <td className="border border-gray-300 px-2 py-1 max-w-[180px] truncate"
+                        title={r.customerName}>{r.customerName}</td>
+                      <td className="border border-gray-300 px-2 py-1 max-w-[200px] truncate"
+                        title={r.address}>{r.address}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">
+                        {r.currentBalance}
+                      </td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">
+                        {r.kwhCharge}
+                      </td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">
+                        {r.averageConsumption}
+                      </td>
+                    </tr>
+                  ))}
+                  {reportData.length > 0 && (
+                    <tr className="bg-gray-200 font-bold">
+                      <td className="border border-gray-300 px-2 py-1 text-center" colSpan={3}>TOTAL</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">{formatCurrency(totalBalance)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">{formatKwh(totalKwh)}</td>
+                      <td className="border border-gray-300 px-2 py-1" />
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {reportData.length > 0 && (
+                <p className="text-xs text-gray-500 mt-2 text-right px-2">
+                  Total records: {reportData.length.toLocaleString()}
+                </p>
+              )}
+            </div>
           </div>
-
-          {reportData.length > 0 && (
-            <p className="text-xs text-gray-500 mt-2 text-right">
-              Total records: {reportData.length.toLocaleString()}
-            </p>
-          )}
 
           {reportError && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">

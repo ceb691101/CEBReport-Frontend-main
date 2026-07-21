@@ -334,7 +334,7 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
           .meta { font-size: 11px; margin-bottom: 12px; }
           .meta span { font-weight: bold; }
           table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-          th    { background: #b0e0e8; font-weight: bold; text-align: center;
+          th    { background: #d3d3d3; font-weight: bold; text-align: center;
                   padding: 5px 4px; border: 1px solid #aaa; font-size: 10px; }
           td    { padding: 3px 4px; border: 1px solid #ccc; font-size: 10px;
                   vertical-align: top; }
@@ -373,26 +373,26 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
 
     return (
       <table className="w-full border-collapse text-xs">
-        <thead>
-          <tr className="bg-[#b0e0e8] text-gray-800">
+        <thead className="bg-gray-100 sticky top-0">
+          <tr>
             {showProvCols && (
               <>
-                <th className="border border-gray-300 px-2 py-2 text-center font-bold">Province</th>
-                <th className="border border-gray-300 px-2 py-2 text-center font-bold">Area</th>
+                <th className="border border-gray-300 px-2 py-1 text-center">Province</th>
+                <th className="border border-gray-300 px-2 py-1 text-center">Area</th>
               </>
             )}
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Acct.<br/>Number</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Name</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Address</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">City</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Tariff</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Contract<br/>Demand</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Security<br/>Deposit</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Total KWO<br/>Units</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Total KWD<br/>Units</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Total<br/>KWP<br/>Units</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">KVA</th>
-            <th className="border border-gray-300 px-2 py-2 text-center font-bold">Monthly<br/>Charge</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Acct.<br/>Number</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Name</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Address</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">City</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Tariff</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Contract<br/>Demand</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Security<br/>Deposit</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Total KWO<br/>Units</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Total KWD<br/>Units</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Total<br/>KWP<br/>Units</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">KVA</th>
+            <th className="border border-gray-300 px-2 py-1 text-center">Monthly<br/>Charge</th>
           </tr>
         </thead>
         <tbody>
@@ -423,8 +423,6 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
               <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.MonthlyCharge || "—"}</td>
             </tr>
           ))}
-
-          
         </tbody>
       </table>
     );
@@ -434,16 +432,14 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
   // JSX
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
+    <div className="p-4 bg-white rounded-lg shadow-sm">
 
       {/* ── FORM ──────────────────────────────────────────────────────────── */}
       {!reportVisible && (
         <>
-          <div className="mb-6">
-            <h2 className={`text-xl font-bold ${maroon}`}>
-              Security Deposit vs Contract Demand - Bulk
-            </h2>
-          </div>
+          <h1 className={`text-xl font-bold ${maroon} mb-4`}>
+            Security Deposit vs Contract Demand - Bulk
+          </h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* First Row - Bill Cycle + Report Category */}
@@ -606,10 +602,10 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
       {reportVisible && (
         <div className="mt-6">
 
-          {/* Report Header — title + buttons together (Solar style) */}
+          {/* Report Header — title + buttons together */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
             <div>
-              <h2 className={`text-xl font-bold ${maroon}`}>
+              <h2 className={`text-lg font-bold ${maroon}`}>
                 Comparision of Security Deposit and Contract Demand for a {reportCategory}
               </h2>
               <p className="text-sm text-gray-600 mt-1">
@@ -638,7 +634,7 @@ const SecurityDepositContractDemandBulk: React.FC = () => {
             </div>
           </div>
 
-          {/* Scrollable table (Solar style) */}
+          {/* Scrollable table */}
           <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg">
             <div ref={printRef} className="min-w-full py-4">
               {renderTable()}
