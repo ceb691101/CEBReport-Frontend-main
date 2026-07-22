@@ -415,9 +415,6 @@ const CashSheetDateRangePayeeReport: React.FC = () => {
   const maroon = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
-  const inputCls =
-    "px-3 py-1.5 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#7A0000] focus:border-transparent transition text-xs";
-
   useEffect(() => {
     const fetchDepartments = async () => {
       if (!epfNo) {
