@@ -245,75 +245,7 @@ const extractRoleInfoList = (value: unknown, epfNo?: string): UserRoleInfo[] => 
   return infos;
 };
 
-const extractRoleIds = (value: unknown, epfNo?: string): string[] => {
-  const roleIds = new Set<string>();
-  const normalizedEpfNo = epfNo ? normalizeId(epfNo) : "";
 
-  const addRoleId = (raw: unknown) => {
-    if (raw === undefined || raw === null) {
-      return;
-    }
-
-    const roleId = String(raw).trim();
-    if (roleId.length > 0) {
-      roleIds.add(roleId);
-    }
-  };
-
-  if (typeof value === "string" || typeof value === "number") {
-    addRoleId(value);
-    return Array.from(roleIds);
-  }
-
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      if (typeof item === "string" || typeof item === "number") {
-        addRoleId(item);
-        continue;
-      }
-
-      if (item && typeof item === "object") {
-        const roleObject = item as RoleLikeObject;
-        const userId = readUserIdFromObject(roleObject);
-        const isMatchingUser =
-          !normalizedEpfNo ||
-          !userId ||
-          normalizeId(userId) === normalizedEpfNo;
-
-        if (!isMatchingUser) {
-          continue;
-        }
-
-        const roleId = readRoleIdFromObject(roleObject);
-        if (roleId) {
-          roleIds.add(roleId);
-        }
-      }
-    }
-
-    return Array.from(roleIds);
-  }
-
-  if (value && typeof value === "object") {
-    const roleObject = value as RoleLikeObject;
-    const userId = readUserIdFromObject(roleObject);
-    const isMatchingUser =
-      !normalizedEpfNo ||
-      !userId ||
-      normalizeId(userId) === normalizedEpfNo;
-
-    if (!isMatchingUser) {
-      return [];
-    }
-
-    const roleId = readRoleIdFromObject(roleObject);
-    if (roleId) {
-      roleIds.add(roleId);
-    }
-  }
-
-  return Array.from(roleIds);
-};
 
 const toRoleReportItems = (value: unknown): RoleReportApiItem[] => {
   if (!Array.isArray(value)) {
@@ -477,6 +409,8 @@ export const loadRoleBasedSidebarData = async (epfNo: string): Promise<SidebarRe
     return {
       data: [],
       message: "Unable to load reports because user information is missing.",
+      billMap: null,
+      levelNo: null,
     };
   }
 
