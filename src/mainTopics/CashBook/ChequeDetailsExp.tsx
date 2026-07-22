@@ -29,6 +29,7 @@ interface ChequeExpItem {
 /* ---------- constants ---------- */
 const PAGE_SIZE = 9;
 const FETCH_TIMEOUT_MS = 180000;
+const DATE_INPUT_FORMAT = "yyyy-MM-dd"; // HTML date input format
 
 /* ---------- formatting helpers ---------- */
 const formatNumber = (num: number | string | null | undefined): string => {
