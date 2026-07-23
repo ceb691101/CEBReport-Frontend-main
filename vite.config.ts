@@ -60,6 +60,34 @@ export default defineConfig(({ mode }) => {
 									rewrite: (path) => path.replace(/^\/misapi/, ""),
 								},
 				*/
+
+				"/misapi/api/phv-obsolete-idle-fifo": {
+					target: env.VITE_SERVER_API,
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+				"/misapi/api/phvdamagebos/report": {
+					target: env.VITE_LOCAL_API,
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+
+				"/misapi/api/phvnonmovingbos/report": {
+					target: env.VITE_LOCAL_API,
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+
+				"/misapi/api/phvobsoletebos/report": {
+					target: env.VITE_LOCAL_API,
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+
 				"/misapi": {
 					target: env.VITE_SERVER_API,
 					changeOrigin: true,
