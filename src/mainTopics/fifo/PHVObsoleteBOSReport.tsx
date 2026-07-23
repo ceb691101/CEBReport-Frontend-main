@@ -142,8 +142,8 @@ const PHVObsoleteBOSReport: React.FC = () => {
         const errorMessage = e.message.includes("JSON.parse")
           ? "Invalid data format received from server."
           : e.message.includes("Failed to fetch")
-          ? "Failed to connect to the server. Please check if the server is running."
-          : e.message;
+            ? "Failed to connect to the server. Please check if the server is running."
+            : e.message;
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -346,7 +346,6 @@ const PHVObsoleteBOSReport: React.FC = () => {
     if (reportData.length === 0) return;
 
     const titleRows = [
-      `Electricity Distribution Lanka (Pvt) Ltd.`,
       `Board of Survey Recommendation for Obsolete AND Idle Stocks Items - Annual Verification of the Year-${selectedYear}`,
       `Cost Center: ${costCtrIdDisplay} / : ${costCtrNameDisplay}`,
       `Warehouse : ${selectedWarehouse}`,
@@ -455,7 +454,6 @@ const PHVObsoleteBOSReport: React.FC = () => {
   </style>
 </head>
 <body>
-  <div class="company">Electricity Distribution Lanka (Pvt) Ltd.</div>
   <div class="topic">Board of Survey Recommendation for Obsolete AND Idle Stocks Items - Annual Verification of the Year-${selectedYear}</div>
   <div class="cost-center-row">
     <div><strong>Cost Center:</strong> ${costCtrIdDisplay} / : ${costCtrNameDisplay}</div>
@@ -514,36 +512,67 @@ const PHVObsoleteBOSReport: React.FC = () => {
   <div class="signed-by">Singed by</div>
 
   <div class="member-row">
-    <div class="member-num">(1)..................................</div>
-    <div class="member-label">Chairman - BOS(Name)</div>
-    <div class="member-sig">................................. Signature</div>
+    <div class="cert-col">
+      <div class="sig-space"></div>
+      <div>(1).......................................</div>
+      <div>Chairman - BOS(Name)</div>
+    </div>
+    <div class="cert-col">
+      <div class="sig-space"></div>
+      <div>.......................................</div>
+      <div>Signature</div>
+    </div>
   </div>
+
   <div class="member-row">
-    <div class="member-num">(2)..................................</div>
-    <div class="member-label">Member - BOS(Name)</div>
-    <div class="member-sig">................................. Signature</div>
+    <div class="cert-col">
+      <div class="sig-space"></div>
+      <div>(2).......................................</div>
+      <div>Member - BOS(Name)</div>
+    </div>
+    <div class="cert-col">
+      <div class="sig-space"></div>
+      <div>.......................................</div>
+      <div>Signature</div>
+    </div>
   </div>
+
   <div class="member-row">
-    <div class="member-num">(3)..................................</div>
-    <div class="member-label">Member - BOS(Name)</div>
-    <div class="member-sig">................................. Signature</div>
+    <div class="cert-col">
+      <div class="sig-space"></div>
+      <div>(3).......................................</div>
+      <div>Member - BOS(Name)</div>
+    </div>
+    <div class="cert-col">
+      <div class="sig-space"></div>
+      <div>.......................................</div>
+      <div>Signature</div>
+    </div>
   </div>
+
   <div class="member-row">
-    <div class="member-num">(4)..................................</div>
-    <div class="member-label">Observer - BOS(Name)</div>
-    <div class="member-sig">................................. Signature</div>
+    <div class="cert-col">
+      <div class="sig-space"></div>
+      <div>(4).......................................</div>
+      <div>Observer - BOS(Name)</div>
+    </div>
+    <div class="cert-col">
+      <div class="sig-space"></div>
+      <div>.......................................</div>
+      <div>Signature</div>
+    </div>
   </div>
   <div class="final-date">Date &nbsp; : ..................................</div>
 
   <hr/>
   <div class="approval-row">
     <div>Date &nbsp; : ..................................</div>
-    <div>DGM &nbsp;&nbsp; ..............................</div>
+    <div>Director &nbsp;&nbsp; ..............................</div>
   </div>
   <hr/>
   <div class="approval-row">
     <div>Date &nbsp; : ..................................</div>
-    <div>Additional General Manager &nbsp;&nbsp; ..............................</div>
+    <div>Cheif Opperative Officer &nbsp;&nbsp; ..............................</div>
   </div>
 </body>
 </html>`;
@@ -566,7 +595,7 @@ const PHVObsoleteBOSReport: React.FC = () => {
     <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans">
       <div className="flex justify-between items-center mb-4">
         <h2 className={`text-xl font-bold ${maroon}`}>
-          Physical Verification Obsolete Idle BOS - AV/7A/BOS
+          6. Physical Verification Obsolete Idle BOS - AV/7A/BOS
         </h2>
       </div>
 
@@ -607,11 +636,10 @@ const PHVObsoleteBOSReport: React.FC = () => {
           <button
             onClick={handleViewReport}
             disabled={!selectedDept || !selectedWarehouse || warehouseLoading}
-            className={`flex items-center gap-1 px-3 py-1.5 ${maroonGrad} text-white rounded-md text-sm font-medium hover:brightness-110 transition shadow ${
-              !selectedDept || !selectedWarehouse || warehouseLoading
+            className={`flex items-center gap-1 px-3 py-1.5 ${maroonGrad} text-white rounded-md text-sm font-medium hover:brightness-110 transition shadow ${!selectedDept || !selectedWarehouse || warehouseLoading
                 ? "opacity-50 cursor-not-allowed"
                 : ""
-            }`}
+              }`}
           >
             <Eye className="w-4 h-4" /> View
           </button>
@@ -694,13 +722,12 @@ const PHVObsoleteBOSReport: React.FC = () => {
                     <tr
                       key={`${department.DeptId}-${i}`}
                       onClick={() => setSelectedDept(department)}
-                      className={`cursor-pointer ${
-                        selectedDept?.DeptId === department.DeptId
+                      className={`cursor-pointer ${selectedDept?.DeptId === department.DeptId
                           ? "bg-[#7A0000] text-white"
                           : i % 2
-                          ? "bg-white hover:bg-gray-100"
-                          : "bg-gray-50 hover:bg-gray-100"
-                      }`}
+                            ? "bg-white hover:bg-gray-100"
+                            : "bg-gray-50 hover:bg-gray-100"
+                        }`}
                     >
                       <td className="px-4 py-2 truncate min-w-0">{department.DeptId}</td>
                       <td className="px-4 py-2 truncate min-w-0">{department.DeptName}</td>
@@ -767,7 +794,6 @@ const PHVObsoleteBOSReport: React.FC = () => {
                   </button>
                 </div>
 
-                <div className={`text-center font-bold ${maroon}`}>Electricity Distribution Lanka (Pvt) Ltd.</div>
                 <div className={`text-center font-bold ${maroon} mt-1`}>
                   Board of Survey Recommendation for Obsolete AND Idle Stocks Items - Annual Verification of the Year-{selectedYear}
                 </div>
@@ -884,9 +910,17 @@ const PHVObsoleteBOSReport: React.FC = () => {
                       { n: 4, label: "Observer - BOS(Name)" },
                     ].map((m) => (
                       <div key={m.n} className="flex justify-between text-gray-600">
-                        <span className="w-[22%]">({m.n})..................................</span>
-                        <span className="w-[33%]">{m.label}</span>
-                        <span className="w-[45%] text-right">................................. Signature</span>
+                        <span className="w-[10%]">({m.n})</span>
+                        <div className="w-1/2">
+                          <div className="h-8"></div>
+                          <div>.......................................</div>
+                          <div>{m.label}</div>
+                        </div>
+                        <div className="w-1/2">
+                          <div className="h-8"></div>
+                          <div>.......................................</div>
+                          <div>Signature</div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -895,12 +929,12 @@ const PHVObsoleteBOSReport: React.FC = () => {
                   <hr className="my-4 border-gray-400" />
                   <div className="flex justify-between">
                     <span>Date &nbsp; : ..................................</span>
-                    <span>DGM &nbsp;&nbsp; ..............................</span>
+                    <span>Director &nbsp;&nbsp; ..............................</span>
                   </div>
                   <hr className="my-4 border-gray-400" />
                   <div className="flex justify-between mb-2">
                     <span>Date &nbsp; : ..................................</span>
-                    <span>Additional General Manager &nbsp;&nbsp; ..............................</span>
+                    <span>Chief Operative Officer &nbsp;&nbsp; ..............................</span>
                   </div>
                 </div>
               </div>
