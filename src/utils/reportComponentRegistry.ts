@@ -65,7 +65,6 @@ import PriceVarianceReport from "../mainTopics/CashBook/PriceVarianceReport";
 import ChequeDetailWPReport from "../mainTopics/CashBook/ChequeDetailsWP";
 import PriceVarianceWHReport from "../mainTopics/CashBook/PriceVarianceWHReport";
 import ChequeSummaryReport from "../mainTopics/CashBook/ChequeSummaryReport";
-import ChequeDetailsExpRegionReport from "../mainTopics/CashBook/ChequeDetailsExpRegionReport";
 import RegionPeriodStatusReport from "../mainTopics/CashBook/Regionperiodstatusreport";
 
 // General reports
@@ -134,6 +133,9 @@ import LastDocNo from "../mainTopics/PhysicalVerification/LastDocNo";
 // Phisical Verification FIFO reports
 import PHVSlowMovingWHReport from "../mainTopics/fifo/PHVSlowMovingWHReport";
 import PHVNonMovingWHReport from "../mainTopics/fifo/PHVNonMovingWHReport";
+import PHVDamageBOSReport from "../mainTopics/fifo/PHVDamageBOSReport";
+import PHVObsoleteBOSReport from "../mainTopics/fifo/PHVObsoleteBOSReport";
+import PHVNonMovingBOSReport from "../mainTopics/fifo/PHVNonMovingBOSReport.tsx";
 
 // PUCSL/LISS reports
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
@@ -291,8 +293,6 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cash sheet report": CashSheetReport,
 	"cash sheet within date range for selected payee": CashSheetDateRangePayeeReport,
 	"cheque details with expcode": ChequeDetailsExp,
-	"cheque details with exp code region": ChequeDetailsExpRegionReport,
-	"cheque details with exp code (region)": ChequeDetailsExpRegionReport,
 	"price variance" : PriceVarianceReport,
 	"cheque details within period" : ChequeDetailWPReport,
 	"price variance wh wise" : PriceVarianceWHReport,
@@ -363,6 +363,9 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"2. physical verification damage - av/7b (fifo)": PHVDamageFIFO,
 	"3. physical verification slow moving wh wise - av/6 (fifo)": PHVSlowMovingWHReport,
 	"4. physical verification non moving wh wise - av/6b (fifo)": PHVNonMovingWHReport,
+	"5. physical verification damage bos - av/7b/bos": PHVDamageBOSReport,
+	"6. physical verification obsolete idle bos - av/7a/bos": PHVObsoleteBOSReport,
+	"7. physical verification non-moving wh wise (fifo) - av/6/bos": PHVNonMovingBOSReport,
 
 	// Physical Verification reports
 	"1 phv entry form": PHVEntryForm,
@@ -488,22 +491,12 @@ export const getReportComponentLoose = (normalizedReportName: string): Component
 		return null;
 	}
 
-	const matches = Object.entries(reportComponentRegistry).filter(([key]) => {
+	for (const [key, component] of Object.entries(reportComponentRegistry)) {
 		const normalizedKey = normalizeForLooseLookup(key);
-		return normalizedKey === query || normalizedKey.includes(query) || query.includes(normalizedKey);
-	});
-
-	if (matches.length === 0) {
-		return null;
+		if (normalizedKey.includes(query) || query.includes(normalizedKey)) {
+			return component;
+		}
 	}
 
-	matches.sort((a, b) => {
-		const aKey = normalizeForLooseLookup(a[0]);
-		const bKey = normalizeForLooseLookup(b[0]);
-		const aScore = aKey === query ? 1000 : aKey.length;
-		const bScore = bKey === query ? 1000 : bKey.length;
-		return bScore - aScore;
-	});
-
-	return matches[0][1];
+	return null;
 };
