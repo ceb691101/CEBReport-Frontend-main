@@ -50,6 +50,10 @@ import SalesAndCollection from "../mainTopics/Collections/SalesAndCollection";
 import CustomersHighestOutstanding from "../mainTopics/Collections/CustomersHighestOutstanding";
 import SuspensePaymentDetails from "../mainTopics/Collections/SuspensePaymentDetails";
 
+
+// Consumption Analysis reports
+//import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
+
 // CashBook reports
 import CashBookDetailsReport from "../mainTopics/CashBook/CashBookDetailsReport";
 import CashBookCCReport from "../mainTopics/CashBook/CashBookCCReport";
@@ -108,10 +112,6 @@ import LedgerCardReport from "../mainTopics/LedgerCard/LedgerCardReport";
 import LCWithoutSubAcc from "../mainTopics/LedgerCard/LCWithoutSubAcc";
 import LedgerCardSubAccountTotal from "../mainTopics/LedgerCard/LedgerCardSubAccountTotal";
 import DivisionalLedgerCard from "../mainTopics/LedgerCard/DivisionalLedgerCard";
-
-// Physical Verification FIFO reports
-import PHVSlowMovingWHReport from "../mainTopics/fifo/PHVSlowMovingWHReport";
-import PHVNonMovingWHReport from "../mainTopics/fifo/PHVNonMovingWHReport";
 
 // Physical Verification reports
 import PHVEntryForm from "../mainTopics/PhysicalVerification/PHVEntryForm";
@@ -177,17 +177,6 @@ import AreaTrialBalance from "../mainTopics/TrialBalance/AreaTrialBalance";
 // Work In Progress reports
 import AgeAnalysisCostCenter from "../mainTopics/WorkInProgress/AgeAnalysisCostCenter";
 import CompletedCostCenterWise from "../mainTopics/WorkInProgress/CompletedCostCenterWise";
-
-// Dashboard pages
-import DefaultDashboardPage from "../mainTopics/Dashboard/DefaultDashboardPage";
-import FinancialDashboardPage from "../mainTopics/Dashboard/FinancialDashboardPage";
-import DgmDashboardPage from "../mainTopics/Dashboard/DgmDashboardPage";
-import OperationsDashboardPage from "../mainTopics/Dashboard/OperationsDashboardPage";
-import AnalyticsDashboardPage from "../mainTopics/Dashboard/AnalyticsDashboardPage";
-import SolarDashboardPage from "../mainTopics/Dashboard/SolarDashboardPage";
-import CollectionsDashboardPage from "../mainTopics/Dashboard/CollectionsDashboardPage";
-import ExecutiveDashboardPage from "../mainTopics/Dashboard/ExecutiveDashboardPage";
-import InventoryDashboardPage from "../mainTopics/Dashboard/InventoryDashboardPage";
 
 export type ReportComponentRegistry = Record<string, ComponentType>;
 
@@ -321,7 +310,6 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"sequence change accounts": ActiveCustomersSalesByTariff,
 	"retails journal": ActiveCustomersSalesByTariff,
 	"arrears position meter reader wise": Arreasposition,
-	"list of government accounts meter reader wise": ListOfGovernmentAccounts,
 	"list of customers enlisted in master invoices": ActiveCustomersSalesByTariff,
 	"disconnection list": ActiveCustomersSalesByTariff,
 	"shakthi led distribution summary": ActiveCustomersSalesByTariff,
@@ -484,20 +472,6 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	// Work In Progress reports
 	"cost center wise work in progress with age analysis": AgeAnalysisCostCenter,
 	"cost center wise work in progress completed projects": CompletedCostCenterWise,
-
-	// Dashboard pages
-	"main dashboard": DefaultDashboardPage,
-	"default dashboard": DefaultDashboardPage,
-	"financial dashboard": FinancialDashboardPage,
-	"dgm dashboard": DgmDashboardPage,
-	"operations dashboard": OperationsDashboardPage,
-	"analytics dashboard": AnalyticsDashboardPage,
-	"solar dashboard": SolarDashboardPage,
-	"collections dashboard": CollectionsDashboardPage,
-	"collections payments dashboard": CollectionsDashboardPage,
-	"collections & payments dashboard": CollectionsDashboardPage,
-	"executive dashboard": ExecutiveDashboardPage,
-	"inventory dashboard": InventoryDashboardPage,
 };
 
 /**
