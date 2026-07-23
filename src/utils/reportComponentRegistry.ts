@@ -36,7 +36,7 @@ import DebtorsAnalysis from "../mainTopics/Analysis/DebtorsAnalysis";
 import AgeAnalysis from "../mainTopics/Analysis/AgeAnalysis";
 import SolarAgeAnalysis from "../mainTopics/Analysis/SolarAgeAnalysis";
 
-// Billing & Payment reports
+// Customer Details
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
 import PaymentInquiry from "../mainTopics/CustomerDetails/PaymentInquiry";
 import TransactionHistoryOrdinary from "../mainTopics/CustomerDetails/TransactionHistoryOrdinary";
@@ -258,7 +258,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"consumption pattern analysis": AgeAnalysis,
 	"age analysis of solar power consumers": SolarAgeAnalysis,
 
-	// Billing & Payment reports
+	// Customer Details
 	"customer information": CustomerDetails,
 	"transaction history": CustomerDetails,
 	"transaction history ordinary": TransactionHistoryOrdinary,
