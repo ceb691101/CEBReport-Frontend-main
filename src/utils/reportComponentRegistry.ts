@@ -109,10 +109,6 @@ import LCWithoutSubAcc from "../mainTopics/LedgerCard/LCWithoutSubAcc";
 import LedgerCardSubAccountTotal from "../mainTopics/LedgerCard/LedgerCardSubAccountTotal";
 import DivisionalLedgerCard from "../mainTopics/LedgerCard/DivisionalLedgerCard";
 
-// Physical Verification FIFO reports
-import PHVSlowMovingWHReport from "../mainTopics/fifo/PHVSlowMovingWHReport";
-import PHVNonMovingWHReport from "../mainTopics/fifo/PHVNonMovingWHReport";
-
 // Physical Verification reports
 import PHVEntryForm from "../mainTopics/PhysicalVerification/PHVEntryForm";
 import PHVValidation from "../mainTopics/PhysicalVerification/PHVValidation";
