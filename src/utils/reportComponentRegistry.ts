@@ -300,10 +300,10 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cash sheet report": CashSheetReport,
 	"cash sheet within date range for selected payee": CashSheetDateRangePayeeReport,
 	"cheque details with expcode": ChequeDetailsExp,
-	"price variance" : PriceVarianceReport,
-	"cheque details within period" : ChequeDetailWPReport,
-	"price variance wh wise" : PriceVarianceWHReport,
-	"cheque summary" : ChequeSummaryReport, 
+	"price variance": PriceVarianceReport,
+	"cheque details within period": ChequeDetailWPReport,
+	"price variance wh wise": PriceVarianceWHReport,
+	"cheque summary": ChequeSummaryReport,
 	"region wise period status": RegionPeriodStatusReport,
 
 	// General reports
