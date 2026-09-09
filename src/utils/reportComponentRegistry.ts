@@ -216,19 +216,22 @@ import JobEstimateDetailsCCReport from "../mainTopics/SMC/JobEstimateDetailsCCRe
 import JobStatusDocInquiryReport from "../mainTopics/SMC/JobStatusDocInquiryReport.tsx";
 import JobSummaryAllReport from "../mainTopics/SMC/JobSummaryAllReport.tsx";
 import JobSummaryPeriodReport from "../mainTopics/SMC/JobSummaryPeriodReport.tsx";
+import CCJobSummaryReport from "../mainTopics/SMC/CCJobSummaryReport.tsx";
 
 //SMC - Management Information
 import SmcJobProgressReport from "../mainTopics/SMC-ManagementInfo/SMCJobProgressReport.tsx";
 import CCT1T2T3Report from "../mainTopics/SMC-ManagementInfo/CCT1T2T3Report.tsx";
 import PivIIPaidNotEnergizedReport from "../mainTopics/SMC-ManagementInfo/PIVIIPaidNotEnergizedReport.tsx";
 import JobFinBillNotGeneratedReport from "../mainTopics/SMC-ManagementInfo/JobFinBillNotGeneratedReport.tsx";
+import AreaT1T2T3Report from "../mainTopics/SMC-ManagementInfo/AreaT1T2T3Report.tsx";
+//import ProvinceT1T2T3Report from "../mainTopics/SMC-ManagementInfo/ProvinceT1T2T3Report.tsx";
 
 //FIFO reports
 import IssueReceiptSummaryReport from "../mainTopics/fifo/IssueReceiptSummaryReport";
 import QuantityMatFIFOReport from "../mainTopics/fifo/QuantityMatFIFOReport";
 
 
-// Construction 
+// Construction
 import BulkConnectionDetailsReport from "../mainTopics/Construction/BulkConnectionDetailsReport";
 import ConstructionAllReport from "../mainTopics/Construction/ConstructionAllReport";
 import ConstructionCompletedReport from "../mainTopics/Construction/ConstructionCompletedReport";
@@ -514,13 +517,16 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"job status document inquiry application sub type wise" : JobStatusDocInquiryReport,
 	"job summary new connection edl" : JobSummaryAllReport,
 	"job summary within period" : JobSummaryPeriodReport,
+	"cost center wise job summary" : CCJobSummaryReport,
 
 	//SMC - Management Information
 	"smc job progress": SmcJobProgressReport,
 	"cost center wise t1 t2 t3 report": CCT1T2T3Report,
 	"piv ii paid not energized": PivIIPaidNotEnergizedReport,
 	"cost center wise job finished not paid contractor payment": JobFinBillNotGeneratedReport,
-	
+	"area wise t1 t2 t3 report" : AreaT1T2T3Report,
+	//"province wise t1 t2 t3 report" : ProvinceT1T2T3Report,
+
 	//FIFO reports
 	"issue and receipt summary": IssueReceiptSummaryReport,
 	"quantity on hand material wise fifo": QuantityMatFIFOReport,
