@@ -22,6 +22,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   collections: CreditCard,
   executive: Target,
   inventory: Package,
+  integrated: BarChart3,
 };
 
 const getDashboardKey = (name: string): string => {
@@ -35,6 +36,7 @@ const getDashboardKey = (name: string): string => {
   if (norm.includes("collections") || norm.includes("payment")) return "collections";
   if (norm.includes("executive") || norm.includes("kpi")) return "executive";
   if (norm.includes("inventory") || norm.includes("procurement")) return "inventory";
+  if (norm.includes("integrated") || norm.includes("combination")) return "integrated";
   return "default";
 };
 
@@ -71,6 +73,14 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
       seenKeys.add(item.id);
       return true;
     });
+
+  if (!seenKeys.has("integrated")) {
+    dashboards.push({
+      id: "integrated",
+      label: "Integrated Dashboard",
+      icon: iconMap["integrated"] || BarChart3,
+    });
+  }
 
   if (!loading && dashboards.length === 0) {
     return null;
