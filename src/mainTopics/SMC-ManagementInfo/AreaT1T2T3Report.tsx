@@ -165,7 +165,7 @@ const AreaT1T2T3ReportTable: React.FC<{
   </style>
 </head>
 <body>
-  <div class="company">${COMPANY_NAME} / ${areaLabel}</div>
+  <div class="company">${COMPANY_NAME} </div>
   <div class="title">Area Wise T1, T2, T3 Report From ${fromLabel} To ${toLabel}</div>
   <div class="info"><strong>Area:</strong> ${compId} / ${areaLabel} &nbsp;&nbsp; <strong>Records:</strong> ${totalRecords}</div>
   <table>
@@ -245,7 +245,7 @@ const AreaT1T2T3ReportTable: React.FC<{
                     </div>
 
                     <h2 className={`text-base md:text-lg font-bold text-center ${maroon}`}>
-                        {COMPANY_NAME} / {areaLabel}
+                        {COMPANY_NAME}
                     </h2>
                     <h3 className={`text-sm md:text-base font-semibold text-center mb-4 ${maroon}`}>
                         Area Wise T1, T2, T3 Report From {fromLabel} To {toLabel}
