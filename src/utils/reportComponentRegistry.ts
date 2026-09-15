@@ -224,7 +224,7 @@ import CCT1T2T3Report from "../mainTopics/SMC-ManagementInfo/CCT1T2T3Report.tsx"
 import PivIIPaidNotEnergizedReport from "../mainTopics/SMC-ManagementInfo/PIVIIPaidNotEnergizedReport.tsx";
 import JobFinBillNotGeneratedReport from "../mainTopics/SMC-ManagementInfo/JobFinBillNotGeneratedReport.tsx";
 import AreaT1T2T3Report from "../mainTopics/SMC-ManagementInfo/AreaT1T2T3Report.tsx";
-//import ProvinceT1T2T3Report from "../mainTopics/SMC-ManagementInfo/ProvinceT1T2T3Report.tsx";
+import ProvinceT1T2T3Report from "../mainTopics/SMC-ManagementInfo/ProvinceT1T2T3Report.tsx";
 
 //FIFO reports
 import IssueReceiptSummaryReport from "../mainTopics/fifo/IssueReceiptSummaryReport";
@@ -525,7 +525,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"piv ii paid not energized": PivIIPaidNotEnergizedReport,
 	"cost center wise job finished not paid contractor payment": JobFinBillNotGeneratedReport,
 	"area wise t1 t2 t3 report" : AreaT1T2T3Report,
-	//"province wise t1 t2 t3 report" : ProvinceT1T2T3Report,
+	"province wise t1 t2 t3 report" : ProvinceT1T2T3Report,
 
 	//FIFO reports
 	"issue and receipt summary": IssueReceiptSummaryReport,
