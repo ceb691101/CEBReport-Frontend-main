@@ -85,6 +85,7 @@ const RegionTrial: React.FC = () => {
 			document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
+	/* ────── Fetch Regions/Divisions (same pattern as RegionPeriodStatusReport) ────── */
 	useEffect(() => {
 		const fetchData = async () => {
 			if (!epfNo) {
@@ -102,8 +103,19 @@ const RegionTrial: React.FC = () => {
 					`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/70`
 				);
 				if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-				const txt = await res.text();
-				const parsed = JSON.parse(txt);
+
+				const contentType = res.headers.get("content-type");
+				if (!contentType || !contentType.includes("application/json")) {
+					const text = await res.text();
+					throw new Error(
+						`Expected JSON but got ${contentType}. Response: ${text.substring(
+							0,
+							100
+						)}`
+					);
+				}
+
+				const parsed = await res.json();
 				const rawData = Array.isArray(parsed) ? parsed : parsed.data || [];
 				const final: Region[] = rawData.map((item: any) => ({
 					compId: item.CompId,
@@ -120,6 +132,7 @@ const RegionTrial: React.FC = () => {
 		fetchData();
 	}, [epfNo]);
 
+	/* ────── Filter Regions ────── */
 	useEffect(() => {
 		const f = data.filter(
 			(c) =>
@@ -547,7 +560,7 @@ const printPDF = () => {
 		if (isLastRow && curCat !== null) {
 			tableRowsHTML += `
 				<tr style="background-color: #d3d3d3; font-weight: bold;">
-					<td style="padding: ${paddingSize}; border: ${borderSize} solid #999;"></td>
+					<td style="padding: ${paddingSize}; border: ${borderSize} solid #999;"></td> 
 					<td style="padding: ${paddingSize}; border: ${borderSize} solid #999; font-weight: bold; color: #7A0000;">TOTAL ${curCat.toUpperCase()}</td>
 					${catTot
 						.map(
