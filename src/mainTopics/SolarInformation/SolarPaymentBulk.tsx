@@ -95,6 +95,14 @@ const SolarPaymentBulk: React.FC = () => {
     // Helper function for error handling
     const fetchWithErrorHandling = async (url: string) => {
         try {
+            // Validate URL before fetching
+            if (!url || typeof url !== 'string' || url.trim().length === 0) {
+                throw new Error('Invalid URL: URL is empty or not a string');
+            }
+
+            // Log the URL for debugging
+            console.log("Request URL:", url);
+            
             const response = await fetch(url, {
                 headers: {
                     Accept: "application/json",
@@ -108,8 +116,11 @@ const SolarPaymentBulk: React.FC = () => {
                     if (errorData.errorMessage) {
                         errorMsg = errorData.errorMessage;
                     }
+                    if (errorData.errorDetails) {
+                        errorMsg += ` - ${errorData.errorDetails}`;
+                    }
                 } catch (e) {
-                    errorMsg = response.statusText;
+                    errorMsg = `${response.status} ${response.statusText}`;
                 }
                 throw new Error(errorMsg);
             }
@@ -337,6 +348,14 @@ const SolarPaymentBulk: React.FC = () => {
         setLoading(true);
         setReportError(null);
 
+    // Handle form submission
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!canSubmit()) return;
+
+        setLoading(true);
+        setReportError(null);
+
         try {
             // Determine report type and type code based on selected category
             let reportType = "";
@@ -356,9 +375,30 @@ const SolarPaymentBulk: React.FC = () => {
                 typeCode = "ALL";
             }
 
+            // Validate all parameters before constructing URL
+            const validationErrors: string[] = [];
+            if (!billCycle) validationErrors.push("Bill cycle is required");
+            if (!netType) validationErrors.push("Net type is required");
+            if (!reportType) validationErrors.push("Report type could not be determined");
+            if (!typeCode) validationErrors.push("Type code is required");
+
+            if (validationErrors.length > 0) {
+                setReportError(`Validation error: ${validationErrors.join(", ")}`);
+                setLoading(false);
+                return;
+            }
+
+            // Construct URL with proper encoding - ensure parameters are valid
+            const netTypeValue = mapNetTypeToApiValue(netType);
+            if (!netTypeValue) {
+                setReportError("Invalid net type selected");
+                setLoading(false);
+                return;
+            }
+
             const url = `/misapi/solarapi/solarPayment/bulk?billCycle=${encodeURIComponent(
                 billCycle
-            )}&netType=${encodeURIComponent(mapNetTypeToApiValue(netType))}&reportType=${reportType}&typeCode=${encodeURIComponent(
+            )}&netType=${encodeURIComponent(netTypeValue)}&reportType=${encodeURIComponent(reportType)}&typeCode=${encodeURIComponent(
                 typeCode
             )}`;
 
@@ -389,14 +429,17 @@ const SolarPaymentBulk: React.FC = () => {
                 setSelectedBillCycleDisplay(selectedCycle?.display || billCycle);
             } else {
                 console.warn("Empty or invalid data received:", data); // Debug log
-                setReportError("No data available for the selected criteria.");
+                const errorMessage = data?.errorMessage || "No data available for the selected criteria.";
+                setReportError(errorMessage);
             }
         } catch (err: any) {
             console.error("Error fetching report:", err);
-            setReportError(err.message || "Failed to generate report. Please try again.");
+            const errorMessage = err.message || "Failed to generate report. Please try again.";
+            setReportError(errorMessage);
         } finally {
             setLoading(false);
         }
+    };
     };
 
     // Format division option
