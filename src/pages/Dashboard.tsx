@@ -75,7 +75,7 @@ const Dashboard: React.FC = () => {
     const firstAllowedKey = allowedKeys[0];
 
     // If no dashboardId in URL, OR if the URL dashboardId is no longer allowed for this role:
-    if (!dashboardId || (dashboardId !== "integrated" && !allowedKeys.includes(dashboardId))) {
+    if (!dashboardId || !allowedKeys.includes(dashboardId)) {
       navigate(`/dashboard/${firstAllowedKey}`, { replace: true });
     }
   }, [dashboardId, filteredSubtopics, loading, navigate]);
@@ -93,7 +93,7 @@ const Dashboard: React.FC = () => {
   }
 
   // Render modern empty state if no dashboards assigned
-  if (filteredSubtopics.length === 0 && dashboardId !== "integrated") {
+  if (filteredSubtopics.length === 0) {
     return (
       <div className="flex min-h-[70vh] items-center justify-center p-8">
         <div className="w-full max-w-md rounded-3xl border border-stone-200 bg-white p-8 text-center shadow-lg shadow-stone-200/50">
@@ -115,9 +115,8 @@ const Dashboard: React.FC = () => {
   }
 
   const allowedKeys = filteredSubtopics.map((s) => getDashboardKey(s.name));
-  const activeDashboard = (dashboardId && (dashboardId === "integrated" || allowedKeys.includes(dashboardId))) 
-    ? dashboardId 
-    : allowedKeys[0];
+  const activeDashboard =
+    dashboardId && allowedKeys.includes(dashboardId) ? dashboardId : allowedKeys[0];
 
   const SecondaryDashboardPage = secondaryDashboardPages[activeDashboard];
 

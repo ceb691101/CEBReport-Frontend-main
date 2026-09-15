@@ -74,14 +74,6 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
       return true;
     });
 
-  if (!seenKeys.has("integrated")) {
-    dashboards.push({
-      id: "integrated",
-      label: "Integrated Dashboard",
-      icon: iconMap["integrated"] || BarChart3,
-    });
-  }
-
   if (!loading && dashboards.length === 0) {
     return null;
   }

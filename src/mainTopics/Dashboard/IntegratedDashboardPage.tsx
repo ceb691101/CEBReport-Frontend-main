@@ -8,7 +8,6 @@ import {
   FileText,
   Wallet,
   RotateCcw,
-  Sparkles,
   Package,
   Calendar,
   Activity,
@@ -19,7 +18,6 @@ import {
   ChevronUp,
   Info,
   Layers,
-  MapPin,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -853,13 +851,6 @@ export default function IntegratedDashboardPage() {
         amount: item.amount || 0,
       };
     });
-  }, [pivTotal]);
-
-  const provinceBreakdownData = useMemo(() => {
-    return [...pivTotal].reverse().map((item) => ({
-      ...item,
-      label: new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" }),
-    }));
   }, [pivTotal]);
 
   // Data processing for Material Master SVG Donut Chart (Area Engineer view)

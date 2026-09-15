@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useUser } from "../../../contexts/UserContext";
-import { Filter, RotateCcw, ChevronDown, Loader2 } from "lucide-react";
+import { Filter, RotateCcw, Loader2 } from "lucide-react";
 
 export interface ProvinceItem {
   code: string;
@@ -693,9 +693,12 @@ export const IntegratedDashboardHeader: React.FC<IntegratedDashboardHeaderProps>
   return (
     <div className={`bg-white border-b border-gray-200 sticky top-0 z-10 transition-all duration-1000 opacity-100 ${className}`}>
       <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-col justify-center min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap tracking-tight leading-tight">{title}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-4">
+          <div className="flex flex-col justify-center min-w-0 max-w-full">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate tracking-tight leading-tight">{title}</h1>
+            {subtitle && (
+              <p className="text-xs text-gray-500 font-medium mt-0.5 truncate">{subtitle}</p>
+            )}
             {lastUpdated && (
               <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-gray-400 font-medium">
                 <span className="relative flex h-1.5 w-1.5 flex-shrink-0">
@@ -707,13 +710,24 @@ export const IntegratedDashboardHeader: React.FC<IntegratedDashboardHeaderProps>
               </div>
             )}
           </div>
-          <div className="ml-auto flex items-center justify-end gap-2.5 flex-shrink-0">
+          <div className="flex flex-wrap items-center justify-end gap-2.5 w-full sm:w-auto sm:ml-auto">
+            {/* Filters label / loading indicator */}
+            <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mr-0.5">
+              {loadingMetadata ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#7A0000]" />
+              ) : (
+                <Filter className="w-3.5 h-3.5" />
+              )}
+              <span>Filters</span>
+            </div>
+
             {/* 1. Province Dropdown */}
             <select
               value={selectedProvince === "all" ? "" : (selectedProvince || "")}
               onChange={(e) => handleProvinceChange(e.target.value || "all")}
               disabled={isProvinceDisabled || loadingMetadata}
-              className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7A0000] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed max-w-[190px] truncate"
+              aria-label="Filter by province"
+              className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7A0000] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed w-[calc(50%-5px)] sm:w-auto sm:max-w-[190px] truncate"
             >
               {loadingMetadata ? (
                 <option value="">Loading Provinces...</option>
@@ -734,7 +748,8 @@ export const IntegratedDashboardHeader: React.FC<IntegratedDashboardHeaderProps>
               value={selectedArea === "all" ? "" : (selectedArea || "")}
               onChange={(e) => handleAreaChange(e.target.value || "all")}
               disabled={isAreaDisabled || loadingMetadata || areasLoading}
-              className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7A0000] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed max-w-[190px] truncate"
+              aria-label="Filter by area"
+              className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7A0000] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed w-[calc(50%-5px)] sm:w-auto sm:max-w-[190px] truncate"
             >
               {!isAreaDisabled && (
                 <option value="">
@@ -749,7 +764,7 @@ export const IntegratedDashboardHeader: React.FC<IntegratedDashboardHeaderProps>
             </select>
 
             {/* 3. Division Pill Buttons */}
-            <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg p-1">
+            <div className="flex flex-wrap items-center gap-1.5 bg-gray-100 rounded-lg p-1">
               {filteredDivisions.map((division) => {
                 const isSelected = (selectedDivision || "all").toLowerCase() === division.id.toLowerCase();
 
