@@ -771,22 +771,6 @@ const DgmDashboardPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* 30-Day Sum Stats Block */}
-                    {!loading && breakdownData.length > 0 && (
-                      <div className="bg-gradient-to-r from-orange-50/50 to-amber-50/30 border border-orange-100/50 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
-                        <div>
-                          <span className="text-[9px] font-black text-orange-800/80 uppercase tracking-widest">Total 30-Day Collections</span>
-                          <p className="text-2xl font-black text-slate-800 tracking-tight mt-1 flex items-baseline gap-1.5">
-                            <span className="text-xs font-bold text-slate-400">LKR</span>
-                            {total30DayCollection.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                        <div className="text-right">
-
-                        </div>
-                      </div>
-                    )}
-
                     {loading ? (
                       <div className="space-y-4 py-2">
                         {[1, 2, 3].map((i) => (
@@ -801,11 +785,11 @@ const DgmDashboardPage: React.FC = () => {
                         No collection details available for this period.
                       </div>
                     ) : (
-                      <div className="space-y-3 flex-1 flex flex-col justify-end">
+                      <div className="space-y-3 flex-1 flex flex-col justify-start">
                         <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 pl-1">Recent 7 Days Activity</div>
 
                         {/* Clean Scrollable List View of progress bars in a 2-column grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent font-sans">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent font-sans">
                           {(() => {
                             const recent7 = breakdownData.slice(0, 7);
                             const sum7 = recent7.reduce((s, it) => s + (it.amount || 0), 0);

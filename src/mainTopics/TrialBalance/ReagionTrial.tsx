@@ -96,6 +96,9 @@ const RegionTrial: React.FC = () => {
 			setLoading(true);
 			setError(null);
 			try {
+				// This endpoint is already scoped to the user's role server-side
+				// (rep_role_new joined to rep_roles_cct_new by epf_no at lvl_no 70),
+				// so whatever it returns is exactly the set of regions the user may see.
 				const res = await fetch(
 					`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/70`
 				);
@@ -118,16 +121,10 @@ const RegionTrial: React.FC = () => {
 					compId: item.CompId,
 					CompName: item.CompName,
 				}));
-
 				setData(final);
 				setFiltered(final);
 			} catch (e: any) {
-				console.error("API Error:", e);
-				setError(
-					e.message.includes("JSON.parse")
-						? "Invalid data format received from server. Please check if the API is returning valid JSON."
-						: e.message
-				);
+				setError(e.message);
 			} finally {
 				setLoading(false);
 			}
@@ -563,7 +560,7 @@ const printPDF = () => {
 		if (isLastRow && curCat !== null) {
 			tableRowsHTML += `
 				<tr style="background-color: #d3d3d3; font-weight: bold;">
-					<td style="padding: ${paddingSize}; border: ${borderSize} solid #999;"></td>
+					<td style="padding: ${paddingSize}; border: ${borderSize} solid #999;"></td> 
 					<td style="padding: ${paddingSize}; border: ${borderSize} solid #999; font-weight: bold; color: #7A0000;">TOTAL ${curCat.toUpperCase()}</td>
 					${catTot
 						.map(
