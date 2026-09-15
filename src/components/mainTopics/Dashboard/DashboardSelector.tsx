@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   BarChart3, Menu, X, Home, DollarSign, Users,
-  Briefcase, Sun, CreditCard, Target, Package
+  Briefcase, Sun, CreditCard, Target, Package, UserCheck
 } from "lucide-react";
 import { useRoleBasedSubtopics } from "../../../hooks/useRoleBasedSubtopics";
 import { useUser } from "../../../contexts/UserContext";
@@ -22,10 +22,12 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   collections: CreditCard,
   executive: Target,
   inventory: Package,
+  standingorders: UserCheck,
 };
 
 const getDashboardKey = (name: string): string => {
   const norm = name.toLowerCase();
+  if (norm.includes("standing") || norm.includes("stod") || norm.includes("standingorders")) return "standingorders";
   if (norm.includes("financial")) return "financial";
   if (norm.includes("areaengineer") || norm.includes("area engineer") || norm.includes("agm") || norm.includes("area")) return "areaengineer";
   if (norm.includes("dgm") || norm.includes("construction")) return "dgm";
@@ -52,6 +54,7 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
     "DB-Dashboard",
     "DB-DASHBOARD",
     "Dashboards",
+    "DB - DashBoard",
   ]);
 
   // Dynamically map assigned dashboards from Admin Panel ONLY
@@ -112,13 +115,11 @@ const DashboardSelector: React.FC<DashboardSelectorProps> = ({
             <button
               key={dashboard.id}
               onClick={() => onSelectDashboard(dashboard.id)}
-              className={`w-full rounded-xl text-sm transition-all duration-200 flex items-center ${
-                isOpen ? 'px-3.5 py-2.5 gap-3 justify-start' : 'p-3 justify-center'
-              } ${
-                isActive
+              className={`w-full rounded-xl text-sm transition-all duration-200 flex items-center ${isOpen ? 'px-3.5 py-2.5 gap-3 justify-start' : 'p-3 justify-center'
+                } ${isActive
                   ? "bg-[color:var(--ceb-maroon)] text-white shadow-sm font-medium"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 font-normal"
-              }`}
+                }`}
               title={!isOpen ? dashboard.label : ""}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />

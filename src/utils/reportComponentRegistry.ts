@@ -201,6 +201,7 @@ import CollectionsDashboardPage from "../mainTopics/Dashboard/CollectionsDashboa
 import ExecutiveDashboardPage from "../mainTopics/Dashboard/ExecutiveDashboardPage";
 import InventoryDashboardPage from "../mainTopics/Dashboard/InventoryDashboardPage";
 import AreaEngineerDashboardPage from "../mainTopics/Dashboard/AreaEngineerDashboardPage";
+import StandingOrdersDashboardPage from "../mainTopics/Dashboard/StandingOrdersDashboardPage";
 
 //SMC
 import JobRegisterCCReport from "../mainTopics/SMC/JobRegisterCCReport.tsx";
@@ -535,6 +536,10 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"executive dashboard": ExecutiveDashboardPage,
 	"inventory dashboard": InventoryDashboardPage,
 	"area general manager dashboard": AreaEngineerDashboardPage,
+	"standingorders": StandingOrdersDashboardPage,
+	"standingordersdashboardpage": StandingOrdersDashboardPage,
+	"standing orders": StandingOrdersDashboardPage,
+	"standing orders dashboard": StandingOrdersDashboardPage,
 
 	// SMC
 	"cost center wise job register": JobRegisterCCReport,
@@ -617,3 +622,4 @@ export const getReportComponentLoose = (normalizedReportName: string): Component
 
 	return null;
 };
+
