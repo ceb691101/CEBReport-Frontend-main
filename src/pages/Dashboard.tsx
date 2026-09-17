@@ -14,6 +14,7 @@ import SolarDashboardPage from "../mainTopics/Dashboard/SolarDashboardPage";
 import CollectionsDashboardPage from "../mainTopics/Dashboard/CollectionsDashboardPage";
 import ExecutiveDashboardPage from "../mainTopics/Dashboard/ExecutiveDashboardPage";
 import InventoryDashboardPage from "../mainTopics/Dashboard/InventoryDashboardPage";
+import IntegratedDashboardPage from "../mainTopics/Dashboard/IntegratedDashboardPage";
 
 const secondaryDashboardPages: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboardPage,
@@ -25,6 +26,7 @@ const secondaryDashboardPages: Record<string, React.ComponentType> = {
   collections: CollectionsDashboardPage,
   executive: ExecutiveDashboardPage,
   inventory: InventoryDashboardPage,
+  integrated: IntegratedDashboardPage,
 };
 
 const getDashboardKey = (name: string): string => {
@@ -38,6 +40,7 @@ const getDashboardKey = (name: string): string => {
   if (norm.includes("collections") || norm.includes("payment")) return "collections";
   if (norm.includes("executive") || norm.includes("kpi")) return "executive";
   if (norm.includes("inventory") || norm.includes("procurement")) return "inventory";
+  if (norm.includes("integrated") || norm.includes("combination")) return "integrated";
   return "default";
 };
 
@@ -112,9 +115,8 @@ const Dashboard: React.FC = () => {
   }
 
   const allowedKeys = filteredSubtopics.map((s) => getDashboardKey(s.name));
-  const activeDashboard = (dashboardId && allowedKeys.includes(dashboardId)) 
-    ? dashboardId 
-    : allowedKeys[0];
+  const activeDashboard =
+    dashboardId && allowedKeys.includes(dashboardId) ? dashboardId : allowedKeys[0];
 
   const SecondaryDashboardPage = secondaryDashboardPages[activeDashboard];
 
