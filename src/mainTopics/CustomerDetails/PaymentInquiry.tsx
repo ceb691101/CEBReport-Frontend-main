@@ -1111,13 +1111,6 @@ useEffect(() => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 bg-white rounded-xl shadow border border-gray-200 text-sm font-sans max-h-[82vh] overflow-y-auto">
-      {/* Error Alert */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700 text-xs">{error}</p>
-        </div>
-      )}
-
       {/* Form Section */}
       <div className="grid grid-cols-1 gap-4 mb-4 w-full">
         {/* Individual Payments Section */}
@@ -1204,6 +1197,13 @@ useEffect(() => {
               )}
             </button>
           </div>
+
+          {/* Error Alert */}
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-xs">{error}</p>
+            </div>
+          )}
 
           {/* Results Section - Payment Inquiry */}
           {activeTab === "individual" && paymentResult && (
@@ -1491,7 +1491,7 @@ useEffect(() => {
           {/* Info Text */}
           <div className="mt-3">
             <p className="text-xs text-yellow-600">
-              this option provides facility to access provincial server and extract information about payments
+              This option provides facility to access provincial server and extract information about payments
             </p>
           </div>
 
