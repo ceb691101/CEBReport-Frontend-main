@@ -333,6 +333,8 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"current account reconsiliation(external)- period": CurrAcctReconExtPeriod,
 	"payment inquiries": PaymentInquiry,
 	"standing order": StandingOrder,
+	"automatic bill settlement inquiry": StandingOrder,
+	"automatic bill settlement": StandingOrder,
 
 	// Collections reports
 	"sales and collection": SalesAndCollection,
