@@ -7,7 +7,16 @@ import { useReportRenderer } from "../hooks/useReportRenderer";
 const BillingPayment = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Customer Details"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
-    const renderReport = useReportRenderer();
+  const renderReport = useReportRenderer();
+
+  // Ensure "Standing Order" is always present as the 4th card
+  const displaySubtopics = [...subtopics];
+  if (!displaySubtopics.some((s) => s.name.toLowerCase().includes("standing order"))) {
+    displaySubtopics.push({
+      id: 9999,
+      name: "Standing Order",
+    });
+  }
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -25,7 +34,7 @@ const BillingPayment = () => {
 
   return (
     <div className="flex flex-col gap-4 pt-5">
-      {subtopics.map((subtopic) => (
+      {displaySubtopics.map((subtopic) => (
         <SubtopicCard
           key={subtopic.id}
           id={subtopic.id}
@@ -33,7 +42,7 @@ const BillingPayment = () => {
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-              {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
+          {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
       <Outlet />

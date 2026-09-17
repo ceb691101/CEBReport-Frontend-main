@@ -43,6 +43,7 @@ import SolarAgeAnalysis from "../mainTopics/Analysis/SolarAgeAnalysis";
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
 import PaymentInquiry from "../mainTopics/CustomerDetails/PaymentInquiry";
 import TransactionHistoryOrdinary from "../mainTopics/CustomerDetails/TransactionHistoryOrdinary";
+import StandingOrder from "../mainTopics/CustomerDetails/StandingOrder";
 
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
@@ -331,6 +332,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"current account reconciliation (external) - period": CurrAcctReconExtPeriod,
 	"current account reconsiliation(external)- period": CurrAcctReconExtPeriod,
 	"payment inquiries": PaymentInquiry,
+	"standing order": StandingOrder,
 
 	// Collections reports
 	"sales and collection": SalesAndCollection,
