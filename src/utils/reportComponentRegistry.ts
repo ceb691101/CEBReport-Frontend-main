@@ -73,6 +73,7 @@ import CashbookInquiryDrCrReport from "../mainTopics/CashBook/CashBookInquiryDrC
 import ChequeCancellationDivisionReport from "../mainTopics/CashBook/ChequeCancellationDivisionReport.tsx";
 import ChequeDetailsInquiryReport from "../mainTopics/CashBook/ChequeDetailsInquiryReport.tsx";
 import InquiryCashBookUnpostedCancelReport from "../mainTopics/CashBook/InquiryCashBookUnpostedCancelReport.tsx";
+import ProvinceWiseCashBookInquiryReport from "../mainTopics/CashBook/ProvinceCashBookInquiryReport.tsx";
 
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
@@ -109,6 +110,7 @@ import GrnRaisedForPurchasingReport from "../mainTopics/inventory/Grnraisedforpu
 import CcGrnNotGenReport from "../mainTopics/inventory/Ccgrnnotgenreport";
 import BranchGrnNotGenReport from "../mainTopics/inventory/BranchGrnNotGenReport";
 import MaterialFlowReport from "../mainTopics/inventory/MaterialFlowReport.tsx";
+import MaterialPriceByYear from "../mainTopics/inventory/MaterialPriceByYear";
 import IssueSummaryProvinceReport from "../mainTopics/inventory/IssueSummaryProvinceReport";
 
 // JobCard reports
@@ -201,6 +203,7 @@ import CollectionsDashboardPage from "../mainTopics/Dashboard/CollectionsDashboa
 import ExecutiveDashboardPage from "../mainTopics/Dashboard/ExecutiveDashboardPage";
 import InventoryDashboardPage from "../mainTopics/Dashboard/InventoryDashboardPage";
 import AreaEngineerDashboardPage from "../mainTopics/Dashboard/AreaEngineerDashboardPage";
+import IntegratedDashboardPage from "../mainTopics/Dashboard/IntegratedDashboardPage";
 
 //SMC
 import JobRegisterCCReport from "../mainTopics/SMC/JobRegisterCCReport.tsx";
@@ -213,19 +216,27 @@ import RegionSMCAllPIVReport from "../mainTopics/SMC/RegionSMCAllPIVReport.tsx";
 import SMCMatDetailsReport from "../mainTopics/SMC/SMCMatDetailsReport.tsx";
 import EnergizedNotAccountCCReport from "../mainTopics/SMC/EnergizedNotAccountCCReport.tsx";
 import EnergizeAgeAnalysisReport from "../mainTopics/SMC/EnergizeAgeAnalysisReport.tsx";
+import JobAllocatedEstimatesDetailsReport from "../mainTopics/SMC/JobAllocatedEstimatesDetailsReport.tsx";
+import JobEstimateDetailsCCReport from "../mainTopics/SMC/JobEstimateDetailsCCReport.tsx";
+import JobStatusDocInquiryReport from "../mainTopics/SMC/JobStatusDocInquiryReport.tsx";
+import JobSummaryAllReport from "../mainTopics/SMC/JobSummaryAllReport.tsx";
+import JobSummaryPeriodReport from "../mainTopics/SMC/JobSummaryPeriodReport.tsx";
+import CCJobSummaryReport from "../mainTopics/SMC/CCJobSummaryReport.tsx";
 
 //SMC - Management Information
 import SmcJobProgressReport from "../mainTopics/SMC-ManagementInfo/SMCJobProgressReport.tsx";
 import CCT1T2T3Report from "../mainTopics/SMC-ManagementInfo/CCT1T2T3Report.tsx";
 import PivIIPaidNotEnergizedReport from "../mainTopics/SMC-ManagementInfo/PIVIIPaidNotEnergizedReport.tsx";
 import JobFinBillNotGeneratedReport from "../mainTopics/SMC-ManagementInfo/JobFinBillNotGeneratedReport.tsx";
+import AreaT1T2T3Report from "../mainTopics/SMC-ManagementInfo/AreaT1T2T3Report.tsx";
+import ProvinceT1T2T3Report from "../mainTopics/SMC-ManagementInfo/ProvinceT1T2T3Report.tsx";
 
 //FIFO reports
 import IssueReceiptSummaryReport from "../mainTopics/fifo/IssueReceiptSummaryReport";
 import QuantityMatFIFOReport from "../mainTopics/fifo/QuantityMatFIFOReport";
 
 
-// Construction 
+// Construction
 import BulkConnectionDetailsReport from "../mainTopics/Construction/BulkConnectionDetailsReport";
 import ConstructionAllReport from "../mainTopics/Construction/ConstructionAllReport";
 import ConstructionCompletedReport from "../mainTopics/Construction/ConstructionCompletedReport";
@@ -240,6 +251,12 @@ import InquiryChequeRunReport from "../mainTopics/Common/InquiryCheckRunReport.t
 import InquiryGeneralLedgerReport from "../mainTopics/Common/InquiryGeneralLedgerReport.tsx";
 import InquiryInventoryReport from "../mainTopics/Common/InquiryInventoryReport.tsx";
 import InquiryMaterialRequisitionReport from "../mainTopics/Common/InquiryMaterialRequisitionReport.tsx";
+import MaterialReqJobwiseReport from "../mainTopics/Common/MaterialReqJobwiseReport.tsx";
+import MaterialReqJobwiseNoMatReport from "../mainTopics/Common/MaterialReqJobwiseNoMatReport.tsx";
+import TransactionsPerCostCenterReport from "../mainTopics/Common/TransactionsPerCostCenterReport.tsx";
+import ProvinceMaterialReqSummaryReport from "../mainTopics/Common/ProvinceMaterialReqSummaryReport.tsx";
+import ProvinceMaterialReqDetailReport from "../mainTopics/Common/ProvinceMaterialReqDetailReport.tsx";
+import TenderDocInquiryReport from "../mainTopics/Common/TenderDocInquiryReport.tsx";
 
 //General Ledger Reports
 import CostCenterWiseGLDocumentReport from "../mainTopics/GeneralLedger/CostcenterwiseGlDocumentReport.tsx";
@@ -370,6 +387,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"Cheque cancellation division": ChequeCancellationDivisionReport,
 	"cheque details inquiry cheque no range": ChequeDetailsInquiryReport,
 	"inquiry cash book unpost and cancellation": InquiryCashBookUnpostedCancelReport,
+	"province wise cash book details inquiry": ProvinceWiseCashBookInquiryReport,
 
 	// General reports
 	"tariff block wise consumption": TariffBlockWiseConsumption,
@@ -402,6 +420,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"grn raised by edl for purchasing": GrnRaisedForPurchasingReport,
 	"c/c grn value tv not generated by own cost center": CcGrnNotGenReport,
 	"branch wise grn not generated issues": BranchGrnNotGenReport,
+	"material price for given year": MaterialPriceByYear,
 	"province wise quantity on hand": ProvinceWiseQuantityOnHand,
 	"provincial quantity on hand cross tab": ProvincialQtyHand,
 	"quantity on hand all region material active online": QtyOnHandAllRegion,
@@ -526,6 +545,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"executive dashboard": ExecutiveDashboardPage,
 	"inventory dashboard": InventoryDashboardPage,
 	"area general manager dashboard": AreaEngineerDashboardPage,
+	"integrated dashboard": IntegratedDashboardPage,
 
 	// SMC
 	"cost center wise job register": JobRegisterCCReport,
@@ -538,13 +558,21 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"division wise smc job material details" : SMCMatDetailsReport,
 	"cost center wise energized not account opened" : EnergizedNotAccountCCReport,
 	"cost center wise energized age analysis" : EnergizeAgeAnalysisReport,
-	
+	"job allocated material quantities vs quantity on hand report" : JobAllocatedEstimatesDetailsReport,
+	"job estimate details within date range" : JobEstimateDetailsCCReport,
+	"job status document inquiry application sub type wise" : JobStatusDocInquiryReport,
+	"job summary new connection edl" : JobSummaryAllReport,
+	"job summary within period" : JobSummaryPeriodReport,
+	"cost center wise job summary" : CCJobSummaryReport,
+
 	//SMC - Management Information
 	"smc job progress": SmcJobProgressReport,
 	"cost center wise t1 t2 t3 report": CCT1T2T3Report,
 	"piv ii paid not energized": PivIIPaidNotEnergizedReport,
 	"cost center wise job finished not paid contractor payment": JobFinBillNotGeneratedReport,
-	
+	"area wise t1 t2 t3 report" : AreaT1T2T3Report,
+	"province wise t1 t2 t3 report" : ProvinceT1T2T3Report,
+
 	//FIFO reports
 	"issue and receipt summary": IssueReceiptSummaryReport,
 	"quantity on hand material wise fifo": QuantityMatFIFOReport,
@@ -564,6 +592,12 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"inquiry general ledger": InquiryGeneralLedgerReport,
 	"inquiry inventory": InquiryInventoryReport,
 	"inquiry material requisition": InquiryMaterialRequisitionReport,
+	"material requisition jobwise without materials": MaterialReqJobwiseNoMatReport,
+	"material requisition jobwise": MaterialReqJobwiseReport,
+	"no of transactions per cost center": TransactionsPerCostCenterReport,
+	"province wise material requisition summary inquiry": ProvinceMaterialReqSummaryReport,
+	"province wise material requisition details inquiry": ProvinceMaterialReqDetailReport,
+	"tender document inquiry": TenderDocInquiryReport,
 
 	//General Ledger Reports
 	"cost center wise gl document inquiry": CostCenterWiseGLDocumentReport,
