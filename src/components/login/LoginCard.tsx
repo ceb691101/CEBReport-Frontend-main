@@ -290,7 +290,6 @@ const LoginCard = () => {
             </button>
           </div>
         </form>
-        <div className="flex justify-between mt-4 sm:mt-6 text-xs sm:text-sm text-gray-500"></div>
       </div>
     </div>
   );
