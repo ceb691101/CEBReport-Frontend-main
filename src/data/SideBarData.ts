@@ -80,11 +80,17 @@ export type SidebarResult = {
 
 const USER_ROLE_ENDPOINTS = [
   "/misapi/api/userrole",
+  "http://localhost:44381/api/userrole"
 ];
+
 const ROLE_REPORTS_ENDPOINTS = [
   "/misapi/api/reprolereports/get",
-  
+  "http://localhost:44381/api/reprolereports/get"
 ];
+
+// const ROLE_REPORTS_ENDPOINTS = [
+//   "http://localhost:44381/api/reprolereports/get",
+// ];
 
 export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
   icon: TbReportAnalytics,
