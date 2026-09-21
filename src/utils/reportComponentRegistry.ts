@@ -173,6 +173,7 @@ import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
 import SolarPendingJobsReport from "../mainTopics/SolarJobs/SolarPendingJobsReport";
 import CcApplicationProgress from "../mainTopics/SolarJobs/CcApplicationProgress";
 import CCSolarPendingReport from "../mainTopics/SolarJobs/CCSolarPendingReport.tsx";
+import SolarOrdinaryCustomersGenerationCapacity from "../mainTopics/SolarJobs/SolarOrdinaryCustomersGenerationCapacity";
 
 // Solar Religious Purpose reports
 import AreaWiseSRPApplicationPIV from "../mainTopics/SRP/AreaWiseSRPApplicationPIV";
@@ -504,6 +505,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar retail rooftop pending jobs after piv2 paid": SolarPendingJobsReport,
 	"c/c solar application progress": CcApplicationProgress,
 	"cost center wise solar retail rooftop pending jobs after piv2 paid": CCSolarPendingReport,
+	"solar ordinary customers generation capacity": SolarOrdinaryCustomersGenerationCapacity,
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,
@@ -551,27 +553,27 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise job register": JobRegisterCCReport,
 	"cost center wise new connection job register": JobRegCCNCReport,
 	"area wise smc all details": SMCAllApplicationReport,
-	"cost center wise completed jobs" : CompletedJobsCCReport,
-	"cost center wise pending estimation" : PendingEstimationCCReport,
-	"edl fund summary of new connection" : FundSummaryReport,
-	"divisional smc all application data without ea piv paid date" : RegionSMCAllPIVReport,
-	"division wise smc job material details" : SMCMatDetailsReport,
-	"cost center wise energized not account opened" : EnergizedNotAccountCCReport,
-	"cost center wise energized age analysis" : EnergizeAgeAnalysisReport,
-	"job allocated material quantities vs quantity on hand report" : JobAllocatedEstimatesDetailsReport,
-	"job estimate details within date range" : JobEstimateDetailsCCReport,
-	"job status document inquiry application sub type wise" : JobStatusDocInquiryReport,
-	"job summary new connection edl" : JobSummaryAllReport,
-	"job summary within period" : JobSummaryPeriodReport,
-	"cost center wise job summary" : CCJobSummaryReport,
+	"cost center wise completed jobs": CompletedJobsCCReport,
+	"cost center wise pending estimation": PendingEstimationCCReport,
+	"edl fund summary of new connection": FundSummaryReport,
+	"divisional smc all application data without ea piv paid date": RegionSMCAllPIVReport,
+	"division wise smc job material details": SMCMatDetailsReport,
+	"cost center wise energized not account opened": EnergizedNotAccountCCReport,
+	"cost center wise energized age analysis": EnergizeAgeAnalysisReport,
+	"job allocated material quantities vs quantity on hand report": JobAllocatedEstimatesDetailsReport,
+	"job estimate details within date range": JobEstimateDetailsCCReport,
+	"job status document inquiry application sub type wise": JobStatusDocInquiryReport,
+	"job summary new connection edl": JobSummaryAllReport,
+	"job summary within period": JobSummaryPeriodReport,
+	"cost center wise job summary": CCJobSummaryReport,
 
 	//SMC - Management Information
 	"smc job progress": SmcJobProgressReport,
 	"cost center wise t1 t2 t3 report": CCT1T2T3Report,
 	"piv ii paid not energized": PivIIPaidNotEnergizedReport,
 	"cost center wise job finished not paid contractor payment": JobFinBillNotGeneratedReport,
-	"area wise t1 t2 t3 report" : AreaT1T2T3Report,
-	"province wise t1 t2 t3 report" : ProvinceT1T2T3Report,
+	"area wise t1 t2 t3 report": AreaT1T2T3Report,
+	"province wise t1 t2 t3 report": ProvinceT1T2T3Report,
 
 	//FIFO reports
 	"issue and receipt summary": IssueReceiptSummaryReport,
