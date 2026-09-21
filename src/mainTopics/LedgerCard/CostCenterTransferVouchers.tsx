@@ -250,7 +250,7 @@ const CostCenterTransferVouchers: React.FC = () => {
 			return;
 		}
 		if (!toCostCenter.trim()) {
-			toast.error("Please select Destination Cost Center.");
+			toast.error("Please select Transferee.");
 			return;
 		}
 		if (!year || isNaN(+year)) {
@@ -374,9 +374,9 @@ const CostCenterTransferVouchers: React.FC = () => {
 		const cctName = data[0]?.CctName || "";
 
 		const csvLines: string[] = [
-			`Cost center Ledger Card Report for ${monthDisplay} / ${year}`,
-			`Cost Centre: ${fromCostCenter} ${cctName ? `/ ${cctName}` : ""}`,
-			`Destination Cost centre (Transfer Department): ${toCostCenter}`,
+			`Summary of Transfer Vouchers ${monthDisplay} / ${year}`,
+			`Transferer : ${fromCostCenter} ${cctName ? `/ ${cctName}` : ""}`,
+			`Transferee : ${toCostCenter}`,
 			"",
 		];
 
@@ -497,9 +497,9 @@ const CostCenterTransferVouchers: React.FC = () => {
 				</style>
 			</head>
 			<body>
-				<div class="header-title">Cost center Ledger Card Report for ${monthDisplay} / ${year}</div>
-				<div class="header-sub">Cost Centre: ${fromCostCenter} ${cctName ? `/ ${cctName}` : ""}</div>
-				<div class="header-sub">Destination Cost centre (Transfer Department): ${toCostCenter}</div>
+				<div class="header-title">Summary of Transfer Vouchers ${monthDisplay} / ${year}</div>
+				<div class="header-sub">Transferer: ${fromCostCenter} ${cctName ? `/ ${cctName}` : ""}</div>
+				<div class="header-sub">Transferee : ${toCostCenter}</div>
 				
 				<table>
 					<thead>
@@ -701,12 +701,14 @@ const CostCenterTransferVouchers: React.FC = () => {
 							<div className="grid grid-cols-1 md:grid-cols-2 text-sm mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
 								<div>
 									<p>
-										<span className="font-bold">Cost Centre :</span>{" "}
+										<span className="font-bold">
+											Transferer :
+										</span>{" "}
 										{fromCostCenter} {data[0]?.CctName ? `/ ${data[0].CctName}` : ""}
 									</p>
 									<p>
 										<span className="font-bold">
-											Destination Cost centre (Transfer Department) :
+											Transferee :
 										</span>{" "}
 										{toCostCenter}
 									</p>

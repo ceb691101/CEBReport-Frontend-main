@@ -502,7 +502,6 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"c/c solar application progress": CcApplicationProgress,
 	"cost center wise solar retail rooftop pending jobs after piv2 paid": CCSolarPendingReport,
 	"solar ordinary customers generation capacity": SolarOrdinaryCustomersGenerationCapacity,
-	"solar ordinary customers generation capacity report": SolarOrdinaryCustomersGenerationCapacity,
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,

@@ -379,11 +379,6 @@ const DgmDashboardPage: React.FC = () => {
     fetchCustomPivData();
   }, [fetchCount, selectedCompanyId, customPivStart, customPivEnd]);
 
-  // Calculations for PIV 30-Day Collections
-  const total30DayCollection = useMemo(() => {
-    return pivTotal.reduce((sum, item) => sum + (item.amount || 0), 0);
-  }, [pivTotal]);
-
   const breakdownData = useMemo(() => {
     return [...pivTotal].reverse().map((item) => ({
       ...item,
