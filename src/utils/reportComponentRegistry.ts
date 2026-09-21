@@ -77,6 +77,7 @@ import ProvinceWiseCashBookInquiryReport from "../mainTopics/CashBook/ProvinceCa
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
 import BillCalculation from "../mainTopics/general/BillCalculation";
+import TariffStructure from "../mainTopics/general/TariffStructure";
 import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
 import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
 import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
@@ -165,6 +166,7 @@ import SolarConnectionDetailsRetail from "../mainTopics/SolarInformation/SolarCo
 import SolarConnectionDetailsBulk from "../mainTopics/SolarInformation/SolarConnectionDetailsBulk";
 import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustomerInformation";
 import RoofTopSolarInputData from "../mainTopics/SolarInformation/RoofTopSolarInputData";
+import SolarRooftopPaymentsandExportunits from "../mainTopics/SolarInformation/SolarRooftopPaymentsandExportunits";
 
 // Solar Jobs reports
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
@@ -389,6 +391,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"tariff block wise consumption": TariffBlockWiseConsumption,
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
 	"bill calculation": BillCalculation,
+	"tariff structure": TariffStructure,
 	"listing of customers": ListingofCustomers,
 	"list of government accounts": ListOfGovernmentAccounts,
 	"largest 50 customers details ordinary": LargestCus,
@@ -494,6 +497,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar connection details incl reading and usage bulk": SolarConnectionDetailsBulk,
 	"solar customer information": SolarCustomerInformation,
 	"rooftop solar input data portal for t and d loss calculation": RoofTopSolarInputData,
+	"solar rooftop payments and export units": SolarRooftopPaymentsandExportunits,
 
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
