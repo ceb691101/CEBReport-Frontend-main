@@ -109,27 +109,26 @@ const SolarOrdinaryCustomersGenerationCapacity: React.FC = () => {
 	const handleDownloadCSV = () => {
 		if (reportData.length === 0) return;
 
-		const headers = [
-			"Division",
-			"No. of Accounts",
-			"Generated Capacity",
-		];
-
 		const formattedFrom = fromDate.replace(/-/g, "/");
 		const formattedTo = toDate.replace(/-/g, "/");
 
+		const headers = [
+			"Division",
+			"No. of Accounts",
+			"Total Generation Capacity (kW)",
+		];
+
 		const csvRows: string[] = [
-			"Solar Ordinary Customers Generation Capacity",
-			`Period: ${formattedFrom} To ${formattedTo}`,
-			"Currency: LKR",
+			csvEscape("Electricity Distribution Lanka (Pvt) Ltd"),
+			csvEscape(`SOLAR ORDINARY CUSTOMERS FROM ${formattedFrom} TO ${formattedTo}`),
 			"",
 			headers.map(csvEscape).join(","),
 		];
 
 		reportData.forEach((item) => {
 			const row = [
-				`="${item.Division ?? ""}"`,
-				item.NoOfAccounts ?? 0,
+				item.Division ?? "",
+				formatInteger(item.NoOfAccounts),
 				formatNumber(item.GeneratedCapacity),
 			];
 			csvRows.push(row.map(csvEscape).join(","));
@@ -137,11 +136,11 @@ const SolarOrdinaryCustomersGenerationCapacity: React.FC = () => {
 
 		// Summary row
 		const summaryRow = [
-			'"Total"',
-			computedTotalAccounts,
+			"Total",
+			formatInteger(computedTotalAccounts),
 			formatNumber(computedTotalCapacity),
 		];
-		csvRows.push(summaryRow.join(","));
+		csvRows.push(summaryRow.map(csvEscape).join(","));
 
 		const csvContent = csvRows.join("\n");
 		const blob = new Blob(["\uFEFF" + csvContent], {
@@ -203,7 +202,7 @@ const SolarOrdinaryCustomersGenerationCapacity: React.FC = () => {
         <tr>
           <th>Division</th>
           <th class="numeric">No. of Accounts</th>
-          <th class="numeric">Generated Capacity</th>
+          <th class="numeric">Generated Capacity (kW)</th>
         </tr>
       </thead>`;
 
@@ -211,7 +210,7 @@ const SolarOrdinaryCustomersGenerationCapacity: React.FC = () => {
 <html>
 <head>
 <meta charset="utf-8">
-<title>Solar Ordinary Customers Generation Capacity</title>
+<title>&nbsp;</title>
 <style>${tableStyle}
 body { font-family: Arial, sans-serif; margin: 8mm; print-color-adjust: exact; }
 h3 { text-align: center; color: #7A0000; font-size: 16px; font-weight: bold; margin: 0 0 8px 0; }
@@ -221,6 +220,8 @@ h3 { text-align: center; color: #7A0000; font-size: 16px; font-weight: bold; mar
 
 @page { margin: 10mm; }
 @page { 
+  @top-center { content: "Electricity Distribution Lanka (Pvt) Ltd"; font-size: 9px; font-weight: normal; color: #333; }
+  @top-right { content: none; }
   @bottom-left { content: "Printed on: ${new Date().toLocaleString()}"; font-size: 9px; color: #666; }
   @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 9px; color: #666; }
 }
@@ -231,9 +232,6 @@ h3 { text-align: center; color: #7A0000; font-size: 16px; font-weight: bold; mar
 <div class="subtitles">
   <div class="subtitle-left">
     <strong>Period :</strong> ${formattedFrom} to ${formattedTo}
-  </div>
-  <div class="subtitle-right">
-    <strong>Currency:</strong> LKR
   </div>
 </div>
 
@@ -288,7 +286,7 @@ h3 { text-align: center; color: #7A0000; font-size: 16px; font-weight: bold; mar
 					title="Solar Ordinary Customers Generation Capacity"
 					subtitlebold="Period:"
 					subtitlenormal={`${formattedDisplayFrom} to ${formattedDisplayTo}`}
-					currency="Currency: LKR"
+					currency=""
 					loading={reportLoading}
 					hasData={reportData.length > 0}
 					handleDownloadCSV={handleDownloadCSV}
@@ -300,7 +298,7 @@ h3 { text-align: center; color: #7A0000; font-size: 16px; font-weight: bold; mar
 							<tr>
 								<th className="px-4 py-2.5 text-left font-semibold">Division</th>
 								<th className="px-4 py-2.5 text-right font-semibold">No. of Accounts</th>
-								<th className="px-4 py-2.5 text-right font-semibold">Generated Capacity</th>
+								<th className="px-4 py-2.5 text-right font-semibold">Generated Capacity (kW)</th>
 							</tr>
 						</thead>
 						<tbody>
