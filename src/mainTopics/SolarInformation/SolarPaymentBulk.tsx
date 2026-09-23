@@ -341,12 +341,12 @@ const SolarPaymentBulk: React.FC = () => {
     };
 
     // Handle form submission
-    const handleSubmit = async (e: React.FormEvent) => {
+    /*const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!canSubmit()) return;
 
         setLoading(true);
-        setReportError(null);
+        setReportError(null);*/
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
@@ -440,7 +440,7 @@ const SolarPaymentBulk: React.FC = () => {
             setLoading(false);
         }
     };
-    };
+    //};
 
     // Format division option
     const formatDivisionOption = (division: Division): string => {
