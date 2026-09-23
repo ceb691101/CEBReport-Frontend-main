@@ -29,14 +29,6 @@ interface VoucherItem {
 	CctName: string | null;
 }
 
-interface GroupedVouchers {
-	docPf: string;
-	trfType: string;
-	items: VoucherItem[];
-	subTotalDr: number;
-	subTotalCr: number;
-}
-
 const formatNumber = (num: number | string | null | undefined): string => {
 	const n = num === null || num === undefined ? NaN : Number(num);
 	if (isNaN(n)) return "0.00";
@@ -230,10 +222,14 @@ const CostCenterTransferVouchers: React.FC = () => {
 			}
 			setLoadingDocProfiles(true);
 			try {
-				const res = await fetch(`/misapi/api/ledgercard/costcenter-transfer-vouchers/doc-profiles?costctr=${encodeURIComponent(fromCostCenter)}`);
+				const res = await fetch(`/misapi/api/ledgercard/costcenter-transfer-vouchers/doc-profiles?costctr=${encodeURIComponent(fromCostCenter.trim())}`, {
+					headers: {
+						Accept: "application/json",
+					},
+				});
 				if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 				const parsed = await res.json();
-				setDocProfiles(parsed || []);
+				setDocProfiles(Array.isArray(parsed) ? parsed : []);
 			} catch (err: any) {
 				console.error("Error loading doc profiles:", err);
 			} finally {
@@ -330,37 +326,14 @@ const CostCenterTransferVouchers: React.FC = () => {
 		setError(null);
 	};
 
-	// Grouping by Doc. Profile & Transfer Type
-	const groupedData = useMemo(() => {
-		const groupsMap: { [key: string]: GroupedVouchers } = {};
-		const groupKeys: string[] = [];
-
-		data.forEach((item) => {
-			const docPf = item.DocPf || "N/A";
-			const trfType = item.TrfType || "N/A";
-			const key = `${docPf}___${trfType}`;
-
-			if (!groupsMap[key]) {
-				groupsMap[key] = {
-					docPf,
-					trfType,
-					items: [],
-					subTotalDr: 0,
-					subTotalCr: 0,
-				};
-				groupKeys.push(key);
-			}
-
-			groupsMap[key].items.push(item);
-			groupsMap[key].subTotalDr += item.DrAmt || 0;
-			groupsMap[key].subTotalCr += item.CrAmt || 0;
-		});
-
-		return groupKeys.map((key) => groupsMap[key]);
-	}, [data]);
-
-	const grandTotalDr = useMemo(() => data.reduce((sum, item) => sum + (item.DrAmt || 0), 0), [data]);
-	const grandTotalCr = useMemo(() => data.reduce((sum, item) => sum + (item.CrAmt || 0), 0), [data]);
+	const fromCostCenterName = costCenters.find((item) => item.CostCenterId === fromCostCenter)?.CostCenterName || "";
+	const toCostCenterName = costCenters.find((item) => item.CostCenterId === toCostCenter)?.CostCenterName || "";
+	const reportDocProfiles = [...new Set(data.map((item) => item.DocPf).filter(Boolean))].join(", ") || selectedDocPf || "All";
+	const monthDisplay = startMonth === endMonth
+		? getMonthName(startMonth)
+		: `${getMonthName(startMonth)} - ${getMonthName(endMonth)}`;
+	const transactionTotalDr = useMemo(() => data.reduce((sum, item) => sum + (item.DrAmt || 0), 0), [data]);
+	const transactionTotalCr = useMemo(() => data.reduce((sum, item) => sum + (item.CrAmt || 0), 0), [data]);
 
 	const handleDownloadCSV = () => {
 		if (data.length === 0) return;
@@ -368,67 +341,30 @@ const CostCenterTransferVouchers: React.FC = () => {
 		const escapeCsv = (value: any) =>
 			`"${String(value ?? "").replace(/"/g, '""')}"`;
 
-		const monthDisplay = startMonth === endMonth 
-			? getMonthName(startMonth) 
-			: `${getMonthName(startMonth)} - ${getMonthName(endMonth)}`;
-		const cctName = data[0]?.CctName || "";
-
 		const csvLines: string[] = [
-			`Cost center Ledger Card Report for ${monthDisplay} / ${year}`,
-			`Cost Centre: ${fromCostCenter} ${cctName ? `/ ${cctName}` : ""}`,
-			`Destination Cost centre (Transfer Department): ${toCostCenter}`,
+			`Summary of Transfer Vouchers ${reportDocProfiles}`,
+			`Transferer: ${fromCostCenter} / ${fromCostCenterName}`,
+			`Transferee: ${toCostCenter} / ${toCostCenterName}`,
+			`Month: ${monthDisplay} ${year}`,
 			"",
+			["No.", "Document No.", "Remarks", "Acct. Date", "Dr Amount", "Cr Amount"]
+				.map(escapeCsv)
+				.join(","),
 		];
 
-		groupedData.forEach((group) => {
-			csvLines.push(`"Group: Doc. Profile: ${group.docPf} | Transfer Type: ${group.trfType}"`);
-			csvLines.push(
-				["Document No", "Remarks", "Acct. Date", "Sub Account", "Reference", "Dr Amount", "Cr Amount"]
-					.map(escapeCsv)
-					.join(",")
-			);
-
-			group.items.forEach((item) => {
-				csvLines.push(
-					[
-						item.DocNo || "",
-						item.Remarks || "",
-						item.AcctDt ? new Date(item.AcctDt).toLocaleDateString("en-GB") : "",
-						item.SubAc || "",
-						item.ChqNo || item.Ref1 || "",
-						formatNumber(item.DrAmt),
-						formatNumber(item.CrAmt),
-					]
-						.map(escapeCsv)
-						.join(",")
-				);
-			});
-
-			csvLines.push(
-				[
-					`"Subtotal (${group.docPf} / ${group.trfType})"`,
-					"",
-					"",
-					"",
-					"",
-					formatNumber(group.subTotalDr),
-					formatNumber(group.subTotalCr),
-				].join(",")
-			);
-			csvLines.push("");
+		data.forEach((item, index) => {
+			csvLines.push([
+				index + 1,
+				item.DocNo || "",
+				item.Remarks || "",
+				item.AcctDt ? new Date(item.AcctDt).toLocaleDateString("en-GB") : "",
+				formatNumber(item.DrAmt),
+				formatNumber(item.CrAmt),
+			].map(escapeCsv).join(","));
 		});
 
-		csvLines.push(
-			[
-				`"Grand Total"`,
-				"",
-				"",
-				"",
-				"",
-				formatNumber(grandTotalDr),
-				formatNumber(grandTotalCr),
-			].join(",")
-		);
+		csvLines.push(["Transaction Total", "", "", "", formatNumber(transactionTotalDr), formatNumber(transactionTotalCr)].map(escapeCsv).join(","));
+		csvLines.push("", "This is system generated report. Signature not required.");
 
 		const blob = new Blob([csvLines.join("\n")], { type: "text/csv" });
 		const url = URL.createObjectURL(blob);
@@ -442,43 +378,16 @@ const CostCenterTransferVouchers: React.FC = () => {
 	const printPDF = () => {
 		if (data.length === 0 || !iframeRef.current) return;
 
-		const monthDisplay = startMonth === endMonth 
-			? getMonthName(startMonth) 
-			: `${getMonthName(startMonth)} - ${getMonthName(endMonth)}`;
-		const cctName = data[0]?.CctName || "";
-
-		let tableRows = "";
-		groupedData.forEach((group) => {
-			tableRows += `
-				<tr style="background-color: #fce8e8; font-weight: bold; color: #7A0000;">
-					<td colspan="7" style="padding: 6px; border: 1px solid #ddd;">
-						Doc. Profile: <strong>${group.docPf}</strong> &nbsp;|&nbsp; Transfer Type: <strong>${group.trfType}</strong>
-					</td>
-				</tr>
-			`;
-
-			group.items.forEach((item) => {
-				tableRows += `
-					<tr style="border-bottom: 1px solid #ddd;">
-						<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.DocNo || ""}</td>
-						<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.Remarks || ""}</td>
-						<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.AcctDt ? new Date(item.AcctDt).toLocaleDateString("en-GB") : ""}</td>
-						<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.SubAc || ""}</td>
-						<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.ChqNo || item.Ref1 || ""}</td>
-						<td style="padding: 4px 8px; border: 1px solid #ddd; text-align: right;">${formatNumber(item.DrAmt)}</td>
-						<td style="padding: 4px 8px; border: 1px solid #ddd; text-align: right;">${formatNumber(item.CrAmt)}</td>
-					</tr>
-				`;
-			});
-
-			tableRows += `
-				<tr style="background-color: #fef9c3; font-weight: bold; border-bottom: 2px solid #ccc;">
-					<td colspan="5" style="padding: 5px 8px; border: 1px solid #ddd; text-align: right;">Subtotal (${group.docPf} / ${group.trfType}):</td>
-					<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; color: #b91c1c;">${formatNumber(group.subTotalDr)}</td>
-					<td style="padding: 5px 8px; border: 1px solid #ddd; text-align: right; color: #15803d;">${formatNumber(group.subTotalCr)}</td>
-				</tr>
-			`;
-		});
+		const tableRows = data.map((item, index) => `
+			<tr style="border-bottom: 1px solid #ddd;">
+				<td style="padding: 4px 8px; border: 1px solid #ddd;">${index + 1}</td>
+				<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.DocNo || ""}</td>
+				<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.Remarks || ""}</td>
+				<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.AcctDt ? new Date(item.AcctDt).toLocaleDateString("en-GB") : ""}</td>
+				<td style="padding: 4px 8px; border: 1px solid #ddd; text-align: right;">${formatNumber(item.DrAmt)}</td>
+				<td style="padding: 4px 8px; border: 1px solid #ddd; text-align: right;">${formatNumber(item.CrAmt)}</td>
+			</tr>
+		`).join("");
 
 		const htmlContent = `
 			<!DOCTYPE html>
@@ -486,29 +395,31 @@ const CostCenterTransferVouchers: React.FC = () => {
 			<head>
 				<title>Cost Center Transfer Vouchers</title>
 				<style>
-					body { font-family: sans-serif; font-size: 12px; margin: 20px; }
+					@page { margin: 0; }
+					body { font-family: sans-serif; font-size: 12px; margin: 0; padding: 20px; }
 					table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 					th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; }
 					th { background-color: #7A0000; color: white; font-weight: bold; }
 					.text-right { text-align: right; }
-					.header-title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+					.header-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
 					.header-sub { font-size: 14px; margin-bottom: 5px; }
-					.grand-total { font-weight: bold; background-color: #7A0000; color: white; }
+					.transaction-total { font-weight: bold; background-color: #7A0000; color: white; }
+					.footer-note { margin-top: 24px; text-align: center; font-style: italic; }
 				</style>
 			</head>
 			<body>
-				<div class="header-title">Cost center Ledger Card Report for ${monthDisplay} / ${year}</div>
-				<div class="header-sub">Cost Centre: ${fromCostCenter} ${cctName ? `/ ${cctName}` : ""}</div>
-				<div class="header-sub">Destination Cost centre (Transfer Department): ${toCostCenter}</div>
+				<div class="header-title">Summary of Transfer Vouchers ${reportDocProfiles}</div>
+				<div class="header-sub">Transferer: ${fromCostCenter} / ${fromCostCenterName}</div>
+				<div class="header-sub">Transferee: ${toCostCenter} / ${toCostCenterName}</div>
+				<div class="header-sub">Month: ${monthDisplay} ${year}</div>
 				
 				<table>
 					<thead>
 						<tr>
-							<th>Document No</th>
+							<th>No.</th>
+							<th>Document No.</th>
 							<th>Remarks</th>
 							<th>Acct. Date</th>
-							<th>Sub Account</th>
-							<th>Reference</th>
 							<th class="text-right">Dr Amount</th>
 							<th class="text-right">Cr Amount</th>
 						</tr>
@@ -517,13 +428,14 @@ const CostCenterTransferVouchers: React.FC = () => {
 						${tableRows}
 					</tbody>
 					<tfoot>
-						<tr class="grand-total">
-							<td colspan="5" class="text-right">Grand Total:</td>
-							<td class="text-right">${formatNumber(grandTotalDr)}</td>
-							<td class="text-right">${formatNumber(grandTotalCr)}</td>
+						<tr class="transaction-total">
+							<td colspan="4" class="text-right">Transaction Total:</td>
+							<td class="text-right">${formatNumber(transactionTotalDr)}</td>
+							<td class="text-right">${formatNumber(transactionTotalCr)}</td>
 						</tr>
 					</tfoot>
 				</table>
+				<div class="footer-note">This is system generated report. Signature not required.</div>
 			</body>
 			</html>
 		`;
@@ -695,20 +607,22 @@ const CostCenterTransferVouchers: React.FC = () => {
 							</div>
 
 							<h2 className={`text-xl font-bold mb-4 text-center ${maroon}`}>
-								Cost center Ledger Card Report for {startMonth === endMonth ? getMonthName(startMonth) : `${getMonthName(startMonth)} - ${getMonthName(endMonth)}`} / {year}
+								Summary of Transfer Vouchers {reportDocProfiles}
 							</h2>
 
 							<div className="grid grid-cols-1 md:grid-cols-2 text-sm mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
 								<div>
 									<p>
-										<span className="font-bold">Cost Centre :</span>{" "}
-										{fromCostCenter} {data[0]?.CctName ? `/ ${data[0].CctName}` : ""}
+										<span className="font-bold">Transferer:</span>{" "}
+										{fromCostCenter} / {fromCostCenterName}
 									</p>
 									<p>
-										<span className="font-bold">
-											Destination Cost centre (Transfer Department) :
-										</span>{" "}
-										{toCostCenter}
+										<span className="font-bold">Transferee:</span>{" "}
+										{toCostCenter} / {toCostCenterName}
+									</p>
+									<p>
+										<span className="font-bold">Month:</span>{" "}
+										{monthDisplay} {year}
 									</p>
 								</div>
 								<div className="text-right font-semibold text-gray-600">
@@ -717,102 +631,47 @@ const CostCenterTransferVouchers: React.FC = () => {
 							</div>
 
 							<div className="overflow-x-auto border rounded-lg shadow-sm">
-								<table className="w-full text-xs border-collapse table-fixed min-w-[1050px]">
+								<table className="w-full text-xs border-collapse table-fixed min-w-[760px]">
 									<thead className={`${maroonGrad} text-white`}>
 										<tr>
-											<th className="px-3 py-2 w-[18%] text-left">Document No</th>
-											<th className="px-3 py-2 w-[24%] text-left">Remarks</th>
-											<th className="px-3 py-2 w-[12%] text-left">Acct. Date</th>
-											<th className="px-3 py-2 w-[11%] text-left">Sub Account</th>
-											<th className="px-3 py-2 w-[13%] text-left">Reference</th>
-											<th className="px-3 py-2 w-[11%] text-right">Dr Amount</th>
-											<th className="px-3 py-2 w-[11%] text-right">Cr Amount</th>
+											<th className="px-3 py-2 w-[7%] text-left">No.</th>
+											<th className="px-3 py-2 w-[18%] text-left">Document No.</th>
+											<th className="px-3 py-2 w-[35%] text-left">Remarks</th>
+											<th className="px-3 py-2 w-[15%] text-left">Acct. Date</th>
+											<th className="px-3 py-2 w-[12.5%] text-right">Dr Amount</th>
+											<th className="px-3 py-2 w-[12.5%] text-right">Cr Amount</th>
 										</tr>
 									</thead>
 									<tbody>
-										{groupedData.map((group, gIdx) => (
-											<React.Fragment key={gIdx}>
-												{/* Group Header Row */}
-												<tr className="bg-red-50/90 font-bold border-t-2 border-b border-[#7A0000]/30 text-[#7A0000]">
-													<td colSpan={7} className="px-3 py-2">
-														<div className="flex items-center gap-4 text-xs md:text-sm">
-															<span>
-																Doc. Profile:{" "}
-																<span className="font-mono bg-white px-2 py-0.5 rounded border border-red-200 shadow-sm text-gray-900">
-																	{group.docPf}
-																</span>
-															</span>
-															<span className="text-gray-300">|</span>
-															<span>
-																Transfer Type:{" "}
-																<span className="font-mono bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-200 shadow-sm">
-																	{group.trfType}
-																</span>
-															</span>
-														</div>
-													</td>
-												</tr>
-
-												{/* Voucher Items */}
-												{group.items.map((item, idx) => (
-													<tr
-														key={`${gIdx}-${idx}`}
-														className="border-b border-gray-200 hover:bg-gray-50"
-													>
-														<td className="px-3 py-2 font-mono font-medium border-r border-gray-200">
-															{item.DocNo}
-														</td>
-														<td className="px-3 py-2 border-r border-gray-200">
-															{item.Remarks}
-														</td>
-														<td className="px-3 py-2 border-r border-gray-200 whitespace-nowrap">
-															{item.AcctDt ? new Date(item.AcctDt).toLocaleDateString("en-GB") : ""}
-														</td>
-														<td className="px-3 py-2 font-mono border-r border-gray-200">
-															{item.SubAc}
-														</td>
-														<td className="px-3 py-2 border-r border-gray-200">
-															{item.ChqNo || item.Ref1 || ""}
-														</td>
-														<td className="px-3 py-2 text-right font-mono border-r border-gray-200">
-															{formatNumber(item.DrAmt)}
-														</td>
-														<td className="px-3 py-2 text-right font-mono">
-															{formatNumber(item.CrAmt)}
-														</td>
-													</tr>
-												))}
-
-												{/* Group Subtotal Row */}
-												<tr className="bg-amber-50/80 font-bold border-b-2 border-gray-300 text-gray-800">
-													<td colSpan={5} className="px-3 py-2 text-right border-r border-gray-300">
-														Subtotal ({group.docPf} / {group.trfType}):
-													</td>
-													<td className="px-3 py-2 text-right font-mono border-r border-gray-300 text-red-700">
-														{formatNumber(group.subTotalDr)}
-													</td>
-													<td className="px-3 py-2 text-right font-mono text-green-700">
-														{formatNumber(group.subTotalCr)}
-													</td>
-												</tr>
-											</React.Fragment>
+										{data.map((item, index) => (
+											<tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+												<td className="px-3 py-2">{index + 1}</td>
+												<td className="px-3 py-2 font-mono font-medium">{item.DocNo}</td>
+												<td className="px-3 py-2">{item.Remarks}</td>
+												<td className="px-3 py-2 whitespace-nowrap">{item.AcctDt ? new Date(item.AcctDt).toLocaleDateString("en-GB") : ""}</td>
+												<td className="px-3 py-2 text-right font-mono">{formatNumber(item.DrAmt)}</td>
+												<td className="px-3 py-2 text-right font-mono">{formatNumber(item.CrAmt)}</td>
+											</tr>
 										))}
 									</tbody>
 									<tfoot className="bg-[#7A0000] text-white font-bold border-t-2 border-gray-400">
 										<tr>
-											<td colSpan={5} className="px-3 py-2.5 text-right border-r border-red-900">
-												Grand Total:
+											<td colSpan={4} className="px-3 py-2.5 text-right border-r border-red-900">
+												Transaction Total:
 											</td>
 											<td className="px-3 py-2.5 text-right font-mono border-r border-red-900">
-												{formatNumber(grandTotalDr)}
+												{formatNumber(transactionTotalDr)}
 											</td>
 											<td className="px-3 py-2.5 text-right font-mono">
-												{formatNumber(grandTotalCr)}
+												{formatNumber(transactionTotalCr)}
 											</td>
 										</tr>
 									</tfoot>
 								</table>
 							</div>
+							<p className="mt-6 text-center text-sm italic text-gray-600">
+								This is system generated report. Signature not required.
+							</p>
 						</div>
 					</div>
 				</div>

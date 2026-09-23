@@ -1,0 +1,2126 @@
+{
+  "sourceUrl": "http://old.cebinfo.ceb/TariffStructure/",
+  "effectiveFrom": "11/05/2026",
+  "tables": [
+    {
+      "title": "Domestic and Religious Purpose",
+      "rows": [
+        [
+          {
+            "text": "Tariff Category",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          },
+          {
+            "text": "Block Units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          },
+          {
+            "text": "Unit Charge (Rs/Kwh)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": true,
+            "align": "right"
+          },
+          {
+            "text": "Fixed Charge (Rs/month)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": true,
+            "align": "right"
+          },
+          {
+            "text": "Fuel Adjustment (%)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": true,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Domestic Purpose",
+            "colSpan": 5,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "D-1",
+            "colSpan": 1,
+            "rowSpan": 12,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "0 - 30 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "5.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "80.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "31- 60 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "9.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "210.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "If Consumption is above 60 kwh per month the following tariff will be applicable",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "0 - 60 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "14.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "N/A",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "61 - 90 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "20.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "400.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "91 - 120 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "28.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "121 - 180 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "44.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,500.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Consumption above 180kWh per month",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "Block 1: 0 - 180 kWh",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "32.50",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Block 2: above 180 kWh",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "100.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "2500.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Domestic Time of Use",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "Day (05:30 - 18:30 hrs)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "47.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "2,500.00",
+            "colSpan": 1,
+            "rowSpan": 3,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "Peak (18:30 - 22.30 hrs)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "106.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "Off Peak (22:30 - 05:30 hrs)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "33.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "Religious Purpose",
+            "colSpan": 5,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "R-1",
+            "colSpan": 1,
+            "rowSpan": 8,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "0- 30 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "4.50",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "75.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "31- 90 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "4.50",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "200.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "91- 120 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "8.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "350.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "121- 180 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "19.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,300.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Consumption above 180 kWh per month",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "Block 1: 0 - 180 kWh",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "11.80",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Block 2: Above 180 kWh",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "35.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "2,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ]
+      ]
+    },
+    {
+      "title": "General, Government, Hotel, Industrial and Other Tariffs",
+      "rows": [
+        [
+          {
+            "text": "Tariff Category",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": true,
+            "align": "left"
+          },
+          {
+            "text": "Units",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": true,
+            "align": "center"
+          },
+          {
+            "text": "Unit Charge (Rs/Kwh)",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          },
+          {
+            "text": "Fixed Charge (Rs/Month)",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": true,
+            "align": "right"
+          },
+          {
+            "text": "Demand Charge (Rs/Kva)",
+            "colSpan": 2,
+            "rowSpan": 2,
+            "header": true,
+            "align": "right"
+          },
+          {
+            "text": "Fuel Adjustment (%)",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": true,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Peak (1830hr - 2230hr)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": true,
+            "align": "right"
+          },
+          {
+            "text": "Off-Peak (2230hr-0530hr)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": true,
+            "align": "right"
+          },
+          {
+            "text": "Day (0530hr-1830hr)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": true,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "General Purpose",
+            "colSpan": 9,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "GP-1",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "< 181 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "27.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "500.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 2,
+            "rowSpan": 2,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "> 180 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "36.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "1,600.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "GP-2",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "78.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "40.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "51.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "6,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,800.00",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "GP-3",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "77.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "39.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "49.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "6,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,700.00",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Government Purpose",
+            "colSpan": 9,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "GV-1",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "< 181 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "34.50",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "600.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 2,
+            "rowSpan": 2,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "> 180 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "45.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "1,900.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "GV-2",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "78.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "40.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "54.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "6,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,800.00",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "GV-3",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "77.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "39.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "53.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "6,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,700.00",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Hotel Purpose",
+            "colSpan": 9,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "H-1",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "< 301 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "9.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "300.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 2,
+            "rowSpan": 2,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "> 300 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "18.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "800.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "H-2",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "39.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "16.50",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "19.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "6,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,650.00",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "H-3",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "38.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "15.50",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "18.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "6,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,600.00",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Industrial Purpose",
+            "colSpan": 9,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "I-1",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "< 301 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "9.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "300.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 2,
+            "rowSpan": 2,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "> 300 units",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "18.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "800.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "I-2",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "39.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "16.50",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "19.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "6,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,650.00",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "I-3",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "38.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "15.50",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "18.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "6,000.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "1,600.00",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Street Lighting",
+            "colSpan": 9,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "-",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "60.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "None",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "None",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "EV Charging Of CEB Charging Stations",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          },
+          {
+            "text": "DC Fast Charging (Rs/kWh)",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          },
+          {
+            "text": "Level 2 AC Ch. (Rs/kWh)",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Day (05:30 - 18:30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "87.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "70.00",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Peak (18:30 - 22.30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "111.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "90.00",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Off Peak (22:30 - 05:30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "53.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "40.00",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Agriculture - Optional Time of Use (ToU)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          },
+          {
+            "text": "Energe Charge (Rs/kWh)",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          },
+          {
+            "text": "Fixed Charge (Rs/month)",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Day (05:30 - 18:30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "14.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "750.00",
+            "colSpan": 4,
+            "rowSpan": 3,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Peak (18:30 - 22.30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "28.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Off Peak (22:30 - 05:30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "8.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "EVCS1 : Supply at 400/230V & Contract Demand < 42 kVA",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          },
+          {
+            "text": "Energe Charge (Rs/kWh)",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          },
+          {
+            "text": "Fixed Charge (Rs/month)",
+            "colSpan": 4,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Day (05:30 - 18:30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "15.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "1,600.00",
+            "colSpan": 4,
+            "rowSpan": 3,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Peak (18:30 - 22.30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "70.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Off Peak (22:30 - 05:30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "31.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "EVCS2 : Supply at or above 400/230V & Contract Demand > 42kVA",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          },
+          {
+            "text": "Energe Charge (Rs/kWh)",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          },
+          {
+            "text": "Fixed Charge (Rs/month)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          },
+          {
+            "text": "Demand Charge (Rs/kVA)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": true,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Day (05:30 - 18:30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "15.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "5000.00",
+            "colSpan": 2,
+            "rowSpan": 3,
+            "header": false,
+            "align": "center"
+          },
+          {
+            "text": "1,500.00",
+            "colSpan": 2,
+            "rowSpan": 3,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Peak (18:30 - 22.30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "70.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          }
+        ],
+        [
+          {
+            "text": "Off Peak (22:30 - 05:30 hrs)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "31.00",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": false,
+            "align": "center"
+          }
+        ]
+      ]
+    },
+    {
+      "title": "Optional Pre-paid Tariff Scheme (LECO) for Retail Consumers",
+      "rows": [
+        [
+          {
+            "text": "Optional Pre-paid Tariff Scheme (LECO) for Retail Consumers",
+            "colSpan": 3,
+            "rowSpan": 1,
+            "header": true,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "Energy Charge (LKR/kWh)",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          }
+        ],
+        [
+          {
+            "text": "Domestic",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "Block 1: 0 - 90 kWh/month",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "17.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Block 2: Above 90 kWh/month",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "93.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Religious",
+            "colSpan": 1,
+            "rowSpan": 2,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "Block 1: 0 - 90 kWh/month",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "8.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Block 2: Above 90 kWh/month",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "31.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "General (GP - 1)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "38.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Industrial (I - 1)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "19.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ],
+        [
+          {
+            "text": "Hotel (H - 1)",
+            "colSpan": 2,
+            "rowSpan": 1,
+            "header": false,
+            "align": "left"
+          },
+          {
+            "text": "19.00",
+            "colSpan": 1,
+            "rowSpan": 1,
+            "header": false,
+            "align": "right"
+          }
+        ]
+      ]
+    }
+  ]
+}
