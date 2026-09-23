@@ -33,7 +33,6 @@ interface JobSummaryPeriodSummary {
 }
 
 /* ────── Constants ────── */
-const PAGE_SIZE = 9;
 const FETCH_TIMEOUT_MS = 240000;
 const COMPANY_NAME = "Electricity Distribution Lanka Private Limited";
 

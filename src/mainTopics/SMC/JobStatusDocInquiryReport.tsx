@@ -115,7 +115,6 @@ const JobStatusDocInquiryTable: React.FC<{
     departmentName: string;
     onClose: () => void;
 }> = ({ data, summary, fromDate, toDate, costCenter, departmentName, onClose }) => {
-    const maroon = "text-[#7A0000]";
     const fromLabel = formatDate(fromDate);
     const toLabel = formatDate(toDate);
     const reportTitle = `Job Status Document Inquiry (Application Sub Type Wise) - From ${fromLabel} To ${toLabel}`;
