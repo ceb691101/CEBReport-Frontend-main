@@ -90,7 +90,18 @@ const parseNumber = (value: any): number => {
   return isNaN(num) ? 0 : num;
 };
 
-const fmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatLeadingZero = (value: any): string => {
+  if (value === undefined || value === null || value === "") return "";
+  let s = String(value).trim();
+  if (s.startsWith(".")) return "0" + s;
+  if (s.startsWith("-.")) return "-0" + s.slice(1);
+  return s.replace(/(^|[^0-9])\.([0-9]+)/g, "$10.$2");
+};
+
+const fmt = (n: number) => {
+  if (isNaN(n)) return "0.00";
+  return formatLeadingZero(n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+};
 
 // Reduce a raw cycle label like "Apr 26", "Apr-26", "Apr" down to just the
 // 3-letter month abbreviation, e.g. "Apr" — used to build the short
@@ -328,18 +339,18 @@ const ReceivablePosition: React.FC = () => {
         rows.push({
           areaCode: item.AreaCode ?? item.areaCode ?? area.areaCode,
           areaName: area.areaName,
-          openingBalance: String(item.OpeningBalance ?? item.openingBalance ?? "0.00"),
-          monthlyCharge: String(item.MonthlyCharge ?? item.monthlyCharge ?? "0.00"),
-          debits: String(item.Debits ?? item.debits ?? "0.00"),
-          credits: String(item.Credits ?? item.credits ?? "0.00"),
-          underCharge: String(item.UnderCharge ?? item.underCharge ?? "0.00"),
-          overCharge: String(item.OverCharge ?? item.overCharge ?? "0.00"),
-          payments: String(item.Payments ?? item.payments ?? "0.00"),
-          closingBalance: String(item.ClosingBalance ?? item.closingBalance ?? "0.00"),
-          closingBalanceWithoutFinAcc: String(item.ClosingBalanceWithoutFinAcc ?? item.closingBalanceWithoutFinAcc ?? "0.00"),
-          averageCharge: String(item.AverageCharge ?? item.averageCharge ?? "0.00"),
-          noOfMonthsInArrears: String(item.NoOfMonthsInArrears ?? item.noOfMonthsInArrears ?? "0.00"),
-          noOfMonthsInArrearsWithoutFinAcc: String(
+          openingBalance: formatLeadingZero(item.OpeningBalance ?? item.openingBalance ?? "0.00"),
+          monthlyCharge: formatLeadingZero(item.MonthlyCharge ?? item.monthlyCharge ?? "0.00"),
+          debits: formatLeadingZero(item.Debits ?? item.debits ?? "0.00"),
+          credits: formatLeadingZero(item.Credits ?? item.credits ?? "0.00"),
+          underCharge: formatLeadingZero(item.UnderCharge ?? item.underCharge ?? "0.00"),
+          overCharge: formatLeadingZero(item.OverCharge ?? item.overCharge ?? "0.00"),
+          payments: formatLeadingZero(item.Payments ?? item.payments ?? "0.00"),
+          closingBalance: formatLeadingZero(item.ClosingBalance ?? item.closingBalance ?? "0.00"),
+          closingBalanceWithoutFinAcc: formatLeadingZero(item.ClosingBalanceWithoutFinAcc ?? item.closingBalanceWithoutFinAcc ?? "0.00"),
+          averageCharge: formatLeadingZero(item.AverageCharge ?? item.averageCharge ?? "0.00"),
+          noOfMonthsInArrears: formatLeadingZero(item.NoOfMonthsInArrears ?? item.noOfMonthsInArrears ?? "0.00"),
+          noOfMonthsInArrearsWithoutFinAcc: formatLeadingZero(
             item.NoOfMonthsInArrearsWithoutFinAcc ?? item.noOfMonthsInArrearsWithoutFinAcc ?? "0.00"
           ),
           rawOpeningBalance: parseNumber(item.RawOpeningBalance ?? item.rawOpeningBalance ?? item.OpeningBalance),
@@ -516,18 +527,18 @@ const ReceivablePosition: React.FC = () => {
         (r) => `<tr>
       <td style="border:1px solid #ccc;padding:3px 4px;text-align:center;font-size:9px">${escapeCsv(r.areaCode)}</td>
       <td style="border:1px solid #ccc;padding:3px 4px;text-align:left;font-size:9px">${escapeCsv(r.areaName)}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.openingBalance}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.monthlyCharge}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.debits}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.credits}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.underCharge}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.overCharge}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.payments}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.closingBalance}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.closingBalanceWithoutFinAcc}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.averageCharge}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.noOfMonthsInArrears}</td>
-      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${r.noOfMonthsInArrearsWithoutFinAcc}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.openingBalance)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.monthlyCharge)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.debits)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.credits)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.underCharge)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.overCharge)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.payments)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.closingBalance)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.closingBalanceWithoutFinAcc)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.averageCharge)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.noOfMonthsInArrears)}</td>
+      <td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-size:9px">${formatLeadingZero(r.noOfMonthsInArrearsWithoutFinAcc)}</td>
     </tr>`
       )
       .join("");
@@ -800,18 +811,18 @@ const ReceivablePosition: React.FC = () => {
                     <tr key={`${r.areaCode}-${i}`} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                       <td className="border border-gray-300 px-2 py-1 text-center font-mono">{r.areaCode}</td>
                       <td className="border border-gray-300 px-2 py-1 text-left">{r.areaName}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.openingBalance}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.monthlyCharge}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.debits}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.credits}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.underCharge}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.overCharge}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.payments}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.closingBalance}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.closingBalanceWithoutFinAcc}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.averageCharge}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.noOfMonthsInArrears}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{r.noOfMonthsInArrearsWithoutFinAcc}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.openingBalance)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.monthlyCharge)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.debits)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.credits)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.underCharge)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.overCharge)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.payments)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.closingBalance)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.closingBalanceWithoutFinAcc)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.averageCharge)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.noOfMonthsInArrears)}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right font-mono">{formatLeadingZero(r.noOfMonthsInArrearsWithoutFinAcc)}</td>
                     </tr>
                   ))}
                 </tbody>
