@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback } from "react";
 import { FaFileDownload, FaPrint } from "react-icons/fa";
 import { useUser } from "../../contexts/UserContext";
