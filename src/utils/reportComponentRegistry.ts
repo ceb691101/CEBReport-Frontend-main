@@ -115,6 +115,7 @@ import MaterialFlowReport from "../mainTopics/inventory/MaterialFlowReport.tsx";
 import MaterialPriceByYear from "../mainTopics/inventory/MaterialPriceByYear";
 import QuantityOnHandLessThanReorderLevel from "../mainTopics/inventory/QuantityOnHandLessThanReorderLevel";
 import IssueSummaryProvinceReport from "../mainTopics/inventory/IssueSummaryProvinceReport";
+import QtyOnHandReorderReport from "../mainTopics/inventory/QtyOnHandReorderReport.tsx";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -435,6 +436,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"quantity on hand all region material active online": QtyOnHandAllRegion,
 	"flow report": MaterialFlowReport,
 	"issue summary province usage": IssueSummaryProvinceReport,
+	"quantity on hand reorder level": QtyOnHandReorderReport,
 
 	// JobCard reports
 	"job card details": JobCardInfo,
