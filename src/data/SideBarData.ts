@@ -348,6 +348,39 @@ export const buildTopics = (roleReports: RoleReportApiItem[]): Topic[] => {
     topicIndex += 1;
   }
 
+  const analysisTopic = topics.find((topic) => topic.name.toLowerCase() === "analysis");
+  const governmentAgeAnalysisName = "Age Analysis For Government Customers(Bulk Customers)";
+  const existingGovernmentAgeAnalysis = analysisTopic?.subtopics.find((subtopic) =>
+    ["age analysis for government customers", governmentAgeAnalysisName.toLowerCase()]
+      .includes(subtopic.name.trim().toLowerCase())
+  );
+  if (existingGovernmentAgeAnalysis) {
+    existingGovernmentAgeAnalysis.name = governmentAgeAnalysisName;
+  } else if (analysisTopic) {
+    const usedIds = new Set(analysisTopic.subtopics.map((subtopic) => subtopic.id));
+    let id = -51;
+    while (usedIds.has(id)) id -= 1;
+    analysisTopic.subtopics.splice(3, 0, { id, repIdNo: "", name: governmentAgeAnalysisName });
+  }
+
+  // The Area Engineer screen is the application landing dashboard.
+  const dashboardTopic = topics.find((topic) => topic.path === "/dashboard");
+  if (dashboardTopic) {
+    if (!dashboardTopic.subtopics.some((subtopic) =>
+      /area\s*engineer/i.test(subtopic.name)
+    )) {
+      dashboardTopic.subtopics.unshift({ id: -50, repIdNo: "", name: "Area Engineer Dashboard" });
+    }
+  } else {
+    topics.unshift({
+      id: -50,
+      name: "Dashboard",
+      icon: MdDashboard,
+      path: "/dashboard",
+      subtopics: [{ id: -50, repIdNo: "", name: "Area Engineer Dashboard" }],
+    });
+  }
+
   // Always ensure Report Catalog is present in topics for all authenticated users
   const hasReportCatalog = topics.some(
     (t) =>

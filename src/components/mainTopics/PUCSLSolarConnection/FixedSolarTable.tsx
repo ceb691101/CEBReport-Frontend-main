@@ -45,8 +45,8 @@ const FixedSolarTable: React.FC<Props> = ({ data }) => {
                         <td className={`${td} text-right`}>{formatNumber(item.KwhAt37)}</td>
                         <td className={`${td} text-right`}>{formatNumber(item.KwhAt2318)}</td>
                         <td className={`${td} text-right`}>{formatNumber(item.KwhAt2706)}</td>
-                        <td className={`${td} text-right`}>{formatNumber(item.KwhOthers)}</td>
-                        <td className={`${td} text-right font-medium`}>{formatNumber(item.PaidAmount)}</td>
+                        <td className={`${td} text-right`}>{formatNumber(item.KwhOthers + (item.BulkKwhOthers ?? 0))}</td>
+                        <td className={`${td} text-right font-medium`}>{formatNumber(item.PaidAmount + (item.BulkOtherPaidAmount ?? 0))}</td>
                     </tr>
                 ))}
             </tbody>

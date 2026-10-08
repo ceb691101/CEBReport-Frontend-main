@@ -16,17 +16,16 @@ import CostCenterTrial from "./mainTopics/TrialBalance/CostCenterTrial";
 
 import AdminHome from "./pages/AdminHome";
 import Dashboard from "./pages/Dashboard.tsx";
-
 function App() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { setUser } = useUser();
-  const { setLogged } = useLogged();
+const { user, setUser } = useUser();
+const { logged, setLogged } = useLogged();
+const location = useLocation();
+const navigate = useNavigate();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const username = params.get("username");
-    
+
     if (username) {
       const fetchUserData = async () => {
         let level = 0;
@@ -47,7 +46,7 @@ function App() {
               level = parseInt(entry.LevelNo, 10) || 0;
               const code = (entry.BillMap || "").trim();
               const name = (entry.CompanyName || "").trim();
-              
+
               if (level >= 80) {
                 // top level
               } else if (level >= 70) {
@@ -89,7 +88,7 @@ function App() {
           RegionCode: regCode,
           RegionName: regName,
         } as any);
-        
+
         setLogged({ Logged: true, Errormsg: "" });
         navigate("/dashboard", { replace: true });
       };
@@ -101,7 +100,9 @@ function App() {
 	return (
 		<>
 			<Routes>
-				<Route path="/" element={<LoginPage />} />
+				<Route path="/" element={user.Logged && logged.Logged
+          ? <Navigate to="/dashboard/areaEngineer" replace />
+          : <LoginPage />} />
 
         <Route
           path="/adminhome"
@@ -123,7 +124,7 @@ function App() {
 
 				<Route
 					path="/home"
-					element={<Navigate to="/report/report-catalog" replace />}
+					element={<Navigate to="/dashboard/areaEngineer" replace />}
 				/>
 
 				<Route

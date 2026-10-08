@@ -163,7 +163,12 @@ const PUCSLSolarConnection: React.FC = () => {
                 solarType: hideSolarType ? "" : getSolarTypeValue(solarType),
             };
 
-            const response = await fetch("/misapi/api/pucsl/solarConnections", {
+            // Use the updated local API for Fixed Solar Data while developing.
+            // Other reports and production continue to use the shared API.
+            const reportEndpoint = import.meta.env.DEV && reportType === "FixedSolarData"
+                ? "/api/pucsl/solarConnections"
+                : "/misapi/api/pucsl/solarConnections";
+            const response = await fetch(reportEndpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Accept: "application/json" },
                 body: JSON.stringify(requestBody),
@@ -263,6 +268,13 @@ const PUCSLSolarConnection: React.FC = () => {
                 "VariableSolar"
             );
         } else {
+            if (reportData.some((item) =>
+                item.BulkKwhOthers === undefined || item.BulkOtherPaidAmount === undefined
+            )) {
+                setReportError("The connected API does not include bulk other-rate data. Use the updated local API or deploy the updated backend before downloading this CSV.");
+                return;
+            }
+
             buildAndDownloadCSV(title, selectionInfo, selectedBillCycleDisplay, solarType, billCycle,
                 [["Tariff Category", "Year", "Month", "No of Customers",
                     "kWh Purchased at 15.50", "kWh Purchased at 22.00", "kWh Purchased at 34.50",
@@ -271,7 +283,9 @@ const PUCSLSolarConnection: React.FC = () => {
                 reportData.map((item) => [
                     item.Category, item.Year, item.Month, item.NoOfCustomers,
                     item.KwhAt1550, item.KwhAt22, item.KwhAt3450, item.KwhAt37,
-                    item.KwhAt2318, item.KwhAt2706, item.KwhOthers, item.PaidAmount,
+                    item.KwhAt2318, item.KwhAt2706,
+                    item.KwhOthers + (item.BulkKwhOthers ?? 0),
+                    item.PaidAmount + (item.BulkOtherPaidAmount ?? 0),
                 ]),
                 "FixedSolar"
             );
