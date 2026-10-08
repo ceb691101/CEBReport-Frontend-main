@@ -3,6 +3,12 @@ import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import { useReportRenderer } from "../hooks/useReportRenderer";
 
+const governmentAgeAnalysisName = "Age Analysis For Government Customers(Bulk Customers)";
+const displaySubtopicName = (name: string) =>
+  name.trim().toLowerCase() === "age analysis for government customers"
+    ? governmentAgeAnalysisName
+    : name;
+
 
 
 const Analysis = () => {
@@ -32,11 +38,11 @@ const Analysis = () => {
         <SubtopicCard
           key={subtopic.id}
           id={subtopic.id}
-          title={subtopic.name}
+          title={displaySubtopicName(subtopic.name)}
           expanded={expandedCard === subtopic.id}
           onToggle={toggleCard}
         >
-            {renderReport(subtopic.name, subtopic.repIdNo ?? String(subtopic.id))}
+            {renderReport(displaySubtopicName(subtopic.name), subtopic.repIdNo ?? String(subtopic.id))}
         </SubtopicCard>
       ))}
     </div>
@@ -44,5 +50,4 @@ const Analysis = () => {
 };
 
 export default Analysis;
-
 

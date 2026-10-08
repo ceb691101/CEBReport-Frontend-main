@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaFileDownload, FaPrint } from "react-icons/fa";
+import { useUser } from "../../contexts/UserContext";
+import { isWithinUserScope } from "../../hooks/useReportScope";
 
 // Interfaces
 interface BillCycleOption {
@@ -20,6 +22,7 @@ interface OrdinaryTOUModel {
 }
 
 const TariffBlockWiseConsumption: React.FC = () => {
+  const { user } = useUser();
   // Colors and styling
   const maroon = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
@@ -270,10 +273,60 @@ const TariffBlockWiseConsumption: React.FC = () => {
   const handleSearch = async () => {
     if (!formData.billCycle || !formData.reportType) return;
 
+    const level = user.Level ?? 0;
+    const hasRequiredScope =
+      level >= 80 ||
+      (level >= 70 && Boolean(user.RegionCode?.trim())) ||
+      (level >= 60 && Boolean(user.ProvinceCode?.trim())) ||
+      (level > 0 && Boolean(user.AreaCode?.trim()));
+
+    if (!hasRequiredScope) {
+      setReportError("Your account does not have a valid report scope. Please contact an administrator.");
+      setShowReport(false);
+      return;
+    }
+
     setReportLoading(true);
     setReportError(null);
     setReportData([]);
     setTouData([]);
+
+    const scopeType = level >= 80 ? "Entire CEB" : level >= 70 ? "Region" : level >= 60 ? "Province" : "Area";
+    const scopeCode = level >= 80
+      ? ""
+      : level >= 70
+        ? user.RegionCode?.trim() || ""
+        : level >= 60
+          ? user.ProvinceCode?.trim() || ""
+          : user.AreaCode?.trim() || "";
+    const postBody = {
+      billCycle: formData.billCycle,
+      // The API must apply this scope before aggregating tariff totals.
+      level,
+      Level: level,
+      areaCode: user.AreaCode?.trim() || "",
+      AreaCode: user.AreaCode?.trim() || "",
+      provinceCode: user.ProvinceCode?.trim() || "",
+      ProvinceCode: user.ProvinceCode?.trim() || "",
+      regionCode: user.RegionCode?.trim() || "",
+      RegionCode: user.RegionCode?.trim() || "",
+      scopeType,
+      ScopeType: scopeType,
+      scopeCode,
+      ScopeCode: scopeCode,
+      billMap: scopeCode,
+      BillMap: scopeCode,
+    };
+    const scopeQuery = new URLSearchParams({
+      billCycle: formData.billCycle,
+      level: String(level),
+      areaCode: postBody.areaCode,
+      provinceCode: postBody.provinceCode,
+      regionCode: postBody.regionCode,
+      scopeType,
+      scopeCode,
+      billMap: scopeCode,
+    }).toString();
 
     try {
       const selectedReport = reportTypeOptions.find(
@@ -285,10 +338,6 @@ const TariffBlockWiseConsumption: React.FC = () => {
 
       try {
         // First try POST request with body
-        const postBody = {
-          billCycle: formData.billCycle,
-        };
-
         console.log(
           "Making API call to:",
           selectedReport.api,
@@ -307,7 +356,7 @@ const TariffBlockWiseConsumption: React.FC = () => {
 
         // If POST fails, try GET with query parameters
         try {
-          const url = `${selectedReport.api}?billCycle=${formData.billCycle}`;
+          const url = `${selectedReport.api}?${scopeQuery}`;
           data = await fetchWithErrorHandling(url, { method: "GET" });
         } catch (getError: any) {
           console.log(
@@ -317,13 +366,16 @@ const TariffBlockWiseConsumption: React.FC = () => {
 
           // Try alternative parameter formats
           try {
-            const altUrl = `${selectedReport.api}/${formData.billCycle}`;
+            const altUrl = `${selectedReport.api}/${formData.billCycle}?${scopeQuery}`;
             data = await fetchWithErrorHandling(altUrl, { method: "GET" });
           } catch (altError: any) {
             // Try POST without body
             try {
-              const postUrl = `${selectedReport.api}?billCycle=${formData.billCycle}`;
-              data = await fetchWithErrorHandling(postUrl, { method: "POST" });
+              const postUrl = `${selectedReport.api}?${scopeQuery}`;
+              data = await fetchWithErrorHandling(postUrl, {
+                method: "POST",
+                body: JSON.stringify(postBody),
+              });
             } catch (finalError: any) {
               throw new Error(
                 `All request methods failed. Last error: ${finalError.message}`
@@ -352,7 +404,7 @@ const TariffBlockWiseConsumption: React.FC = () => {
             "/CEBINFO_API_2025/api/tariffBlockwiseOrdinaryDataTOU",
             {
               method: "POST",
-              body: JSON.stringify({ billCycle: formData.billCycle }),
+              body: JSON.stringify(postBody),
             }
           );
 
@@ -360,7 +412,15 @@ const TariffBlockWiseConsumption: React.FC = () => {
 
           const touResultData =
             touResponse.data?.OrdTOUList || touResponse.OrdTOUList || [];
-          setTouData(touResultData);
+          setTouData(
+            touResultData.filter((row: any) => {
+              const area = row.AreaCode ?? row.areaCode;
+              const province = row.ProvinceCode ?? row.provinceCode;
+              const region = row.RegionCode ?? row.regionCode;
+              if (area == null && province == null && region == null) return true;
+              return isWithinUserScope(user, area, province, region);
+            })
+          );
           console.log("TOU Data set:", touResultData);
         } catch (touError: any) {
           console.warn("Failed to fetch TOU data:", touError.message);
@@ -432,7 +492,18 @@ const TariffBlockWiseConsumption: React.FC = () => {
       console.log("Final resultData before setState:", resultData);
       console.log("Final resultData length:", resultData.length);
 
-      setReportData(resultData);
+      const scopedResultData = resultData.filter((row: any) => {
+        const area = row.AreaCode ?? row.areaCode;
+        const province = row.ProvinceCode ?? row.provinceCode;
+        const region = row.RegionCode ?? row.regionCode;
+        // Aggregated API rows do not contain geography; in that case the API
+        // has already applied the scope from postBody. Detail rows are also
+        // checked here to prevent accidental cross-scope display/export.
+        if (area == null && province == null && region == null) return true;
+        return isWithinUserScope(user, area, province, region);
+      });
+
+      setReportData(scopedResultData);
       setShowReport(true);
 
       // Scroll to report after a small delay
@@ -760,6 +831,24 @@ const TariffBlockWiseConsumption: React.FC = () => {
     setReportError(null);
   };
 
+  const level = user.Level ?? 0;
+  const scopeField = level >= 80
+    ? { label: "Reporting Scope", value: "ENTIRE CEB" }
+    : level >= 70
+      ? {
+          label: "Select Region",
+          value: `${user.RegionCode?.trim() || ""}${user.RegionName?.trim() ? ` - ${user.RegionName.trim()}` : ""}`,
+        }
+      : level >= 60
+        ? {
+            label: "Select Province",
+            value: `${user.ProvinceCode?.trim() || ""}${user.ProvinceName?.trim() ? ` - ${user.ProvinceName.trim()}` : ""}`,
+          }
+        : {
+            label: "Select Area",
+            value: `${user.AreaCode?.trim() || ""}${user.AreaName?.trim() ? ` - ${user.AreaName.trim()}` : ""}`,
+          };
+
   const renderForm = () => (
     <>
       <h2 className={`text-xl font-bold mb-6 ${maroon}`}>
@@ -815,6 +904,21 @@ const TariffBlockWiseConsumption: React.FC = () => {
               ? "Bill cycles filtered to 400 and below for Bulk reports"
               : "Select a bill cycle to view report data"}
           </p>
+        </div>
+
+        {/* Role-based scope is fixed for the logged-in user. */}
+        <div className="flex flex-col">
+          <label className={`${maroon} text-xs font-medium mb-1`}>
+            {scopeField.label}:
+          </label>
+          <select
+            value={scopeField.value}
+            disabled
+            aria-label={scopeField.label}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
+          >
+            <option value={scopeField.value}>{scopeField.value || "No scope assigned"}</option>
+          </select>
         </div>
       </div>
 

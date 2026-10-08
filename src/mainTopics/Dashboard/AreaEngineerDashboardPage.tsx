@@ -220,7 +220,9 @@ const AreaEngineerDashboardPage: React.FC = () => {
   // Area Selection States (Level No = 50 for Area Engineer)
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [companies, setCompanies] = useState<{ compId: string; compName: string }[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("WPN");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [headerArea, setHeaderArea] = useState("");
 
   // Custom Date Period PIV Collection States
   const [customPivStart, setCustomPivStart] = useState<string>(() => {
@@ -267,11 +269,15 @@ const AreaEngineerDashboardPage: React.FC = () => {
   // Fetch authorized Area list for Area Engineer (Level No = 50)
   useEffect(() => {
     const fetchCompanies = async () => {
+      setCompanies([]);
+      setSelectedCompanyId("");
       if (!epfNo) return;
+      setCompaniesLoading(true);
       try {
         const res = await fetch(`/misapi/api/incomeexpenditure/Usercompanies/${epfNo}/50`);
         if (!res.ok) throw new Error("Failed to fetch Area Engineer areas");
         const parsed = await res.json();
+        if (parsed.errorMessage) throw new Error(parsed.errorMessage);
         let rawData: any[] = [];
         if (Array.isArray(parsed)) {
           rawData = parsed;
@@ -292,9 +298,14 @@ const AreaEngineerDashboardPage: React.FC = () => {
           setCompanies(final);
           const hasWPN = final.some(c => c.compId.toUpperCase() === "WPN");
           setSelectedCompanyId(hasWPN ? "WPN" : final[0].compId);
-        } 
+        } else {
+          setError("No areas have been assigned to your account.");
+        }
       } catch (err) {
         console.error("Failed to load Area Engineer authorized areas:", err);
+        setError(err instanceof Error ? err.message : "Unable to load assigned areas.");
+      } finally {
+        setCompaniesLoading(false);
       }
     };
     fetchCompanies();
@@ -302,6 +313,7 @@ const AreaEngineerDashboardPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!selectedCompanyId) return;
       setLoading(true);
       setError(null);
       try {
@@ -581,7 +593,17 @@ const AreaEngineerDashboardPage: React.FC = () => {
           onSelectDashboard={(dashboard) => navigate(`/dashboard/${dashboard}`)}
         />
         <div className="flex-1 min-w-0">
-          <DashboardHeader title="Area Engineer Dashboard" />
+          <DashboardHeader
+            title="Area Engineer Dashboard"
+            selectedProvince={user.ProvinceCode}
+            selectedArea={headerArea}
+            areas={companies.map((company) => ({ AreaCode: company.compId, AreaName: company.compName }))}
+            areasLoading={companiesLoading}
+            onAreaChange={(code) => {
+              setHeaderArea(code);
+              setSelectedCompanyId(code || companies[0]?.compId || "");
+            }}
+          />
 
           {/* Action / Refresh Bar (Glassmorphic) */}
           <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-20 shadow-sm">
@@ -593,7 +615,6 @@ const AreaEngineerDashboardPage: React.FC = () => {
                 </span>
 
                 {/* Global Area Engineer Area Selector (Level No = 50) */}
-                {companies.length > 0 && (
                   <div className="relative" ref={companyDropdownRef}>
                     <button
                       type="button"
@@ -605,7 +626,9 @@ const AreaEngineerDashboardPage: React.FC = () => {
                     >
                       <span className="truncate flex items-center gap-2">
                         <Building className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                        {selectedCompanyId} - {companies.find(c => c.compId === selectedCompanyId)?.compName || ""}
+                        {selectedCompanyId
+                          ? `${selectedCompanyId} - ${companies.find(c => c.compId === selectedCompanyId)?.compName || ""}`
+                          : "Select Area"}
                       </span>
                       <ChevronDown className="w-3.5 h-3.5 ml-1 flex-shrink-0 text-slate-400" />
                     </button>
@@ -655,7 +678,6 @@ const AreaEngineerDashboardPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                )}
               </div>
 
               <div className="flex items-center gap-3">

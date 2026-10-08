@@ -53,13 +53,16 @@ const TariffStructure = () => {
       setExportError("Please allow pop-ups to open the PDF print view.");
       return;
     }
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-    };
+    const printedOn = new Intl.DateTimeFormat("en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Colombo",
+    }).format(new Date());
+
+    printWindow.document.open();
     printWindow.document.write(`<!doctype html>
-      <html><head><title>Tariff Structure</title><style>
-        @page { size: A4 landscape; margin: 10mm; }
+      <html><head><meta charset="utf-8"><title>Tariff Structure</title><style>
+        @page { size: A4 landscape; margin: 12mm 10mm 14mm; }
         body { font-family: Arial, sans-serif; font-size: 10px; color: #111; }
         h1 { font-size: 20px; color: #7A0000; margin: 0 0 6px; }
         p { margin: 0 0 16px; }
@@ -72,13 +75,28 @@ const TariffStructure = () => {
         .text-left { text-align: left; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
+        .print-footer { position: fixed; right: 0; bottom: -9mm; color: #666; font-size: 8px; }
+        .sr-only { position: static; width: auto; height: auto; padding: 0; margin: 0 0 8px; overflow: visible; clip: auto; white-space: normal; border: 0; }
         * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       </style></head><body>
         <h1>Tariff Structure</h1>
         <p>Effective from ${tariffStructure.effectiveFrom}</p>
         ${tablesRef.current.innerHTML}
+        <div class="print-footer">Printed on: ${printedOn}</div>
       </body></html>`);
     printWindow.document.close();
+
+    // Waiting for the new document to finish layout prevents an empty preview in
+    // Chromium, especially when the report contains several long tables.
+    const openPrintDialog = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+    if (printWindow.document.readyState === "complete") {
+      window.setTimeout(openPrintDialog, 250);
+    } else {
+      printWindow.addEventListener("load", () => window.setTimeout(openPrintDialog, 250), { once: true });
+    }
   };
 
   return (

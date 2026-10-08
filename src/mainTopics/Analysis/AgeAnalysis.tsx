@@ -40,6 +40,8 @@ interface CustomerTypeOption {
   value: string;
 }
 
+type GovernmentReportType = "Detailed report" | "Full report" | "Summary report";
+
 interface Debtor {
   AreaName: string;
   AccountNumber: string;
@@ -67,7 +69,7 @@ interface Debtor {
   ErrorMessage: string | null;
 }
 
-const AgeAnalysis: React.FC = () => {
+const AgeAnalysis: React.FC<{ governmentOnly?: boolean }> = ({ governmentOnly = false }) => {
   // Colors and styling
   const maroon = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
@@ -78,6 +80,8 @@ const AgeAnalysis: React.FC = () => {
 
   // State
   const [areas, setAreas] = useState<Area[]>([]);
+  const [sectors, setSectors] = useState<string[]>([]);
+  const [selectedSector, setSelectedSector] = useState("");
   const [billCycleOptions, setBillCycleOptions] = useState<BillCycleOption[]>(
     []
   );
@@ -87,6 +91,8 @@ const AgeAnalysis: React.FC = () => {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const [governmentReportType, setGovernmentReportType] = useState<GovernmentReportType>("Detailed report");
+  const isSummaryReport = governmentOnly && governmentReportType === "Summary report";
 
   // Chart state
   const [showChart, setShowChart] = useState(false);
@@ -119,11 +125,21 @@ const AgeAnalysis: React.FC = () => {
   ];
 
   const [formData, setFormData] = useState({
-    custType: "A",
+    custType: governmentOnly ? "G" : "A",
     billCycle: "",
     areaCode: "",
-    timePeriod: "0-6",
+    timePeriod: governmentOnly ? "All" : "0-6",
   });
+
+  const reportLocation = useMemo(() => {
+    if (governmentOnly) return `Sector: ${selectedSector}`;
+    const area = areas.find((item) => item.AreaCode === formData.areaCode);
+    return `Area: ${area?.AreaName ?? formData.areaCode} (${formData.areaCode})`;
+  }, [governmentOnly, selectedSector, areas, formData.areaCode]);
+
+  const locationFilePart = governmentOnly
+    ? `Sector_${selectedSector.replace(/[^a-z0-9_-]/gi, "")}`
+    : `Area${formData.areaCode}`;
 
   // Helper functions
   const generateBillCycleOptions = (
@@ -194,20 +210,22 @@ const AgeAnalysis: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        let areasUrl = "/misapi/api/ordinary/areas";
-        if (locked["Region"]?.code) {
-          areasUrl += `?regionCode=${locked["Region"].code}`;
-        } else if (locked["Province"]?.code) {
-          areasUrl += `?provCode=${locked["Province"].code}`;
+        if (governmentOnly) {
+          const sectorData = await fetchWithErrorHandling("/misapi/api/debtors/sectors");
+          setSectors(sectorData.data ?? []);
+        } else {
+          let areasUrl = "/misapi/api/ordinary/areas";
+          if (locked["Region"]?.code) {
+            areasUrl += `?regionCode=${locked["Region"].code}`;
+          } else if (locked["Province"]?.code) {
+            areasUrl += `?provCode=${locked["Province"].code}`;
+          }
+          const areaData = await fetchWithErrorHandling(areasUrl);
+          setAreas(areaData.data || []);
+          const defaultAreaCode = locked["Area"]?.code
+            || (areaData.data?.length > 0 ? areaData.data[0].AreaCode : "");
+          setFormData((prev) => ({ ...prev, areaCode: defaultAreaCode }));
         }
-        const areaData = await fetchWithErrorHandling(areasUrl);
-        setAreas(areaData.data || []);
-        const defaultAreaCode = locked["Area"]?.code
-          || (areaData.data?.length > 0 ? areaData.data[0].AreaCode : "");
-        setFormData((prev) => ({
-          ...prev,
-          areaCode: defaultAreaCode,
-        }));
 
         const maxCycleData = await fetchWithErrorHandling(
           "/misapi/api/billcycle/max"
@@ -231,7 +249,7 @@ const AgeAnalysis: React.FC = () => {
     };
 
     fetchData();
-  }, [user.Level, user.RegionCode, user.ProvinceCode]);
+  }, [user.Level, user.RegionCode, user.ProvinceCode, user.AreaCode, governmentOnly]);
 
   // Calculate totals from debtors
   const totals = useMemo(() => {
@@ -258,6 +276,16 @@ const AgeAnalysis: React.FC = () => {
       months61Plus: debtors.reduce((sum, d) => sum + d.Months61Plus, 0),
     };
   }, [debtors]);
+
+  const summaryBuckets = totals ? [
+    { label: "0-6 Months", amount: totals.month0 + totals.month1 + totals.month2 + totals.month3 + totals.month4 + totals.month5 + totals.month6 },
+    { label: "7-12 Months", amount: totals.months7_9 + totals.months10_12 },
+    { label: "1-2 Years", amount: totals.months13_24 },
+    { label: "2-3 Years", amount: totals.months25_36 },
+    { label: "3-4 Years", amount: totals.months37_48 },
+    { label: "4-5 Years", amount: totals.months49_60 },
+    { label: "5+ Years", amount: totals.months61Plus },
+  ] : [];
 
   // Memoized chart data
   const chartData = useMemo(() => {
@@ -358,9 +386,18 @@ const AgeAnalysis: React.FC = () => {
     []
   );
 
+  const handleGovernmentReportTypeChange = (reportType: GovernmentReportType) => {
+    setGovernmentReportType(reportType);
+    setFormData((previous) => ({
+      ...previous,
+      timePeriod: governmentOnly ? "All" : previous.timePeriod,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.areaCode || !formData.billCycle || !formData.custType) return;
+    if (!formData.billCycle || !formData.custType
+      || (governmentOnly ? !selectedSector : !formData.areaCode)) return;
 
     setReportLoading(true);
     setReportError(null);
@@ -398,10 +435,22 @@ const AgeAnalysis: React.FC = () => {
           ageRange = "All";
       }
 
-      const url = `/misapi/api/debtors?custType=${formData.custType}&billCycle=${formData.billCycle}&areaCode=${formData.areaCode}&ageRange=${ageRange}`;
+      const params = new URLSearchParams({
+        custType: formData.custType,
+        billCycle: formData.billCycle,
+        ageRange,
+      });
+      if (governmentOnly) {
+        params.set("scope", "EntireCEB");
+        params.set("sector", selectedSector);
+      } else {
+        params.set("areaCode", formData.areaCode);
+      }
+      const url = `/misapi/api/debtors?${params.toString()}`;
 
-      // Increased timeout for Active customer reports
-      const timeout = formData.custType === "A" ? 120000 : 60000; // 2 minutes for Active, 1 minute for others
+      const timeout = governmentOnly
+        ? 180000
+        : formData.custType === "A" ? 120000 : 60000;
       const data = await fetchWithErrorHandling(url, timeout);
 
       if (data.errorMessage) {
@@ -433,8 +482,9 @@ const AgeAnalysis: React.FC = () => {
       let errorMessage = "Error fetching report: ";
 
       if (err.message.includes("timed out")) {
-        errorMessage +=
-          "The request timed out. This usually happens when there are too many Active customers. Try selecting a more specific time period or smaller area.";
+        errorMessage += governmentOnly
+          ? "The request timed out. Try again or choose another sector."
+          : "The request timed out. This usually happens when there are too many Active customers. Try selecting a more specific time period or smaller area.";
       } else {
         errorMessage += err.message || err.toString();
       }
@@ -609,9 +659,9 @@ const AgeAnalysis: React.FC = () => {
     let csvContent = [
       `"Age Analysis Report - ${customerTypeOptions.find((t) => t.value === formData.custType)?.display
       } Customers"`,
+      ...(governmentOnly ? [`"Report Type: ${governmentReportType}"`] : []),
       `"Bill Cycle: ${getFormattedBillCycle()}"`,
-      `"Area: ${areas.find((a) => a.AreaCode === formData.areaCode)?.AreaName
-      } (${formData.areaCode})"`,
+      `"${reportLocation.replace(/"/g, '""')}"`,
 
       "",
       headers.map((h) => `"${h}"`).join(","),
@@ -624,7 +674,7 @@ const AgeAnalysis: React.FC = () => {
     const link = document.createElement("a");
     link.href = url;
     link.download = `AgeAnalysis_${formData.custType}_Cycle${formData.billCycle
-      }_Area${formData.areaCode}_${new Date().toISOString().slice(0, 10)}.csv`;
+      }_${locationFilePart}_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -637,7 +687,66 @@ const AgeAnalysis: React.FC = () => {
     customerTypeOptions,
     totals,
     totalRecords,
+    governmentOnly,
+    governmentReportType,
+    reportLocation,
+    locationFilePart,
   ]);
+
+  const downloadSummaryAsCSV = () => {
+    if (!totals) return;
+    const csvRow = (cells: Array<string | number>) => cells
+      .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+      .join(",");
+    const csvContent = [
+      csvRow(["Age Analysis For Government Customers(Bulk Customers) - Summary report"]),
+      csvRow([`Bill Cycle: ${getFormattedBillCycle()}`]),
+      csvRow([reportLocation]),
+      "",
+      csvRow(["Government Customers", debtors.length]),
+      csvRow(["Total Outstanding Balance", totals.totalOutstanding]),
+      csvRow(["Age Period", "Amount"]),
+      ...summaryBuckets.map(({ label, amount }) => csvRow([label, amount])),
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob(["\uFEFF", csvContent], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `GovernmentAgeAnalysis_Summary_Cycle${formData.billCycle}_${locationFilePart}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const printSummaryPDF = () => {
+    if (!totals) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[character] ?? character);
+    printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Age Analysis For Government Customers(Bulk Customers) - Summary</title>
+      <style>@page { size: A4; margin: 15mm; } body { font-family: Arial, sans-serif; font-size: 12px; }
+      h1 { font-size: 18px; color: #7A0000; } table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      th, td { border: 1px solid #ccc; padding: 8px; text-align: left; } th { background: #f3f4f6; }
+      td:last-child { text-align: right; }</style></head><body>
+      <h1>Age Analysis For Government Customers(Bulk Customers) - Summary report</h1>
+      <p>Bill Cycle: ${escapeHtml(getFormattedBillCycle())}<br>${escapeHtml(reportLocation)}</p>
+      <p>Government Customers: ${debtors.length}<br>Total Outstanding Balance: ${formatCurrency(totals.totalOutstanding)}</p>
+      <table><thead><tr><th>Age Period</th><th>Amount</th></tr></thead><tbody>
+      ${summaryBuckets.map(({ label, amount }) => `<tr><td>${label}</td><td>${formatCurrency(amount)}</td></tr>`).join("")}
+      </tbody></table></body></html>`);
+    printWindow.document.close();
+    const openPrintDialog = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+    if (printWindow.document.readyState === "complete") {
+      setTimeout(openPrintDialog, 250);
+    } else {
+      printWindow.addEventListener("load", openPrintDialog, { once: true });
+    }
+  };
 
   const printPDF = () => {
     if (!debtors.length) return;
@@ -805,7 +914,7 @@ const AgeAnalysis: React.FC = () => {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Age Analysis Report</title>
+          <title>Age Analysis Report${governmentOnly ? ` - ${governmentReportType}` : ""}</title>
           <style>
             body { font-family: Arial; font-size: 10px; margin: 10mm; }
             table { width: 100%; border-collapse: collapse; }
@@ -862,10 +971,9 @@ const AgeAnalysis: React.FC = () => {
         <body>
           <div class="header">AGE ANALYSIS REPORT - ${customerTypeOptions.find((t) => t.value === formData.custType)
         ?.display
-      } </div>
+      }${governmentOnly ? ` - ${governmentReportType}` : ""}</div>
           <div class="subheader">
-            Area: <span class="bold">${areas.find((a) => a.AreaCode === formData.areaCode)?.AreaName
-      } (${formData.areaCode})</span><br>
+            <span class="bold">${reportLocation}</span><br>
             Bill Cycle: <span class="bold">${getFormattedBillCycle()}</span><br>
             
           </div>
@@ -1126,7 +1234,9 @@ const AgeAnalysis: React.FC = () => {
 
   const renderForm = () => (
     <>
-      <h2 className={`text-xl font-bold mb-6 ${maroon}`}>Age Analysis</h2>
+      <h2 className={`text-xl font-bold mb-6 ${maroon}`}>
+        {governmentOnly ? "Age Analysis For Government Customers(Bulk Customers)" : "Age Analysis"}
+      </h2>
 
       {/* Warning for Active customers */}
       {formData.custType === "A" && (
@@ -1139,28 +1249,47 @@ const AgeAnalysis: React.FC = () => {
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {governmentOnly && (
+            <div className="flex flex-col">
+              <label htmlFor="government-report-type" className={`${maroon} text-xs font-medium mb-1`}>
+                Report Type:
+              </label>
+              <select
+                id="government-report-type"
+                value={governmentReportType}
+                onChange={(event) => handleGovernmentReportTypeChange(event.target.value as GovernmentReportType)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+              >
+                <option value="Detailed report">Detailed report</option>
+                <option value="Full report">Full report</option>
+                <option value="Summary report">Summary report</option>
+              </select>
+            </div>
+          )}
           {/* Customer Type Dropdown */}
-          <div className="flex flex-col">
-            <label className={`${maroon} text-xs font-medium mb-1`}>
-              Select Customer Type:
-            </label>
-            <select
-              name="custType"
-              value={formData.custType}
-              onChange={handleInputChange}
-              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent mb-1"
-            >
-              {customerTypeOptions.map((type) => (
-                <option
-                  key={type.value}
-                  value={type.value}
-                  className="text-xs py-1"
-                >
-                  {type.display} - {type.value}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!governmentOnly && (
+            <div className="flex flex-col">
+              <label className={`${maroon} text-xs font-medium mb-1`}>
+                Select Customer Type:
+              </label>
+              <select
+                name="custType"
+                value={formData.custType}
+                onChange={handleInputChange}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent mb-1"
+              >
+                {customerTypeOptions.map((type) => (
+                  <option
+                    key={type.value}
+                    value={type.value}
+                    className="text-xs py-1"
+                  >
+                    {type.display} - {type.value}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Bill Cycle Dropdown */}
           <div className="flex flex-col">
@@ -1186,65 +1315,83 @@ const AgeAnalysis: React.FC = () => {
             </select>
           </div>
 
-          {/* Area Dropdown */}
-          <div className="flex flex-col">
-            <label className={`${maroon} text-xs font-medium mb-1`}>
-              Select Area:
-            </label>
-            {locked["Area"] ? (
+          {/* Report location */}
+          {governmentOnly ? (
+            <div className="flex flex-col">
+              <label htmlFor="government-sector" className={`${maroon} text-xs font-medium mb-1`}>
+                Sector:
+              </label>
               <select
-                disabled
-                value={locked["Area"].code}
-                className="w-full px-2 py-1.5 text-xs border rounded-md bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                id="government-sector"
+                value={selectedSector}
+                onChange={(event) => setSelectedSector(event.target.value)}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                required
               >
-                <option value={locked["Area"].code}>
-                  {locked["Area"].name ? `${locked["Area"].code} - ${locked["Area"].name}` : locked["Area"].code}
-                </option>
+                <option value="">Select Sector</option>
+                {sectors.map((sector) => (
+                  <option key={sector} value={sector}>{sector}</option>
+                ))}
               </select>
-            ) : (
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              <label className={`${maroon} text-xs font-medium mb-1`}>
+                Select Area:
+              </label>
+              {locked["Area"] ? (
+                <select
+                  disabled
+                  value={locked["Area"].code}
+                  className="w-full px-2 py-1.5 text-xs border rounded-md bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                >
+                  <option value={locked["Area"].code}>
+                    {locked["Area"].name ? `${locked["Area"].code} - ${locked["Area"].name}` : locked["Area"].code}
+                  </option>
+                </select>
+              ) : (
+                <select
+                  name="areaCode"
+                  value={formData.areaCode}
+                  onChange={handleInputChange}
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                  required
+                >
+                  {areas.map((area) => (
+                    <option key={area.AreaCode} value={area.AreaCode} className="text-xs py-1">
+                      {area.AreaName} ({area.AreaCode})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
+          {/* Time Period Dropdown */}
+          {!governmentOnly && (
+            <div className="flex flex-col">
+              <label className={`${maroon} text-xs font-medium mb-1`}>
+                Select Time Period:
+              </label>
               <select
-                name="areaCode"
-                value={formData.areaCode}
+                name="timePeriod"
+                value={formData.timePeriod}
                 onChange={handleInputChange}
                 className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
                 required
               >
-                {areas.map((area) => (
+                {timePeriods.map((period) => (
                   <option
-                    key={area.AreaCode}
-                    value={area.AreaCode}
+                    key={period.value}
+                    value={period.value}
                     className="text-xs py-1"
                   >
-                    {area.AreaName} ({area.AreaCode})
+                    {period.label}
                   </option>
                 ))}
               </select>
-            )}
-          </div>
-
-          {/* Time Period Dropdown */}
-          <div className="flex flex-col">
-            <label className={`${maroon} text-xs font-medium mb-1`}>
-              Select Time Period:
-            </label>
-            <select
-              name="timePeriod"
-              value={formData.timePeriod}
-              onChange={handleInputChange}
-              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-              required
-            >
-              {timePeriods.map((period) => (
-                <option
-                  key={period.value}
-                  value={period.value}
-                  className="text-xs py-1"
-                >
-                  {period.label}
-                </option>
-              ))}
-            </select>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* View Report Button */}
@@ -1253,7 +1400,7 @@ const AgeAnalysis: React.FC = () => {
             type="submit"
             disabled={
               reportLoading ||
-              !formData.areaCode ||
+              (governmentOnly ? !selectedSector : !formData.areaCode) ||
               !formData.billCycle ||
               !formData.custType
             }
@@ -1316,7 +1463,7 @@ const AgeAnalysis: React.FC = () => {
               customerTypeOptions.find((t) => t.value === formData.custType)
                 ?.display
             }{" "}
-            Customers
+            Customers{governmentOnly ? ` — ${governmentReportType}` : ""}
           </h3>
           <div className="flex gap-2 mt-2">
             {/* <button
@@ -1334,14 +1481,14 @@ const AgeAnalysis: React.FC = () => {
               PDF
             </button> */}
             <button
-              onClick={downloadAsCSV}
+              onClick={isSummaryReport ? downloadSummaryAsCSV : downloadAsCSV}
               className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
               disabled={!debtors.length}
             >
               <FaFileDownload className="w-3 h-3" /> CSV
             </button>
             <button
-              onClick={printPDF}
+              onClick={isSummaryReport ? printSummaryPDF : printPDF}
               className="flex items-center gap-1 px-3 py-1.5 border border-green-400 text-green-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-green-50 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-200 transition"
               disabled={!debtors.length}
             >
@@ -1373,8 +1520,7 @@ const AgeAnalysis: React.FC = () => {
           Bill Cycle: {getFormattedBillCycle()}
         </p>
         <p className="text-sm text-gray-600 mb-2">
-          Area: {areas.find((a) => a.AreaCode === formData.areaCode)?.AreaName}{" "}
-          ({formData.areaCode})
+          {reportLocation}
         </p>
         {/* <p className="text-sm text-gray-600 mb-4">
           Total Records: {totalRecords} {totalPages > 1 && `(${totalPages} pages)`}
@@ -1433,6 +1579,11 @@ const AgeAnalysis: React.FC = () => {
                   Total Outstanding Balance:{" "}
                   <strong>{formatCurrency(totals.totalOutstanding)}</strong>
                 </p>
+                {isSummaryReport && (
+                  <p className="text-sm text-blue-700">
+                    Government Customers: <strong>{debtors.length}</strong>
+                  </p>
+                )}
                 {formData.timePeriod === "All" && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-xs text-blue-600">
                     <div>
@@ -1464,9 +1615,20 @@ const AgeAnalysis: React.FC = () => {
             {/* Chart Section */}
             {renderChart()}
 
-            {renderPagination()}
+            {!isSummaryReport && renderPagination()}
 
-            <div className="overflow-x-auto">
+            {isSummaryReport ? (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-xs">
+                  <thead><tr className="bg-gray-100"><th className="border border-gray-300 px-2 py-1 text-left">Age Period</th><th className="border border-gray-300 px-2 py-1 text-right">Amount</th></tr></thead>
+                  <tbody>
+                    {summaryBuckets.map(({ label, amount }) => (
+                      <tr key={label}><td className="border border-gray-300 px-2 py-1">{label}</td><td className="border border-gray-300 px-2 py-1 text-right">{formatCurrency(amount)}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <div className="overflow-x-auto">
               <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr className="bg-gray-100">
@@ -1692,9 +1854,9 @@ const AgeAnalysis: React.FC = () => {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </div>}
 
-            {renderPagination()}
+            {!isSummaryReport && renderPagination()}
           </>
         )}
       </div>

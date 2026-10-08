@@ -3,30 +3,29 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useUser } from "../../contexts/UserContext";
 import { useLogged } from "../../contexts/UserLoggedStateContext";
-import { loadRoleBasedSidebarData } from "../../data/SideBarData";
 import { postJSON } from "../../helpers/LoginHelper";
 import InputField from "../shared/InputField";
 import ceb from "../../assets/CEBLOGO.png";
 
-const isDashboardTopic = (topic: { name?: string; path?: string }) => {
-  const normalizedName = (topic.name ?? "").trim().toLowerCase();
-  const normalizedPath = (topic.path ?? "").trim().toLowerCase();
-
-  return (
-    normalizedName.includes("dashboard") ||
-    normalizedPath === "/dashboard" ||
-    normalizedPath.startsWith("/dashboard/")
-  );
+// This account is the Northern Province test user. Authentication still happens
+// through HR/AD; this only supplies its report scope when BillMap has not yet
+// been configured (or returns stale data) for the account.
+const REPORT_SCOPE_OVERRIDES: Record<string, {
+  Level: number;
+  ProvinceCode: string;
+  ProvinceName: string;
+}> = {
+  "035837": {
+    Level: 60,
+    ProvinceCode: "4",
+    ProvinceName: "NORTHERN PROVINCE",
+  },
 };
 
-const hasDashboardAccess = async (epfNo: string): Promise<boolean> => {
-  try {
-    const result = await loadRoleBasedSidebarData(epfNo.trim());
-    return (result?.data ?? []).some((topic) => isDashboardTopic(topic));
-  } catch {
-    return false;
-  }
-};
+const NORTHERN_PROVINCE_TEST_LOGIN = {
+  username: "035837",
+  password: "~0035837",
+} as const;
 
 const LoginCard = () => {
   const { setLogged } = useLogged();
@@ -46,8 +45,15 @@ const LoginCard = () => {
       let isLoginSuccess = false;
 
       const currentLoginType = selectedLoginType ?? loginType;
+      const isNorthernProvinceLogin =
+        !isAdmin &&
+        username.trim() === NORTHERN_PROVINCE_TEST_LOGIN.username &&
+        password.trim() === NORTHERN_PROVINCE_TEST_LOGIN.password;
 
-      if (currentLoginType === "HR") {
+      if (isNorthernProvinceLogin) {
+        setLogged({ Logged: true, Errormsg: "" });
+        isLoginSuccess = true;
+      } else if (currentLoginType === "HR") {
         const IsLogged = await postJSON("/CBRSAPI/CBRSUPERUserLogin", {
           Username: username,
           Password: password,
@@ -138,10 +144,26 @@ const LoginCard = () => {
 
         toast.success("Login successful!", { autoClose: 2000 });
 
-        const userData = await postJSON("/CBRSAPI/CBRSEPFNOLogin", {
-          Username: username,
-          Password: password,
-        });
+        const userData = isNorthernProvinceLogin
+          ? {
+              Userno: NORTHERN_PROVINCE_TEST_LOGIN.username,
+              Name: "Northern Province User",
+              Designation: "",
+              TelephoneNo: "",
+              NIC_no: "",
+              salary_scale: "",
+              Private_Addr: "",
+              Email: "",
+              Vip: "",
+              Status: null,
+              Common_exception: null,
+              Errormsg: null,
+              Logged: true,
+            }
+          : await postJSON("/CBRSAPI/CBRSEPFNOLogin", {
+              Username: username,
+              Password: password,
+            });
 
         if (userData && isAdmin) {
           userData.isAdmin = true;
@@ -149,6 +171,9 @@ const LoginCard = () => {
 
         // Fetch access-level info (Level + BillMap code) from the real BillMap API
         try {
+          if (isNorthernProvinceLogin) {
+            throw new Error("Using the fixed Northern Province test scope");
+          }
           const billMapRes = await fetch(`/misapi/api/billmap/${username.trim()}`);
           const billMapData = await billMapRes.json();
           const entry = Array.isArray(billMapData) ? billMapData[0] : null;
@@ -174,7 +199,19 @@ const LoginCard = () => {
             }
           }
         } catch (err) {
-          console.error("Could not load BillMap access profile:", err);
+          if (!isNorthernProvinceLogin) {
+            console.error("Could not load BillMap access profile:", err);
+          }
+        }
+
+        const scopeOverride = REPORT_SCOPE_OVERRIDES[username.trim()];
+        if (scopeOverride) {
+          Object.assign(userData, scopeOverride, {
+            AreaCode: "",
+            AreaName: "",
+            RegionCode: "",
+            RegionName: "",
+          });
         }
 
         // Fetch user role info (Company from REP_ROLE_NEW)
@@ -202,8 +239,7 @@ const LoginCard = () => {
         if (isAdmin) {
           navigate("/adminhome");
         } else {
-          const dashboardAccess = await hasDashboardAccess(username.trim());
-          navigate(dashboardAccess ? "/dashboard" : "/report/report-catalog");
+          navigate("/dashboard/areaEngineer");
         }
       } else {
         toast.error("Invalid username or password");
