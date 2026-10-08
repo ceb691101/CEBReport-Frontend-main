@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback } from "react";
 import { FaFileDownload, FaPrint } from "react-icons/fa";
 import { useUser } from "../../contexts/UserContext";
@@ -59,6 +58,87 @@ interface BillCycleOption {
   shortLabel: string;
 }
 
+interface BillCycleData {
+  BillCycles?: string[];
+  billCycles?: string[];
+  MaxBillCycle?: string;
+  maxBillCycle?: string;
+}
+
+interface RawProvinceItem {
+  ProvinceCode?: string;
+  provinceCode?: string;
+  ProvinceName?: string;
+  provinceName?: string;
+}
+
+interface RawRegionItem {
+  RegionCode?: string;
+  regionCode?: string;
+  RegionName?: string;
+  regionName?: string;
+}
+
+interface RawAreaItem {
+  AreaCode?: string;
+  areaCode?: string;
+  AreaName?: string;
+  areaName?: string;
+}
+
+interface RawReportItem {
+  AreaCode?: string;
+  areaCode?: string;
+  OpeningBalance?: string | number;
+  openingBalance?: string | number;
+  MonthlyCharge?: string | number;
+  monthlyCharge?: string | number;
+  Debits?: string | number;
+  debits?: string | number;
+  Credits?: string | number;
+  credits?: string | number;
+  UnderCharge?: string | number;
+  underCharge?: string | number;
+  OverCharge?: string | number;
+  overCharge?: string | number;
+  Payments?: string | number;
+  payments?: string | number;
+  ClosingBalance?: string | number;
+  closingBalance?: string | number;
+  ClosingBalanceWithoutFinAcc?: string | number;
+  closingBalanceWithoutFinAcc?: string | number;
+  AverageCharge?: string | number;
+  averageCharge?: string | number;
+  NoOfMonthsInArrears?: string | number;
+  noOfMonthsInArrears?: string | number;
+  NoOfMonthsInArrearsWithoutFinAcc?: string | number;
+  noOfMonthsInArrearsWithoutFinAcc?: string | number;
+  RawOpeningBalance?: number;
+  rawOpeningBalance?: number;
+  RawMonthlyCharge?: number;
+  rawMonthlyCharge?: number;
+  RawDebits?: number;
+  rawDebits?: number;
+  RawCredits?: number;
+  rawCredits?: number;
+  RawUnderCharge?: number;
+  rawUnderCharge?: number;
+  RawOverCharge?: number;
+  rawOverCharge?: number;
+  RawPayments?: number;
+  rawPayments?: number;
+  RawClosingBalance?: number;
+  rawClosingBalance?: number;
+  RawClosingBalanceWithoutFinAcc?: number;
+  rawClosingBalanceWithoutFinAcc?: number;
+  RawAverageCharge?: number;
+  rawAverageCharge?: number;
+  RawNoOfMonthsInArrears?: number;
+  rawNoOfMonthsInArrears?: number;
+  RawNoOfMonthsInArrearsWithoutFinAcc?: number;
+  rawNoOfMonthsInArrearsWithoutFinAcc?: number;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,24 +156,25 @@ async function apiFetch<T>(url: string): Promise<{ data: T | null; errorMessage:
     const contentType = res.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) throw new Error(`Expected JSON but got ${contentType}`);
     return await res.json();
-  } catch (err: any) {
-    if (err.name === "AbortError") return { data: null, errorMessage: "Request timeout. Please check your connection." };
-    if (err.message?.includes("Failed to fetch"))
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (error.name === "AbortError") return { data: null, errorMessage: "Request timeout. Please check your connection." };
+    if (error.message?.includes("Failed to fetch"))
       return { data: null, errorMessage: "Cannot connect to server. Please ensure the backend is running." };
-    return { data: null, errorMessage: err.message };
+    return { data: null, errorMessage: error.message || "An unexpected error occurred" };
   }
 }
 
-const parseNumber = (value: any): number => {
+const parseNumber = (value: unknown): number => {
   if (value === undefined || value === null || value === "") return 0;
   if (typeof value === "number") return value;
   const num = parseFloat(String(value).replace(/,/g, ""));
   return isNaN(num) ? 0 : num;
 };
 
-const formatLeadingZero = (value: any): string => {
+const formatLeadingZero = (value: unknown): string => {
   if (value === undefined || value === null || value === "") return "";
-  let s = String(value).trim();
+  const s = String(value).trim();
   if (s.startsWith(".")) return "0" + s;
   if (s.startsWith("-.")) return "-0" + s.slice(1);
   return s.replace(/(^|[^0-9])\.([0-9]+)/g, "$10.$2");
@@ -160,12 +241,12 @@ const ReceivablePosition: React.FC = () => {
       setSelectedBillCycle("");
       setBillCycleOptions([]);
       try {
-        const response = await apiFetch<any>(`/misapi/api/receivable-position/billcycle/max?billType=${billType}`);
+        const response = await apiFetch<BillCycleData>(`/misapi/api/receivable-position/billcycle/max?billType=${billType}`);
         if (response.errorMessage) {
           setCycleError(response.errorMessage);
           return;
         }
-        const raw = response.data as any;
+        const raw = response.data;
         const cycles: string[] = raw?.BillCycles ?? raw?.billCycles ?? [];
         const maxCycle: string = raw?.MaxBillCycle ?? raw?.maxBillCycle ?? "";
         const maxNum = parseInt(maxCycle, 10);
@@ -184,8 +265,9 @@ const ReceivablePosition: React.FC = () => {
         });
         setBillCycleOptions(options);
         setSelectedBillCycle(options[0].code);
-      } catch (err: any) {
-        setCycleError(err.message || "Failed to load bill cycles.");
+      } catch (err: unknown) {
+        const error = err as Error;
+        setCycleError(error.message || "Failed to load bill cycles.");
       } finally {
         setLoadingCycles(false);
       }
@@ -203,7 +285,7 @@ const ReceivablePosition: React.FC = () => {
     } else if (locked["Region"] && scopeType === "Region") {
       setScopeValue(locked["Region"]!.code);
     }
-  }, [scopeType, user.Level, user.RegionCode, user.ProvinceCode, user.AreaCode]);
+  }, [scopeType, user.Level, user.RegionCode, user.ProvinceCode, user.AreaCode, locked]);
 
   // ── 2. Fetch provinces + regions whenever billType changes ─────────────
   useEffect(() => {
@@ -219,7 +301,10 @@ const ReceivablePosition: React.FC = () => {
     setScopeListError(null);
 
     (async () => {
-      const [provRes, regRes] = await Promise.all([apiFetch<any[]>(provUrl), apiFetch<any[]>(regUrl)]);
+      const [provRes, regRes] = await Promise.all([
+        apiFetch<RawProvinceItem[]>(provUrl),
+        apiFetch<RawRegionItem[]>(regUrl),
+      ]);
 
       const errors: string[] = [];
 
@@ -227,7 +312,7 @@ const ReceivablePosition: React.FC = () => {
         errors.push(provRes.errorMessage);
       } else if (provRes.data && Array.isArray(provRes.data)) {
         setProvinces(
-          provRes.data.map((p: any) => ({
+          provRes.data.map((p: RawProvinceItem) => ({
             provinceCode: p.ProvinceCode ?? p.provinceCode ?? "",
             provinceName: p.ProvinceName ?? p.provinceName ?? "",
           }))
@@ -241,7 +326,7 @@ const ReceivablePosition: React.FC = () => {
       } else if (regRes.data && Array.isArray(regRes.data)) {
         setRegions(
           regRes.data
-            .map((r: any) => {
+            .map((r: RawRegionItem) => {
               const code = r.RegionCode ?? r.regionCode ?? "";
               const name = r.RegionName ?? r.regionName ?? code;
               return { regionCode: code, regionName: name };
@@ -256,14 +341,14 @@ const ReceivablePosition: React.FC = () => {
         setScopeListError(errors.join(" "));
       }
     })();
-  }, [billType, user.Level, user.RegionCode]);
+  }, [billType, user.Level, user.RegionCode, locked]);
 
   // ── Reset scope value when scope type changes ───────────────────────────
   useEffect(() => {
     if (locked["Area"] || locked["Province"] || locked["Region"]) return;
     setScopeValue("");
     setScopeListError(null);
-  }, [scopeType, billType]);
+  }, [scopeType, billType, locked]);
 
   // ── 3. Resolve area list for the current scope + billType + scopeValue ─
   const resolveAreaList = useCallback(async (): Promise<AreaInfo[]> => {
@@ -271,25 +356,25 @@ const ReceivablePosition: React.FC = () => {
 
     if (scopeType === "EntireCEB") {
       const url = billType === "B" ? `/misapi/api/bulk/areas` : `/misapi/api/ordinary/areas`;
-      const res = await apiFetch<any[]>(url);
+      const res = await apiFetch<RawAreaItem[]>(url);
       if (res.errorMessage || !res.data) throw new Error(res.errorMessage || "Failed to load areas.");
-      list = res.data.map((a: any) => ({
+      list = res.data.map((a: RawAreaItem) => ({
         areaCode: a.AreaCode ?? a.areaCode ?? "",
         areaName: a.AreaName ?? a.areaName ?? "",
       }));
     } else if (scopeType === "Province") {
       const url = `/misapi/api/receivable-position/areas-by-province?provinceCode=${encodeURIComponent(scopeValue)}&billType=${billType}`;
-      const res = await apiFetch<any[]>(url);
+      const res = await apiFetch<RawAreaItem[]>(url);
       if (res.errorMessage || !res.data) throw new Error(res.errorMessage || "Failed to load areas for province.");
-      list = res.data.map((a: any) => ({
+      list = res.data.map((a: RawAreaItem) => ({
         areaCode: a.AreaCode ?? a.areaCode ?? "",
         areaName: a.AreaName ?? a.areaName ?? "",
       }));
     } else {
       const url = `/misapi/api/receivable-position/areas-by-region?regionCode=${encodeURIComponent(scopeValue)}&billType=${billType}`;
-      const res = await apiFetch<any[]>(url);
+      const res = await apiFetch<RawAreaItem[]>(url);
       if (res.errorMessage || !res.data) throw new Error(res.errorMessage || "Failed to load areas for region.");
-      list = res.data.map((a: any) => ({
+      list = res.data.map((a: RawAreaItem) => ({
         areaCode: a.AreaCode ?? a.areaCode ?? "",
         areaName: a.AreaName ?? a.areaName ?? "",
       }));
@@ -329,11 +414,11 @@ const ReceivablePosition: React.FC = () => {
           selectedBillCycle
         )}&areaCode=${encodeURIComponent(area.areaCode)}&billType=${billType}`;
 
-        const res = await apiFetch<any>(url);
+        const res = await apiFetch<RawReportItem[] | { data?: RawReportItem[] }>(url);
         if (res.errorMessage || !res.data) continue; // skip areas with no data
 
-        const raw = res.data as any;
-        const arr: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
+        const raw = res.data;
+        const arr: RawReportItem[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
         const item = arr[0];
         if (!item) continue;
 
@@ -391,8 +476,9 @@ const ReceivablePosition: React.FC = () => {
 
       setReportData(rows);
       setHasSearched(true);
-    } catch (err: any) {
-      setReportError(err.message || "Failed to fetch report data.");
+    } catch (err: unknown) {
+      const error = err as Error;
+      setReportError(error.message || "Failed to fetch report data.");
     } finally {
       setLoadingReport(false);
       setLoadingStatus("");

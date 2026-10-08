@@ -88,6 +88,7 @@ import LargestCus from "../mainTopics/general/LargestCus";
 import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
 import FinalizedAccounts from "../mainTopics/general/FinalizedAccounts";
+import MeteringReadingCompletionStatusReport from "../mainTopics/general/MeteringReadingCompletionStatusReport";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -393,6 +394,8 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"province wise cash book details inquiry": ProvinceWiseCashBookInquiryReport,
 
 	// General reports
+	"metering reading completion status report": MeteringReadingCompletionStatusReport,
+	"meter reading completion status report": MeteringReadingCompletionStatusReport,
 	"tariff block wise consumption": TariffBlockWiseConsumption,
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
 	"bill calculation": BillCalculation,

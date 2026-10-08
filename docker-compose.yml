@@ -1,0 +1,9 @@
+services:
+  ceb-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ceb-frontend-container
+    ports:
+      - "8080:80"
+    restart: unless-stopped
