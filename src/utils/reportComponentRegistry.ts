@@ -115,6 +115,7 @@ import MaterialFlowReport from "../mainTopics/inventory/MaterialFlowReport.tsx";
 import MaterialPriceByYear from "../mainTopics/inventory/MaterialPriceByYear";
 import QuantityOnHandLessThanReorderLevel from "../mainTopics/inventory/QuantityOnHandLessThanReorderLevel";
 import IssueSummaryProvinceReport from "../mainTopics/inventory/IssueSummaryProvinceReport";
+import QtyOnHandReorderReport from "../mainTopics/inventory/QtyOnHandReorderReport.tsx";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -235,6 +236,7 @@ import PivIIPaidNotEnergizedReport from "../mainTopics/SMC-ManagementInfo/PIVIIP
 import JobFinBillNotGeneratedReport from "../mainTopics/SMC-ManagementInfo/JobFinBillNotGeneratedReport.tsx";
 import AreaT1T2T3Report from "../mainTopics/SMC-ManagementInfo/AreaT1T2T3Report.tsx";
 import ProvinceT1T2T3Report from "../mainTopics/SMC-ManagementInfo/ProvinceT1T2T3Report.tsx";
+import SmcLineDetailsRegionReport from "../mainTopics/SMC-ManagementInfo/SmcLineDetailsRegionReport.tsx";
 
 //FIFO reports
 import IssueReceiptSummaryReport from "../mainTopics/fifo/IssueReceiptSummaryReport";
@@ -435,6 +437,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"quantity on hand all region material active online": QtyOnHandAllRegion,
 	"flow report": MaterialFlowReport,
 	"issue summary province usage": IssueSummaryProvinceReport,
+	"quantity on hand reorder level": QtyOnHandReorderReport,
 
 	// JobCard reports
 	"job card details": JobCardInfo,
@@ -583,6 +586,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise job finished not paid contractor payment": JobFinBillNotGeneratedReport,
 	"area wise t1 t2 t3 report": AreaT1T2T3Report,
 	"province wise t1 t2 t3 report": ProvinceT1T2T3Report,
+	"smc line details region wise": SmcLineDetailsRegionReport,
 
 	//FIFO reports
 	"issue and receipt summary": IssueReceiptSummaryReport,

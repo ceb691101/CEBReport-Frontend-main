@@ -80,7 +80,7 @@ const ReportTable: React.FC<ReportTableProps> = ({
                         : col.align === "center"
                         ? "text-center"
                         : "text-left"
-                    }`}
+                    } ${col.className || ""}`}
                   >
                     {row[col.accessor]}
                   </td>
