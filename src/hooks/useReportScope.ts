@@ -32,9 +32,10 @@ export function isWithinUserScope(
   recordProvince?: string,
   recordRegion?: string
 ): boolean {
-  const level = user.Level ?? 80;
+  const level = user.Level ?? 0;
+  const normalize = (value?: string) => String(value ?? "").trim().toUpperCase();
   if (level >= 80) return true;
-  if (level >= 70) return recordRegion === user.RegionCode;
-  if (level >= 60) return recordProvince === user.ProvinceCode;
-  return recordArea === user.AreaCode;
+  if (level >= 70) return normalize(recordRegion) === normalize(user.RegionCode);
+  if (level >= 60) return normalize(recordProvince) === normalize(user.ProvinceCode);
+  return normalize(recordArea) === normalize(user.AreaCode);
 }

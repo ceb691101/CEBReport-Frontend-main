@@ -7,6 +7,7 @@ interface StockBalance {
   Province: string;
   DeptId: string;
   MatNm: string;
+  GradeCd?: string;
   UnitPrice?: number;
   QtyOnHand?: number;
   CommittedCost?: number;
@@ -100,6 +101,7 @@ const StockBalancesTable: React.FC<StockBalancesTableProps> = ({ matCd, stockBal
             { label: "Region", accessor: "Region" },
             { label: "Province", accessor: "Province" },
             { label: "Cost Center", accessor: "DeptId" },
+            { label: "Grade Code", accessor: "GradeCd", className: "hidden print:table-cell" },
             { label: "Quantity On Hand", accessor: "QtyOnHand", align: "right" },
             { label: "Reorder Quantity", accessor: "ReorderQty", align: "right" },
           ]}

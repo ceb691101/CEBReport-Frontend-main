@@ -201,12 +201,13 @@ const MaterialDetails: React.FC = () => {
       `"Total Records: ${stockBalances.length}"`,
       "", // Empty line
       // Data section
-      `"Region","Province","Department","Material Name","Unit Price","Quantity On Hand","Reorder Qty"`,
+      `"Region","Province","Department","Material Name","Grade Code","Unit Price","Quantity On Hand","Reorder Qty"`,
       ...stockBalances.map((balance) => [
         `"${mapRegionName(balance.Region)}"`,
         `"${balance.Province}"`,
         `"${balance.DeptId}"`,
         `"${balance.MatNm}"`,
+        `"${balance.GradeCd ?? ""}"`,
         `"${balance.UnitPrice?.toString() ?? ""}"`,
         `"${balance.QtyOnHand?.toString() ?? ""}"`,
         `"${balance.ReorderQty?.toString() ?? ""}"`,

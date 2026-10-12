@@ -28,6 +28,7 @@ type User = {
   ProvinceCode?: string;
   ProvinceName?: string;
   RegionCode?: string;
+  RegionName?: string;
   Company?: string;
 };
 
@@ -70,6 +71,37 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     localStorage.setItem("userData", JSON.stringify(user));
   }, [user]);
+
+  // Recover access details for sessions created while the role API was offline.
+  useEffect(() => {
+    if (!user.Logged || !user.Userno || user.Level) return;
+    let cancelled = false;
+    const loadAccessProfile = async () => {
+      try {
+        const response = await fetch(`/misapi/api/billmap/${encodeURIComponent(user.Userno.trim())}`);
+        if (!response.ok) return;
+        const payload = await response.json();
+        const entry = Array.isArray(payload) ? payload[0] : payload?.data?.[0];
+        const level = Number(entry?.LevelNo);
+        if (cancelled || !Number.isFinite(level) || level <= 0) return;
+        const code = String(entry.BillMap ?? "").trim();
+        const name = String(entry.CompanyName ?? "").trim();
+        setUser((previous) => ({
+          ...previous,
+          Level: level,
+          ...(level >= 80 ? {} : level >= 70
+            ? { RegionCode: code, RegionName: name }
+            : level >= 60
+              ? { ProvinceCode: code, ProvinceName: name }
+              : { AreaCode: code, AreaName: name }),
+        }));
+      } catch {
+        // Keep the saved session; the dashboard reports API errors separately.
+      }
+    };
+    void loadAccessProfile();
+    return () => { cancelled = true; };
+  }, [user.Logged, user.Userno, user.Level]);
 
   return (
     <userContext.Provider value={{ user, setUser }}>

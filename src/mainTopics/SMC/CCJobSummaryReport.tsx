@@ -1,6 +1,6 @@
 // CCJobSummaryReport.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, RotateCcw, Eye, Download, Printer, X, Loader2 } from "lucide-react";
+import { Search, RotateCcw, Eye, Download, Printer, X } from "lucide-react";
 import { useUser } from "../../contexts/UserContext";
 import { toast } from "react-toastify";
 
