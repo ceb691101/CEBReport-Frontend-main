@@ -262,16 +262,30 @@ const AnnualVerificationSheetSignature: React.FC = () => {
     .header h2 { text-align: center; color: #7A0000; font-size: 16px; margin: 0; }
     .header h3 { text-align: center; margin: 1px 0; font-size: 13px; }
 
-    .subtitles { margin-bottom: 1px; font-size: 11.5px; display: flex; justify-content: space-between; }
-    .subtitles div { flex-basis: 25%; }
+    .subtitles { margin-bottom: 6px; font-size: 11px; display: flex; justify-content: space-between; align-items: flex-start; line-height: 1.35; }
+    .subtitles-left { text-align: left; }
+    .subtitles-right { text-align: left; }
 
-    .signature { margin-top: 5px; font-size: 12px; page-break-inside: avoid; }
-    .signature .left { float: left; width: 48%; }
-    .signature .right { float: right; width: 48%; text-align: right; }
+    .signature { margin-top: 14px; font-size: 11px; page-break-inside: avoid; }
+    .sig-statement { margin: 0 0 10px 0; font-size: 11.5px; }
+    .sig-columns { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; }
+    .sig-left { width: 56%; }
+    .sig-right { width: 38%; }
 
-    .signature p { margin: 1px 0; line-height: 1.1; }
-    .signature table { border: none; width: 100%; font-size: 12px; }
-    .signature td { border: none; padding: 1px; }
+    .board-header { font-weight: bold; margin-bottom: 8px; font-size: 11.5px; }
+    .board-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+    .board-table th { border: none !important; font-weight: normal; text-align: left; padding: 2px 4px 6px 0; background: transparent; }
+    .board-table td { border: none !important; padding: 4px 4px 4px 0; vertical-align: bottom; }
+    .dotted-cell { border-bottom: 1px dotted #555 !important; height: 16px; width: 100%; }
+
+    .sig-right p { margin: 0 0 6px 0; line-height: 1.3; }
+    .sig-signature-row { margin: 16px 0 6px 0; display: flex; align-items: flex-end; }
+    .sig-signature-line { flex: 1; border-bottom: 1px dotted #555; height: 14px; margin-left: 6px; }
+    .sig-date-line { display: inline-block; border-bottom: 1px dotted #555; width: 160px; margin-left: 6px; height: 14px; vertical-align: bottom; }
+
+    .notes-section { margin-top: 14px; font-size: 10.5px; line-height: 1.45; }
+    .notes-section p { margin: 1px 0; }
+    .underline { text-decoration: underline; }
 
     .footer { position: absolute; bottom: 0; left: 0; right: 0; font-size: 10px; display: flex; justify-content: space-between; }
 
@@ -323,10 +337,19 @@ const AnnualVerificationSheetSignature: React.FC = () => {
           <h2>ANNUAL VERIFICATION OF STORES - ${selectedYear} / Cost Center : ${selectedDept.DeptId}</h2>
         </div>
 
-        <div class="subtitles"><div>ORIGINAL : Accountant</div><div>From Ref : AV/1/A</div></div>
-        <div class="subtitles"><div>DUPLICATE : (Province/Complex)</div><div>Sheet No : ${docNo}</div></div>
-        <div class="subtitles"><div>TRIPLCATE : Store-kepper/E.S.(C.S.C)</div><div>Date of Verification : ${phvDate}</div></div>
-        <div class="subtitles"><div>Fourth copy : Branch Copy</div><div>${docNo}</div></div>
+        <div class="subtitles">
+          <div class="subtitles-left">
+            <div style="font-weight: bold; margin-bottom: 2px;">TO BE FILLED IN TRIPLICATE</div>
+            <div>1. ORIGINAL : Accountant</div>
+            <div>2. DUPLICATE : (Unit)</div>
+            <div>3. TRIPLICATE : Store-keeper/E.S.(C.S.C.)</div>
+          </div>
+          <div class="subtitles-right">
+            <div>From Ref : AV/1/A</div>
+            <div>Sheet No : ${docNo}</div>
+            <div>Date of Verification : ${phvDate}</div>
+          </div>
+        </div>
 
         <table>
           <thead>
@@ -345,7 +368,7 @@ const AnnualVerificationSheetSignature: React.FC = () => {
               <th style="width:6%">12.<br>Physical Val. (Rs.)</th>
               <th style="width:6%">13.<br>Surplus Val. (Rs.)</th>
               <th style="width:6%">14.<br>Shortage Val. (Rs.)</th>
-              <th style="width:9%">15.<br>Remarks</th>
+              <th style="width:9%">15.<br>Remarks (*)</th>
             </tr>
           </thead>
           <tbody>${bodyHTML}</tbody>
@@ -353,29 +376,66 @@ const AnnualVerificationSheetSignature: React.FC = () => {
 
         <!--   SIGNATURE SECTION -->
         <div class="signature">
-          <div class="left">
-            <p>We do hereby certify that Stocks were physically verfied as per that given statment.</p>
-            <table>
-              <tr>
-                <td style="width: 10%;">Verifiers:</td>
-                <td>Name</td>
-                <td>Desigation</td>
-                <td>Signature</td>
-              </tr>
-              <tr><td class="right">1.</td><td>.........................................</td><td>.........................................</td><td>.........................................</td></tr>
-              <tr><td class="right">2.</td><td>.........................................</td><td>.........................................</td><td>.........................................</td></tr>
-              <tr><td class="right">3.</td><td>.........................................</td><td>.........................................</td><td>.........................................</td></tr>
-            </table>
-            <p>Note 01 : 1 to 4 should be filled by the Store Keeper 5 to 14 should be filled by the Verification Team</p>
+          <p class="sig-statement">We do hereby certify that the stocks were physically verified as per above record.</p>
+
+          <div class="sig-columns">
+            <div class="sig-left">
+              <div class="board-header">Board of Verification</div>
+              <table class="board-table">
+                <thead>
+                  <tr>
+                    <th style="width: 5%;"></th>
+                    <th style="width: 32%;">Name</th>
+                    <th style="width: 32%;">Designation</th>
+                    <th style="width: 21%;">Signature</th>
+                    <th style="width: 10%;">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="right" style="padding-right: 4px;">1.</td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                  </tr>
+                  <tr>
+                    <td class="right" style="padding-right: 4px;">2.</td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                  </tr>
+                  <tr>
+                    <td class="right" style="padding-right: 4px;">3.</td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="sig-right">
+              <p>Agreed for the above physical verification.</p>
+              <div class="sig-signature-row">
+                <span>Signature:</span>
+                <span class="sig-signature-line"></span>
+              </div>
+              <p>Designation : (Store-keeper/Electrical Superintendent/......)</p>
+              <p>(Place the rubber stamp)</p>
+              <p style="margin-top: 10px;">Date :<span class="sig-date-line"></span></p>
+            </div>
           </div>
 
-          <div class="right">
-            <p>Agreed for the above physical verification</p>
-            <p>................................... Valued by : Signature : ...........................</p>
-            <p>Designation : ...........................</p>
-            <p>Value checked by : Store-keeper/Elect. Superintendent</p>
-            <p>Signature : ...........................</p>
-            <p>Designation : ...........................</p>
+          <!-- NOTES SECTION -->
+          <div class="notes-section">
+            <p><strong>Note :</strong></p>
+            <p>Columns 1 - 6 should be filled by the store-keeper/electrical superintendent if the format is not generated by the MITFIN Inventory system.</p>
+            <p>Columns 7 - 15 should be filled by the Board of Verification.</p>
+            <p><span class="underline">Please indicate in the Remark Column</span></p>
+            <p>(*)- Status of the stocks -Obsolete and idle,Damage,slow moving and non moving (O,D,SM and NM)</p>
           </div>
         </div>
 
@@ -404,7 +464,7 @@ const AnnualVerificationSheetSignature: React.FC = () => {
 
       pagesHTML += `<div class="page">
     <div class="header">
-      <h2>CEYLON ELECTRICITY BOARD</h2>
+      <h2>ELECTRICITY DISTRIBUTION LANKA(PRIVATE) LIMITED</h2>
       <h3>ANNUAL VERIFICATION OF STORES - ${selectedYear} / Cost Center : ${selectedDept.DeptId}</h3>             
     </div>
 
