@@ -118,6 +118,14 @@ const SolarPaymentRetail: React.FC = () => {
     // Helper function for error handling
     const fetchWithErrorHandling = async (url: string) => {
         try {
+            // Validate URL before fetching
+            if (!url || typeof url !== 'string' || url.trim().length === 0) {
+                throw new Error('Invalid URL: URL is empty or not a string');
+            }
+
+            // Log the URL for debugging
+            console.log("Request URL:", url);
+
             const response = await fetch(url, {
                 headers: {
                     Accept: "application/json",
@@ -131,8 +139,11 @@ const SolarPaymentRetail: React.FC = () => {
                     if (errorData.errorMessage) {
                         errorMsg = errorData.errorMessage;
                     }
+                    if (errorData.errorDetails) {
+                        errorMsg += ` - ${errorData.errorDetails}`;
+                    }
                 } catch (e) {
-                    errorMsg = response.statusText;
+                    errorMsg = `${response.status} ${response.statusText}`;
                 }
                 throw new Error(errorMsg);
             }
@@ -1616,8 +1627,8 @@ const SolarPaymentRetail: React.FC = () => {
                 console.log("Cycle Type:", selectedCycleType);
                 console.log("Cycle Value:", cycleValue);
 
-                // Fetch ordinary summary
-                const ordinaryEndpoint = `/misapi/solarapi/retail/summary?${cycleParam}=${cycleValue}&cycleType=${cycleTypeParam}`;
+                // Fetch ordinary summary - properly encode cycleValue
+                const ordinaryEndpoint = `/misapi/solarapi/retail/summary?${cycleParam}=${encodeURIComponent(cycleValue)}&cycleType=${cycleTypeParam}`;
                 console.log("Ordinary Endpoint:", ordinaryEndpoint);
 
                 const ordinaryResponse = await fetch(ordinaryEndpoint, {
@@ -1639,7 +1650,7 @@ const SolarPaymentRetail: React.FC = () => {
 
                 // Fetch bulk summary (for both Bill Cycle and Calculation Cycle - using billCycle parameter)
                 let bulkData = [];
-                const bulkEndpoint = `/misapi/solarapi/retail/summary-bulk?billCycle=${cycleValue}`;
+                const bulkEndpoint = `/misapi/solarapi/retail/summary-bulk?billCycle=${encodeURIComponent(cycleValue)}`;
                 console.log("Bulk Endpoint:", bulkEndpoint);
 
                 try {
@@ -1692,10 +1703,11 @@ const SolarPaymentRetail: React.FC = () => {
 
                 const netTypeCode = netTypeMap[netType] || netType;
 
-                let endpoint = `/misapi/solarapi/retail/detailed?${cycleParam}=${cycleValue}&netType=${netTypeCode}&reportType=${reportTypeParam}`;
+                // Properly encode all URL parameters
+                let endpoint = `/misapi/solarapi/retail/detailed?${cycleParam}=${encodeURIComponent(cycleValue)}&netType=${encodeURIComponent(netTypeCode)}&reportType=${encodeURIComponent(reportTypeParam)}`;
 
                 if (selectedCategory !== "Entire CEB") {
-                    endpoint += `&typeCode=${typeCode}`;
+                    endpoint += `&typeCode=${encodeURIComponent(typeCode)}`;
                 }
 
                 endpoint += `&cycleType=${cycleTypeParam}`;

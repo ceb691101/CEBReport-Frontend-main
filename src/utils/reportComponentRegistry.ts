@@ -38,11 +38,13 @@ import CostCenterwisePivDetails from "../mainTopics/PIV/CostCenterwisePivDetails
 import DebtorsAnalysis from "../mainTopics/Analysis/DebtorsAnalysis";
 import AgeAnalysis from "../mainTopics/Analysis/AgeAnalysis";
 import SolarAgeAnalysis from "../mainTopics/Analysis/SolarAgeAnalysis";
+import GovernmentCustomerAgeAnalysis from "../mainTopics/Analysis/GovernmentCustomerAgeAnalysis";
 
 // Customer Details
 import CustomerDetails from "../mainTopics/billing&payment/CustomerDetails";
 import PaymentInquiry from "../mainTopics/CustomerDetails/PaymentInquiry";
 import TransactionHistoryOrdinary from "../mainTopics/CustomerDetails/TransactionHistoryOrdinary";
+import StandingOrder from "../mainTopics/CustomerDetails/StandingOrder";
 
 // Collections reports
 import DishonouredCheques from "../mainTopics/Collections/DishonouredCheques";
@@ -77,6 +79,7 @@ import ProvinceWiseCashBookInquiryReport from "../mainTopics/CashBook/ProvinceCa
 // General reports
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
 import BillCalculation from "../mainTopics/general/BillCalculation";
+import TariffStructure from "../mainTopics/general/TariffStructure";
 import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
 import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
 import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
@@ -112,6 +115,7 @@ import MaterialFlowReport from "../mainTopics/inventory/MaterialFlowReport.tsx";
 import MaterialPriceByYear from "../mainTopics/inventory/MaterialPriceByYear";
 import QuantityOnHandLessThanReorderLevel from "../mainTopics/inventory/QuantityOnHandLessThanReorderLevel";
 import IssueSummaryProvinceReport from "../mainTopics/inventory/IssueSummaryProvinceReport";
+import QtyOnHandReorderReport from "../mainTopics/inventory/QtyOnHandReorderReport.tsx";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -166,6 +170,7 @@ import SolarConnectionDetailsRetail from "../mainTopics/SolarInformation/SolarCo
 import SolarConnectionDetailsBulk from "../mainTopics/SolarInformation/SolarConnectionDetailsBulk";
 import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustomerInformation";
 import RoofTopSolarInputData from "../mainTopics/SolarInformation/RoofTopSolarInputData";
+import SolarRooftopPaymentsandExportunits from "../mainTopics/SolarInformation/SolarRooftopPaymentsandExportunits";
 
 // Solar Jobs reports
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
@@ -204,6 +209,7 @@ import CollectionsDashboardPage from "../mainTopics/Dashboard/CollectionsDashboa
 import ExecutiveDashboardPage from "../mainTopics/Dashboard/ExecutiveDashboardPage";
 import InventoryDashboardPage from "../mainTopics/Dashboard/InventoryDashboardPage";
 import AreaEngineerDashboardPage from "../mainTopics/Dashboard/AreaEngineerDashboardPage";
+import IntegratedDashboardPage from "../mainTopics/Dashboard/IntegratedDashboardPage";
 
 //SMC
 import JobRegisterCCReport from "../mainTopics/SMC/JobRegisterCCReport.tsx";
@@ -231,6 +237,7 @@ import JobFinBillNotGeneratedReport from "../mainTopics/SMC-ManagementInfo/JobFi
 import AreaT1T2T3Report from "../mainTopics/SMC-ManagementInfo/AreaT1T2T3Report.tsx";
 import ProvinceT1T2T3Report from "../mainTopics/SMC-ManagementInfo/ProvinceT1T2T3Report.tsx";
 import SMCLineDetailsByProvince from "../mainTopics/SMC-ManagementInfo/SMCLineDetailsByProvince.tsx";
+import SmcLineDetailsRegionReport from "../mainTopics/SMC-ManagementInfo/SmcLineDetailsRegionReport.tsx";
 
 //FIFO reports
 import IssueReceiptSummaryReport from "../mainTopics/fifo/IssueReceiptSummaryReport";
@@ -340,6 +347,8 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"total debtors analysis": DebtorsAnalysis,
 	"debtors age analysis individual customers": AgeAnalysis,
 	"age analysis of solar power consumers": SolarAgeAnalysis,
+	"age analysis for government customers": GovernmentCustomerAgeAnalysis,
+	"age analysis for government customers(bulk customers)": GovernmentCustomerAgeAnalysis,
 
 	// Customer Details
 	"customer information": CustomerDetails,
@@ -350,6 +359,9 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"current account reconciliation (external) - period": CurrAcctReconExtPeriod,
 	"current account reconsiliation(external)- period": CurrAcctReconExtPeriod,
 	"payment inquiries": PaymentInquiry,
+	"standing order": StandingOrder,
+	"automatic bill settlement inquiry": StandingOrder,
+	"automatic bill settlement": StandingOrder,
 
 	// Collections reports
 	"sales and collection": SalesAndCollection,
@@ -391,6 +403,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"tariff block wise consumption": TariffBlockWiseConsumption,
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
 	"bill calculation": BillCalculation,
+	"tariff structure": TariffStructure,
 	"listing of customers": ListingofCustomers,
 	"list of government accounts": ListOfGovernmentAccounts,
 	"largest 50 customers details ordinary": LargestCus,
@@ -425,6 +438,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"quantity on hand all region material active online": QtyOnHandAllRegion,
 	"flow report": MaterialFlowReport,
 	"issue summary province usage": IssueSummaryProvinceReport,
+	"quantity on hand reorder level": QtyOnHandReorderReport,
 
 	// JobCard reports
 	"job card details": JobCardInfo,
@@ -497,6 +511,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar connection details incl reading and usage bulk": SolarConnectionDetailsBulk,
 	"solar customer information": SolarCustomerInformation,
 	"rooftop solar input data portal for t and d loss calculation": RoofTopSolarInputData,
+	"solar rooftop payments and export units": SolarRooftopPaymentsandExportunits,
 
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
@@ -504,7 +519,6 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"c/c solar application progress": CcApplicationProgress,
 	"cost center wise solar retail rooftop pending jobs after piv2 paid": CCSolarPendingReport,
 	"solar ordinary customers generation capacity": SolarOrdinaryCustomersGenerationCapacity,
-	"solar ordinary customers generation capacity report": SolarOrdinaryCustomersGenerationCapacity,
 
 	// Solar Religious Purpose reports
 	"area wise srp application piv pivi to be paid report": AreaWiseSRPApplicationPIV,
@@ -546,6 +560,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"executive dashboard": ExecutiveDashboardPage,
 	"inventory dashboard": InventoryDashboardPage,
 	"area general manager dashboard": AreaEngineerDashboardPage,
+	"integrated dashboard": IntegratedDashboardPage,
 
 	// SMC
 	"cost center wise job register": JobRegisterCCReport,
@@ -572,8 +587,8 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise job finished not paid contractor payment": JobFinBillNotGeneratedReport,
 	"area wise t1 t2 t3 report": AreaT1T2T3Report,
 	"province wise t1 t2 t3 report": ProvinceT1T2T3Report,
-	"smc line details by province": SMCLineDetailsByProvince,
 	"smc line details by province report": SMCLineDetailsByProvince,
+	"smc line details region wise": SmcLineDetailsRegionReport,
 
 	//FIFO reports
 	"issue and receipt summary": IssueReceiptSummaryReport,

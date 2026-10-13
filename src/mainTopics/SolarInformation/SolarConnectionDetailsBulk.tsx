@@ -236,13 +236,20 @@ const SolarConnectionDetailsBulk: React.FC = () => {
                 if (locked["Region"]?.code) {
                     url += `?regionCode=${locked["Region"].code}`;
                 } else if (locked["Province"]?.code) {
-                    url += `?provCode=${locked["Province"].code}`;
+                    const rawProv = String(locked["Province"].code).trim();
+                    const provNum = parseInt(rawProv, 10);
+                    const formattedProv = (!isNaN(provNum) && rawProv === provNum.toString() && rawProv.length === 1)
+                        ? rawProv.padStart(2, "0")
+                        : rawProv;
+                    url += `?provCode=${formattedProv}`;
                 }
                 const response = await fetchWithErrorHandling(url);
-                if (response?.data && Array.isArray(response.data)) {
+                if (response?.errorMessage) {
+                    setAreaError(response.errorMessage);
+                } else if (response?.data && Array.isArray(response.data)) {
                     setAreas(response.data);
                 } else {
-                    throw new Error("Invalid areas data format");
+                    setAreas([]);
                 }
             } catch (error: any) {
                 console.error("Error fetching areas:", error);
@@ -252,10 +259,8 @@ const SolarConnectionDetailsBulk: React.FC = () => {
             }
         };
 
-        if (reportCategory === "Area") {
-            fetchAreas();
-        }
-    }, [reportCategory, user.Level, user.RegionCode, user.ProvinceCode]);
+        fetchAreas();
+    }, [user.Level, user.RegionCode, user.ProvinceCode]);
 
     // Fetch provinces
     useEffect(() => {
@@ -268,10 +273,12 @@ const SolarConnectionDetailsBulk: React.FC = () => {
                     url += `?regionCode=${locked["Region"].code}`;
                 }
                 const response = await fetchWithErrorHandling(url);
-                if (response?.data && Array.isArray(response.data)) {
+                if (response?.errorMessage) {
+                    setProvinceError(response.errorMessage);
+                } else if (response?.data && Array.isArray(response.data)) {
                     setProvinces(response.data);
                 } else {
-                    throw new Error("Invalid provinces data format");
+                    setProvinces([]);
                 }
             } catch (error: any) {
                 console.error("Error fetching provinces:", error);
@@ -281,10 +288,8 @@ const SolarConnectionDetailsBulk: React.FC = () => {
             }
         };
 
-        if (reportCategory === "Province") {
-            fetchProvinces();
-        }
-    }, [reportCategory, user.Level, user.RegionCode]);
+        fetchProvinces();
+    }, [user.Level, user.RegionCode]);
 
     // Fetch divisions
     useEffect(() => {
@@ -293,10 +298,12 @@ const SolarConnectionDetailsBulk: React.FC = () => {
             setDivisionError(null);
             try {
                 const response = await fetchWithErrorHandling("/misapi/api/bulk/region");
-                if (response?.data && Array.isArray(response.data)) {
+                if (response?.errorMessage) {
+                    setDivisionError(response.errorMessage);
+                } else if (response?.data && Array.isArray(response.data)) {
                     setDivisions(response.data);
                 } else {
-                    throw new Error("Invalid divisions data format");
+                    setDivisions([]);
                 }
             } catch (error: any) {
                 console.error("Error fetching divisions:", error);
@@ -306,18 +313,23 @@ const SolarConnectionDetailsBulk: React.FC = () => {
             }
         };
 
-        if (reportCategory === "Division") {
-            fetchDivisions();
-        }
-    }, [reportCategory]);
+        fetchDivisions();
+    }, []);
 
 
     useEffect(() => {
         const key = reportCategory === "Division" ? "Region" : reportCategory;
         const lock = locked[key as keyof typeof locked];
         if (lock) {
-            setCategoryValue(lock.code);
-            setSelectedCategoryName(lock.name ? `${lock.code} - ${lock.name}` : lock.code);
+            let code = lock.code.trim();
+            if (reportCategory === "Province") {
+                const provNum = parseInt(code, 10);
+                if (!isNaN(provNum) && code === provNum.toString() && code.length === 1) {
+                    code = code.padStart(2, "0");
+                }
+            }
+            setCategoryValue(code);
+            setSelectedCategoryName(lock.name ? `${code} - ${lock.name}` : code);
         }
     }, [reportCategory, user.Level, user.RegionCode, user.ProvinceCode, user.ProvinceName, user.AreaCode, user.AreaName]);
 
