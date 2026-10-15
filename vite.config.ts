@@ -9,6 +9,11 @@ export default defineConfig(({ mode }) => {
 		plugins: [react(), tailwindcss()],
 		server: {
 			proxy: {
+				"/api/debtors": {
+					target: env.VITE_LOCAL_API || `${env.VITE_SERVER_API}/misapi`,
+					changeOrigin: true,
+					secure: false,
+				},
 				"/smsapi": {
 					target: env.VITE_SERVER_API,
 					changeOrigin: true,

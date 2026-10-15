@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { FaFileDownload, FaPrint } from "react-icons/fa";
 
 type ReportType = "Detailed" | "Full" | "Summary";
+type AreaType = "Province" | "Division" | "Entire CEB";
+type Location = { Code: string; Name: string };
 type Sector = { CatCode: string; CatDesc: string };
 const governmentAgeReportName = "Age Analysis For Government Customers(Bulk Customers)";
-const governmentAgeApiRoot = import.meta.env.DEV ? "/api/debtors" : "/misapi/api/debtors";
+const governmentAgeApiRoot = import.meta.env.DEV ? "/api/debtors/bulk" : "/misapi/api/debtors/bulk";
 const billCycleMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const formatBillCycle = (code: string) => {
@@ -114,6 +116,11 @@ const getData = async <T,>(url: string): Promise<T> => {
 };
 
 const GovernmentCustomerAgeAnalysis = () => {
+  const [areaType, setAreaType] = useState<AreaType>("Entire CEB");
+  const [locationCode, setLocationCode] = useState("");
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [reportType, setReportType] = useState<ReportType>("Detailed");
   const [sectorCode, setSectorCode] = useState("");
   const [billCycle, setBillCycle] = useState("");
@@ -123,6 +130,8 @@ const GovernmentCustomerAgeAnalysis = () => {
   const [generatedType, setGeneratedType] = useState<ReportType | null>(null);
   const [generatedSector, setGeneratedSector] = useState("");
   const [generatedCycle, setGeneratedCycle] = useState("");
+  const [generatedAreaType, setGeneratedAreaType] = useState<AreaType>("Entire CEB");
+  const [generatedLocation, setGeneratedLocation] = useState<Location | null>(null);
   const [loadingFilters, setLoadingFilters] = useState(true);
   const [loadingReport, setLoadingReport] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +154,35 @@ const GovernmentCustomerAgeAnalysis = () => {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    setLocations([]);
+    setLocationCode("");
+    setLocationError(null);
+    if (areaType === "Entire CEB") {
+      setLoadingLocations(false);
+      return;
+    }
+    setLoadingLocations(true);
+    const params = new URLSearchParams({ areaType });
+    getData<Location[]>(`${governmentAgeApiRoot}/government-age-analysis/locations?${params}`).then((data) => {
+      if (!active) return;
+      setLocations(data);
+      if (!data.length) setLocationError(`No ${areaType === "Province" ? "provinces" : "divisions"} are available.`);
+    }).catch((cause: unknown) => {
+      if (active) setLocationError(cause instanceof Error ? cause.message : "Unable to load locations.");
+    }).finally(() => {
+      if (active) setLoadingLocations(false);
+    });
+    return () => { active = false; };
+  }, [areaType]);
+
+  const needsLocation = areaType !== "Entire CEB";
+  const selectedLocation = locations.find((location) => location.Code === locationCode);
+  const canGenerate = !loadingFilters && !loadingReport && !!billCycle
+    && (reportType !== "Detailed" || !!sectorCode)
+    && (!needsLocation || (!loadingLocations && !!selectedLocation));
+
   const selectedSector = sectors.find((sector) => sector.CatCode === generatedSector);
   const columns = generatedType === "Summary" ? summaryColumns : detailedColumns;
   const visibleRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page]);
@@ -152,12 +190,13 @@ const GovernmentCustomerAgeAnalysis = () => {
 
   const generateReport = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!billCycle || (reportType === "Detailed" && !sectorCode)) return;
+    if (!canGenerate) return;
     setLoadingReport(true);
     setError(null);
     setRows([]);
     setGeneratedType(null);
-    const params = new URLSearchParams({ billCycle, reportType });
+    const params = new URLSearchParams({ billCycle, reportType, areaType });
+    if (needsLocation) params.set("locationCode", locationCode);
     if (reportType === "Detailed") params.set("sectorCode", sectorCode);
     try {
       const data = await getData<(DetailedRow | SummaryRow)[]>(`${governmentAgeApiRoot}/government-age-analysis?${params}`);
@@ -165,6 +204,8 @@ const GovernmentCustomerAgeAnalysis = () => {
       setGeneratedType(reportType);
       setGeneratedSector(reportType === "Detailed" ? sectorCode : "");
       setGeneratedCycle(billCycle);
+      setGeneratedAreaType(areaType);
+      setGeneratedLocation(needsLocation ? selectedLocation ?? null : null);
       setPage(1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to generate report.");
@@ -175,6 +216,8 @@ const GovernmentCustomerAgeAnalysis = () => {
 
   const reportTitle = `${governmentAgeReportName} - ${generatedType} report`;
   const metadata = [
+    generatedAreaType === "Entire CEB" ? "Area: Entire CEB"
+      : `${generatedAreaType}: ${generatedLocation?.Code} - ${generatedLocation?.Name}`,
     `Bill Cycle: ${formatBillCycle(generatedCycle)}`,
     generatedType === "Detailed"
       ? `Sector: ${generatedSector}${selectedSector?.CatDesc ? ` - ${selectedSector.CatDesc}` : ""}`
@@ -192,7 +235,9 @@ const GovernmentCustomerAgeAnalysis = () => {
     const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = `GovernmentAgeAnalysis_${generatedType}_Cycle${generatedCycle}${generatedSector ? `_Sector${generatedSector}` : ""}.csv`;
+    const locationFilePart = generatedAreaType === "Entire CEB" ? "EntireCEB"
+      : `${generatedAreaType}_${generatedLocation?.Code}`;
+    link.download = `GovernmentAgeAnalysis_${generatedType}_Cycle${generatedCycle}_${locationFilePart}${generatedSector ? `_Sector${generatedSector}` : ""}.csv`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -231,18 +276,42 @@ const GovernmentCustomerAgeAnalysis = () => {
           <form onSubmit={generateReport}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="flex flex-col gap-1 text-xs font-medium text-[#7A0000]">
-                Report Type
-                <select value={reportType} onChange={(event) => setReportType(event.target.value as ReportType)} className="border border-gray-300 rounded-md p-2 text-gray-800">
-                  <option value="Detailed">Detailed report</option>
-                  <option value="Full">Full report</option>
-                  <option value="Summary">Summary report</option>
+                Area Type
+                <select value={areaType} onChange={(event) => {
+                  const nextType = event.target.value as AreaType;
+                  setAreaType(nextType);
+                  setLocationCode("");
+                  setLocations([]);
+                  setLocationError(null);
+                  setLoadingLocations(nextType !== "Entire CEB");
+                }} className="border border-gray-300 rounded-md p-2 text-gray-800">
+                  <option value="Province">Province</option>
+                  <option value="Division">Division</option>
+                  <option value="Entire CEB">Entire CEB</option>
                 </select>
               </label>
+              {needsLocation && <label className="flex flex-col gap-1 text-xs font-medium text-[#7A0000]">
+                {areaType}
+                <select value={locationCode} onChange={(event) => setLocationCode(event.target.value)} className="border border-gray-300 rounded-md p-2 text-gray-800" disabled={loadingLocations} required>
+                  <option value="">{loadingLocations
+                    ? `Loading ${areaType === "Province" ? "provinces" : "divisions"}...` : `Select ${areaType}`}</option>
+                  {locations.map((location) => <option key={location.Code} value={location.Code}>{location.Code} - {location.Name}</option>)}
+                </select>
+                {locationError && <span role="alert" className="text-red-700">{locationError}</span>}
+              </label>}
               <label className="flex flex-col gap-1 text-xs font-medium text-[#7A0000]">
                 Bill Cycle
                 <select value={billCycle} onChange={(event) => setBillCycle(event.target.value)} className="border border-gray-300 rounded-md p-2 text-gray-800" disabled={loadingFilters} required>
                   <option value="">Select Bill Cycle</option>
                   {billCycles.map((cycle) => <option key={cycle} value={cycle}>{formatBillCycle(cycle)}</option>)}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-medium text-[#7A0000]">
+                Report Type
+                <select value={reportType} onChange={(event) => setReportType(event.target.value as ReportType)} className="border border-gray-300 rounded-md p-2 text-gray-800">
+                  <option value="Detailed">Detailed report</option>
+                  <option value="Full">Full report</option>
+                  <option value="Summary">Summary report</option>
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-[#7A0000]">
@@ -255,7 +324,7 @@ const GovernmentCustomerAgeAnalysis = () => {
               </label>
             </div>
             <div className="flex justify-end mt-6">
-              <button type="submit" disabled={loadingFilters || loadingReport || !billCycle || (reportType === "Detailed" && !sectorCode)} className="px-6 py-2 rounded-md bg-[#7A0000] text-white disabled:opacity-50">
+              <button type="submit" disabled={!canGenerate} className="px-6 py-2 rounded-md bg-[#7A0000] text-white disabled:opacity-50">
                 {loadingReport ? "Loading..." : "Generate Report"}
               </button>
             </div>
