@@ -117,21 +117,21 @@ const AnnualVerificationSheetSignature: React.FC = () => {
     };
 
     const headers = [
-      "Serial No",
-      "Code No",
+      "Serial No.",
+      "Code No.",
       "Description",
       "Grade",
       "UOM",
-      "S/ Price",
-      "Stock Book Qty",
-      "Physical Qty",
+      "Standard Price (Rs. Cts.)",
+      "Book Balance",
+      "Physical Balance",
       "Surplus",
       "Shortage",
-      "Stock Book Value (Rs.)",
-      "Physical Val. (Rs.)",
-      "Surplus Val. (Rs.)",
-      "Shortage Val. (Rs.)",
-      "Remarks",
+      "Book Value (Rs. Cts.)",
+      "Physical Value (Rs. Cts.)",
+      "Surplus (Rs. Cts.)",
+      "Shortage (Rs. Cts.)",
+      "Remarks (*)",
     ];
 
     const csvRows: string[] = [
@@ -287,16 +287,13 @@ const AnnualVerificationSheetSignature: React.FC = () => {
     .notes-section p { margin: 1px 0; }
     .underline { text-decoration: underline; }
 
-    .footer { position: absolute; bottom: 0; left: 0; right: 0; font-size: 10px; display: flex; justify-content: space-between; }
-
     .clear { clear: both; }
-    .totals-row td { font-weight: bold; font-size: 15px; background-color: #f0f0f0; }
   `;
 
     let serialNo = 1;
 
 
-    let pagesHTML = "";
+let pagesHTML = "";
 
 
     documentNos.forEach((docNo, p) => {
@@ -325,12 +322,6 @@ const AnnualVerificationSheetSignature: React.FC = () => {
     </tr>`;
       });
 
-      const now = new Date();
-      const timestamp =
-        now.toLocaleDateString("en-GB") +
-        " " +
-        now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", ".");
-
       pagesHTML += `
       <div class="page">
         <div class="header">
@@ -354,21 +345,49 @@ const AnnualVerificationSheetSignature: React.FC = () => {
         <table>
           <thead>
             <tr>
-              <th style="width:3%">1.<br>Serial</th>
-              <th style="width:4%">2.<br>Code No</th>
-              <th style="width:27%">3.<br>Description</th>
-              <th style="width:4%">4.<br>Grad</th>
-              <th style="width:4%">5.<br>UOM</th>
-              <th style="width:5%">6.<br>S/ Price</th>
-              <th style="width:5%">7.<br>Stock Book Qty</th>
-              <th style="width:5%">8.<br>Physical</th>
-              <th style="width:5%">9.<br>Surplus</th>
-              <th style="width:5%">10.<br>Shortag</th>
-              <th style="width:6%">11.<br>Stock Book Value (Rs.)</th>
-              <th style="width:6%">12.<br>Physical Val. (Rs.)</th>
-              <th style="width:6%">13.<br>Surplus Val. (Rs.)</th>
-              <th style="width:6%">14.<br>Shortage Val. (Rs.)</th>
-              <th style="width:9%">15.<br>Remarks (*)</th>
+              <th style="width:3%">1</th>
+              <th style="width:4%">2</th>
+              <th style="width:27%">3</th>
+              <th style="width:4%">4</th>
+              <th style="width:4%">5</th>
+              <th style="width:5%">6</th>
+              <th style="width:5%">7</th>
+              <th style="width:5%">8</th>
+              <th style="width:5%">9</th>
+              <th style="width:5%">10</th>
+              <th style="width:5%">11</th>
+              <th style="width:6%">12</th>
+              <th style="width:6%">13</th>
+              <th style="width:6%">14</th>
+              <th style="width:9%">15</th>
+            </tr>
+            <tr>
+              <th rowspan="3">Serial No.</th>
+              <th rowspan="3">Code No.</th>
+              <th rowspan="3">Description</th>
+              <th rowspan="3">Grade</th>
+              <th rowspan="3">UOM</th>
+              <th rowspan="2">Standard Price</th>
+              <th colspan="4">Q U A N T I T Y</th>
+              <th colspan="4">V A L U E</th>
+              <th rowspan="3">Remarks (*)</th>
+            </tr>
+            <tr>
+              <th rowspan="2">Book Balance</th>
+              <th rowspan="2">Physical Balance</th>
+              <th rowspan="2">Surplus</th>
+              <th rowspan="2">Shortage</th>
+              <th>Book Value</th>
+              <th>Physical Value</th>
+              <th>Surplus</th>
+              <th>Shortage</th>
+            </tr>
+            <tr>
+              <th>Rs. Cts.</th>
+              <th>Rs. Cts.</th>
+              <th>Rs. Cts.</th>
+              <th>Rs. Cts.</th>
+              <th>Rs. Cts.</th>
             </tr>
           </thead>
           <tbody>${bodyHTML}</tbody>
@@ -439,63 +458,9 @@ const AnnualVerificationSheetSignature: React.FC = () => {
           </div>
         </div>
 
-        <div class="footer">
-          <div>Date & time of the Report Generated : ${timestamp}</div>
-          <div>Page ${p + 1} of ${totalPages}</div>
-        </div>
-
         <div class="clear"></div>
       </div>`;
     });
-
-    /*   Total Section  */
-    if (reportData.length > 0) {
-      const totalStockBookValue = reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0);
-      const totalPhysicalValue = reportData.reduce((sum, item) => sum + (item.PhysicalBook || 0), 0);
-      const totalSurplusValue = reportData.reduce((sum, item) => sum + (item.SurplusAmount || 0), 0);
-      const totalShortageValue = reportData.reduce((sum, item) => sum + (item.ShortageAmount || 0), 0);
-
-      const now = new Date();
-      const formattedDate = now.toLocaleDateString("en-GB");
-      const formattedTime = now
-        .toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })
-        .replace(":", ".");
-      const timestamp = `${formattedDate} ${formattedTime}`;
-
-      pagesHTML += `<div class="page">
-    <div class="header">
-      <h2>ELECTRICITY DISTRIBUTION LANKA(PRIVATE) LIMITED</h2>
-      <h3>ANNUAL VERIFICATION OF STORES - ${selectedYear} / Cost Center : ${selectedDept.DeptId}</h3>             
-    </div>
-
-  
-    <table>
-      <thead>
-        <tr>
-          <th>Total Stock Book Value (Rs.)</th>
-          <th>Total Physical Value (Rs.)</th>
-          <th>Total Surplus Value (Rs.)</th>
-          <th>Total Shortage Value (Rs.)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="right">${totalStockBookValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td class="right">${totalPhysicalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td class="right">${totalSurplusValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td class="right">${totalShortageValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="footer">
-      <div>Date & time of the Report Generated : ${timestamp}</div>
-      <div>Page ${documentNos.length + 1} of ${documentNos.length + 1}</div>
-    </div>
-
-    <div class="clear"></div>
-  </div>`;
-    }
 
     const fullHTML = `
     <html>
@@ -577,51 +542,39 @@ const AnnualVerificationSheetSignature: React.FC = () => {
           <table className="w-full text-xs">
             <thead className={`${maroonGrad} text-white`}>
               <tr>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap w-[5%]">
-                  Serial No
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap">
-                  Code No
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-left whitespace-nowrap">
-                  Description
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap">
-                  Grade
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap">
-                  UOM
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  S/ Price
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Stock Book Qty
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Physical Qty
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Surplus
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Shortage
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Stock Book Value (Rs.)
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Physical Val. (Rs.)
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Surplus Val. (Rs.)
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Shortage Val. (Rs.)
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap">
-                  Remarks
-                </th>
+                {Array.from({ length: 15 }, (_, index) => (
+                  <th key={index} className="border border-gray-400 px-2 py-1 text-center whitespace-nowrap">
+                    {index + 1}
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Serial No.</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Code No.</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Description</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Grade</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">UOM</th>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Standard Price</th>
+                <th colSpan={4} className="border border-gray-400 px-2 py-1 text-center">Q U A N T I T Y</th>
+                <th colSpan={4} className="border border-gray-400 px-2 py-1 text-center">V A L U E</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Remarks (*)</th>
+              </tr>
+              <tr>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Book Balance</th>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Physical Balance</th>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Surplus</th>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Shortage</th>
+                <th className="border border-gray-400 px-2 py-2 text-center">Book Value</th>
+                <th className="border border-gray-400 px-2 py-2 text-center">Physical Value</th>
+                <th className="border border-gray-400 px-2 py-2 text-center">Surplus</th>
+                <th className="border border-gray-400 px-2 py-2 text-center">Shortage</th>
+              </tr>
+              <tr>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
               </tr>
             </thead>
             <tbody>
