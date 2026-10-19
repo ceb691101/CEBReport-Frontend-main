@@ -204,7 +204,7 @@ const JobRegCCNCReportTable: React.FC<{
             "",
         ];
         const headers = [
-            "Job No",
+            "Application No",
             "Project No",
             "Applicant Name & Address",
             "Tariff Cat",
@@ -311,7 +311,7 @@ const JobRegCCNCReportTable: React.FC<{
            PIV Amount / account-code / Total headers are currency columns, so they get an
            explicit text-align:right override to line up with their right-aligned data cells. */
         const fixedHeaderCells = [
-            "Job No", "Project No", "Applicant Name &amp; Address", "Tariff Cat", "Phase",
+            "Application No", "Project No", "Applicant Name &amp; Address", "Tariff Cat", "Phase",
             "Connection Type", "Contractor", "Contractor Allocated Date", "Job Finished Date", "PIV No",
         ];
 
@@ -427,7 +427,7 @@ const JobRegCCNCReportTable: React.FC<{
                             <table className="w-full text-xs border-collapse">
                                 <thead>
                                     <tr className="bg-[#7A0000] text-white sticky top-0">
-                                        <th className="px-3 py-2 border border-gray-300 text-center font-bold">Job No</th>
+                                        <th className="px-3 py-2 border border-gray-300 text-center font-bold">Application No</th>
                                         <th className="px-3 py-2 border border-gray-300 text-center font-bold">Project No</th>
                                         <th className="px-3 py-2 border border-gray-300 text-center font-bold">Applicant Name &amp; Address</th>
                                         <th className="px-3 py-2 border border-gray-300 text-center font-bold">Tariff Cat</th>
