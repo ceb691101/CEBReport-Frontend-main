@@ -160,6 +160,7 @@ import PHVNonMovingBOSReport from "../mainTopics/PHVFIFO/PHVNonMovingBOSReport.t
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
 import PUCSLSolarCustomers from "../mainTopics/PUCSL/PUCSLSolarCustomers";
 import SolarDataForUNT from "../mainTopics/PUCSL/SolarDataForUNT";
+import SolarJournalsRetail from "../mainTopics/PUCSL/SolarJournalsRetail";
 
 // Solar Information reports
 import SolarPVBilling from "../mainTopics/SolarInformation/SolarPVBilling";
@@ -506,6 +507,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"pucsl reports solar connections new": PUCSLSolarConnection,
 	"pucsl solar customers": PUCSLSolarCustomers,
 	"solar data for unt calculation": SolarDataForUNT,
+	"solar journals - retail": SolarJournalsRetail,
 
 	// Solar Information reports
 	"solar pv billing information": SolarPVBilling,
