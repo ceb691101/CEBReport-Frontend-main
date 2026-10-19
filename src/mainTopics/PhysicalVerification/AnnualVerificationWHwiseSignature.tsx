@@ -266,36 +266,39 @@ const AnnualVerificationWHwiseSignature: React.FC = () => {
       return `"${str}"`;
     };
     const headers = [
-      "Serial No",
-      "Code No",
+      "Serial No.",
+      "Code No.",
       "Description",
       "Grade",
       "UOM",
-      "S/ Price",
-      "Stock Book Qty",
-      "Physical Qty",
+      "Standard Price (Rs. Cts.)",
+      "Book Balance",
+      "Physical Balance",
       "Surplus",
       "Shortage",
-      "Stock Book Value (Rs.)",
-      "Physical Val. (Rs.)",
-      "Surplus Val. (Rs.)",
-      "Shortage Val. (Rs.)",
-      "Remarks",
+      "Book Value (Rs. Cts.)",
+      "Physical Value (Rs. Cts.)",
+      "Surplus (Rs. Cts.)",
+      "Shortage (Rs. Cts.)",
+      "Remarks (*)",
     ];
     const csvRows: string[] = [
       csvSafe(`ANNUAL VERIFICATION OF STORES - ${selectedYear ?? currentYear} (Verification Sheet)`),
-      csvSafe(`Cost Center : ${selectedDept.DeptId} - ${selectedDept.DeptName} - ${selectedWarehouse}`),
+      csvSafe(`Cost Center : ${selectedDept.DeptId} - ${selectedDept.DeptName}`),
 
 
       "",
     ];
     const docNo = reportData[0]?.DocumentNo || "";
+
     csvRows.push(
       csvSafe("ORIGINAL : Accountant"),
-      csvSafe(`DUPLICATE : (Province/Complex)`),
-      csvSafe(`TRIPLCATE : Store-keeper/E.S.(C.S.C)`),
-      csvSafe(`Fourth copy : Branch Copy | ${docNo}`),
+      csvSafe(`DUPLICATE : (Unit)`),
+      csvSafe(`TRIPLCATE : Store-keeper/E.S.(C.S.C.)`),
+      csvSafe(`Fourth copy : Branch Copy     | ${docNo}`),
       csvSafe(`From Ref : AV/1/A`),
+
+
       ""
     );
     csvRows.push(headers.map(csvSafe).join(","));
@@ -362,7 +365,7 @@ const AnnualVerificationWHwiseSignature: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Annual_Verification_WHwise_Signature_${selectedDept.DeptId}_${selectedWarehouse}_${selectedYear ?? currentYear}_${selectedMonth != null ? String(selectedMonth).padStart(2, "0") : ""}.csv`;
+    link.download = `Annual_Verification_Sheet_${selectedDept.DeptId}_${selectedYear ?? currentYear}_${selectedMonth != null ? String(selectedMonth).padStart(2, "0") : ""}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -379,96 +382,48 @@ const printPDF = () => {
   });
 
   const documentNos = Object.keys(groupedByDoc);
-  const totalPages = documentNos.length + 1; // +1 for totals page
+  const totalPages = documentNos.length;
 
   /* ================= STYLES ================= */
   const tableStyle = `
-    @page { size: A4 landscape; margin: 4mm; }
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    @page { size: A4 landscape; margin: 4mm 4mm 4mm 4mm; }
+    body { margin: 0; padding: 0; }
 
-    .page {
-      page-break-after: always;
-      position: relative;
-      min-height: 200mm;
-      display: flex;
-      flex-direction: column;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 9px;
-      table-layout: fixed;
-    }
-
-    th, td {
-      border: 1px solid #000;
-      padding: 1px 2px;
-      word-wrap: break-word;
-    }
-
-    th {
-      background-color: #ffffff;
-      font-weight: bold;
-      text-align: center;
-    }
+    .page { page-break-after: always; position: relative; min-height: 200mm; display: flex; flex-direction: column; }
+    table { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
+    th, td { border: 1px solid #000; padding: 1px 2px; word-wrap: break-word; }
+    th { background-color: #ffffff; font-weight: bold; text-align: center; }
 
     .center { text-align: center; }
     .right { text-align: right; }
 
-    .header h2 {
-      text-align: center;
-      color: #7A0000;
-      font-size: 16px;
-      margin: 0;
-    }
+    .header h2 { text-align: center; color: #7A0000; font-size: 16px; margin: 0; }
+    .header h3 { text-align: center; margin: 1px 0; font-size: 13px; }
 
-    .header h3 {
-      text-align: center;
-      margin: 1px 0;
-      font-size: 13px;
-    }
+    .subtitles { margin-bottom: 6px; font-size: 11px; display: flex; justify-content: space-between; align-items: flex-start; line-height: 1.35; }
+    .subtitles-left { text-align: left; }
+    .subtitles-right { text-align: left; }
 
-    .subtitles {
-      margin-bottom: 1px;
-      font-size: 11.5px;
-      display: flex;
-      justify-content: space-between;
-    }
+    .signature { margin-top: 14px; font-size: 11px; page-break-inside: avoid; }
+    .sig-statement { margin: 0 0 10px 0; font-size: 11.5px; }
+    .sig-columns { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; }
+    .sig-left { width: 56%; }
+    .sig-right { width: 38%; }
 
-    .subtitles div { flex-basis: 25%; }
+    .board-header { font-weight: bold; margin-bottom: 8px; font-size: 11.5px; }
+    .board-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+    .board-table th { border: none !important; font-weight: normal; text-align: left; padding: 2px 4px 6px 0; background: transparent; }
+    .board-table td { border: none !important; padding: 4px 4px 4px 0; vertical-align: bottom; }
+    .dotted-cell { border-bottom: 1px dotted #555 !important; height: 16px; width: 100%; }
 
-    .signature {
-      margin-top: 5px;
-      font-size: 12px;
-      page-break-inside: avoid;
-    }
+    .sig-right p { margin: 0 0 6px 0; line-height: 1.3; }
+    .sig-signature-row { margin: 16px 0 6px 0; display: flex; align-items: flex-end; }
+    .sig-signature-line { flex: 1; border-bottom: 1px dotted #555; height: 14px; margin-left: 6px; }
+    .sig-date-line { display: inline-block; border-bottom: 1px dotted #555; width: 160px; margin-left: 6px; height: 14px; vertical-align: bottom; }
 
-    .signature .left { float: left; width: 48%; }
-    .signature .right { float: right; width: 48%; text-align: right; }
-
-    .signature p { margin: 1px 0; line-height: 1.1; }
-
-    .signature table {
-      border: none;
-      width: 100%;
-      font-size: 12px;
-    }
-
-    .signature td {
-      border: none;
-      padding: 1px;
-    }
-
-    .footer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      font-size: 10px;
-      display: flex;
-      justify-content: space-between;
-    }
+    .notes-section { margin-top: 14px; font-size: 10.5px; line-height: 1.45; }
+    .notes-section p { margin: 1px 0; }
+    .underline { text-decoration: underline; }
 
     .clear { clear: both; }
   `;
@@ -505,139 +460,146 @@ const printPDF = () => {
       `;
     });
 
-    const now = new Date();
-    const timestamp =
-      now.toLocaleDateString("en-GB") +
-      " " +
-      now
-        .toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })
-        .replace(":", ".");
-
     pagesHTML += `
       <div class="page">
         <div class="header">
-<h2>ANNUAL VERIFICATION OF STORES - ${selectedYear} / COST CENTRE : ${selectedDept.DeptId} </h2>
-<h3>${selectedDept.DeptName ? selectedDept.DeptName + ' - ' : ''}Warehouse Code :${selectedWarehouse}</h3></div>
+          <h2>ANNUAL VERIFICATION OF STORES - ${selectedYear} / Cost Center : ${selectedDept.DeptId}</h2>
+        </div>
 
-        <div class="subtitles"><div>ORIGINAL : Accountant</div><div>From Ref : AV/1/A</div></div>
-        <div class="subtitles"><div>DUPLICATE : (Province/Complex)</div><div>Sheet No : ${docNo}</div></div>
-        <div class="subtitles"><div>TRIPLCATE : Store-keeper/E.S.(C.S.C)</div><div>Date of Verification : ${phvDate.split(/[\sT]/)[0] || phvDate}</div></div>
-        <div class="subtitles"><div>Fourth copy : Branch Copy</div><div>${docNo}</div></div>
+        <div class="subtitles">
+          <div class="subtitles-left">
+            <div style="font-weight: bold; margin-bottom: 2px;">TO BE FILLED IN TRIPLICATE</div>
+            <div>1. ORIGINAL : Accountant</div>
+            <div>2. DUPLICATE : (Unit)</div>
+            <div>3. TRIPLICATE : Store-keeper/E.S.(C.S.C.)</div>
+          </div>
+          <div class="subtitles-right">
+            <div>From Ref : AV/1/A</div>
+            <div>Sheet No : ${docNo}</div>
+            <div>Date of Verification : ${phvDate}</div>
+          </div>
+        </div>
 
         <table>
           <thead>
             <tr>
-              <th style="width:3%">1.<br>Serial</th>
-              <th style="width:4%">2.<br>Code No</th>
-              <th style="width:27%">3.<br>Description</th>
-              <th style="width:4%">4.<br>Grade</th>
-              <th style="width:4%">5.<br>UOM</th>
-              <th style="width:5%">6.<br>S/ Price</th>
-              <th style="width:5%">7.<br>Stock Book Qty</th>
-              <th style="width:5%">8.<br>Physical</th>
-              <th style="width:5%">9.<br>Surplus</th>
-              <th style="width:5%">10.<br>Shortage</th>
-              <th style="width:6%">11.<br>Stock Book Value</th>
-              <th style="width:6%">12.<br>Physical Value</th>
-              <th style="width:6%">13.<br>Surplus Value</th>
-              <th style="width:6%">14.<br>Shortage Value</th>
-              <th style="width:9%">15.<br>Remarks</th>
+              <th style="width:3%">1</th>
+              <th style="width:4%">2</th>
+              <th style="width:27%">3</th>
+              <th style="width:4%">4</th>
+              <th style="width:4%">5</th>
+              <th style="width:5%">6</th>
+              <th style="width:5%">7</th>
+              <th style="width:5%">8</th>
+              <th style="width:5%">9</th>
+              <th style="width:5%">10</th>
+              <th style="width:5%">11</th>
+              <th style="width:6%">12</th>
+              <th style="width:6%">13</th>
+              <th style="width:6%">14</th>
+              <th style="width:9%">15</th>
+            </tr>
+            <tr>
+              <th rowspan="3">Serial No.</th>
+              <th rowspan="3">Code No.</th>
+              <th rowspan="3">Description</th>
+              <th rowspan="3">Grade</th>
+              <th rowspan="3">UOM</th>
+              <th rowspan="2">Standard Price</th>
+              <th colspan="4">Q U A N T I T Y</th>
+              <th colspan="4">V A L U E</th>
+              <th rowspan="3">Remarks (*)</th>
+            </tr>
+            <tr>
+              <th rowspan="2">Book Balance</th>
+              <th rowspan="2">Physical Balance</th>
+              <th rowspan="2">Surplus</th>
+              <th rowspan="2">Shortage</th>
+              <th>Book Value</th>
+              <th>Physical Value</th>
+              <th>Surplus</th>
+              <th>Shortage</th>
+            </tr>
+            <tr>
+              <th>Rs. Cts.</th>
+              <th>Rs. Cts.</th>
+              <th>Rs. Cts.</th>
+              <th>Rs. Cts.</th>
+              <th>Rs. Cts.</th>
             </tr>
           </thead>
           <tbody>${bodyHTML}</tbody>
         </table>
 
+        <!--   SIGNATURE SECTION -->
         <div class="signature">
-          <div class="left">
-            <p>We do hereby certify that Stocks were physically verified as per that given statement.</p>
-            <table>
-              <tr><td>Verifiers:</td><td>Name</td><td>Designation</td><td>Signature</td></tr>
-              <tr><td class="right">1.</td><td>........................</td><td>........................</td><td>........................</td></tr>
-              <tr><td class="right">2.</td><td>........................</td><td>........................</td><td>........................</td></tr>
-              <tr><td class="right">3.</td><td>........................</td><td>........................</td><td>........................</td></tr>
-            </table>
-            <p>Note:1: 1 to 4 should be filled by the Store-keeper 5 to 14 should be filled by the Verification Team</p>
+          <p class="sig-statement">We do hereby certify that the stocks were physically verified as per above record.</p>
+
+          <div class="sig-columns">
+            <div class="sig-left">
+              <div class="board-header">Board of Verification</div>
+              <table class="board-table">
+                <thead>
+                  <tr>
+                    <th style="width: 5%;"></th>
+                    <th style="width: 32%;">Name</th>
+                    <th style="width: 32%;">Designation</th>
+                    <th style="width: 21%;">Signature</th>
+                    <th style="width: 10%;">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="right" style="padding-right: 4px;">1.</td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                  </tr>
+                  <tr>
+                    <td class="right" style="padding-right: 4px;">2.</td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                  </tr>
+                  <tr>
+                    <td class="right" style="padding-right: 4px;">3.</td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                    <td><div class="dotted-cell"></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="sig-right">
+              <p>Agreed for the above physical verification.</p>
+              <div class="sig-signature-row">
+                <span>Signature:</span>
+                <span class="sig-signature-line"></span>
+              </div>
+              <p>Designation : (Store-keeper/Electrical Superintendent/......)</p>
+              <p>(Place the rubber stamp)</p>
+              <p style="margin-top: 10px;">Date :<span class="sig-date-line"></span></p>
+            </div>
           </div>
 
-          <div class="right">
-            <p>Agreed for the above physical verification</p> 
-            <p>Valued by : ........................</p>
-            <p>Designation : ........................</p>
-            <p>Store-keeper / Electrical Superintendent</p>
+          <!-- NOTES SECTION -->
+          <div class="notes-section">
+            <p><strong>Note :</strong></p>
+            <p>Columns 1 - 6 should be filled by the store-keeper/electrical superintendent if the format is not generated by the MITFIN Inventory system.</p>
+            <p>Columns 7 - 15 should be filled by the Board of Verification.</p>
+            <p><span class="underline">Please indicate in the Remark Column</span></p>
+            <p>(*)- Status of the stocks -Obsolete and idle,Damage,slow moving and non moving (O,D,SM and NM)</p>
           </div>
-        </div>
-
-        <div class="footer">
-          <div>Date & time of the Report Generated : ${timestamp}</div>
-          <div>Page ${pageIndex + 1} of ${totalPages}</div>
         </div>
 
         <div class="clear"></div>
       </div>
     `;
   });
-
-  /* ================= TOTALS PAGE ================= */
-  if (reportData.length > 0) {
-    const totalStockBookValue = reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0);
-    const totalPhysicalValue = reportData.reduce((sum, item) => sum + (item.PhysicalBook || 0), 0);
-    const totalSurplusValue = reportData.reduce((sum, item) => sum + (item.SurplusAmount || 0), 0);
-    const totalShortageValue = reportData.reduce((sum, item) => sum + (item.ShortageAmount || 0), 0);
-
-    const now = new Date();
-    const timestamp =
-      now.toLocaleDateString("en-GB") +
-      " " +
-      now
-        .toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })
-        .replace(":", ".");
-
-    pagesHTML += `
-      <div class="page">
-    
-      <table>
-          <thead>
-            <tr>
-              <th style="width:3%">1.<br>Serial</th>
-              <th style="width:4%">2.<br>Code No</th>
-              <th style="width:27%">3.<br>Description</th>
-              <th style="width:4%">4.<br>Grade</th>
-              <th style="width:4%">5.<br>UOM</th>
-              <th style="width:5%">6.<br>S/ Price</th>
-              <th style="width:5%">7.<br>Stock Book Qty</th>
-              <th style="width:5%">8.<br>Physical</th>
-              <th style="width:5%">9.<br>Surplus</th>
-              <th style="width:5%">10.<br>Shortage</th>
-              <th style="width:6%">11.<br>Stock Book Value</th>
-              <th style="width:6%">12.<br>Physical Value</th>
-              <th style="width:6%">13.<br>Surplus Value</th>
-              <th style="width:6%">14.<br>Shortage Value</th>
-              <th style="width:9%">15.<br>Remarks</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="center" colspan="10"><strong>TOTAL</strong></td>
-              <td class="right"><strong>${totalStockBookValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-              <td class="right"><strong>${totalPhysicalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-              <td class="right"><strong>${totalSurplusValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-              <td class="right"><strong>${totalShortageValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
-              <td>-</td>
-            </tr>
-          </tbody>
-        </table>
-
-     
-
-        <div class="footer">
-          <div>Date & time of the Report Generated : ${timestamp}</div>
-          <div>Page ${totalPages} of ${totalPages}</div>
-        </div>
-
-        <div class="clear"></div>
-      </div>
-    `;
-  }
 
   /* ================= RENDER ================= */
   const fullHTML = `
@@ -833,51 +795,39 @@ const printPDF = () => {
           <table className="w-full text-xs">
             <thead className={`${maroonGrad} text-white`}>
               <tr>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap w-[5%]">
-                  Serial No
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap">
-                  Code No
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-left whitespace-nowrap">
-                  Description
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap">
-                  Grade
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap">
-                  UOM
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  S/ Price
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Stock Book Qty
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Physical Qty
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Surplus
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Shortage
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Stock Book Value (Rs.)
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Physical Val. (Rs.)
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Surplus Val. (Rs.)
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-right whitespace-nowrap">
-                  Shortage Val. (Rs.)
-                </th>
-                <th className="border border-gray-400 px-3 py-2 text-center whitespace-nowrap">
-                  Remarks
-                </th>
+                {Array.from({ length: 15 }, (_, index) => (
+                  <th key={index} className="border border-gray-400 px-2 py-1 text-center whitespace-nowrap">
+                    {index + 1}
+                  </th>
+                ))}
+              </tr>
+              <tr>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Serial No.</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Code No.</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Description</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Grade</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">UOM</th>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Standard Price</th>
+                <th colSpan={4} className="border border-gray-400 px-2 py-1 text-center">Q U A N T I T Y</th>
+                <th colSpan={4} className="border border-gray-400 px-2 py-1 text-center">V A L U E</th>
+                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Remarks (*)</th>
+              </tr>
+              <tr>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Book Balance</th>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Physical Balance</th>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Surplus</th>
+                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Shortage</th>
+                <th className="border border-gray-400 px-2 py-2 text-center">Book Value</th>
+                <th className="border border-gray-400 px-2 py-2 text-center">Physical Value</th>
+                <th className="border border-gray-400 px-2 py-2 text-center">Surplus</th>
+                <th className="border border-gray-400 px-2 py-2 text-center">Shortage</th>
+              </tr>
+              <tr>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
               </tr>
             </thead>
             <tbody>
