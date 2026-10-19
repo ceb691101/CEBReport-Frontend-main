@@ -32,6 +32,8 @@ export interface FixedSolarDataModel {
     KwhAt37: number;
     KwhAt2318: number;
     KwhAt2706: number;
+    BulkKwhOthers?: number;
+    BulkOtherPaidAmount?: number;
     KwhOthers: number;
     PaidAmount: number;
     ErrorMessage?: string;

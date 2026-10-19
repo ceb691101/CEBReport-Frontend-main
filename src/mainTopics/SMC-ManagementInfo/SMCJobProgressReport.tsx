@@ -170,8 +170,12 @@ const SmcJobProgressReport: React.FC = () => {
 		setShowReport(true);
 
 		try {
-			const costCtrParam = encodeURIComponent(dept.DeptId);
-			const url = `/misapi/api/smcjobprogress/report/${fromDate}/${toDate}/${costCtrParam}`;
+			const params = new URLSearchParams({
+				fromDate,
+				toDate,
+				costCtr: dept.DeptId.trim(),
+			});
+			const url = `/misapi/api/smcjobprogress/report?${params.toString()}`;
 
 			const res = await fetch(url, {
 				credentials: "include",

@@ -32,6 +32,7 @@ export type StockBalance = {
   Province: string;
   DeptId: string;
   MatNm: string;
+  GradeCd?: string;
   UnitPrice: number;
   QtyOnHand: number;
   CommittedCost?: number;
