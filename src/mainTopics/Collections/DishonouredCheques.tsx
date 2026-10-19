@@ -1,5 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaFileDownload, FaPrint } from "react-icons/fa";
+import { useReportScope } from "../../hooks/useReportScope";
+import { useUser } from "../../contexts/UserContext";
 
 interface DishonouredCheque {
   acctNo: string;
@@ -19,7 +21,26 @@ interface DishonouredCheque {
   email: string;
 }
 
+interface AreaItem {
+  AreaCode?: string;
+  areaCode?: string;
+  ProvCode?: string;
+  provCode?: string;
+  Region?: string;
+  region?: string;
+  AreaName?: string;
+  areaName?: string;
+}
+
 const DishonouredCheques: React.FC = () => {
+  const { level, locked } = useReportScope();
+  const { user } = useUser();
+  const lockedRegionCode = locked["Region"]?.code;
+  const lockedProvinceCode = locked["Province"]?.code;
+  const lockedAreaCode = locked["Area"]?.code;
+
+  const [allOrdinaryAreas, setAllOrdinaryAreas] = useState<AreaItem[]>([]);
+
   const maroon = "text-[#7A0000]";
   const maroonGrad = "bg-gradient-to-r from-[#7A0000] to-[#A52A2A]";
 
@@ -36,11 +57,193 @@ const DishonouredCheques: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Fetch ordinary areas on mount to enforce geographical scoping check (level < 80)
+  useEffect(() => {
+    if (level >= 80) return;
+
+    const fetchAllAreas = async () => {
+      try {
+        const response = await fetch("/misapi/api/ordinary/areas");
+        if (!response.ok) throw new Error("Failed to fetch ordinary areas");
+        const result = await response.json();
+        if (result?.data && Array.isArray(result.data)) {
+          setAllOrdinaryAreas(result.data);
+        }
+      } catch (err) {
+        console.error("Error fetching areas for scope verification:", err);
+      }
+    };
+
+    fetchAllAreas();
+  }, [level]);
+
+  const normalizeRegion = (val?: string) => {
+    if (!val) return "";
+    const s = String(val).trim().toLowerCase();
+    return s.replace(/^region\s*/, "").replace(/^r/, "").replace(/^0+/, "");
+  };
+
+  const isRegionMatch = (r1?: string, r2?: string) => {
+    if (!r1 || !r2) return false;
+    const s1 = String(r1).trim().toLowerCase();
+    const s2 = String(r2).trim().toLowerCase();
+    return s1 === s2 || normalizeRegion(s1) === normalizeRegion(s2);
+  };
+
+  const normalizeProv = (p?: string) => {
+    if (!p) return "";
+    const s = String(p).trim().toLowerCase();
+    return s.startsWith("0") && s.length > 1 ? s.replace(/^0+/, "") : s;
+  };
+
+  const isProvMatch = (p1?: string, p2?: string) => {
+    if (!p1 || !p2) return false;
+    const s1 = String(p1).trim().toLowerCase();
+    const s2 = String(p2).trim().toLowerCase();
+    return s1 === s2 || normalizeProv(s1) === normalizeProv(s2);
+  };
+
+  const normalizeArea = (a?: string) => {
+    if (!a) return "";
+    const s = String(a).trim().toLowerCase();
+    return s.startsWith("0") && s.length > 1 ? s.replace(/^0+/, "") : s;
+  };
+
+  const isAreaMatch = (a1?: string, a2?: string) => {
+    if (!a1 || !a2) return false;
+    const s1 = String(a1).trim().toLowerCase();
+    const s2 = String(a2).trim().toLowerCase();
+    return s1 === s2 || normalizeArea(s1) === normalizeArea(s2);
+  };
+
+  const resolveAccountArea = async (acct: string, areasList: AreaItem[]) => {
+    const cleanAcct = String(acct || "").trim();
+    if (cleanAcct.length < 2) return null;
+    const prefix2 = cleanAcct.substring(0, 2);
+
+    // 1. Direct match with ordinary areas list
+    const matched = areasList.find(
+      (a: AreaItem) =>
+        String(a.AreaCode || a.areaCode || "").trim().toLowerCase() ===
+        prefix2.toLowerCase()
+    );
+    if (matched) {
+      return {
+        areaCode: String(matched.AreaCode || matched.areaCode || "").trim(),
+        provCode: String(matched.ProvCode || matched.provCode || "").trim(),
+        regionCode: String(matched.Region || matched.region || "").trim(),
+      };
+    }
+
+    // 2. Special Colombo legacy postal prefixes (05, 06, 07 -> Colombo South "03"; 08, 09 -> Colombo East "02")
+    if (["05", "06", "07"].includes(prefix2)) {
+      const cs = areasList.find(
+        (a: AreaItem) => String(a.AreaCode || a.areaCode || "").trim() === "03"
+      );
+      if (cs) {
+        return {
+          areaCode: "03",
+          provCode: String(cs.ProvCode || cs.provCode || "3").trim(),
+          regionCode: String(cs.Region || cs.region || "R1").trim(),
+        };
+      }
+    } else if (["08", "09"].includes(prefix2)) {
+      const ce = areasList.find(
+        (a: AreaItem) => String(a.AreaCode || a.areaCode || "").trim() === "02"
+      );
+      if (ce) {
+        return {
+          areaCode: "02",
+          provCode: String(ce.ProvCode || ce.provCode || "3").trim(),
+          regionCode: String(ce.Region || ce.region || "R1").trim(),
+        };
+      }
+    }
+
+    // 3. Fallback to Customer Master API if prefix not directly resolved
+    try {
+      const response = await fetch(
+        "/MRMSAPI/API/Customer/GetOrdinaryCustomertranhst_asc",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ account_no: cleanAcct, from_cycle: "450" }),
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        const returnedAreaCode = String(
+          result?.customer_master_detail?.area_code || ""
+        ).trim();
+        if (returnedAreaCode) {
+          const areaObj = areasList.find(
+            (a: AreaItem) =>
+              String(a.AreaCode || a.areaCode || "").trim().toLowerCase() ===
+              returnedAreaCode.toLowerCase()
+          );
+          if (areaObj) {
+            return {
+              areaCode: String(areaObj.AreaCode || areaObj.areaCode || "").trim(),
+              provCode: String(areaObj.ProvCode || areaObj.provCode || "").trim(),
+              regionCode: String(
+                areaObj.Region || areaObj.region || ""
+              ).trim(),
+            };
+          }
+        }
+      }
+    } catch {
+      // Ignore fallback error
+    }
+
+    return null;
+  };
+
+  const isAccountAuthorized = (
+    accountScope: { areaCode: string; provCode: string; regionCode: string } | null
+  ): boolean => {
+    // Level >= 80 is HQ - completely unrestricted
+    if (level >= 80) return true;
+    if (!accountScope) return false;
+
+    // Region Level (Level 70 - 79)
+    if (level >= 70) {
+      const reg =
+        lockedRegionCode ||
+        user.RegionCode ||
+        (user.Name?.match(/R[1-4]/i)?.[0]) ||
+        "";
+      if (!reg) return false;
+      return isRegionMatch(accountScope.regionCode, reg);
+    }
+
+    // Province Level (Level 60 - 69)
+    if (level >= 60) {
+      const prov =
+        lockedProvinceCode ||
+        user.ProvinceCode ||
+        (user.Name?.match(/Province\s*([0-9A-Z])/i)?.[1]) ||
+        "";
+      if (!prov) return false;
+      return isProvMatch(accountScope.provCode, prov);
+    }
+
+    // Area Level (Level < 60)
+    const area =
+      lockedAreaCode ||
+      user.AreaCode ||
+      (user.Name?.match(/\b\d{2}\b/)?.[0]) ||
+      "";
+    if (!area) return false;
+    return isAreaMatch(accountScope.areaCode, area);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedOption(e.target.value);
     setInputValue("");
     setFromDate("");
     setToDate("");
+    setReportError(null);
   };
 
   const formatCurrency = (value: number): string => {
@@ -203,7 +406,7 @@ const DishonouredCheques: React.FC = () => {
 
     const rows = cheques.map(getRowData);
 
-    let csvContent = [
+    const csvContent = [
       `Dishonoured Cheques Report`,
       selectedOption === "Single Account"
         ? `Account No: ${inputValue || ""}\nAddress: ${
@@ -615,8 +818,32 @@ const DishonouredCheques: React.FC = () => {
     setReportVisible(false);
 
     try {
+      let currentAreas = allOrdinaryAreas;
+      if (level < 80 && currentAreas.length === 0) {
+        try {
+          const res = await fetch("/misapi/api/ordinary/areas");
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.data && Array.isArray(data.data)) {
+              currentAreas = data.data;
+              setAllOrdinaryAreas(data.data);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load areas:", e);
+        }
+      }
+
+      // Check level-based access control (LBAC) upfront for Single Account
+      if (selectedOption === "Single Account" && level < 80) {
+        const scope = await resolveAccountArea(inputValue.trim(), currentAreas);
+        if (!scope || !isAccountAuthorized(scope)) {
+          throw new Error("This account is outside your access scope.");
+        }
+      }
+
       let endpoint = "";
-      let body: any = {};
+      let body: Record<string, unknown> = {};
       let validationError = "";
 
       // Validate inputs based on selected option
@@ -643,7 +870,7 @@ const DishonouredCheques: React.FC = () => {
           };
           break;
 
-        case "All":
+        case "All": {
           endpoint = "/CEBINFO_API_2025/api/DateRangeDishonouredChque";
           // Calculate 5 years ago from today
           const today = new Date();
@@ -655,6 +882,7 @@ const DishonouredCheques: React.FC = () => {
             date2: formatDateForAPI(today.toISOString().split("T")[0]),
           };
           break;
+        }
 
         default:
           validationError = "Invalid search option";
@@ -687,7 +915,7 @@ const DishonouredCheques: React.FC = () => {
           } else if (errorData.message) {
             errorMsg = errorData.message;
           }
-        } catch (e) {
+        } catch {
           errorMsg = `${errorMsg}: ${await response.text()}`;
         }
         throw new Error(errorMsg);
@@ -713,15 +941,92 @@ const DishonouredCheques: React.FC = () => {
         throw new Error("No data returned from API");
       }
 
+      // Check level-based access control (LBAC) for Cheque No
+      if (selectedOption === "Cheque No" && level < 80) {
+        const filteredCheques: DishonouredCheque[] = [];
+        for (const item of chequesData) {
+          const scope = await resolveAccountArea(item.acctNo, currentAreas);
+          if (scope && isAccountAuthorized(scope)) {
+            filteredCheques.push(item);
+          }
+        }
+        if (!filteredCheques.length) {
+          throw new Error("This cheque is outside your access scope.");
+        }
+        setCheques(filteredCheques);
+        setReportVisible(true);
+        return;
+      }
+
+      // Check level-based access control (LBAC) for Date Range and All options
+      if (
+        (selectedOption === "Date Range" || selectedOption === "All") &&
+        level < 80
+      ) {
+        const filteredCheques = chequesData.filter(
+          (item: DishonouredCheque) => {
+            const cleanAcct = String(item.acctNo || "").trim();
+            if (cleanAcct.length < 2) return false;
+            const prefix2 = cleanAcct.substring(0, 2);
+
+            let matched = currentAreas.find(
+              (a: AreaItem) =>
+                String(a.AreaCode || a.areaCode || "").trim().toLowerCase() ===
+                prefix2.toLowerCase()
+            );
+            if (!matched) {
+              if (["05", "06", "07"].includes(prefix2)) {
+                matched = currentAreas.find(
+                  (a: AreaItem) =>
+                    String(a.AreaCode || a.areaCode || "").trim() === "03"
+                );
+              } else if (["08", "09"].includes(prefix2)) {
+                matched = currentAreas.find(
+                  (a: AreaItem) =>
+                    String(a.AreaCode || a.areaCode || "").trim() === "02"
+                );
+              }
+            }
+            if (!matched) return false;
+
+            const scope = {
+              areaCode: String(
+                matched.AreaCode || matched.areaCode || ""
+              ).trim(),
+              provCode: String(
+                matched.ProvCode || matched.provCode || ""
+              ).trim(),
+              regionCode: String(
+                matched.Region || matched.region || ""
+              ).trim(),
+            };
+            return isAccountAuthorized(scope);
+          }
+        );
+
+        if (!filteredCheques.length) {
+          throw new Error(
+            "No dishonoured cheques found within your access scope."
+          );
+        }
+        setCheques(filteredCheques);
+        setReportVisible(true);
+        return;
+      }
+
       setCheques(chequesData);
       setReportVisible(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error in form submission:", err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Failed to load dishonoured cheques";
       // Special handling for network errors
-      if (err.message.includes("Failed to fetch")) {
+      if (msg.includes("Failed to fetch")) {
         setReportError("Network error - please check your connection");
       } else {
-        setReportError(err.message || "Failed to load dishonoured cheques");
+        setReportError(msg);
       }
     } finally {
       setLoading(false);
@@ -745,6 +1050,11 @@ const DishonouredCheques: React.FC = () => {
           <h2 className={`text-xl font-bold mb-6 ${maroon}`}>
             Dishonoured Cheques
           </h2>
+          {reportError && (
+            <div className="text-red-600 bg-red-100 border border-red-300 p-4 rounded text-sm mb-4">
+              <strong>Error:</strong> {reportError}
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               {/* Dropdown */}

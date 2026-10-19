@@ -30,6 +30,23 @@ const General = () => {
     menuSubtopics.splice(insertIndex + 1, 0, tariff);
   }
 
+  // Ensure "Metering Reading Completion Status Report" is placed at the very top
+  const meteringReportName = "Metering Reading Completion Status Report";
+  const meteringIndex = menuSubtopics.findIndex(
+    (subtopic) =>
+      normalizeReportName(subtopic.name) === normalizeReportName(meteringReportName)
+  );
+
+  const meteringReport =
+    meteringIndex !== -1
+      ? menuSubtopics.splice(meteringIndex, 1)[0]
+      : {
+          id: Math.min(0, ...subtopics.map((subtopic) => subtopic.id), 0) - 10,
+          name: meteringReportName,
+        };
+
+  menuSubtopics.unshift(meteringReport);
+
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
       setExpandedCard(selectedSubtopicId);

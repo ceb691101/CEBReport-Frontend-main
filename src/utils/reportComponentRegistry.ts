@@ -90,6 +90,7 @@ import LargestCus from "../mainTopics/general/LargestCus";
 import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerDetails";
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
 import FinalizedAccounts from "../mainTopics/general/FinalizedAccounts";
+import MeteringReadingCompletionStatusReport from "../mainTopics/general/MeteringReadingCompletionStatusReport";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -172,6 +173,8 @@ import SolarConnectionDetailsBulk from "../mainTopics/SolarInformation/SolarConn
 import SolarCustomerInformation from "../mainTopics/SolarInformation/SolarCustomerInformation";
 import RoofTopSolarInputData from "../mainTopics/SolarInformation/RoofTopSolarInputData";
 import SolarRooftopPaymentsandExportunits from "../mainTopics/SolarInformation/SolarRooftopPaymentsandExportunits";
+import SolarPaymentLissReconciliation from "../mainTopics/SolarInformation/SolarPaymentLissReconciliation";
+import SolarJournalsBulk from "../mainTopics/PUCSL/SolarJournalsBulk";
 
 // Solar Jobs reports
 import SolarBillingReport from "../mainTopics/SolarJobs/SolarBillingReport";
@@ -402,6 +405,8 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise selected payee within date range": CashBookCCReport,
 
 	// General reports
+	"metering reading completion status report": MeteringReadingCompletionStatusReport,
+	"meter reading completion status report": MeteringReadingCompletionStatusReport,
 	"tariff block wise consumption": TariffBlockWiseConsumption,
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
 	"bill calculation": BillCalculation,
@@ -514,6 +519,14 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"solar customer information": SolarCustomerInformation,
 	"rooftop solar input data portal for t and d loss calculation": RoofTopSolarInputData,
 	"solar rooftop payments and export units": SolarRooftopPaymentsandExportunits,
+	"solar payment and liss reconciliation report": SolarPaymentLissReconciliation,
+	"solar payment & liss reconciliation report": SolarPaymentLissReconciliation,
+	"solar payment and liss reconciliation": SolarPaymentLissReconciliation,
+	"solar payment & liss reconciliation": SolarPaymentLissReconciliation,
+	"solar journals - bulk": SolarJournalsBulk,
+	"solar journals bulk": SolarJournalsBulk,
+	"solar journals - bulk report": SolarJournalsBulk,
+	"solar journals bulk report": SolarJournalsBulk,
 
 	// Solar Jobs reports
 	"area wise solar sent to billing details": SolarBillingReport,
