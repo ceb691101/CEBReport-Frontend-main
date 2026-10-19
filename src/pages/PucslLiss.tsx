@@ -5,8 +5,6 @@ import SubtopicCard from "../components/shared/SubtopicCard";
 import { useReportRenderer } from "../hooks/useReportRenderer";
 import { normalizeReportName } from "../utils/reportNameMatch";
 
-const retailJournals: RoleSubtopic = { id: -1, name: "Solar Journals - Retail" };
-
 const PucslLiss = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["PUCSL/LISS"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
@@ -17,6 +15,25 @@ const PucslLiss = () => {
   const visibleSubtopics = subtopics.length > 0 && !hasRetailJournals
     ? [...subtopics, retailJournals]
     : subtopics;
+
+  const menuSubtopics = [...subtopics];
+
+  // Ensure "Solar Journals - Bulk" is always available in PUCSL/LISS list
+  const journalsReportName = "Solar Journals - Bulk";
+  const journalsIndex = menuSubtopics.findIndex(
+    (subtopic) =>
+      normalizeReportName(subtopic.name) === normalizeReportName(journalsReportName)
+  );
+
+  const journalsReport =
+    journalsIndex !== -1
+      ? menuSubtopics.splice(journalsIndex, 1)[0]
+      : {
+          id: Math.min(0, ...subtopics.map((subtopic) => subtopic.id), 0) - 99,
+          name: journalsReportName,
+        };
+
+  menuSubtopics.push(journalsReport);
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {

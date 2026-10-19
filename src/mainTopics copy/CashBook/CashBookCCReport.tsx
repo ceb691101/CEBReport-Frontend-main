@@ -541,10 +541,13 @@ const CashBookCCReport: React.FC = () => {
 		const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
 		try {
-			const payeeParam = payee ? encodeURIComponent(payee) : "";
-			const url = `/misapi/api/cashbook/ccreport/${toYYYYMMDD(
-				fromDate
-			)}/${toYYYYMMDD(toDate)}/${dept.DeptId}/${payeeParam}`;
+			const params = new URLSearchParams({
+				fromDate: toYYYYMMDD(fromDate),
+				toDate: toYYYYMMDD(toDate),
+				costCtr: dept.DeptId.trim(),
+				payee: payee.trim(),
+			});
+			const url = `/misapi/api/cashbook/ccreport?${params.toString()}`;
 			const res = await fetch(url, {signal: controller.signal});
 			clearTimeout(timeout);
 

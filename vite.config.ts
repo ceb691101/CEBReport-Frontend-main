@@ -40,11 +40,27 @@ export default defineConfig(({ mode }) => {
 					secure: false,
 				},
 
+				// Route new solar-journals report to local IIS Express backend for testing until deployed to server
+				"/misapi/solarapi/solar-journals": {
+					target: "http://localhost:44381",
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+
+				// Route meter-reading completion-status to local IIS Express backend for testing
+				"/misapi/api/meter-reading": {
+					target: "http://localhost:44381",
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+
 				"/misapi": {
 					target: env.VITE_SERVER_API,
 					changeOrigin: true,
 					secure: false,
-					//rewrite: (path) => path.replace(/^\/misapi/, ""),
+
 				},
 				"/api": {
 					target: env.VITE_SERVER_API,
