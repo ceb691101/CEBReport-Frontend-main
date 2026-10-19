@@ -337,9 +337,13 @@ const SolarDataForUNT = () => {
       ].join(","));
     }
 
+    const csvCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const locationLabel = reportCategory === "Entire CEB" ? "Scope" : reportCategory;
     const csvContent = [
-      `Solar Data for UNT Calculation - ${netType}`,
-      selectedBillCycleDisplay,
+      csvCell(`Solar Data for UNT Calculation - ${netType}`),
+      csvCell(`${locationLabel}: ${selectedLocationLabel}`),
+      csvCell(`Bill Cycle: ${selectedBillCycleDisplay}`),
+      csvCell(`Solar Type: ${netType}`),
       "",
       headers,
       ...rows

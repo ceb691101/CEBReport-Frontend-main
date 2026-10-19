@@ -9,6 +9,11 @@ export default defineConfig(({ mode }) => {
 		plugins: [react(), tailwindcss()],
 		server: {
 			proxy: {
+				"/api/debtors": {
+					target: env.VITE_LOCAL_API || `${env.VITE_SERVER_API}/misapi`,
+					changeOrigin: true,
+					secure: false,
+				},
 				"/smsapi": {
 					target: env.VITE_SERVER_API,
 					changeOrigin: true,
@@ -46,11 +51,8 @@ export default defineConfig(({ mode }) => {
 					target: env.VITE_SERVER_API,
 					changeOrigin: true,
 					secure: false,
-					// When testing with local IIS Express (http://localhost:44381), uncomment below:
-					// target: env.VITE_LOCAL_API || "http://localhost:44381",
-					// rewrite: (path) => path.replace(/^\/misapi/, ""),
-				},
 
+				},
 				"/api": {
 					target: env.VITE_SERVER_API,
 					changeOrigin: true,

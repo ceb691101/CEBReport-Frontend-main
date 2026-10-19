@@ -20,7 +20,7 @@ const secondaryDashboardPages: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboardPage,
   financial: FinancialDashboardPage,
   dgm: DgmDashboardPage,
-  areaEngineer: AreaEngineerDashboardPage,
+  areaengineer: AreaEngineerDashboardPage,
   operations: OperationsDashboardPage,
   solar: SolarDashboardPage,
   collections: CollectionsDashboardPage,
@@ -32,8 +32,8 @@ const secondaryDashboardPages: Record<string, React.ComponentType> = {
 const getDashboardKey = (name: string): string => {
   const norm = name.toLowerCase();
   if (norm.includes("financial")) return "financial";
+  if (norm.includes("areaengineer") || norm.includes("area engineer") || norm.includes("agm") || norm.includes("area")) return "areaengineer";
   if (norm.includes("dgm") || norm.includes("construction")) return "dgm";
-  if (norm.includes("area engineer")) return "areaEngineer";
   if (norm.includes("operations") || norm.includes("field")) return "operations";
   if (norm.includes("analytics")) return "analytics";
   if (norm.includes("solar")) return "solar";
@@ -48,6 +48,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { dashboardId } = useParams<{ dashboardId?: string }>();
   const { user } = useUser();
+  const isAreaEngineerLanding = !dashboardId || dashboardId.toLowerCase() === "areaengineer";
 
   const { subtopics, loading } = useRoleBasedSubtopics([
     "Dashboard",
@@ -69,16 +70,21 @@ const Dashboard: React.FC = () => {
   }, [subtopics, user?.Level]);
 
   useEffect(() => {
+    if (isAreaEngineerLanding) return;
     if (loading || filteredSubtopics.length === 0) return;
 
     const allowedKeys = filteredSubtopics.map((s) => getDashboardKey(s.name));
     const firstAllowedKey = allowedKeys[0];
 
     // If no dashboardId in URL, OR if the URL dashboardId is no longer allowed for this role:
-    if (!dashboardId || !allowedKeys.includes(dashboardId)) {
+    if (!dashboardId || !allowedKeys.includes(dashboardId.toLowerCase())) {
       navigate(`/dashboard/${firstAllowedKey}`, { replace: true });
     }
-  }, [dashboardId, filteredSubtopics, loading, navigate]);
+  }, [dashboardId, filteredSubtopics, loading, navigate, isAreaEngineerLanding]);
+
+  if (isAreaEngineerLanding) {
+    return <AreaEngineerDashboardPage />;
+  }
 
   // Render smooth spinner while checking permissions
   if (loading) {
@@ -116,7 +122,7 @@ const Dashboard: React.FC = () => {
 
   const allowedKeys = filteredSubtopics.map((s) => getDashboardKey(s.name));
   const activeDashboard =
-    dashboardId && allowedKeys.includes(dashboardId) ? dashboardId : allowedKeys[0];
+    dashboardId && allowedKeys.includes(dashboardId.toLowerCase()) ? dashboardId.toLowerCase() : allowedKeys[0];
 
   const SecondaryDashboardPage = secondaryDashboardPages[activeDashboard];
 
