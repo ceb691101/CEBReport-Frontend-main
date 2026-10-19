@@ -1,12 +1,22 @@
 import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
+import type { RoleSubtopic } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import { useReportRenderer } from "../hooks/useReportRenderer";
+import { normalizeReportName } from "../utils/reportNameMatch";
+
+const retailJournals: RoleSubtopic = { id: -1, name: "Solar Journals - Retail" };
 
 const PucslLiss = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["PUCSL/LISS"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const renderReport = useReportRenderer();
+  const hasRetailJournals = subtopics.some(
+    (subtopic) => normalizeReportName(subtopic.name) === normalizeReportName(retailJournals.name)
+  );
+  const visibleSubtopics = subtopics.length > 0 && !hasRetailJournals
+    ? [...subtopics, retailJournals]
+    : subtopics;
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -24,7 +34,7 @@ const PucslLiss = () => {
 
   return (
     <div className="flex flex-col gap-4 pt-5">
-      {subtopics.map((subtopic) => (
+      {visibleSubtopics.map((subtopic) => (
         <SubtopicCard
           key={subtopic.id}
           id={subtopic.id}
