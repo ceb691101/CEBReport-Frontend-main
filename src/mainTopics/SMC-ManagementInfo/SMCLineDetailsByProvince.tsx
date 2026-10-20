@@ -100,14 +100,6 @@ const currentDay = String(today.getDate()).padStart(2, "0");
 const maxDate = `${currentYear}-${currentMonth}-${currentDay}`;
 const minDate = `${currentYear - 20}-${currentMonth}-${currentDay}`;
 
-/* ────── Formatting helpers ────── */
-const csvEscape = (val: string | number | null | undefined): string => {
-  if (val == null) return "";
-  const str = String(val);
-  if (/[,\n"]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
-  return str;
-};
-
 const SMCLineDetailsByProvince: React.FC = () => {
   const { user } = useUser();
   const epfNo = user?.Userno || "";
