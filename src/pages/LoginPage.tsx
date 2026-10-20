@@ -19,7 +19,7 @@ const LoginPage = () => {
         >
           © 2026 Utility Solutions & Automation Branch, Electricity Distribution Lanka (Private) Limited.
           <br />
-          All Rights Reserved. Version 1.9
+          All Rights Reserved. Version 1.10
         </div>
       </section>
     </main>
