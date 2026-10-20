@@ -11,12 +11,12 @@ export default defineConfig(({ mode }) => {
 			proxy: {
 				// New report endpoint is available in the local MISReports API.
 				"/misapi/api/pucsl/solarJournalsRetail": {
-					target: env.VITE_LOCAL_API || env.VITE_SERVER_API,
+					target:env.VITE_SERVER_API,
 					changeOrigin: true,
 					secure: false,
-					rewrite: env.VITE_LOCAL_API
-						? (path) => path.replace(/^\/misapi/, "")
-						: undefined,
+					// rewrite: env.VITE_LOCAL_API
+					// 	? (path) => path.replace(/^\/misapi/, "")
+					// 	: undefined,
 				},
 				"/api/debtors": {
 					target: env.VITE_LOCAL_API || `${env.VITE_SERVER_API}/misapi`,
