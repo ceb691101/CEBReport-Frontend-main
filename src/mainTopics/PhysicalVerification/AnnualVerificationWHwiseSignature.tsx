@@ -265,99 +265,116 @@ const AnnualVerificationWHwiseSignature: React.FC = () => {
       const str = String(value).replace(/"/g, '""');
       return `"${str}"`;
     };
-    const headers = [
-      "Serial No.",
-      "Code No.",
-      "Description",
-      "Grade",
-      "UOM",
-      "Standard Price (Rs. Cts.)",
-      "Book Balance",
-      "Physical Balance",
-      "Surplus",
-      "Shortage",
-      "Book Value (Rs. Cts.)",
-      "Physical Value (Rs. Cts.)",
-      "Surplus (Rs. Cts.)",
-      "Shortage (Rs. Cts.)",
-      "Remarks (*)",
-    ];
-    const csvRows: string[] = [
-      csvSafe(`ANNUAL VERIFICATION OF STORES - ${selectedYear ?? currentYear} (Verification Sheet)`),
-      csvSafe(`Cost Center : ${selectedDept.DeptId} - ${selectedDept.DeptName}`),
+    const COLS = 15;
+    const rowOf = (cells: (string | number)[]) => {
+      const r: (string | number)[] = [...cells];
+      while (r.length < COLS) r.push("");
+      return r.map(csvSafe).join(",");
+    };
+    // text on the left (col 1) and on the right (col 11), like the PDF's top block
+    const twoCol = (left: string, right: string) => {
+      const cells: string[] = new Array(COLS).fill("");
+      cells[0] = left;
+      cells[10] = right;
+      return rowOf(cells);
+    };
 
+    // Header once at the top, signature/notes once at the end
+    const docNosInReport = Array.from(
+      new Set(reportData.map((i) => (i.DocumentNo || "").trim()).filter(Boolean))
+    );
+    const sheetNo =
+      docNosInReport.length > 1
+        ? `${docNosInReport[0]} - ${docNosInReport[docNosInReport.length - 1]}`
+        : docNosInReport[0] || "";
+    const phvDate = reportData[0]?.PhvDate || "..............";
 
-      "",
-    ];
-    const docNo = reportData[0]?.DocumentNo || "";
+    const csvRows: string[] = [];
 
     csvRows.push(
-      csvSafe("ORIGINAL : Accountant"),
-      csvSafe(`DUPLICATE : (Unit)`),
-      csvSafe(`TRIPLCATE : Store-keeper/E.S.(C.S.C.)`),
-      csvSafe(`Fourth copy : Branch Copy     | ${docNo}`),
-      csvSafe(`From Ref : AV/1/A`),
-
-
-      ""
+      rowOf([`ANNUAL VERIFICATION OF STORES - ${selectedYear ?? currentYear}`]),
+      rowOf([`Cost Center : ${selectedDept.DeptId} - ${selectedDept.DeptName}`]),
+      rowOf([])
     );
-    csvRows.push(headers.map(csvSafe).join(","));
+
+    csvRows.push(
+      twoCol("TO BE FILLED IN TRIPLICATE", "From Ref : AV/1/A"),
+      twoCol("1. ORIGINAL : Accountant", `Sheet No : ${sheetNo}`),
+      twoCol("2. DUPLICATE : (Unit)", `Date of Verification : ${phvDate}`),
+      twoCol("3. TRIPLICATE : Store-keeper/E.S.(C.S.C.)", ""),
+      rowOf([])
+    );
+
+    /* Table headers (same rows as the PDF) */
+    csvRows.push(
+      rowOf(Array.from({ length: COLS }, (_, i) => i + 1)),
+      rowOf([
+        "Serial No.", "Code No.", "Description", "Grade", "UOM", "Standard Price",
+        "Q U A N T I T Y", "", "", "",
+        "V A L U E", "", "", "",
+        "Remarks (*)",
+      ]),
+      rowOf([
+        "", "", "", "", "", "",
+        "Book Balance", "Physical Balance", "Surplus", "Shortage",
+        "Book Value", "Physical Value", "Surplus", "Shortage",
+        "",
+      ]),
+      rowOf([
+        "", "", "", "", "",
+        "Rs. Cts.",
+        "", "", "", "",
+        "Rs. Cts.", "Rs. Cts.", "Rs. Cts.", "Rs. Cts.",
+        "",
+      ])
+    );
+
+    /* Data rows */
     reportData.forEach((item, idx) => {
-      const row = [
-        idx + 1,
-        "\t" + (item.MaterialCode || ""),
-        item.MaterialName,
-        item.GradeCode,
-        item.UomCode,
-        formatNumber(item.UnitPrice),
-        formatNumber(item.QtyOnHand),
-        formatNumber(item.CountedQty),
-        formatNumber(item.SurplusQty),
-        formatNumber(item.ShortageQty),
-        formatNumber(item.StockBook),
-        formatNumber(item.PhysicalBook),
-        formatNumber(item.SurplusAmount),
-        formatNumber(item.ShortageAmount),
-        item.Reason,
-      ];
-      csvRows.push(row.map(csvSafe).join(","));
+      csvRows.push(
+        rowOf([
+          idx + 1,
+          "\t" + (item.MaterialCode || ""),
+          item.MaterialName,
+          item.GradeCode,
+          item.UomCode,
+          formatNumber(item.UnitPrice),
+          formatNumber(item.QtyOnHand),
+          formatNumber(item.CountedQty),
+          formatNumber(item.SurplusQty),
+          formatNumber(item.ShortageQty),
+          formatNumber(item.StockBook),
+          formatNumber(item.PhysicalBook),
+          formatNumber(item.SurplusAmount),
+          formatNumber(item.ShortageAmount),
+          item.Reason,
+        ])
+      );
     });
-    /* Total section*/
-    const totalStockBookValue = reportData.reduce(
-      (sum, item) => sum + (item.StockBook || 0),
-      0
+
+    /* Signature section (once, at the end) */
+    csvRows.push(
+      rowOf([]),
+      rowOf(["We do hereby certify that the stocks were physically verified as per above record."]),
+      rowOf([]),
+      twoCol("Board of Verification", "Agreed for the above physical verification."),
+      rowOf(["", "Name", "", "Designation", "", "Signature", "", "Date"]),
+      twoCol("1.", "Signature:"),
+      twoCol("2.", "Designation : (Store-keeper/Electrical Superintendent/......)"),
+      twoCol("3.", "(Place the rubber stamp)"),
+      twoCol("", "Date :")
     );
-    const totalPhysicalValue = reportData.reduce(
-      (sum, item) => sum + (item.PhysicalBook || 0),
-      0
+
+    /* Notes */
+    csvRows.push(
+      rowOf([]),
+      rowOf(["Note :"]),
+      rowOf(["Columns 1 - 6 should be filled by the store-keeper/electrical superintendent if the format is not generated by the MITFIN Inventory system."]),
+      rowOf(["Columns 7 - 15 should be filled by the Board of Verification."]),
+      rowOf(["Please indicate in the Remark Column"]),
+      rowOf(["(*)- Status of the stocks -Obsolete and idle,Damage,slow moving and non moving (O,D,SM and NM)"])
     );
-    const totalSurplusValue = reportData.reduce(
-      (sum, item) => sum + (item.SurplusAmount || 0),
-      0
-    );
-    const totalShortageValue = reportData.reduce(
-      (sum, item) => sum + (item.ShortageAmount || 0),
-      0
-    );
-    csvRows.push("");
-    const totalsRow = [
-      "",
-      "",
-      "TOTAL",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      formatNumber(totalStockBookValue),
-      formatNumber(totalPhysicalValue),
-      formatNumber(totalSurplusValue),
-      formatNumber(totalShortageValue),
-      "",
-    ];
-    csvRows.push(totalsRow.map(csvSafe).join(","));
+
     const csvContent = csvRows.join("\n");
     const blob = new Blob(["\uFEFF" + csvContent], {
       type: "text/csv;charset=utf-8;",
@@ -389,7 +406,9 @@ const printPDF = () => {
     @page { size: A4 landscape; margin: 4mm 4mm 4mm 4mm; }
     body { margin: 0; padding: 0; }
 
-    .page { page-break-after: always; position: relative; min-height: 200mm; display: flex; flex-direction: column; }
+    .page { position: relative; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
     table { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
     th, td { border: 1px solid #000; padding: 1px 2px; word-wrap: break-word; }
     th { background-color: #ffffff; font-weight: bold; text-align: center; }
@@ -399,6 +418,7 @@ const printPDF = () => {
 
     .header h2 { text-align: center; color: #7A0000; font-size: 16px; margin: 0; }
     .header h3 { text-align: center; margin: 1px 0; font-size: 13px; }
+    .cost-center { font-size: 13px; margin: 2px 0 6px 0; text-align: left; }
 
     .subtitles { margin-bottom: 6px; font-size: 11px; display: flex; justify-content: space-between; align-items: flex-start; line-height: 1.35; }
     .subtitles-left { text-align: left; }
@@ -428,44 +448,39 @@ const printPDF = () => {
     .clear { clear: both; }
   `;
 
-  let pagesHTML = "";
-  let serialNo = 1;
-
-  /* ================= MAIN PAGES ================= */
-  documentNos.forEach((docNo, pageIndex) => {
-    const rows = groupedByDoc[docNo];
-    const phvDate = rows[0]?.PhvDate || "..............";
+    // Header only on the first page, signature/notes only on the last page.
+    // One continuous table: rows flow across pages, column headings repeat.
+    const docNosInReport = documentNos.filter(Boolean);
+    const sheetNo =
+      docNosInReport.length > 1
+        ? `${docNosInReport[0]} - ${docNosInReport[docNosInReport.length - 1]}`
+        : docNosInReport[0] || "";
+    const phvDate = reportData[0]?.PhvDate || "..............";
 
     let bodyHTML = "";
-
-    rows.forEach(item => {
+    reportData.forEach((item, idx) => {
       bodyHTML += `
-        <tr>
-          <td class="center">${serialNo++}</td>
-          <td class="center">${escapeHtml(item.MaterialCode)}</td>
-          <td>${escapeHtml(item.MaterialName)}</td>
-          <td class="center">${escapeHtml(item.GradeCode)}</td>
-          <td class="center">${escapeHtml(item.UomCode)}</td>
-          <td class="right">${formatNumber(item.UnitPrice)}</td>
-          <td class="right">${formatNumber(item.QtyOnHand)}</td>
-          <td class="right">${formatNumber(item.CountedQty)}</td>
-          <td class="right">${formatNumber(item.SurplusQty)}</td>
-          <td class="right">${formatNumber(item.ShortageQty)}</td>
-          <td class="right">${formatNumber(item.StockBook)}</td>
-          <td class="right">${formatNumber(item.PhysicalBook)}</td>
-          <td class="right">${formatNumber(item.SurplusAmount)}</td>
-          <td class="right">${formatNumber(item.ShortageAmount)}</td>
-          <td>${escapeHtml(item.Reason)}</td>
-        </tr>
-      `;
+    <tr>
+      <td class="center">${idx + 1}</td>
+      <td class="center">${escapeHtml(item.MaterialCode)}</td>
+      <td>${escapeHtml(item.MaterialName)}</td>
+      <td class="center">${escapeHtml(item.GradeCode)}</td>
+      <td class="center">${escapeHtml(item.UomCode)}</td>
+      <td class="right">${formatNumber(item.UnitPrice)}</td>
+      <td class="right">${formatNumber(item.QtyOnHand)}</td>
+      <td class="right">${formatNumber(item.CountedQty)}</td>
+      <td class="right">${formatNumber(item.SurplusQty)}</td>
+      <td class="right">${formatNumber(item.ShortageQty)}</td>
+      <td class="right">${formatNumber(item.StockBook)}</td>
+      <td class="right">${formatNumber(item.PhysicalBook)}</td>
+      <td class="right">${formatNumber(item.SurplusAmount)}</td>
+      <td class="right">${formatNumber(item.ShortageAmount)}</td>
+      <td>${escapeHtml(item.Reason)}</td>
+    </tr>`;
     });
 
-    pagesHTML += `
+    const pagesHTML = `
       <div class="page">
-        <div class="header">
-          <h2>ANNUAL VERIFICATION OF STORES - ${selectedYear} / Cost Center : ${selectedDept.DeptId}</h2>
-        </div>
-
         <div class="subtitles">
           <div class="subtitles-left">
             <div style="font-weight: bold; margin-bottom: 2px;">TO BE FILLED IN TRIPLICATE</div>
@@ -475,10 +490,15 @@ const printPDF = () => {
           </div>
           <div class="subtitles-right">
             <div>From Ref : AV/1/A</div>
-            <div>Sheet No : ${docNo}</div>
-            <div>Date of Verification : ${phvDate}</div>
+            <div>Sheet No : ${escapeHtml(sheetNo)}</div>
+            <div>Date of Verification : ${escapeHtml(phvDate)}</div>
           </div>
         </div>
+        <div class="header">
+          <h2>ANNUAL VERIFICATION OF STORES - ${selectedYear}</h2>
+        </div>
+        <div class="cost-center"><strong>Cost Center :</strong> ${escapeHtml(selectedDept.DeptId)} - ${escapeHtml(selectedDept.DeptName)}</div>
+
 
         <table>
           <thead>
@@ -531,7 +551,7 @@ const printPDF = () => {
           <tbody>${bodyHTML}</tbody>
         </table>
 
-        <!--   SIGNATURE SECTION -->
+        <!--   SIGNATURE SECTION (last page only) -->
         <div class="signature">
           <p class="sig-statement">We do hereby certify that the stocks were physically verified as per above record.</p>
 
@@ -596,10 +616,7 @@ const printPDF = () => {
           </div>
         </div>
 
-        <div class="clear"></div>
-      </div>
-    `;
-  });
+      </div>`;
 
   /* ================= RENDER ================= */
   const fullHTML = `
@@ -625,7 +642,7 @@ const printPDF = () => {
         title="print-frame"
       />
       <h2 className={`text-lg md:text-xl font-bold mb-4 ${maroon}`}>
-        Annual Verification WHwise Signature
+        3.2. Annual Verification Sheet (WHwise Signature) AV/1A
       </h2>
       <div className="flex flex-col md:flex-row flex-wrap gap-2 md:gap-3 mb-4 justify-end items-end">
         <div className="flex items-center gap-2">
@@ -783,7 +800,7 @@ const printPDF = () => {
       )}
       {showReport && selectedDept && (
         <ReportViewer
-          title={`ANNUAL VERIFICATION WAREHOUSEWISE SIGNATURE - ${selectedYear} `}
+          title={`3.2. Annual Verification Sheet (WHwise Signature) AV/1A - ${selectedYear} `}
           subtitlebold2="Cost Center :"
           subtitlenormal2={`${selectedDept.DeptId} - ${selectedDept.DeptName}`}
           loading={reportLoading}
@@ -791,100 +808,162 @@ const printPDF = () => {
           handleDownloadCSV={handleDownloadCSV}
           printPDF={printPDF}
           closeReport={closeReport}
+          plain
         >
-          <table className="w-full text-xs">
-            <thead className={`${maroonGrad} text-white`}>
-              <tr>
-                {Array.from({ length: 15 }, (_, index) => (
-                  <th key={index} className="border border-gray-400 px-2 py-1 text-center whitespace-nowrap">
-                    {index + 1}
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Serial No.</th>
-                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Code No.</th>
-                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Description</th>
-                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Grade</th>
-                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">UOM</th>
-                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Standard Price</th>
-                <th colSpan={4} className="border border-gray-400 px-2 py-1 text-center">Q U A N T I T Y</th>
-                <th colSpan={4} className="border border-gray-400 px-2 py-1 text-center">V A L U E</th>
-                <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Remarks (*)</th>
-              </tr>
-              <tr>
-                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Book Balance</th>
-                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Physical Balance</th>
-                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Surplus</th>
-                <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Shortage</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Book Value</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Physical Value</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Surplus</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Shortage</th>
-              </tr>
-              <tr>
-                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
-                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
-                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
-                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
-                <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((item, idx) => (
-                <tr
-                  key={idx}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="border border-gray-300 px-3 py-2 text-center">
-                    {idx + 1}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-left">
-                    {item.MaterialCode || ""}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-left">
-                    {item.MaterialName || ""}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-center">
-                    {item.GradeCode || ""}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-center">
-                    {item.UomCode || ""}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right">
-                    {formatNumber(item.UnitPrice)}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right">
-                    {formatNumber(item.QtyOnHand)}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right">
-                    {formatNumber(item.CountedQty)}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right">
-                    {formatNumber(item.SurplusQty)}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right">
-                    {formatNumber(item.ShortageQty)}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right">
-                    {formatNumber(item.StockBook)}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right">
-                    {formatNumber(item.PhysicalBook)}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right">
-                    {formatNumber(item.SurplusAmount)}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-right">
-                    {formatNumber(item.ShortageAmount)}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-center">
-                    {item.Reason || ""}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {(() => {
+            // Header once at the top, signature/notes once at the end
+            const th = "border border-gray-400 px-2 py-1 text-center";
+            const docNosInReport = Array.from(
+              new Set(reportData.map((i) => (i.DocumentNo || "").trim()).filter(Boolean))
+            );
+            const sheetNo =
+              docNosInReport.length > 1
+                ? `${docNosInReport[0]} - ${docNosInReport[docNosInReport.length - 1]}`
+                : docNosInReport[0] || "";
+            const phvDate = reportData[0]?.PhvDate || "..............";
+
+            return (
+              <div className="text-xs">
+                {/* Top details (same as PDF) */}
+                <div className="flex justify-between items-start mb-3 leading-relaxed">
+                  <div>
+                    <div className="font-bold mb-0.5">TO BE FILLED IN TRIPLICATE</div>
+                    <div>1. ORIGINAL : Accountant</div>
+                    <div>2. DUPLICATE : (Unit)</div>
+                    <div>3. TRIPLICATE : Store-keeper/E.S.(C.S.C.)</div>
+                  </div>
+                  <div>
+                    <div>From Ref : AV/1/A</div>
+                    <div>Sheet No : {sheetNo}</div>
+                    <div>Date of Verification : {phvDate}</div>
+                  </div>
+                </div>
+
+                <table className="w-full">
+                  <thead className={`${maroonGrad} text-white`}>
+                    <tr>
+                      {Array.from({ length: 15 }, (_, index) => (
+                        <th key={index} className={`${th} whitespace-nowrap`}>
+                          {index + 1}
+                        </th>
+                      ))}
+                    </tr>
+                    <tr>
+                      <th rowSpan={3} className={th}>Serial No.</th>
+                      <th rowSpan={3} className={th}>Code No.</th>
+                      <th rowSpan={3} className={th}>Description</th>
+                      <th rowSpan={3} className={th}>Grade</th>
+                      <th rowSpan={3} className={th}>UOM</th>
+                      <th rowSpan={2} className={th}>Standard Price</th>
+                      <th colSpan={4} className={th}>Q U A N T I T Y</th>
+                      <th colSpan={4} className={th}>V A L U E</th>
+                      <th rowSpan={3} className={th}>Remarks (*)</th>
+                    </tr>
+                    <tr>
+                      <th rowSpan={2} className={th}>Book Balance</th>
+                      <th rowSpan={2} className={th}>Physical Balance</th>
+                      <th rowSpan={2} className={th}>Surplus</th>
+                      <th rowSpan={2} className={th}>Shortage</th>
+                      <th className={th}>Book Value</th>
+                      <th className={th}>Physical Value</th>
+                      <th className={th}>Surplus</th>
+                      <th className={th}>Shortage</th>
+                    </tr>
+                    <tr>
+                      <th className={th}>Rs. Cts.</th>
+                      <th className={th}>Rs. Cts.</th>
+                      <th className={th}>Rs. Cts.</th>
+                      <th className={th}>Rs. Cts.</th>
+                      <th className={th}>Rs. Cts.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.map((item, idx) => (
+                      <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                        <td className="border border-gray-300 px-3 py-2 text-center">{idx + 1}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-center">{item.MaterialCode || ""}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-left">{item.MaterialName || ""}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-center">{item.GradeCode || ""}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-center">{item.UomCode || ""}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.UnitPrice)}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.QtyOnHand)}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.CountedQty)}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.SurplusQty)}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.ShortageQty)}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.StockBook)}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.PhysicalBook)}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.SurplusAmount)}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.ShortageAmount)}</td>
+                        <td className="border border-gray-300 px-3 py-2 text-left">{item.Reason || ""}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Signature section (same as PDF, shown once at the end) */}
+                <div className="mt-4">
+                  <p className="mb-3">
+                    We do hereby certify that the stocks were physically verified as per above record.
+                  </p>
+
+                  <div className="flex justify-between items-start gap-6">
+                    <div className="w-[56%]">
+                      <div className="font-bold mb-2">Board of Verification</div>
+                      <table className="w-full table-fixed">
+                        <thead>
+                          <tr>
+                            <th className="w-[5%]"></th>
+                            <th className="w-[32%] font-normal text-left pb-2">Name</th>
+                            <th className="w-[32%] font-normal text-left pb-2">Designation</th>
+                            <th className="w-[21%] font-normal text-left pb-2">Signature</th>
+                            <th className="w-[10%] font-normal text-left pb-2">Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[1, 2, 3].map((n) => (
+                            <tr key={n}>
+                              <td className="text-right pr-1 align-bottom">{n}.</td>
+                              {[0, 1, 2, 3].map((c) => (
+                                <td key={c} className="px-1 py-1 align-bottom">
+                                  <div className="border-b border-dotted border-gray-600 h-4 w-full"></div>
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="w-[38%]">
+                      <p className="mb-2">Agreed for the above physical verification.</p>
+                      <div className="flex items-end my-4">
+                        <span>Signature:</span>
+                        <span className="flex-1 border-b border-dotted border-gray-600 h-4 ml-2"></span>
+                      </div>
+                      <p className="mb-2">Designation : (Store-keeper/Electrical Superintendent/......)</p>
+                      <p className="mb-2">(Place the rubber stamp)</p>
+                      <p className="mt-3 flex items-end">
+                        Date :
+                        <span className="inline-block border-b border-dotted border-gray-600 w-40 ml-2 h-4"></span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 leading-relaxed">
+                    <p className="font-bold">Note :</p>
+                    <p>
+                      Columns 1 - 6 should be filled by the store-keeper/electrical superintendent if the format is not generated by the MITFIN Inventory system.
+                    </p>
+                    <p>Columns 7 - 15 should be filled by the Board of Verification.</p>
+                    <p className="underline">Please indicate in the Remark Column</p>
+                    <p>
+                      (*)- Status of the stocks -Obsolete and idle,Damage,slow moving and non moving (O,D,SM and NM)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </ReportViewer>
       )}
     </div>

@@ -477,16 +477,6 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"gl/005": CurrAcctReconOwnOther,
 	"gl005": CurrAcctReconOwnOther,
 
-
-	// Physical Verification FIFO reports
-	"1. physical verification obsolete idle - av/7a (fifo)": PHVObsoleteIdleFIFO,
-	"2. physical verification damage - av/7b (fifo)": PHVDamageFIFO,
-	"3. physical verification slow moving wh wise - av/6 (fifo)": PHVSlowMovingWHReport,
-	"4. physical verification non moving wh wise - av/6b (fifo)": PHVNonMovingWHReport,
-	"5. physical verification damage bos - av/7b/bos": PHVDamageBOSReport,
-	"6. physical verification obsolete idle bos - av/7a/bos": PHVObsoleteBOSReport,
-	"7. physical verification non-moving wh wise (fifo) - av/6/bos": PHVNonMovingBOSReport,
-
 	// Physical Verification reports
 	"1 phv entry form": PHVEntryForm,
 	"2 1 phv validation": PHVValidation,
@@ -501,6 +491,15 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"8 physical verification obsolete idle bos av 7a bos": PHVObsoleteIdleBOS,
 	"9 physical verification damage bos av 7b bos": PHVDamageBOS,
 	"last document no selected year": LastDocNo,
+
+	// Physical Verification FIFO reports
+	"1 physical verification obsolete idle - av/7a (fifo)": PHVObsoleteIdleFIFO,
+	"2 physical verification damage - av/7b (fifo)": PHVDamageFIFO,
+	"3 physical verification slow moving wh wise - av/6 (fifo)": PHVSlowMovingWHReport,
+	"4 physical verification non moving wh wise - av/6b (fifo)": PHVNonMovingWHReport,
+	"5 physical verification damage bos - av/7b/bos": PHVDamageBOSReport,
+	"6 physical verification obsolete idle bos - av/7a/bos": PHVObsoleteBOSReport,
+	"7 physical verification non-moving wh wise (fifo) - av/6/bos": PHVNonMovingBOSReport,
 
 	// PUCSL/LISS reports
 	"pucsl reports solar connections new": PUCSLSolarConnection,

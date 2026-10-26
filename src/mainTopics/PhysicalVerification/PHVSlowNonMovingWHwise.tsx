@@ -37,6 +37,14 @@ const formatNumber = (num: number | null | undefined): string => {
   });
 };
 
+const formatDescription = (item: Pick<SlowNonMovingItem, "MaterialName" | "GradeCode" | "UomCode">): string => {
+  const details = [
+    item.GradeCode ? `Grade: ${item.GradeCode}` : "",
+    item.UomCode ? `UOM: ${item.UomCode}` : "",
+  ].filter(Boolean);
+  return details.length ? `${item.MaterialName} (${details.join(", ")})` : item.MaterialName;
+};
+
 
 const PHVSlowNonMovingWHwise: React.FC = () => {
   const { user } = useUser();
@@ -256,56 +264,95 @@ const PHVSlowNonMovingWHwise: React.FC = () => {
   };
 
 const handleDownloadCSV = () => {
-  if (!reportData.length) return;
+  if (!reportData.length || !selectedDept) return;
+
+  const COLS = 8;
+  const q = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const rowOf = (cells: (string | number)[]) => {
+    const r = [...cells];
+    while (r.length < COLS) r.push("");
+    return r.map(q).join(",");
+  };
+
+  const verificationDate = reportData[0]?.PhvDate
+    ? new Date(String(reportData[0].PhvDate)).toLocaleDateString("en-GB")
+    : "";
 
   const rows: string[] = [];
 
-  rows.push(`"STATEMENT OF NON-MOVING & SLOW-MOVING MATERIALS"`);
-  rows.push(`"Cost Center","${selectedDept?.DeptId} - ${selectedDept?.DeptName}"`);
-  rows.push(`"Warehouse","${selectedWarehouse}"`);
-  rows.push(""); 
+  /* Header (once, same as the PDF's first page) */
+  rows.push(
+    rowOf(["TO BE FILLED IN TRIPLICATE", "", "", "", "", "", "", "Form - AV/6"]),
+    rowOf(["1. Original : Director"]),
+    rowOf(["2. Duplicate : Engineer-in-charge"]),
+    rowOf(["3. Triplicate : Store-keeper/E.S.(C.S.C.)"]),
+    rowOf([]),
+    rowOf([`ANNUAL VERIFICATION OF STORES/STOCKS - ${selectedYear}`]),
+    rowOf(["Statement of Non-Moving and Slow Moving Stocks"]),
+    rowOf([
+      `LOCATION: ${selectedDept.DeptName} (${selectedDept.DeptId}) - ${selectedWarehouse}`,
+      "", "", "", "", "", "",
+      `SHEET NO. ${reportData[0]?.DocumentNo || ""}`,
+    ]),
+    rowOf(["", "", "", "", "", "", "", `DATE OF VERIFICATION : ${verificationDate}`]),
+    rowOf([])
+  );
 
-  const formatValue = (v: any) => `"${v ?? ""}"`;
-  const formatNumberCSV = (n: number | null | undefined) =>
-    `"${(n ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}"`;
+  /* Table headings */
+  rows.push(
+    rowOf(["STOCK", "", "", "QUANTITY", "UNIT PRICE (Rs.)", "COST (Rs.)", "REASONS", "RECOMMENDED ACTION TO BE TAKEN"]),
+    rowOf(["", "CODE", "DESCRIPTION"])
+  );
 
   const pushSection = (title: string, items: SlowNonMovingItem[]) => {
     if (!items.length) return;
 
-    rows.push(`"${title}"`);
-    rows.push(`"Serial No","Code No","Description","Grade Code","UOM","Unit Price","Qty","Stock Value","Remarks"`);
+    rows.push(rowOf([title]));
 
-    items.forEach((item, idx) => {
-      rows.push([
-        formatValue(idx + 1),
-        formatValue(item.MaterialCode),
-        formatValue(item.MaterialName),
-        formatValue(item.GradeCode),
-        formatValue(item.UomCode),
-        formatNumberCSV(item.UnitPrice),
-        formatNumberCSV(item.QtyOnHand),
-        formatNumberCSV(item.StockBook),
-        formatValue(item.Reason),
-      ].join(","));
+    items.forEach((item) => {
+      rows.push(
+        rowOf([
+          "",
+          item.MaterialCode,
+          formatDescription(item),
+          formatNumber(item.QtyOnHand),
+          formatNumber(item.UnitPrice),
+          formatNumber(item.StockBook),
+          item.Reason || "N",
+          "",
+        ])
+      );
     });
 
-    const subtotal = items.reduce((s, x) => s + (x.StockBook || 0), 0);
-    rows.push(`"","","","","","","TOTAL",${formatNumberCSV(subtotal)},""`);
-    rows.push(""); 
+    const subtotal = items.reduce((sum, x) => sum + (x.StockBook || 0), 0);
+    rows.push(rowOf(["", "", "", "", "Sub total", formatNumber(subtotal), "", ""]));
   };
 
-  pushSection("NON-MOVING ITEMS", nonMovingItems);
+  pushSection("1. Non Moving", nonMovingItems);
+  pushSection("2. Slow Moving", slowMovingItems);
 
-  pushSection("SLOW-MOVING ITEMS", slowMovingItems);
+  const grandTotal = reportData.reduce((sum, x) => sum + (x.StockBook || 0), 0);
+  rows.push(rowOf(["", "", "", "", "Grand total", formatNumber(grandTotal), "", ""]));
 
-  const grandTotal = reportData.reduce((s, x) => s + (x.StockBook || 0), 0);
-  rows.push(`"","", "", "", "", "", GRAND TOTAL,${formatNumberCSV(grandTotal)},""`);
+  /* Signature section (once, at the end) */
+  rows.push(
+    rowOf([]),
+    rowOf(["We do hereby certify that the stocks were physically verified as per the given statement."]),
+    rowOf([]),
+    rowOf(["Board of Verification", "", "", "", "", "", "", "Agreed & Certified Correct by"]),
+    rowOf(["Name", "Signature"]),
+    rowOf(["1. ........................", "...................", "", "", "", "", "", "......................................"]),
+    rowOf(["2. ........................", "...................", "", "", "", "", "", "Store-keeper/E.S.(C.S.C.)"]),
+    rowOf(["3. ........................", "..................."])
+  );
 
-  const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/csv" });
+  const blob = new Blob(["﻿" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
+  link.href = url;
   link.download = "Slow_Non_Moving_WHwise.csv";
   link.click();
+  URL.revokeObjectURL(url);
 };
 
 
@@ -324,55 +371,46 @@ const printPDF = () => {
       ? new Date(String(reportData[0].PhvDate)).toLocaleDateString("en-GB")
       : "";
 
-  const PAGE_HEIGHT = 277;
-  const HEADER_HEIGHT = 42;
-  const TABLE_HEADER_HEIGHT = 12;
-  const ROW_HEIGHT = 12; 
-  const NOTE_HEIGHT = 20; 
-  const GRAND_TOTAL_HEIGHT = 8; 
-  const SIGNATURE_HEIGHT = 52;
-  const FOOTER_HEIGHT = 14;
+  // Heights in mm (used to decide how many table rows fit on a page)
+  const PAGE_HEIGHT = 190;
+  const HEADER_HEIGHT = 45;        // shown on the first page only
+  const TABLE_HEADER_HEIGHT = 16;  // column headings repeat on every page
+  const ROW_HEIGHT = 8;
+  const SIGNATURE_HEIGHT = 42;     // shown on the last page only
 
-  const AVAILABLE_FOR_ROWS_REGULAR =
-    PAGE_HEIGHT - HEADER_HEIGHT - TABLE_HEADER_HEIGHT - SIGNATURE_HEIGHT - FOOTER_HEIGHT;
-
-  const AVAILABLE_FOR_ROWS_LAST =
-    PAGE_HEIGHT - HEADER_HEIGHT - TABLE_HEADER_HEIGHT - NOTE_HEIGHT - GRAND_TOTAL_HEIGHT - SIGNATURE_HEIGHT - FOOTER_HEIGHT;
-
-  const MAX_ROWS_PER_PAGE_REGULAR = Math.floor(AVAILABLE_FOR_ROWS_REGULAR / ROW_HEIGHT);
-  const MAX_ROWS_PER_PAGE_LAST = Math.floor(AVAILABLE_FOR_ROWS_LAST / ROW_HEIGHT) - 1; 
 
   const tableStyle = `
-    @page { size: A4 portrait; margin: 10mm; }
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 9.5pt; line-height: 1.15; }
-    .page { page-break-after: always; height: 277mm; position: relative; display: flex; flex-direction: column; }
-    .header { text-align: center; margin-bottom: 6px; }
-    .header h2 { margin: 0; font-size: 11pt; font-weight: bold; color: #7A0000; }
-    .header h3 { margin: 2px 0; font-size: 9.5pt; }
-    .subtitles { font-size: 9pt; display: flex; justify-content: space-between; margin: 2px 0; }
-    .subtitles div { flex-basis: 50%; }
-    .subtitles .right { text-align: right; }
+    @page { size: A4 landscape; margin: 8mm; }
+    body { margin: 0; padding: 0; font-size: 9.5pt; line-height: 1.15; }
+    .page { page-break-after: always; height: 190mm; position: relative; display: flex; flex-direction: column; }
+    .document-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .triplicate { width: 48%; font-size: 8pt; line-height: 1.35; }
+    .form { text-align: right; font-weight: bold; margin-bottom: 4px; }
+    .header { text-align: center; margin: 7px 0 5px; }
+    .header h2 { margin: 0 0 4px; font-size: 16px; font-weight: bold; color: #7A0000; text-align: center; }
+    .header h3 { margin: 0; font-size: 13px; font-weight: bold; text-align: center; }
+    .details { display: flex; justify-content: space-between; margin: 5px 0 2px; font-size: 8.5pt; font-weight: bold; }
+    .verification-date { text-align: right; margin-bottom: 3px; font-size: 8.5pt; font-weight: bold; }
     table { width: 100%; border-collapse: collapse; font-size: 7.5pt; margin-top: 4px; table-layout: fixed; }
     th, td { border: 1px solid black; padding: 2px 3px; }
-    th { background: #f0f0f0; font-weight: bold; text-align: center; font-size: 8pt; }
+    th { background: #ffffff; font-weight: bold; text-align: center; font-size: 8pt; }
     .left { text-align: left; word-wrap: break-word; }
     .center { text-align: center; }
     .right { text-align: right; }
-    .subtotal { background: #f8f8f8; font-weight: bold; text-align: center; }
-    .grandtotal { background: #e8e8e8; font-weight: bold; font-size: 9.5pt; text-align: center; }
-    .note { font-size: 8.5pt; margin: 8px 0; padding: 6px; border: 1px solid black; }
+    .section-title { font-weight: bold; }
+    .subtotal { background: #ffffff; font-weight: bold; text-align: center; }
+    .grandtotal { background: #ffffff; font-weight: bold; font-size: 9.5pt; text-align: center; }
     .signature { margin-top: auto; margin-bottom: 16px; font-size: 9pt; page-break-inside: avoid; }
-    .signature .left { float: left; width: 48%; }
-    .signature .right { float: right; width: 48%; text-align: right; }
+    .signature .left { float: left; width: 55%; }
+    .signature .right { float: right; width: 42%; text-align: right; }
     .signature p { margin: 1px 0; line-height: 1.1; }
-    .signature table { border: none; width: 100%; font-size: 9pt; }
+    .signature table { border: none; width: 78%; font-size: 9pt; }
     .signature td { border: none; padding: 1px; }
-    .footer { position: absolute; bottom: 0; left: 0; right: 0; font-size: 8px; font-weight: normal; color: #000000; display: flex; justify-content: space-between; align-items: center; padding: 4px 10mm; background: white; }
     
     /* Allow descriptions to wrap to multiple lines */
-    tbody tr { height: 12mm; }
+    tbody tr { height: 8mm; }
     tbody td { vertical-align: middle; line-height: 1.3; }
-    tbody td.left { white-space: normal; word-break: break-word; max-height: 12mm; overflow: hidden; }
+    tbody td.left { white-space: normal; word-break: break-word; max-height: 8mm; overflow: hidden; }
   `;
 
   const escape = (str: any) => 
@@ -382,199 +420,169 @@ const printPDF = () => {
     (n ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const renderHeader = () => `
+    <div class="document-top">
+      <div class="triplicate">
+        <strong>TO BE FILLED IN TRIPLICATE</strong><br>
+        1. Original : Director<br>
+        2. Duplicate : Engineer-in-charge<br>
+        3. Triplicate : Store-keeper/E.S.(C.S.C.)
+      </div>
+      <div class="form">Form - AV/6</div>
+    </div>
     <div class="header">
-      <h2>STATEMENT OF NON-MOVING, SLOW MOVING MATERIALS IN STOCKS - ${selectedYear}</h2>
-      <h3>COST CENTRE : ${selectedDept.DeptId} WHARE HOUSE - ${selectedWarehouse}</h3>
+      <h2>ANNUAL VERIFICATION OF STORES/STOCKS - ${selectedYear}</h2>
+      <h3>Statement of Non-Moving and Slow Moving Stocks</h3>
     </div>
-    <div class="subtitles">
-      <div>1.ORIGINAL  :  Deputy General Manager</div>
-      <div class="right">Form - AV/6</div>
+    <div class="details">
+      <span>LOCATION: ${escape(`${selectedDept.DeptName} (${selectedDept.DeptId}) - ${selectedWarehouse}`)}</span>
+      <span>SHEET NO. ${escape(reportData[0]?.DocumentNo || "")}</span>
     </div>
-    <div class="subtitles">
-      <div>2.DUPLICATE :  Engineer-in-charge</div>
-      <div class="right">Date of Verification : ${verificationDate}</div>
-    </div>
-    <div class="subtitles">
-      <div>3.TRIPLCATE :   Store-kepper/E.S.(C.S.C)</div>
-      <div class="right"></div>
-    </div>
+    <div class="verification-date">DATE OF VERIFICATION : ${escape(verificationDate)}</div>
   `;
 
   const renderTableHeader = () => `
+    <colgroup>
+      <col style="width:9%">
+      <col style="width:11%">
+      <col style="width:30%">
+      <col style="width:8%">
+      <col style="width:9%">
+      <col style="width:9%">
+      <col style="width:10%">
+      <col style="width:14%">
+    </colgroup>
     <thead>
       <tr>
-        <th style="width:5%">Serial No</th>
-        <th style="width:9%">Code No</th>
-        <th style="width:28%">Description</th>
-        <th style="width:7%">Grade Code</th>
-        <th style="width:5%">UOM</th>
-        <th style="width:9%">Quantity<br>(Stock Book)</th>
-        <th style="width:9%">Unit Price</th>
-        <th style="width:10%">Cost (Rs.)<br>(Stock Book)</th>
-        <th style="width:7%">Reasons</th>
-        <th style="width:11%">Recommended action<br>to be taken</th>
+        <th colspan="3">STOCK</th>
+        <th rowspan="2">QUANTITY</th>
+        <th rowspan="2">UNIT PRICE (Rs.)</th>
+        <th rowspan="2">COST (Rs.)</th>
+        <th rowspan="2">REASONS</th>
+        <th rowspan="2">RECOMMENDED ACTION TO BE TAKEN</th>
+      </tr>
+      <tr>
+        <th></th>
+        <th>CODE</th>
+        <th>DESCRIPTION</th>
       </tr>
     </thead>
   `;
 
-  const renderRows = (items: SlowNonMovingItem[], start: number) => 
-    items.map((it, i) => `
+  const renderItemRow = (it: SlowNonMovingItem) => `
       <tr>
-        <td class="center">${start + i}</td>
+        <td></td>
         <td class="center">${escape(it.MaterialCode)}</td>
-        <td class="left">${escape(it.MaterialName)}</td>
-        <td class="center">${escape(it.GradeCode)}</td>
-        <td class="center">${escape(it.UomCode)}</td>
+        <td class="left">${escape(formatDescription(it))}</td>
         <td class="right">${formatNum(it.QtyOnHand)}</td>
         <td class="right">${formatNum(it.UnitPrice)}</td>
         <td class="right">${formatNum(it.StockBook)}</td>
         <td class="center">${escape(it.Reason || 'N')}</td>
         <td class="center"></td>
       </tr>
-    `).join("");
+    `;
 
-  const renderSignature = (includeNoteAndGrandTotal: boolean = false) => {
-    const grandTotal = reportData.reduce((s, x) => s + (x.StockBook || 0), 0);
-    
+  const renderSectionRow = (title: string) =>
+    `<tr class="section-title"><td>${escape(title)}</td><td colspan="7"></td></tr>`;
+
+  const renderSubtotalRow = (amount: number) => `
+      <tr class="subtotal">
+        <td colspan="5" class="right">Sub total</td>
+        <td class="right">${formatNum(amount)}</td>
+        <td colspan="2"></td>
+      </tr>
+    `;
+
+  const renderGrandTotalRow = (amount: number) => `
+      <tr class="grandtotal">
+        <td colspan="5" class="right">Grand total</td>
+        <td class="right">${formatNum(amount)}</td>
+        <td colspan="2"></td>
+      </tr>
+    `;
+
+  const renderSignature = () => {
     return `
-      ${includeNoteAndGrandTotal ? `
-        <div class="note">
-          Note: The Sub Total Value of the report is shown as total stock value of the materials which exists S/N as first letter in remarks column. It is not equal to actual total value of Slow Moving or Non moving Stock. This report is helpd to prepare STATEMENT OF NON-MOVING and SLOW MOVING STOCKS.<br>
-          Note added: 2020/02/17
-        </div>
-        <table style="margin-top: 8px;">
-          <tbody>
-            <tr class="grandtotal">
-              <td colspan="7" class="right">Grand Total</td>
-              <td class="right">${formatNum(grandTotal)}</td>
-              <td colspan="2"></td>
-            </tr>
-          </tbody>
-        </table>
-      ` : ''}
       <div class="signature">
         <div class="left">
-          <p>We do hereby certify that Stocks were physically verified as per that given statement.</p>
+          <p>We do hereby certify that the stocks were physically verified as per the given statement.</p>
           <table>
-            <tr><td>Board of Verifications</td><td>Name</td><td>Designation</td><td>Signature</td></tr>
-            <tr><td class="right">1.</td><td>...................</td><td>...................</td><td>...................</td></tr>
-            <tr><td class="right">2.</td><td>...................</td><td>...................</td><td>...................</td></tr>
-            <tr><td class="right">3.</td><td>...................</td><td>...................</td><td>...................</td></tr>
+            <tr><td colspan="2"><strong>Board of Verification</strong></td></tr>
+            <tr><td>Name</td><td>Signature</td></tr>
+            <tr><td>1. ........................</td><td>...................</td></tr>
+            <tr><td>2. ........................</td><td>...................</td></tr>
+            <tr><td>3. ........................</td><td>...................</td></tr>
           </table>
         </div>
         <div class="right">
-          <p>Agreed and certified correct.</p><br>
+          <p>Agreed &amp; Certified Correct by</p><br>
           <p>......................................</p><br>
-          <p>Store-keeper/Elect. Superintendent (C.S.C.)</p>
+          <p>Store-keeper/E.S.(C.S.C.)</p>
         </div>
         <div style="clear: both;"></div>
       </div>
     `;
   };
 
-  const renderFooter = (page: number, totalPages: number) => {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString("en-GB");
-    const timeStr = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", ".");
-    const timestamp = `${dateStr} ${timeStr}`;
-    return `
-      <div class="footer">
-        <div>Date & time of the Report Generated : ${timestamp}</div>
-        <div>Page ${page} of ${totalPages}</div>
-      </div>
-    `;
+  /* ---- One flat list of table rows: section titles, items, sub totals, grand total ---- */
+  const entries: string[] = [];
+
+  const addSection = (title: string, items: SlowNonMovingItem[]) => {
+    if (items.length === 0) return;
+    entries.push(renderSectionRow(title));
+    items.forEach((it) => entries.push(renderItemRow(it)));
+    entries.push(renderSubtotalRow(items.reduce((sum, x) => sum + (x.StockBook || 0), 0)));
   };
 
-  const paginateItems = (items: SlowNonMovingItem[], isLastSection: boolean) => {
-    if (items.length === 0) return [];
-    
-    const pages: SlowNonMovingItem[][] = [];
-    let remaining = [...items];
+  addSection("1. Non Moving", nonMovingItems);
+  addSection("2. Slow Moving", slowMovingItems);
+  entries.push(renderGrandTotalRow(reportData.reduce((sum, x) => sum + (x.StockBook || 0), 0)));
 
-    while (remaining.length > 0) {
-      const isLastPage = remaining.length <= (isLastSection && pages.length === 0 ? MAX_ROWS_PER_PAGE_LAST : MAX_ROWS_PER_PAGE_REGULAR);
-      const maxRows = isLastPage && isLastSection ? MAX_ROWS_PER_PAGE_LAST : MAX_ROWS_PER_PAGE_REGULAR;
-      
-      pages.push(remaining.slice(0, maxRows));
-      remaining = remaining.slice(maxRows);
+  /* ---- Pagination: header only on the first page, signature only on the last page ---- */
+  const rowsThatFit = (heightMm: number) => Math.max(1, Math.floor(heightMm / ROW_HEIGHT));
+
+  const CAP_FIRST = rowsThatFit(PAGE_HEIGHT - HEADER_HEIGHT - TABLE_HEADER_HEIGHT);
+  const CAP_MIDDLE = rowsThatFit(PAGE_HEIGHT - TABLE_HEADER_HEIGHT);
+  const CAP_FIRST_AND_LAST = rowsThatFit(PAGE_HEIGHT - HEADER_HEIGHT - TABLE_HEADER_HEIGHT - SIGNATURE_HEIGHT);
+  const CAP_LAST = rowsThatFit(PAGE_HEIGHT - TABLE_HEADER_HEIGHT - SIGNATURE_HEIGHT);
+
+  const pages: { rows: string[]; isFirst: boolean; isLast: boolean }[] = [];
+  let idx = 0;
+
+  while (idx < entries.length) {
+    const isFirst = pages.length === 0;
+    const remaining = entries.length - idx;
+    const capFull = isFirst ? CAP_FIRST : CAP_MIDDLE;
+    const capLast = isFirst ? CAP_FIRST_AND_LAST : CAP_LAST;
+
+    let take: number;
+    let isLast = false;
+
+    if (remaining <= capLast) {
+      take = remaining;            // everything left fits together with the signature
+      isLast = true;
+    } else if (remaining <= capFull) {
+      take = Math.max(1, remaining - 1); // keep at least one row for the last page (with the signature)
+    } else {
+      take = capFull;
     }
 
-    return pages;
-  };
-
-  const hasNonMoving = nonMovingItems.length > 0;
-  const hasSlowMoving = slowMovingItems.length > 0;
-  
-  let allPages: Array<{
-    title: string;
-    items: SlowNonMovingItem[];
-    subtotal: number;
-    isLastPage: boolean;
-    serialStart: number;
-  }> = [];
-
-  let serialCounter = 1;
-
-  if (hasNonMoving) {
-    const nonMovingPages = paginateItems(nonMovingItems, !hasSlowMoving);
-    const nonMovingSubtotal = nonMovingItems.reduce((s, x) => s + (x.StockBook || 0), 0);
-    
-    nonMovingPages.forEach((pageItems, idx) => {
-      allPages.push({
-        title: "1. Non Moving",
-        items: pageItems,
-        subtotal: idx === nonMovingPages.length - 1 ? nonMovingSubtotal : 0,
-        isLastPage: !hasSlowMoving && idx === nonMovingPages.length - 1,
-        serialStart: serialCounter
-      });
-      serialCounter += pageItems.length;
-    });
+    pages.push({ rows: entries.slice(idx, idx + take), isFirst, isLast });
+    idx += take;
   }
-
-  if (hasSlowMoving) {
-    serialCounter = 1; 
-    const slowMovingPages = paginateItems(slowMovingItems, true);
-    const slowMovingSubtotal = slowMovingItems.reduce((s, x) => s + (x.StockBook || 0), 0);
-    
-    slowMovingPages.forEach((pageItems, idx) => {
-      allPages.push({
-        title: "2. Slow Moving",
-        items: pageItems,
-        subtotal: idx === slowMovingPages.length - 1 ? slowMovingSubtotal : 0,
-        isLastPage: idx === slowMovingPages.length - 1,
-        serialStart: serialCounter
-      });
-      serialCounter += pageItems.length;
-    });
-  }
-
-  const totalPages = allPages.length;
 
   let html = `<html><head><style>${tableStyle}</style></head><body>`;
 
-  allPages.forEach((pageData, pageIdx) => {
-    const pageNum = pageIdx + 1;
-    const showSubtotal = pageData.subtotal > 0;
-    
+  pages.forEach((pg) => {
     html += `
       <div class="page">
-        ${renderHeader()}
-        <div style="font-weight:bold; margin:6px 0 2px;">${pageData.title}</div>
+        ${pg.isFirst ? renderHeader() : ""}
         <table>
           ${renderTableHeader()}
           <tbody>
-            ${renderRows(pageData.items, pageData.serialStart)}
-            ${showSubtotal ? `
-              <tr class="subtotal">
-                <td colspan="7" class="right">Sub Total of ${pageData.title.replace('1. ', '').replace('2. ', '')}</td>
-                <td class="right">${formatNum(pageData.subtotal)}</td>
-                <td colspan="2"></td>
-              </tr>
-            ` : ''}
+            ${pg.rows.join("")}
           </tbody>
         </table>
-        ${renderSignature(pageData.isLastPage)}
-        ${renderFooter(pageNum, totalPages)}
+        ${pg.isLast ? renderSignature() : ""}
       </div>
     `;
   });
@@ -597,7 +605,7 @@ const printPDF = () => {
         title="print-frame"
       />
       <h2 className={`text-lg md:text-xl font-bold mb-4 ${maroon}`}>
-        Annual Verification WHwise Signature
+        4. Physical Verification Non Moving/Slow Moving WH Wise AV/6
       </h2>
       <div className="flex flex-col md:flex-row flex-wrap gap-2 md:gap-3 mb-4 justify-end items-end">
         <div className="flex items-center gap-2">
@@ -755,7 +763,7 @@ const printPDF = () => {
       )}
       {showReport && selectedDept && (
         <ReportViewer
-          title={`STATEMENT OF NON-MOVING & SLOW-MOVING MATERIALS - ${selectedYear}`}
+          title={`4. Physical Verification Non Moving/Slow Moving WH Wise AV/6 - ${selectedYear}`}
           subtitlebold2="Cost Center :"
           subtitlenormal2={`${selectedDept.DeptId} - ${selectedDept.DeptName} - Warehouse: ${selectedWarehouse}`}
           loading={reportLoading}
@@ -763,119 +771,134 @@ const printPDF = () => {
           handleDownloadCSV={handleDownloadCSV}
           printPDF={printPDF}
           closeReport={closeReport}
+          plain
         >
-          {/* NON-MOVING SECTION */}
-          {nonMovingItems.length > 0 && (
-            <div className="mb-8">
-              <h3 className="font-bold text-lg mb-3 text-center bg-gray-100 py-2">
-                1. NON-MOVING ITEMS
-              </h3>
-              <table className="w-full text-xs border-collapse">
-                <thead className={`${maroonGrad} text-white`}>
-                  <tr>
-                    <th className="border border-gray-400 px-2 py-2 text-center">Serial No</th>
-                    <th className="border border-gray-400 px-2 py-2 text-center">Code No</th>
-                    <th className="border border-gray-400 px-2 py-2 text-left">Description</th>
-                    <th className="border border-gray-400 px-2 py-2 text-center">Grade Code</th>
-                    <th className="border border-gray-400 px-2 py-2 text-center">UOM</th>
-                    <th className="border border-gray-400 px-2 py-2 text-right">Unit Price</th>
-                    <th className="border border-gray-400 px-2 py-2 text-right">Quantity</th>
-                    <th className="border border-gray-400 px-2 py-2 text-right">Stock Value (Rs.)</th>
-                    <th className="border border-gray-400 px-2 py-2 text-center">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {nonMovingItems.map((item, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{idx + 1}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{item.MaterialCode}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-left">{item.MaterialName}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{item.GradeCode}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{item.UomCode}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.UnitPrice)}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.QtyOnHand)}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.StockBook)}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{item.Reason}</td>
+          {(() => {
+            const th = "border border-gray-400 px-2 py-1 text-center";
+            const verificationDate = reportData[0]?.PhvDate
+              ? new Date(String(reportData[0].PhvDate)).toLocaleDateString("en-GB")
+              : "";
+            const sections = [
+              { title: "1. Non Moving", items: nonMovingItems },
+              { title: "2. Slow Moving", items: slowMovingItems },
+            ].filter((section) => section.items.length > 0);
+
+            return (
+              <div className="text-xs">
+                <div className="flex justify-between items-start mb-3 leading-relaxed">
+                  <div>
+                    <div className="font-bold mb-0.5">TO BE FILLED IN TRIPLICATE</div>
+                    <div>1. ORIGINAL : Director</div>
+                    <div>2. DUPLICATE : Engineer-in-charge</div>
+                    <div>3. TRIPLICATE : Store-keeper/E.S.(C.S.C.)</div>
+                  </div>
+                  <div>
+                    <div>Form - AV/6</div>
+                    <div>Sheet No : {reportData[0]?.DocumentNo || ""}</div>
+                    <div>Date of Verification : {verificationDate}</div>
+                  </div>
+                </div>
+                <table className="w-full">
+                  <colgroup>
+                    <col className="w-[9%]" />
+                    <col className="w-[11%]" />
+                    <col className="w-[30%]" />
+                    <col className="w-[8%]" />
+                    <col className="w-[9%]" />
+                    <col className="w-[9%]" />
+                    <col className="w-[10%]" />
+                    <col className="w-[14%]" />
+                  </colgroup>
+                  <thead className={`${maroonGrad} text-white`}>
+                    <tr>
+                      <th colSpan={3} className={th}>STOCK</th>
+                      <th rowSpan={2} className={th}>QUANTITY</th>
+                      <th rowSpan={2} className={th}>UNIT PRICE (Rs.)</th>
+                      <th rowSpan={2} className={th}>COST (Rs.)</th>
+                      <th rowSpan={2} className={th}>REASONS</th>
+                      <th rowSpan={2} className={th}>RECOMMENDED ACTION TO BE TAKEN</th>
                     </tr>
-                  ))}
-                  <tr className="bg-yellow-50 font-bold">
-                    <td colSpan={7} className="border border-gray-300 px-2 py-2 text-center">
-                      Sub Total of Non-Moving Items
-                    </td>
-                    <td className="border border-gray-300 px-2 py-2 text-right">
-                      {formatNumber(nonMovingItems.reduce((sum, item) => sum + (item.StockBook || 0), 0))}
-                    </td>
-                    <td className="border border-gray-300"></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-          {/* SLOW-MOVING SECTION */}
-          {slowMovingItems.length > 0 && (
-            <div className="mb-8">
-              <h3 className="font-bold text-lg mb-3 text-center bg-gray-100 py-2">
-                2. SLOW-MOVING ITEMS
-              </h3>
-              <table className="w-full text-xs border-collapse">
-                <thead className={`${maroonGrad} text-white`}>
-                  <tr>
-                    <th className="border border-gray-400 px-2 py-2 text-center">Serial No</th>
-                    <th className="border border-gray-400 px-2 py-2 text-center">Code No</th>
-                    <th className="border border-gray-400 px-2 py-2 text-left">Description</th>
-                    <th className="border border-gray-400 px-2 py-2 text-center">Grade Code</th>
-                    <th className="border border-gray-400 px-2 py-2 text-center">UOM</th>
-                    <th className="border border-gray-400 px-2 py-2 text-right">Unit Price</th>
-                    <th className="border border-gray-400 px-2 py-2 text-right">Quantity</th>
-                    <th className="border border-gray-400 px-2 py-2 text-right">Stock Value (Rs.)</th>
-                    <th className="border border-gray-400 px-2 py-2 text-center">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {slowMovingItems.map((item, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{idx + 1}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{item.MaterialCode}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-left">{item.MaterialName}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{item.GradeCode}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{item.UomCode}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.UnitPrice)}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.QtyOnHand)}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.StockBook)}</td>
-                      <td className="border border-gray-300 px-2 py-2 text-center">{item.Reason}</td>
+                    <tr>
+                      <th className={th}></th>
+                      <th className={th}>CODE</th>
+                      <th className={th}>DESCRIPTION</th>
                     </tr>
-                  ))}
-                  <tr className="bg-yellow-50 font-bold">
-                    <td colSpan={7} className="border border-gray-300 px-2 py-2 text-center">
-                      Sub Total of Slow-Moving Items
-                    </td>
-                    <td className="border border-gray-300 px-2 py-2 text-right">
-                      {formatNumber(slowMovingItems.reduce((sum, item) => sum + (item.StockBook || 0), 0))}
-                    </td>
-                    <td className="border border-gray-300"></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-          {/* GRAND TOTAL */}
-          {reportData.length > 0 && (
-            <div className="mt-6">
-              <table className="w-full text-xs border-collapse">
-                <tbody>
-                  <tr className="bg-green-100 font-bold text-base">
-                    <td colSpan={7} className="border border-gray-300 px-2 py-3 text-center">
-                      Grand Total
-                    </td>
-                    <td className="border border-gray-300 px-2 py-3 text-right">
-                      {formatNumber(reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0))}
-                    </td>
-                    <td className="border border-gray-300"></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {sections.map((section) => (
+                      <React.Fragment key={section.title}>
+                        <tr>
+                          <td className="border border-gray-300 px-2 py-1 font-bold">{section.title}</td>
+                          <td colSpan={7} className="border border-gray-300"></td>
+                        </tr>
+                        {section.items.map((item, idx) => (
+                          <tr key={`${section.title}-${idx}`}>
+                            <td className="border border-gray-300 px-3 py-2 text-center"></td>
+                            <td className="border border-gray-300 px-3 py-2 text-center">{item.MaterialCode}</td>
+                            <td className="border border-gray-300 px-3 py-2 text-left">{formatDescription(item)}</td>
+                            <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.QtyOnHand)}</td>
+                            <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.UnitPrice)}</td>
+                            <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.StockBook)}</td>
+                            <td className="border border-gray-300 px-3 py-2 text-center">{item.Reason || "N"}</td>
+                            <td className="border border-gray-300 px-3 py-2"></td>
+                          </tr>
+                        ))}
+                        <tr>
+                          <td colSpan={5} className="border border-gray-300 px-3 py-2 text-right font-bold">Sub total</td>
+                          <td className="border border-gray-300 px-3 py-2 text-right font-bold">
+                            {formatNumber(section.items.reduce((sum, item) => sum + (item.StockBook || 0), 0))}
+                          </td>
+                          <td colSpan={2} className="border border-gray-300"></td>
+                        </tr>
+                      </React.Fragment>
+                    ))}
+                    <tr>
+                      <td colSpan={5} className="border border-gray-300 px-3 py-2 text-right font-bold">Grand total</td>
+                      <td className="border border-gray-300 px-3 py-2 text-right font-bold">
+                        {formatNumber(reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0))}
+                      </td>
+                      <td colSpan={2} className="border border-gray-300"></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="mt-4">
+                  <p className="mb-3">We do hereby certify that the stocks were physically verified as per the given statement.</p>
+                  <div className="flex justify-between items-start gap-6">
+                    <div className="w-[56%]">
+                      <div className="font-bold mb-2">Board of Verification</div>
+                      <table className="w-full table-fixed">
+                        <thead>
+                          <tr>
+                            <th className="w-[5%]"></th>
+                            <th className="w-[32%] font-normal text-left pb-2">Name</th>
+                            <th className="w-[21%] font-normal text-left pb-2">Signature</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[1, 2, 3].map((number) => (
+                            <tr key={number}>
+                              <td className="text-right pr-1 align-bottom">{number}.</td>
+                              <td className="px-1 py-1 align-bottom"><div className="border-b border-dotted border-gray-600 h-4 w-full"></div></td>
+                              <td className="px-1 py-1 align-bottom"><div className="border-b border-dotted border-gray-600 h-4 w-full"></div></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="w-[38%]">
+                      <p className="mb-2">Agreed &amp; Certified Correct by</p>
+                      <div className="flex items-end my-4">
+                        <span>Signature:</span>
+                        <span className="flex-1 border-b border-dotted border-gray-600 h-4 ml-2"></span>
+                      </div>
+                      <p className="mb-2">Store-keeper/E.S.(C.S.C.)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </ReportViewer>
       )}
     </div>
