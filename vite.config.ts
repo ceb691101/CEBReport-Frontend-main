@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
 		server: {
 			proxy: {
 				"/misapi/api/general/total-customer-base": {
-					target: env.VITE_LOCAL_API || env.VITE_SERVER_API,
+					target:  env.VITE_SERVER_API,
 					changeOrigin: true,
 					secure: false,
 					rewrite: env.VITE_LOCAL_API
