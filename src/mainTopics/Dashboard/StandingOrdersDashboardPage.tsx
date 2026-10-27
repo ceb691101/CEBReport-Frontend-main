@@ -260,7 +260,7 @@ const StandingOrdersDashboardPage: React.FC = () => {
         acctNumber: item.AcctNumber ?? item.acctNumber ?? item.accNumber ?? "",
         branName: item.BranName ?? item.branName ?? "",
         billCycle: item.BillCycle ?? item.billCycle ?? "",
-        status1: item.Status1 ?? item.status1 ?? "Q",
+        status1: item.Status1 ?? item.status1 ?? "A",
         lastProcDate: item.LastProcDate ?? item.lastProcDate ?? "",
         lastOutBal: item.LastOutBal ?? item.lastOutBal ?? 0,
         calcCycle: item.CalcCycle ?? item.calcCycle ?? "",
@@ -482,7 +482,7 @@ const StandingOrdersDashboardPage: React.FC = () => {
                 <AlertCircle className="w-10 h-10 mx-auto text-amber-500" />
                 <h3 className="text-sm font-bold text-gray-800">No Queued Customers Found</h3>
                 <p className="text-xs text-gray-500 max-w-sm mx-auto">
-                  No matching records with status1 = 'Q' found for the current search criteria.
+                  No matching records with status1 = 'A' found for the current search criteria.
                 </p>
               </div>
             ) : (
@@ -523,7 +523,7 @@ const StandingOrdersDashboardPage: React.FC = () => {
                         </td>
                         <td className="py-3.5 px-4 text-center">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                            {cust.status1 || "Q"}
+                            {cust.status1 || "A"}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-center">
@@ -604,7 +604,7 @@ const StandingOrdersDashboardPage: React.FC = () => {
 
               <div className="bg-gray-50 p-3 rounded-[20px] border border-gray-100 space-y-1">
                 <span className="text-gray-400 font-medium text-[10px] uppercase">Status 1</span>
-                <p className="font-bold text-amber-700 font-mono">{selectedCustomer.status1 || "Q"}</p>
+                <p className="font-bold text-amber-700 font-mono">{selectedCustomer.status1 || "A"}</p>
               </div>
 
               <div className="bg-gray-50 p-3 rounded-[20px] border border-gray-100 space-y-1">
