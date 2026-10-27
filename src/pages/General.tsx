@@ -3,12 +3,13 @@ import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import SubtopicCard from "../components/shared/SubtopicCard";
 import { useReportRenderer } from "../hooks/useReportRenderer";
 import { normalizeReportName } from "../utils/reportNameMatch";
+import { withTotalCustomerBase } from "../utils/generalSubtopics";
 
 const General = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["General"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const renderReport = useReportRenderer();
-  const menuSubtopics = [...subtopics];
+  const menuSubtopics = withTotalCustomerBase(subtopics);
   const billIndex = menuSubtopics.findIndex(
     (subtopic) => normalizeReportName(subtopic.name) === "bill calculation"
   );
@@ -21,7 +22,7 @@ const General = () => {
     const tariff = tariffIndex !== -1
       ? menuSubtopics.splice(tariffIndex, 1)[0]
       : {
-          id: Math.min(0, ...subtopics.map((subtopic) => subtopic.id)) - 1,
+          id: Math.min(0, ...menuSubtopics.map((subtopic) => subtopic.id)) - 1,
           name: "Tariff Structure",
         };
     const insertIndex = menuSubtopics.findIndex(
@@ -41,7 +42,7 @@ const General = () => {
     meteringIndex !== -1
       ? menuSubtopics.splice(meteringIndex, 1)[0]
       : {
-          id: Math.min(0, ...subtopics.map((subtopic) => subtopic.id), 0) - 10,
+          id: Math.min(0, ...menuSubtopics.map((subtopic) => subtopic.id)) - 10,
           name: meteringReportName,
         };
 
