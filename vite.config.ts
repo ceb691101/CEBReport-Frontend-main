@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
 		plugins: [react(), tailwindcss()],
 		server: {
 			proxy: {
+				// This report is available in the local API before remote deployment.
 				"/misapi/api/general/total-customer-base": {
 					target:  env.VITE_SERVER_API,
 					changeOrigin: true,
