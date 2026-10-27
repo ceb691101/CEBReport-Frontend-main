@@ -240,6 +240,7 @@ import ProvinceT1T2T3Report from "../mainTopics/SMC-ManagementInfo/ProvinceT1T2T
 import ProvincewiseSMCJobMaterialDetails from "../mainTopics/SMC-ManagementInfo/ProvincewiseSMCJobMaterialDetails.tsx";
 import SMCLineDetailsByProvince from "../mainTopics/SMC-ManagementInfo/SMCLineDetailsByProvince.tsx";
 import SmcLineDetailsRegionReport from "../mainTopics/SMC-ManagementInfo/SmcLineDetailsRegionReport.tsx";
+import CostPaidJobProgress from "../mainTopics/SMC-ManagementInfo/CostPaidJobProgress.tsx";
 
 //FIFO reports
 import IssueReceiptSummaryReport from "../mainTopics/fifo/IssueReceiptSummaryReport";
@@ -590,9 +591,16 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise job finished not paid contractor payment": JobFinBillNotGeneratedReport,
 	"area wise t1 t2 t3 report": AreaT1T2T3Report,
 	"province wise t1 t2 t3 report": ProvinceT1T2T3Report,
+	"province wise smc job material details report": ProvincewiseSMCJobMaterialDetails,
+	"province wise smc job material details": ProvincewiseSMCJobMaterialDetails,
+	"provincewise smc job material details report": ProvincewiseSMCJobMaterialDetails,
 	"provincewise smc job material details": ProvincewiseSMCJobMaterialDetails,
+	"province-wise smc job material details report": ProvincewiseSMCJobMaterialDetails,
+	"province-wise smc job material details": ProvincewiseSMCJobMaterialDetails,
 	"smc line details by province": SMCLineDetailsByProvince,
 	"smc line details region wise": SmcLineDetailsRegionReport,
+	"c/c cost paid job progress": CostPaidJobProgress,
+	"cost paid job progress": CostPaidJobProgress,
 
 	//FIFO reports
 	"issue and receipt summary": IssueReceiptSummaryReport,
