@@ -200,7 +200,18 @@ const SolarJournalsRetail = () => {
         body: JSON.stringify({ areaType, locationCode: areaType === "Entire CEB" ? "" : locationCode, billCycle }),
         signal: controller.signal,
       });
-      const result = await response.json() as { data?: JournalReport | null; errorMessage?: string; Message?: string };
+      const responseText = await response.text();
+      const httpError = `Failed to generate report (HTTP ${response.status}). Please try again.`;
+      if (!responseText.trim()) {
+        throw new Error(response.ok ? "The report service returned an empty response. Please try again." : httpError);
+      }
+      let result: { data?: JournalReport | null; errorMessage?: string; Message?: string };
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        throw new Error(response.ok ? "The report service returned an invalid response. Please try again." : httpError);
+      }
+      if (!result || typeof result !== "object") throw new Error("The report response is invalid. Please try again.");
       if (!response.ok || result.errorMessage) {
         throw new Error(result.errorMessage || result.Message || `Failed to generate report (HTTP ${response.status}).`);
       }
@@ -402,7 +413,7 @@ const SolarJournalsRetail = () => {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-200 font-semibold">
+                  <tfoot className="sticky bottom-0 bg-gray-200 font-semibold">
                     <tr>
                       <th scope="row" colSpan={5} className="border border-gray-300 px-3 py-2 text-right">Total:</th>
                       <td className="border border-gray-300 px-3 py-2 text-right tabular-nums" style={{ color: "#115e59" }}>{formatAmount(report.TotalCredit)}</td>

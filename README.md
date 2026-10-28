@@ -1,5 +1,31 @@
 # React + TypeScript + Vite
 
+## Total customer base
+
+Under General, open Total customer base to automatically load all areas.
+The screen shows the detected bill cycle and previous cycle, with a Refresh button.
+The results group ordinary `agesmry` counts by province and area, summing
+`c00` through `c61` separately for customer types A/G and F.
+
+The screen uses `GET /misapi/api/general/total-customer-base` without parameters.
+The API detects the cycle using `SELECT MIN(bill_cycle) FROM areas` and returns
+`CurrentCycle`, `CurrentCycleLabel`, `PreviousCycle`, `PreviousCycleLabel`, and `Rows`
+inside `data`. Optional `billCycle`, `areaType`, and `locationCode` parameters
+still support explicit cycles and Province/Division queries. The `/bill-cycles`
+endpoint remains available for callers that need the cycle separately.
+
+In development, this route uses `VITE_LOCAL_API` when configured, removing
+the `/misapi` prefix; otherwise it uses `VITE_SERVER_API` with the prefix.
+Build and start the updated backend in IIS Express before generating reports.
+For production, deploy the rebuilt API under `/misapi` alongside the frontend.
+
+Run `Tests/TotalCustomerBase.Query.Smoke.ps1` from the backend directory
+to verify the three queries and their parameter binding.
+Run `node Tests/TotalCustomerBase.Api.Smoke.mjs http://localhost:5173` to verify
+automatic cycle detection, optional filters, and report data through Vite.
+Run `node Tests/TotalCustomerBase.UI.Smoke.mjs http://localhost:5173` with Vite
+and the API running to verify the report screen in headless Chrome.
+
 ## Solar Journals - Retail
 
 The report includes both credit and debit solar journal transactions, with row
