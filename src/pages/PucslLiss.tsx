@@ -9,6 +9,10 @@ const PucslLiss = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["PUCSL/LISS"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const renderReport = useReportRenderer();
+  const retailJournals: RoleSubtopic = {
+    id: Math.min(0, ...subtopics.map((subtopic) => subtopic.id)) - 1,
+    name: "Solar Journals - Retail",
+  };
   const hasRetailJournals = subtopics.some(
     (subtopic) => normalizeReportName(subtopic.name) === normalizeReportName(retailJournals.name)
   );
@@ -16,7 +20,7 @@ const PucslLiss = () => {
     ? [...subtopics, retailJournals]
     : subtopics;
 
-  const menuSubtopics = [...subtopics];
+  const menuSubtopics = [...visibleSubtopics];
 
   // Ensure "Solar Journals - Bulk" is always available in PUCSL/LISS list
   const journalsReportName = "Solar Journals - Bulk";
@@ -29,7 +33,7 @@ const PucslLiss = () => {
     journalsIndex !== -1
       ? menuSubtopics.splice(journalsIndex, 1)[0]
       : {
-          id: Math.min(0, ...subtopics.map((subtopic) => subtopic.id), 0) - 99,
+          id: Math.min(0, ...menuSubtopics.map((subtopic) => subtopic.id)) - 99,
           name: journalsReportName,
         };
 
@@ -51,7 +55,7 @@ const PucslLiss = () => {
 
   return (
     <div className="flex flex-col gap-4 pt-5">
-      {visibleSubtopics.map((subtopic) => (
+      {menuSubtopics.map((subtopic) => (
         <SubtopicCard
           key={subtopic.id}
           id={subtopic.id}

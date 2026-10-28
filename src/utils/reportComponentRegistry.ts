@@ -81,6 +81,7 @@ import CashBookCCReport from "../mainTopics copy/CashBook/CashBookCCReport.tsx";
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
 import BillCalculation from "../mainTopics/general/BillCalculation";
 import TariffStructure from "../mainTopics/general/TariffStructure";
+import TotalCustomerBase from "../mainTopics/general/TotalCustomerBase";
 import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
 import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
 import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
@@ -412,6 +413,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
 	"bill calculation": BillCalculation,
 	"tariff structure": TariffStructure,
+	"total customer base": TotalCustomerBase,
 	"listing of customers": ListingofCustomers,
 	"list of government accounts": ListOfGovernmentAccounts,
 	"largest 50 customers details ordinary": LargestCus,
