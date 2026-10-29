@@ -451,7 +451,7 @@ const SawMillsMetalCrushersWeldingPlantsDetails: React.FC = () => {
 <title>&nbsp;</title>
 <style>${tableStyle}
 @page { size: landscape; margin: 10mm; }
-@page { 
+@page {
   @top-center { content: "Electricity Distribution Lanka Privated Limited"; font-size: 9px; font-weight: normal; color: #333; }
   @top-right { content: none; }
   @bottom-left { content: "Printed on: ${new Date().toLocaleString()}"; font-size: 9px; color: #666; }

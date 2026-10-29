@@ -115,7 +115,7 @@ const SMCLineDetailsByProvince: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [branchError, setBranchError] = useState<string | null>(null);
-  const [selectedCompId, setSelectedCompId] = useState("");
+  const [, setSelectedCompId] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<Branch | null>(null);
   const [searchId, setSearchId] = useState("");
   const [searchName, setSearchName] = useState("");

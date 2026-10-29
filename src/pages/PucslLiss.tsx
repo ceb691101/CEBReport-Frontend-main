@@ -5,12 +5,14 @@ import SubtopicCard from "../components/shared/SubtopicCard";
 import { useReportRenderer } from "../hooks/useReportRenderer";
 import { normalizeReportName } from "../utils/reportNameMatch";
 
-const retailJournals: RoleSubtopic = { id: -1, name: "Solar Journals - Retail" };
-
 const PucslLiss = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["PUCSL/LISS"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const renderReport = useReportRenderer();
+  const retailJournals: RoleSubtopic = {
+    id: Math.min(0, ...subtopics.map((subtopic) => subtopic.id)) - 1,
+    name: "Solar Journals - Retail",
+  };
   const hasRetailJournals = subtopics.some(
     (subtopic) => normalizeReportName(subtopic.name) === normalizeReportName(retailJournals.name)
   );
