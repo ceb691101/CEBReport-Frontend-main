@@ -89,9 +89,27 @@ export default function SolarBulkSalesGraph({ reportUrl, billCycleOptions, sales
                 </div>
             )}
             {!loading && !error && (
-                <>
+                <div className="mt-6 grid grid-cols-1 items-center gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+                    <div className="min-w-0 overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <caption className="sr-only">kWh sales totals by {cycleName.toLowerCase()} cycle</caption>
+                            <thead className="border-b border-gray-200 text-gray-600">
+                                <tr><th scope="col" className="py-2 pr-4 text-left">{cycleName} cycle</th><th scope="col" className="py-2 text-right">kWh sales</th></tr>
+                            </thead>
+                            <tbody>
+                                {data.map(point => (
+                                    <tr key={point.cycle} className="border-b border-gray-100">
+                                        <th scope="row" className="py-2 pr-4 text-left font-medium">
+                                            {billCycleOptions.find(option => option.code === point.cycle)?.display || point.cycle}
+                                        </th>
+                                        <td className="py-2 text-right">{point.kwhSales === null ? "No data" : formatSales(point.kwhSales)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                     {data.some(point => point.kwhSales !== null) ? (
-                        <div role="img" aria-label={`Bar graph of kWh sales for ${cycleName.toLowerCase()} cycles 454, 455 and 456`} className="mt-6 h-80 w-full">
+                        <div role="img" aria-label={`Bar graph of kWh sales for ${cycleName.toLowerCase()} cycles 454, 455 and 456`} className="h-80 w-full min-w-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={data} margin={{ top: 12, right: 16, bottom: 24, left: 16 }} accessibilityLayer>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -112,23 +130,7 @@ export default function SolarBulkSalesGraph({ reportUrl, billCycleOptions, sales
                             </ResponsiveContainer>
                         </div>
                     ) : <p className="py-8 text-center text-gray-600">No kWh sales data is available for these {cycleName.toLowerCase()} cycles.</p>}
-                    <table className="mt-4 w-full text-sm">
-                        <caption className="sr-only">kWh sales totals by {cycleName.toLowerCase()} cycle</caption>
-                        <thead className="border-b border-gray-200 text-gray-600">
-                            <tr><th scope="col" className="py-2 text-left">{cycleName} cycle</th><th scope="col" className="py-2 text-right">kWh sales</th></tr>
-                        </thead>
-                        <tbody>
-                            {data.map(point => (
-                                <tr key={point.cycle} className="border-b border-gray-100">
-                                    <th scope="row" className="py-2 text-left font-medium">
-                                        {billCycleOptions.find(option => option.code === point.cycle)?.display || point.cycle}
-                                    </th>
-                                    <td className="py-2 text-right">{point.kwhSales === null ? "No data" : formatSales(point.kwhSales)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </>
+                </div>
             )}
         </section>
     );
