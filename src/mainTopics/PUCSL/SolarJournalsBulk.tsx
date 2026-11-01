@@ -35,7 +35,6 @@ const SolarJournalsBulk: React.FC = () => {
   const [billCycle, setBillCycle] = useState<string>("");
 
   const [provinces, setProvinces] = useState<any[]>([]);
-  const [areas, setAreas] = useState<any[]>([]);
   const [divisions, setDivisions] = useState<any[]>([]);
   const [billCycleOptions, setBillCycleOptions] = useState<BillCycleOption[]>([]);
 
@@ -64,7 +63,7 @@ const SolarJournalsBulk: React.FC = () => {
     } catch (err: any) {
       if (err.message && (err.message.includes("Failed to fetch") || err.message.includes("NetworkError"))) {
         throw new Error(
-          "Cannot connect to backend (http://localhost:44381). Please ensure Visual Studio IIS Express is running on port 44381."
+          "Cannot connect to backend server. Please verify network connection or server status."
         );
       }
       throw err;
@@ -101,16 +100,10 @@ const SolarJournalsBulk: React.FC = () => {
     initData();
   }, []);
 
-  // Fetch Area or Division when category changes
+  // Fetch Division when category changes
   useEffect(() => {
     setCategoryValue("");
-    if (reportCategory === "Area") {
-      fetchWithErrorHandling("/misapi/api/bulk/area")
-        .then((res) => {
-          if (Array.isArray(res?.data)) setAreas(res.data);
-        })
-        .catch(console.error);
-    } else if (reportCategory === "Division") {
+    if (reportCategory === "Division") {
       fetchWithErrorHandling("/misapi/api/bulk/region")
         .then((res) => {
           if (Array.isArray(res?.data)) setDivisions(res.data);
@@ -134,8 +127,7 @@ const SolarJournalsBulk: React.FC = () => {
     setReportData(null);
 
     try {
-      // Direct link to local IIS Express backend for testing
-      const url = `http://localhost:44381/solarapi/solar-journals/bulk?billCycle=${encodeURIComponent(
+      const url = `/misapi/solarapi/solar-journals/bulk?billCycle=${encodeURIComponent(
         billCycle
       )}&reportCategory=${encodeURIComponent(reportCategory)}&typeCode=${encodeURIComponent(categoryValue)}`;
 
@@ -152,9 +144,6 @@ const SolarJournalsBulk: React.FC = () => {
       if (reportCategory === "Province") {
         const p = provinces.find((x) => x.ProvinceCode === categoryValue);
         setSelectedCategoryName(p ? `${p.ProvinceCode} - ${p.ProvinceName}` : categoryValue);
-      } else if (reportCategory === "Area") {
-        const a = areas.find((x) => x.AreaCode === categoryValue);
-        setSelectedCategoryName(a ? `${a.AreaCode} - ${a.AreaName}` : categoryValue);
       } else if (reportCategory === "Division") {
         setSelectedCategoryName(categoryValue);
       } else {
@@ -303,7 +292,6 @@ const SolarJournalsBulk: React.FC = () => {
                   required
                 >
                   <option value="Province">Province</option>
-                  <option value="Area">Area</option>
                   <option value="Division">Division</option>
                   <option value="EntireCEB">Entire CEB</option>
                 </select>
@@ -324,12 +312,6 @@ const SolarJournalsBulk: React.FC = () => {
                       provinces.map((p) => (
                         <option key={p.ProvinceCode} value={p.ProvinceCode}>
                           {p.ProvinceCode} - {p.ProvinceName}
-                        </option>
-                      ))}
-                    {reportCategory === "Area" &&
-                      areas.map((a) => (
-                        <option key={a.AreaCode} value={a.AreaCode}>
-                          {a.AreaCode} - {a.AreaName}
                         </option>
                       ))}
                     {reportCategory === "Division" &&

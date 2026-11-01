@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, JSX } from "react";
-import { FaFileDownload, FaPrint } from "react-icons/fa";
+import { FaChartBar, FaFileDownload, FaPrint } from "react-icons/fa";
 import { useUser } from "../../contexts/UserContext";
 import { useReportScope } from "../../hooks/useReportScope";
+import SolarBulkSalesGraph from "../../components/mainTopics/SolarInformation/SolarBulkSalesGraph";
 
 interface Area {
     AreaCode: string;
@@ -98,6 +99,8 @@ const SolarPaymentRetail: React.FC = () => {
     const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
     const [selectedCycleDisplay, setSelectedCycleDisplay] = useState<string>("");
     const [reportVisible, setReportVisible] = useState(false);
+    const [graphVisible, setGraphVisible] = useState(false);
+    const [reportRequestUrl, setReportRequestUrl] = useState("");
 
     // Report data
     const [detailedData, setDetailedData] = useState<DetailedRetailPayment[]>(
@@ -1594,6 +1597,8 @@ const SolarPaymentRetail: React.FC = () => {
         e.preventDefault();
         setLoading(true);
         setReportError(null);
+        setGraphVisible(false);
+        setReportRequestUrl("");
         setDetailedData([]);
         setOrdinarySummaryData([]);
         setBulkSummaryData([]);
@@ -1674,6 +1679,7 @@ const SolarPaymentRetail: React.FC = () => {
 
                 setOrdinarySummaryData(ordinaryData);
                 setBulkSummaryData(bulkData);
+                setReportRequestUrl(ordinaryEndpoint);
                 setReportVisible(true);
             } else if (reportType === "Detailed Report") {
                 const typeCode = selectedCategory === "Entire CEB" ? "" : categoryValue;
@@ -1749,6 +1755,7 @@ const SolarPaymentRetail: React.FC = () => {
                     : [responseData];
                 const sortedData = sortDataAlphabetically(detailedDataArray);
                 setDetailedData(sortedData);
+                setReportRequestUrl(endpoint);
                 setReportVisible(true);
             }
         } catch (err: any) {
@@ -2315,7 +2322,16 @@ const SolarPaymentRetail: React.FC = () => {
                                 )}
                             </p>
                         </div>
-                        <div className="flex space-x-2 mt-2 md:mt-0">
+                        <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
+                            <button
+                                type="button"
+                                onClick={() => setGraphVisible(value => !value)}
+                                aria-pressed={graphVisible}
+                                aria-controls="bulk-solar-sales-graph"
+                                className="flex items-center gap-1 px-3 py-1.5 border border-[#7A0000] text-[#7A0000] bg-white rounded-md text-xs font-medium shadow-sm hover:bg-red-50 whitespace-nowrap transition"
+                            >
+                                <FaChartBar className="w-3 h-3" /> {graphVisible ? "Table View" : "View Graph"}
+                            </button>
                             <button
                                 onClick={downloadAsCSV}
                                 className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
@@ -2337,9 +2353,22 @@ const SolarPaymentRetail: React.FC = () => {
                         </div>
                     </div>
 
+                    {graphVisible && (
+                        <SolarBulkSalesGraph
+                            reportUrl={reportRequestUrl}
+                            billCycleOptions={cycleOptions.map(option => ({
+                                ...option,
+                                display: selectedCycleType === "Calculation Cycle" ? `${option.code} - ${option.display}` : option.display,
+                            }))}
+                            salesField={reportType === "Summary Report" ? "UnitSaleKwh" : "UnitSale"}
+                            cycleType={selectedCycleType === "Calculation Cycle" ? "calculation" : "bill"}
+                            scopeDescription={reportType === "Summary Report" ? "Retail customers across all net types." : undefined}
+                        />
+                    )}
+
                     {/* Report Table */}
                     <div
-                        className={`${reportType === "Summary Report"
+                        className={`${graphVisible ? "hidden" : ""} ${reportType === "Summary Report"
                             ? ""
                             : "overflow-x-auto max-h-[calc(100vh-250px)]"
                             } border border-gray-300 rounded-lg`}

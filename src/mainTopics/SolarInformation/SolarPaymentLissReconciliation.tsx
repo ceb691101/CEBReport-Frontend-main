@@ -238,6 +238,8 @@ const SolarPaymentLissReconciliation: React.FC = () => {
             .text-center { text-align: center; }
             .font-bold { font-weight: bold; }
             .bg-total { background-color: #e5e7eb; font-weight: bold; }
+            .bg-amber-100 { background-color: #fef3c7 !important; color: #78350f !important; font-weight: bold; }
+            .border-amber-300 { border-color: #fcd34d !important; }
             @media print {
               @page { size: landscape; margin: 10mm; }
             }
@@ -301,6 +303,14 @@ const SolarPaymentLissReconciliation: React.FC = () => {
 
   const th = "border border-gray-300 px-4 py-2.5 text-center text-xs font-semibold text-gray-800 bg-gray-100";
   const td = "border border-gray-300 px-4 py-2 text-xs";
+
+  const isBulkMismatch = (row: SolarPaymentLissReconItem) => {
+    return Math.abs((row.buLK ?? 0) - (row.Bliss ?? 0)) > 0.01;
+  };
+
+  const isOrdMismatch = (row: SolarPaymentLissReconItem) => {
+    return Math.abs((row.Ordinary ?? 0) - (row.oLiss ?? 0)) > 0.01;
+  };
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
@@ -492,31 +502,76 @@ const SolarPaymentLissReconciliation: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {reportData.Rows.map((row, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/60"}>
-                      <td className={`${td} font-medium text-gray-900`}>
-                        {row.SchemeName}
-                      </td>
-                      <td className={`${td} text-right text-gray-800`}>
-                        {formatNumber(row.Ordinary)}
-                      </td>
-                      <td className={`${td} text-right text-gray-800`}>
-                        {formatNumber(row.buLK)}
-                      </td>
-                      <td className={`${td} text-right text-gray-800`}>
-                        {formatNumber(row.oLiss)}
-                      </td>
-                      <td className={`${td} text-right text-gray-800`}>
-                        {formatNumber(row.Bliss)}
-                      </td>
-                    </tr>
-                  ))}
+                  {reportData.Rows.map((row, idx) => {
+                    const ordMismatch = isOrdMismatch(row);
+                    const bulkMismatch = isBulkMismatch(row);
+                    const ordDiff = Math.abs((row.Ordinary ?? 0) - (row.oLiss ?? 0));
+                    const bulkDiff = Math.abs((row.buLK ?? 0) - (row.Bliss ?? 0));
+
+                    return (
+                      <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/60"}>
+                        <td className={`${td} font-medium text-gray-900`}>
+                          {row.SchemeName}
+                        </td>
+                        <td
+                          className={`${td} text-right ${
+                            ordMismatch
+                              ? "bg-amber-100 text-amber-950 font-bold border-amber-300"
+                              : "text-gray-800"
+                          }`}
+                          title={ordMismatch ? `Discrepancy: Difference = Rs. ${formatNumber(ordDiff)}` : undefined}
+                        >
+                          {formatNumber(row.Ordinary)}
+                        </td>
+                        <td
+                          className={`${td} text-right ${
+                            bulkMismatch
+                              ? "bg-amber-100 text-amber-950 font-bold border-amber-300"
+                              : "text-gray-800"
+                          }`}
+                          title={bulkMismatch ? `Discrepancy: Difference = Rs. ${formatNumber(bulkDiff)}` : undefined}
+                        >
+                          {formatNumber(row.buLK)}
+                        </td>
+                        <td
+                          className={`${td} text-right ${
+                            ordMismatch
+                              ? "bg-amber-100 text-amber-950 font-bold border-amber-300"
+                              : "text-gray-800"
+                          }`}
+                          title={ordMismatch ? `Discrepancy: Difference = Rs. ${formatNumber(ordDiff)}` : undefined}
+                        >
+                          {formatNumber(row.oLiss)}
+                        </td>
+                        <td
+                          className={`${td} text-right ${
+                            bulkMismatch
+                              ? "bg-amber-100 text-amber-950 font-bold border-amber-300"
+                              : "text-gray-800"
+                          }`}
+                          title={bulkMismatch ? `Discrepancy: Difference = Rs. ${formatNumber(bulkDiff)}` : undefined}
+                        >
+                          {formatNumber(row.Bliss)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
 
 
               </table>
             </div>
           </div>
+
+          {/* Discrepancy Note */}
+          {reportData.Rows.some((r) => isOrdMismatch(r) || isBulkMismatch(r)) && (
+            <div className="flex items-center gap-2 mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-xs">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0"></span>
+              <span>
+                <strong>Note:</strong> Highlighted cells indicate reconciliation discrepancies between Billing and LISS (Ordinary ≠ Ordinary Liss or Bulk ≠ Bulk Liss).
+              </span>
+            </div>
+          )}
 
           {reportError && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">

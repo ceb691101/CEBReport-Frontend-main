@@ -39,8 +39,7 @@ const MeteringReadingCompletionStatusReport: React.FC = () => {
     setLoading(true);
     setErrorMessage(null);
 
-    // Direct localhost URL for testing with local IIS Express backend
-    const url = "http://localhost:44381/api/meter-reading/completion-status";
+    const url = "/misapi/api/meter-reading/completion-status";
 
     try {
       const res = await fetch(url, {
@@ -74,7 +73,7 @@ const MeteringReadingCompletionStatusReport: React.FC = () => {
     } catch (err: any) {
       let msg = err.message || "Failed to connect to backend.";
       if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
-        msg = "Cannot connect to local backend (http://localhost:44381). Please ensure Visual Studio IIS Express is running on port 44381.";
+        msg = "Cannot connect to server. Please verify network connection or server status.";
       }
       setErrorMessage(msg);
     } finally {

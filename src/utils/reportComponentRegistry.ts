@@ -81,6 +81,7 @@ import CashBookCCReport from "../mainTopics copy/CashBook/CashBookCCReport.tsx";
 import ActiveCustomersSalesByTariff from "../mainTopics/general/ActiveCustomersSalesByTariff";
 import BillCalculation from "../mainTopics/general/BillCalculation";
 import TariffStructure from "../mainTopics/general/TariffStructure";
+import TotalCustomerBase from "../mainTopics/general/TotalCustomerBase";
 import RegisteredConsumersForSMSAlerts from "../mainTopics/general/RegisteredConsumersForSMSAlerts";
 import Securitydepositcontractdemandbulk from "../mainTopics/general/Securitydepositcontractdemandbulk";
 import ListOfGovernmentAccounts from "../mainTopics/general/ListOfGovernmentAccounts";
@@ -160,6 +161,7 @@ import PHVNonMovingBOSReport from "../mainTopics/PHVFIFO/PHVNonMovingBOSReport.t
 import PUCSLSolarConnection from "../mainTopics/PUCSL/PUCSLSolarConnection";
 import PUCSLSolarCustomers from "../mainTopics/PUCSL/PUCSLSolarCustomers";
 import SolarDataForUNT from "../mainTopics/PUCSL/SolarDataForUNT";
+import SolarJournalsRetail from "../mainTopics/PUCSL/SolarJournalsRetail";
 
 // Solar Information reports
 import SolarPVBilling from "../mainTopics/SolarInformation/SolarPVBilling";
@@ -232,6 +234,7 @@ import JobStatusDocInquiryReport from "../mainTopics/SMC/JobStatusDocInquiryRepo
 import JobSummaryAllReport from "../mainTopics/SMC/JobSummaryAllReport.tsx";
 import JobSummaryPeriodReport from "../mainTopics/SMC/JobSummaryPeriodReport.tsx";
 import CCJobSummaryReport from "../mainTopics/SMC/CCJobSummaryReport.tsx";
+import SawMillsMetalCrushersWeldingPlantsDetails from "../mainTopics/SMC/SawMillsMetalCrushersWeldingPlantsDetails.tsx";
 
 //SMC - Management Information
 import SmcJobProgressReport from "../mainTopics/SMC-ManagementInfo/SMCJobProgressReport.tsx";
@@ -240,8 +243,10 @@ import PivIIPaidNotEnergizedReport from "../mainTopics/SMC-ManagementInfo/PIVIIP
 import JobFinBillNotGeneratedReport from "../mainTopics/SMC-ManagementInfo/JobFinBillNotGeneratedReport.tsx";
 import AreaT1T2T3Report from "../mainTopics/SMC-ManagementInfo/AreaT1T2T3Report.tsx";
 import ProvinceT1T2T3Report from "../mainTopics/SMC-ManagementInfo/ProvinceT1T2T3Report.tsx";
+import ProvincewiseSMCJobMaterialDetails from "../mainTopics/SMC-ManagementInfo/ProvincewiseSMCJobMaterialDetails.tsx";
 import SMCLineDetailsByProvince from "../mainTopics/SMC-ManagementInfo/SMCLineDetailsByProvince.tsx";
 import SmcLineDetailsRegionReport from "../mainTopics/SMC-ManagementInfo/SmcLineDetailsRegionReport.tsx";
+import CostPaidJobProgress from "../mainTopics/SMC-ManagementInfo/CostPaidJobProgress.tsx";
 
 //FIFO reports
 import IssueReceiptSummaryReport from "../mainTopics/fifo/IssueReceiptSummaryReport";
@@ -411,6 +416,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"active customers and sales by tariff": ActiveCustomersSalesByTariff,
 	"bill calculation": BillCalculation,
 	"tariff structure": TariffStructure,
+	"total customer base": TotalCustomerBase,
 	"listing of customers": ListingofCustomers,
 	"list of government accounts": ListOfGovernmentAccounts,
 	"largest 50 customers details ordinary": LargestCus,
@@ -505,6 +511,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"pucsl reports solar connections new": PUCSLSolarConnection,
 	"pucsl solar customers": PUCSLSolarCustomers,
 	"solar data for unt calculation": SolarDataForUNT,
+	"solar journals - retail": SolarJournalsRetail,
 
 	// Solar Information reports
 	"solar pv billing information": SolarPVBilling,
@@ -593,6 +600,7 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"job summary new connection edl": JobSummaryAllReport,
 	"job summary within period": JobSummaryPeriodReport,
 	"cost center wise job summary": CCJobSummaryReport,
+	"saw mills/metal crushers/welding plants details": SawMillsMetalCrushersWeldingPlantsDetails,
 
 	//SMC - Management Information
 	"smc job progress": SmcJobProgressReport,
@@ -601,8 +609,16 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"cost center wise job finished not paid contractor payment": JobFinBillNotGeneratedReport,
 	"area wise t1 t2 t3 report": AreaT1T2T3Report,
 	"province wise t1 t2 t3 report": ProvinceT1T2T3Report,
-	"smc line details by province report": SMCLineDetailsByProvince,
+	"province wise smc job material details report": ProvincewiseSMCJobMaterialDetails,
+	"province wise smc job material details": ProvincewiseSMCJobMaterialDetails,
+	"provincewise smc job material details report": ProvincewiseSMCJobMaterialDetails,
+	"provincewise smc job material details": ProvincewiseSMCJobMaterialDetails,
+	"province-wise smc job material details report": ProvincewiseSMCJobMaterialDetails,
+	"province-wise smc job material details": ProvincewiseSMCJobMaterialDetails,
+	"smc line details by province": SMCLineDetailsByProvince,
 	"smc line details region wise": SmcLineDetailsRegionReport,
+	"c/c cost paid job progress": CostPaidJobProgress,
+	"cost paid job progress": CostPaidJobProgress,
 
 	//FIFO reports
 	"issue and receipt summary": IssueReceiptSummaryReport,
