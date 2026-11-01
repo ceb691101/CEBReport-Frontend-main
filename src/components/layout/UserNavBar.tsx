@@ -77,7 +77,7 @@ const UserNavBar = () => {
 
           <div className="ml-3 sm:ml-4 flex items-center gap-2">
             <div className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide">
-              REPORTING System
+              OneView
             </div>
             {/* <div className="text-xs sm:text-sm md:text-base font-semibold text-white/80">
     Version 1.1
@@ -157,7 +157,7 @@ const UserNavBar = () => {
 
             <div className="p-3 bg-gray-50 border-t border-gray-100">
               <div className="text-xs text-gray-500 text-center">
-                Reporting System Portal v1.9
+                OneView Portal v1.9
               </div>
             </div>
           </div>

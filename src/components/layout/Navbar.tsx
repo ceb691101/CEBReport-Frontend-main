@@ -36,7 +36,7 @@ const Navbar = () => {
           
           <div className="ml-3 sm:ml-4">
             <div className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-[#7A0000] to-[#A52A2A] bg-clip-text text-transparent tracking-wide">
-              REPORTING System
+              OneView
             </div>
           </div>
         </Link>

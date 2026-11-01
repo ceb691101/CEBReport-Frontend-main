@@ -25,7 +25,7 @@ export default function BranchesPage({ onLogout, isDarkMode = false, setIsDarkMo
         { id: "1c", name: "Payment & Approvals", code: "CBRS-PMT" }
       ]
     },
-    { id: 2, name: "Reporting System", type: "System", code: "REP" },
+    { id: 2, name: "OneView", type: "System", code: "REP" },
     { id: 3, name: "SPS", type: "System", code: "SPS" },
     { id: 4, name: "SMC", type: "System", code: "SMC" },
     { id: 5, name: "Billing", type: "System", code: "BIL" },
