@@ -92,6 +92,7 @@ import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerD
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
 import FinalizedAccounts from "../mainTopics/general/FinalizedAccounts";
 import MeteringReadingCompletionStatusReport from "../mainTopics/general/MeteringReadingCompletionStatusReport";
+import SecurityDepositInterestPayments from "../mainTopics/general/SecurityDepositInterestPayments";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -426,6 +427,12 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"registered consumers for sms alerts": RegisteredConsumersForSMSAlerts,
 	"finalized accounts": FinalizedAccounts,
 	"security deposit contract demand bulk": Securitydepositcontractdemandbulk,
+	"security deposit interest payments": SecurityDepositInterestPayments,
+	"security deposit interest payments - bulk": SecurityDepositInterestPayments,
+	"security deposit interest payments - ordinary": SecurityDepositInterestPayments,
+	"security deposit interest payments bulk": SecurityDepositInterestPayments,
+	"security deposit interest payments ordinary": SecurityDepositInterestPayments,
+	"security deposit interest payment": SecurityDepositInterestPayments,
 
 	// Income & Expenditure reports
 	"cost center wise income expenditure": CostCenterIncomeExpenditure,

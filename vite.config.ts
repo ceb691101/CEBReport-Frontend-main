@@ -9,23 +9,16 @@ export default defineConfig(({ mode }) => {
 		plugins: [react(), tailwindcss()],
 		server: {
 			proxy: {
-				// This report is available in the local API before remote deployment.
-				"/misapi/api/general/total-customer-base": {
-					target: env.VITE_LOCAL_API || env.VITE_SERVER_API,
+				"/misapi/api/security-deposit-interest": {
+					target: env.VITE_LOCAL_API || "http://localhost:44381",
 					changeOrigin: true,
 					secure: false,
-					rewrite: env.VITE_LOCAL_API
-						? (path) => path.replace(/^\/misapi/, "")
-						: undefined,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
 				},
-				// New report endpoint is available in the local MISReports API.
-				"/misapi/api/pucsl/solarJournalsRetail": {
-					target: env.VITE_LOCAL_API || env.VITE_SERVER_API,
+				"/api/security-deposit-interest": {
+					target: env.VITE_LOCAL_API || "http://localhost:44381",
 					changeOrigin: true,
 					secure: false,
-					rewrite: env.VITE_LOCAL_API
-						? (path) => path.replace(/^\/misapi/, "")
-						: undefined,
 				},
 				"/api/debtors": {
 					target: env.VITE_LOCAL_API || `${env.VITE_SERVER_API}/misapi`,
