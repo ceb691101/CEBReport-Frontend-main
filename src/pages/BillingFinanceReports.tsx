@@ -1,3 +1,4 @@
+import { normalizeReportName } from "../utils/reportNameMatch";
 import { useState, useEffect } from "react";
 import { useRoleBasedSubtopics } from "../hooks/useRoleBasedSubtopics";
 import { Outlet } from "react-router-dom";
@@ -8,6 +9,18 @@ const BillingFinanceReports = () => {
   const { subtopics, selectedSubtopicId } = useRoleBasedSubtopics(["Billing Finance Reports"]);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const renderReport = useReportRenderer();
+
+  const menuSubtopics = [...subtopics];
+  const secDepReportName = "Security Deposit Interest Payments";
+  const exists = menuSubtopics.some(
+    (s) => normalizeReportName(s.name) === normalizeReportName(secDepReportName)
+  );
+  if (!exists) {
+    menuSubtopics.unshift({
+      id: Math.min(0, ...subtopics.map((s) => s.id), 0) - 20,
+      name: secDepReportName,
+    });
+  }
 
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
@@ -25,7 +38,7 @@ const BillingFinanceReports = () => {
 
   return (
     <div className="flex flex-col gap-4 pt-5">
-      {subtopics.map((subtopic) => (
+      {menuSubtopics.map((subtopic) => (
         <SubtopicCard
           key={subtopic.id}
           id={subtopic.id}

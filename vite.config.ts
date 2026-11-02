@@ -9,6 +9,17 @@ export default defineConfig(({ mode }) => {
 		plugins: [react(), tailwindcss()],
 		server: {
 			proxy: {
+				"/misapi/api/security-deposit-interest": {
+					target: env.VITE_LOCAL_API || "http://localhost:44381",
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+				"/api/security-deposit-interest": {
+					target: env.VITE_LOCAL_API || "http://localhost:44381",
+					changeOrigin: true,
+					secure: false,
+				},
 				"/api/debtors": {
 					target: env.VITE_LOCAL_API || `${env.VITE_SERVER_API}/misapi`,
 					changeOrigin: true,
