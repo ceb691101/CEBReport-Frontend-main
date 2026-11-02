@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, JSX } from "react";
-import { FaFileDownload, FaPrint } from "react-icons/fa";
+import { FaChartBar, FaFileDownload, FaPrint } from "react-icons/fa";
 import { useUser } from "../../contexts/UserContext";
 import { useReportScope } from "../../hooks/useReportScope";
+import SolarBulkSalesGraph from "../../components/mainTopics/SolarInformation/SolarBulkSalesGraph";
 
 interface Area {
     AreaCode: string;
@@ -83,6 +84,8 @@ const SolarPaymentBulk: React.FC = () => {
     const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
     const [selectedBillCycleDisplay, setSelectedBillCycleDisplay] = useState<string>("");
     const [reportVisible, setReportVisible] = useState(false);
+    const [graphVisible, setGraphVisible] = useState(false);
+    const [reportRequestUrl, setReportRequestUrl] = useState("");
 
     // Report data
     const [reportData, setReportData] = useState<BulkPaymentData[]>([]);
@@ -355,6 +358,7 @@ const SolarPaymentBulk: React.FC = () => {
 
         setLoading(true);
         setReportError(null);
+        setGraphVisible(false);
 
         try {
             // Determine report type and type code based on selected category
@@ -412,6 +416,7 @@ const SolarPaymentBulk: React.FC = () => {
             if (data.data && Array.isArray(data.data) && data.data.length > 0) {
                 const sortedData = sortDataAlphabetically(data.data);
                 setReportData(sortedData);
+                setReportRequestUrl(url);
                 setReportVisible(true);
 
                 // Set display names
@@ -1480,7 +1485,16 @@ const SolarPaymentBulk: React.FC = () => {
                                 | Month: {selectedBillCycleDisplay} | Net Type: {netType}
                             </p>
                         </div>
-                        <div className="flex space-x-2 mt-2 md:mt-0">
+                        <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
+                            <button
+                                type="button"
+                                onClick={() => setGraphVisible(value => !value)}
+                                aria-pressed={graphVisible}
+                                aria-controls="bulk-solar-sales-graph"
+                                className="flex items-center gap-1 px-3 py-1.5 border border-[#7A0000] text-[#7A0000] bg-white rounded-md text-xs font-medium shadow-sm hover:bg-red-50 whitespace-nowrap transition"
+                            >
+                                <FaChartBar className="w-3 h-3" /> {graphVisible ? "Table View" : "View Graph"}
+                            </button>
                             <button
                                 onClick={downloadAsCSV}
                                 className="flex items-center gap-1 px-3 py-1.5 border border-blue-400 text-blue-700 bg-white rounded-md text-xs font-medium shadow-sm hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
@@ -1502,8 +1516,12 @@ const SolarPaymentBulk: React.FC = () => {
                         </div>
                     </div>
 
+                    {graphVisible && (
+                        <SolarBulkSalesGraph reportUrl={reportRequestUrl} billCycleOptions={billCycleOptions} salesField="UnitSale" />
+                    )}
+
                     {/* Report Table */}
-                    <div className="overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg">
+                    <div className={`${graphVisible ? "hidden" : ""} overflow-x-auto max-h-[calc(100vh-250px)] border border-gray-300 rounded-lg`}>
                         <div ref={printRef} className="min-w-full py-4">
                             {renderTable()}
                         </div>

@@ -1,5 +1,56 @@
 # React + TypeScript + Vite
 
+## Total customer base
+
+Under General, open Total customer base to automatically load all areas.
+The screen shows the detected bill cycle and previous cycle, with a Refresh button.
+The results group ordinary `agesmry` counts by province and area, summing
+`c00` through `c61` separately for customer types A/G and F.
+
+The screen uses `GET /misapi/api/general/total-customer-base` without parameters.
+The API detects the cycle using `SELECT MIN(bill_cycle) FROM areas` and returns
+`CurrentCycle`, `CurrentCycleLabel`, `PreviousCycle`, `PreviousCycleLabel`, and `Rows`
+inside `data`. Optional `billCycle`, `areaType`, and `locationCode` parameters
+still support explicit cycles and Province/Division queries. The `/bill-cycles`
+endpoint remains available for callers that need the cycle separately.
+
+In development, this route uses `VITE_LOCAL_API` when configured, removing
+the `/misapi` prefix; otherwise it uses `VITE_SERVER_API` with the prefix.
+Build and start the updated backend in IIS Express before generating reports.
+For production, deploy the rebuilt API under `/misapi` alongside the frontend.
+
+Run `Tests/TotalCustomerBase.Query.Smoke.ps1` from the backend directory
+to verify the three queries and their parameter binding.
+Run `node Tests/TotalCustomerBase.Api.Smoke.mjs http://localhost:5173` to verify
+automatic cycle detection, optional filters, and report data through Vite.
+Run `node Tests/TotalCustomerBase.UI.Smoke.mjs http://localhost:5173` with Vite
+and the API running to verify the report screen in headless Chrome.
+
+## Solar Journals - Retail
+
+The report includes both credit and debit solar journal transactions, with row
+numbers, net type, separate Credit (Rs.) and Debit (Rs.) columns, and separate
+totals. CSV and PDF exports use the same columns. Rebuild and deploy both the
+frontend and API together for these fields.
+
+In local development, `/misapi/api/pucsl/solarJournalsRetail` uses the updated
+MISReports API at `VITE_LOCAL_API` (normally `http://localhost:44381`). Vite removes
+the `/misapi` prefix for this local API. Start the backend in IIS Express before
+generating the report. Without `VITE_LOCAL_API`, requests use `VITE_SERVER_API`.
+
+For production, deploy the rebuilt MISReports API under `/misapi` alongside the
+frontend; the Vite development proxy does not apply to a production build.
+
+To verify this report through the frontend proxy, run
+`Tests/SolarJournalsRetail.Api.Smoke.ps1 -BaseUri http://localhost:5173 -ApiPrefix /misapi/api`
+from the backend directory, using the port of your running Vite server.
+
+Swagger's Solar Journals POST form provides Area Type, Location, and Bill Cycle
+dropdowns and submits their values as JSON. Location is disabled for Entire CEB.
+Refresh Swagger with Ctrl+F5 after rebuilding the API. Run
+`node Tests/SolarJournalsRetail.Swagger.Smoke.mjs` from the backend directory
+to verify the fields and POST requests in headless Chrome.
+
 ## Government bulk customer age analysis
 
 The report needs `GET api/debtors/bulk/sectors` and

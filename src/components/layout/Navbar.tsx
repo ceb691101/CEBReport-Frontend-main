@@ -1,6 +1,6 @@
 // import CEBlogo from "../../assets/CEBLOGO.png";
 import { Link } from "react-router-dom";
-
+////
 const Navbar = () => {
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',

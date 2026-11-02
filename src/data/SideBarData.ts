@@ -7,6 +7,7 @@ import { GiSolarPower } from "react-icons/gi";
 import { FiBriefcase } from "react-icons/fi";
 import { FaArrowDownShortWide } from "react-icons/fa6";
 import { TbReportAnalytics } from "react-icons/tb";
+import { withTotalCustomerBase } from "../utils/generalSubtopics";
 
 type ApiEnvelope<T> = {
   data: T;
@@ -346,6 +347,11 @@ export const buildTopics = (roleReports: RoleReportApiItem[]): Topic[] => {
     });
 
     topicIndex += 1;
+  }
+
+  const generalTopic = topics.find((topic) => topic.path === "/report/general");
+  if (generalTopic) {
+    generalTopic.subtopics = withTotalCustomerBase(generalTopic.subtopics);
   }
 
   const analysisTopic = topics.find((topic) => topic.name.toLowerCase() === "analysis");

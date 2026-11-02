@@ -74,7 +74,9 @@ export const fetchWithErrorHandling = async (url: string) => {
         throw new Error(`Expected JSON response but got ${contentType}`);
     }
 
-    return response.json();
+    const result = await response.json();
+    if (result.errorMessage) throw new Error(result.errorMessage);
+    return result;
 };
 
 // ── Generic CSV builder/downloader ────────────────────────────────────────────

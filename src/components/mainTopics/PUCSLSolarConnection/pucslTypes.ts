@@ -33,7 +33,7 @@ export interface FixedSolarDataModel {
     KwhAt2318: number;
     KwhAt2706: number;
     BulkKwhOthers?: number;
-    BulkOtherPaidAmount?: number;
+    // API totals include ordinary and bulk values.
     KwhOthers: number;
     PaidAmount: number;
     ErrorMessage?: string;

@@ -45,6 +45,7 @@ const PUCSLSolarConnection: React.FC = () => {
     const [billCycleError, setBillCycleError] = useState<string | null>(null);
     const [provinceError, setProvinceError] = useState<string | null>(null);
     const [divisionError, setDivisionError] = useState<string | null>(null);
+    const [divisionLoadAttempt, setDivisionLoadAttempt] = useState(0);
 
     // ── Report state ──────────────────────────────────────────────────────────
     const [reportData, setReportData] = useState<FixedSolarDataModel[]>([]);
@@ -74,6 +75,8 @@ const PUCSLSolarConnection: React.FC = () => {
     const canSubmit = () => {
         if (!reportCategory) return false;
         if (reportCategory !== "Entire CEB" && !categoryValue) return false;
+        if (reportCategory === "Division" &&
+            (isLoadingDivisions || divisionError || !divisions.some((d) => d.RegionCode === categoryValue))) return false;
         if (!billCycle || !reportType) return false;
         if (!hideSolarType && !solarType) return false;
         return true;
@@ -127,25 +130,31 @@ const PUCSLSolarConnection: React.FC = () => {
     // ── Fetch divisions ───────────────────────────────────────────────────────
     useEffect(() => {
         if (reportCategory !== "Division") return;
+        let active = true;
         const fetchDivisions = async () => {
             setIsLoadingDivisions(true);
             setDivisionError(null);
             try {
                 const response = await fetchWithErrorHandling("/misapi/api/ordinary/region");
                 if (!Array.isArray(response?.data)) throw new Error("Invalid divisions data format");
-                setDivisions(response.data);
+                if (active) setDivisions(response.data);
             } catch (err: any) {
-                setDivisionError(err.message || "Failed to load divisions");
+                if (active) {
+                    setDivisions([]);
+                    setDivisionError(err.message || "Failed to load divisions");
+                }
             } finally {
-                setIsLoadingDivisions(false);
+                if (active) setIsLoadingDivisions(false);
             }
         };
         fetchDivisions();
-    }, [reportCategory]);
+        return () => { active = false; };
+    }, [reportCategory, divisionLoadAttempt]);
 
     // ── Form submit ───────────────────────────────────────────────────────────
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!canSubmit() || loading) return;
         setLoading(true);
         setReportError(null);
         setReportData([]);
@@ -163,12 +172,7 @@ const PUCSLSolarConnection: React.FC = () => {
                 solarType: hideSolarType ? "" : getSolarTypeValue(solarType),
             };
 
-            // Use the updated local API for Fixed Solar Data while developing.
-            // Other reports and production continue to use the shared API.
-            const reportEndpoint = import.meta.env.DEV && reportType === "FixedSolarData"
-                ? "/api/pucsl/solarConnections"
-                : "/misapi/api/pucsl/solarConnections";
-            const response = await fetch(reportEndpoint, {
+            const response = await fetch("/misapi/api/pucsl/solarConnections", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Accept: "application/json" },
                 body: JSON.stringify(requestBody),
@@ -268,13 +272,6 @@ const PUCSLSolarConnection: React.FC = () => {
                 "VariableSolar"
             );
         } else {
-            if (reportData.some((item) =>
-                item.BulkKwhOthers === undefined || item.BulkOtherPaidAmount === undefined
-            )) {
-                setReportError("The connected API does not include bulk other-rate data. Use the updated local API or deploy the updated backend before downloading this CSV.");
-                return;
-            }
-
             buildAndDownloadCSV(title, selectionInfo, selectedBillCycleDisplay, solarType, billCycle,
                 [["Tariff Category", "Year", "Month", "No of Customers",
                     "kWh Purchased at 15.50", "kWh Purchased at 22.00", "kWh Purchased at 34.50",
@@ -284,8 +281,7 @@ const PUCSLSolarConnection: React.FC = () => {
                     item.Category, item.Year, item.Month, item.NoOfCustomers,
                     item.KwhAt1550, item.KwhAt22, item.KwhAt3450, item.KwhAt37,
                     item.KwhAt2318, item.KwhAt2706,
-                    item.KwhOthers + (item.BulkKwhOthers ?? 0),
-                    item.PaidAmount + (item.BulkOtherPaidAmount ?? 0),
+                    item.KwhOthers, item.PaidAmount,
                 ]),
                 "FixedSolar"
             );
@@ -398,25 +394,43 @@ const PUCSLSolarConnection: React.FC = () => {
                                     )}
 
                                     {reportCategory === "Division" && (
-                                        <select
-                                            value={categoryValue}
-                                            onChange={(e) => {
-                                                setCategoryValue(e.target.value);
-                                                setBillCycle(""); setReportType(""); setSolarType("");
-                                            }}
-                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
-                                            required
-                                        >
-                                            <option value="">Select Division</option>
-                                            {isLoadingDivisions ? <option>Loading...</option>
-                                                : divisionError ? <option>Error loading divisions</option>
-                                                : divisions.map((d) => (
+                                        <>
+                                            <select
+                                                id="pucsl-division"
+                                                aria-label="Select Division"
+                                                aria-describedby={divisionError ? "pucsl-division-error" : undefined}
+                                                aria-invalid={Boolean(divisionError)}
+                                                disabled={isLoadingDivisions || Boolean(divisionError)}
+                                                value={categoryValue}
+                                                onChange={(e) => {
+                                                    setCategoryValue(e.target.value);
+                                                    setBillCycle(""); setReportType(""); setSolarType("");
+                                                }}
+                                                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-[#7A0000] focus:border-transparent"
+                                                required
+                                            >
+                                                <option value="" disabled>
+                                                    {isLoadingDivisions ? "Loading divisions..." : divisionError ? "Unable to load divisions" : "Select Division"}
+                                                </option>
+                                                {!isLoadingDivisions && !divisionError && divisions.map((d) => (
                                                     <option key={d.RegionCode} value={d.RegionCode}>
                                                         {d.RegionCode}
                                                     </option>
-                                                ))
-                                            }
-                                        </select>
+                                                ))}
+                                            </select>
+                                            {divisionError && (
+                                                <div id="pucsl-division-error" role="alert" className="mt-2 text-xs text-red-700">
+                                                    <p>{divisionError}</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDivisionLoadAttempt((attempt) => attempt + 1)}
+                                                        className="mt-1 font-medium underline"
+                                                    >
+                                                        Retry loading divisions
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             )}
