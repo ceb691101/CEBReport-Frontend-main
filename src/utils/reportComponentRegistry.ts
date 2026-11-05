@@ -92,6 +92,7 @@ import Largest100CustomerDetails from "../mainTopics/general/Largest100CustomerD
 import TariffBlockWiseConsumption from "../mainTopics/general/TariffBlockWiseConsumption";
 import FinalizedAccounts from "../mainTopics/general/FinalizedAccounts";
 import MeteringReadingCompletionStatusReport from "../mainTopics/general/MeteringReadingCompletionStatusReport";
+import SecurityDepositInterestPayments from "../mainTopics/general/SecurityDepositInterestPayments";
 
 // Income & Expenditure reports
 import CostCenterIncomeExpenditure from "../mainTopics/IncomeExpenditure/CostCenterIncomeExpenditure";
@@ -119,6 +120,7 @@ import MaterialPriceByYear from "../mainTopics/inventory/MaterialPriceByYear";
 import QuantityOnHandLessThanReorderLevel from "../mainTopics/inventory/QuantityOnHandLessThanReorderLevel";
 import IssueSummaryProvinceReport from "../mainTopics/inventory/IssueSummaryProvinceReport";
 import QtyOnHandReorderReport from "../mainTopics/inventory/QtyOnHandReorderReport.tsx";
+import QuantityOnHandGradeCodewise from "../mainTopics/inventory/QuantityOnHandGradeCodewise";
 
 // JobCard reports
 import JobCardInfo from "../mainTopics/JobCards/JobCardInfo";
@@ -425,6 +427,12 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"registered consumers for sms alerts": RegisteredConsumersForSMSAlerts,
 	"finalized accounts": FinalizedAccounts,
 	"security deposit contract demand bulk": Securitydepositcontractdemandbulk,
+	"security deposit interest payments": SecurityDepositInterestPayments,
+	"security deposit interest payments - bulk": SecurityDepositInterestPayments,
+	"security deposit interest payments - ordinary": SecurityDepositInterestPayments,
+	"security deposit interest payments bulk": SecurityDepositInterestPayments,
+	"security deposit interest payments ordinary": SecurityDepositInterestPayments,
+	"security deposit interest payment": SecurityDepositInterestPayments,
 
 	// Income & Expenditure reports
 	"cost center wise income expenditure": CostCenterIncomeExpenditure,
@@ -452,6 +460,21 @@ export const reportComponentRegistry: ReportComponentRegistry = {
 	"flow report": MaterialFlowReport,
 	"issue summary province usage": IssueSummaryProvinceReport,
 	"quantity on hand reorder level": QtyOnHandReorderReport,
+	"quantity on hand (all active/inactive) materials (grade code wise)": QuantityOnHandGradeCodewise,
+	"quantity on hand (all active/inactive) materials grade code wise": QuantityOnHandGradeCodewise,
+	"quantity on hand (all active/inactive) materials (grade codewise)": QuantityOnHandGradeCodewise,
+	"quantity on hand (all active/inactive) materials grade codewise": QuantityOnHandGradeCodewise,
+	"quantity on hand all active/inactive materials (grade code wise)": QuantityOnHandGradeCodewise,
+	"quantity on hand all active/inactive materials grade code wise": QuantityOnHandGradeCodewise,
+	"quantity on hand all active inactive materials grade code wise": QuantityOnHandGradeCodewise,
+	"quantity on hand all active inactive materials grade codewise": QuantityOnHandGradeCodewise,
+	"quantity on hand - grade codewise": QuantityOnHandGradeCodewise,
+	"quantity on hand grade codewise": QuantityOnHandGradeCodewise,
+	"quantity on hand - grade code wise": QuantityOnHandGradeCodewise,
+	"quantity on hand grade code wise": QuantityOnHandGradeCodewise,
+	"quantity on hand grade-codewise": QuantityOnHandGradeCodewise,
+	"quantity on hand - grade-codewise": QuantityOnHandGradeCodewise,
+	"215": QuantityOnHandGradeCodewise,
 
 	// JobCard reports
 	"job card details": JobCardInfo,

@@ -48,6 +48,23 @@ const General = () => {
 
   menuSubtopics.unshift(meteringReport);
 
+  // Ensure "Security Deposit Interest Payments" is placed in General menu
+  const secDepReportName = "Security Deposit Interest Payments";
+  const secDepIndex = menuSubtopics.findIndex(
+    (subtopic) =>
+      normalizeReportName(subtopic.name) === normalizeReportName(secDepReportName)
+  );
+
+  const secDepReport =
+    secDepIndex !== -1
+      ? menuSubtopics.splice(secDepIndex, 1)[0]
+      : {
+          id: Math.min(0, ...subtopics.map((subtopic) => subtopic.id), 0) - 11,
+          name: secDepReportName,
+        };
+
+  menuSubtopics.splice(1, 0, secDepReport);
+
   useEffect(() => {
     if (typeof selectedSubtopicId === "number") {
       setExpandedCard(selectedSubtopicId);

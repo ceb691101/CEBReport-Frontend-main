@@ -9,6 +9,17 @@ export default defineConfig(({ mode }) => {
 		plugins: [react(), tailwindcss()],
 		server: {
 			proxy: {
+				"/misapi/api/security-deposit-interest": {
+					target: env.VITE_LOCAL_API || "http://localhost:44381",
+					changeOrigin: true,
+					secure: false,
+					rewrite: (path) => path.replace(/^\/misapi/, ""),
+				},
+				"/api/security-deposit-interest": {
+					target: env.VITE_LOCAL_API || "http://localhost:44381",
+					changeOrigin: true,
+					secure: false,
+				},
 				// This report is available in the local API before remote deployment.
 				"/misapi/api/general/total-customer-base": {
 					target: env.VITE_LOCAL_API || env.VITE_SERVER_API,
