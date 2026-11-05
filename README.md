@@ -38,6 +38,14 @@ MISReports API at `VITE_LOCAL_API` (normally `http://localhost:44381`). Vite rem
 the `/misapi` prefix for this local API. Start the backend in IIS Express before
 generating the report. Without `VITE_LOCAL_API`, requests use `VITE_SERVER_API`.
 
+Run `npm run api` in a separate terminal to start the local API with 32-bit IIS
+Express, then keep it running while using `npm run dev`. Build the backend
+solution first if `bin/MISReports_Api.dll` is missing. The installed Informix
+OLE DB provider requires the 32-bit runtime; the 64-bit runtime fails when
+opening the database connection. Visual Studio is also configured to use
+32-bit IIS Express. If the API is stopped, the development proxy returns a
+JSON HTTP 503 response so the report displays a service-unavailable message.
+
 For production, deploy the rebuilt MISReports API under `/misapi` alongside the
 frontend; the Vite development proxy does not apply to a production build.
 

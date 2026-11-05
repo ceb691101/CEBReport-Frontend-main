@@ -26,6 +26,16 @@ export default defineConfig(({ mode }) => {
 					rewrite: env.VITE_LOCAL_API
 						? (path) => path.replace(/^\/misapi/, "")
 						: undefined,
+					configure: (proxy) => {
+						proxy.on("error", (_error, _request, response) => {
+							if (!("writeHead" in response) || response.headersSent) return;
+							response.writeHead(503, { "Content-Type": "application/json" });
+							response.end(JSON.stringify({
+								data: null,
+								errorMessage: "The report service is unavailable. Please try again later or contact support.",
+							}));
+						});
+					},
 				},
 				"/api/debtors": {
 					target: env.VITE_LOCAL_API || `${env.VITE_SERVER_API}/misapi`,
