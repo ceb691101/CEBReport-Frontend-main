@@ -20,6 +20,34 @@ export default defineConfig(({ mode }) => {
 					changeOrigin: true,
 					secure: false,
 				},
+				// This report is available in the local API before remote deployment.
+				"/misapi/api/general/total-customer-base": {
+					target: env.VITE_LOCAL_API || env.VITE_SERVER_API,
+					changeOrigin: true,
+					secure: false,
+					rewrite: env.VITE_LOCAL_API
+						? (path) => path.replace(/^\/misapi/, "")
+						: undefined,
+				},
+				// New report endpoint is available in the local MISReports API.
+				"/misapi/api/pucsl/solarJournalsRetail": {
+					target: env.VITE_LOCAL_API || env.VITE_SERVER_API,
+					changeOrigin: true,
+					secure: false,
+					rewrite: env.VITE_LOCAL_API
+						? (path) => path.replace(/^\/misapi/, "")
+						: undefined,
+					configure: (proxy) => {
+						proxy.on("error", (_error, _request, response) => {
+							if (!("writeHead" in response) || response.headersSent) return;
+							response.writeHead(503, { "Content-Type": "application/json" });
+							response.end(JSON.stringify({
+								data: null,
+								errorMessage: "The report service is unavailable. Please try again later or contact support.",
+							}));
+						});
+					},
+				},
 				"/api/debtors": {
 					target: env.VITE_LOCAL_API || `${env.VITE_SERVER_API}/misapi`,
 					changeOrigin: true,

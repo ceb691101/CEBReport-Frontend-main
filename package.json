@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "api": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/Start-LocalApi.ps1",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
