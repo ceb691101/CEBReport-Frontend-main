@@ -246,72 +246,62 @@ const PHVShortageSurplusWHwise: React.FC = () => {
   const handleDownloadCSV = () => {
     if (!reportData.length || !selectedDept) return;
 
+    const csvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const rowOf = (cells: (string | number)[]) => {
+      const r = [...cells];
+      while (r.length < 11) r.push("");
+      return r.map(csvCell).join(",");
+    };
+
     const rows: string[] = [];
-    rows.push(`"ANNUAL VERIFICATION SHORTAGE/SURPLUS OF STORES - ${selectedWarehouse} YEAR :-${selectedYear}"`);
-    rows.push(`"Cost Center","${selectedDept?.DeptId} - ${selectedDept?.DeptName}"`);
-    rows.push(`"Warehouse","${selectedWarehouse}"`);
-    rows.push("");
+    rows.push(
+      rowOf([`ECSC/Stores : ${selectedWarehouse}`, "", "", "", "", "", "", "", "", "", "Form - AV/1/B"]),
+      rowOf([`Area/Office Of the Director : ${selectedDept.DeptName} (${selectedDept.DeptId})`]),
+      rowOf([`ANNUAL VERIFICATION OF STORES/STOCKS - ${selectedYear}`]),
+      rowOf(["Explanation for stock shortage and excess"]),
+      rowOf([])
+    );
 
-    const headers = [
-      "Serial No",
-      "Document No",
-      "Code No",
-      "Description",
-      "Grade Code",
-      "UOM",
-      "S/ Price",
-      "Stock Book Qty",
-      "Physical Qty",
-      "Surplus Qty",
-      "Shortage Qty",
-      "Stock Book Value (Rs.)",
-      "Physical Val. (Rs.)",
-      "Surplus Val. (Rs.)",
-      "Shortage Val. (Rs.)",
-    ];
-
-    rows.push(headers.map(h => `"${h}"`).join(","));
+    rows.push(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"].map(csvCell).join(","));
+    rows.push([
+      "Serial No.", "Code No.", "Description", "Unit of Measurement", "Standard Price/Actual Price",
+      "Quantity", "", "Value", "", "Explanation by the Storekeeper/Electrical Superintendent",
+      "Recommended by the Engineer in charge",
+    ].map(csvCell).join(","));
+    rows.push(["", "", "", "", "", "Surplus", "Shortage", "Surplus", "Shortage", "", ""].map(csvCell).join(","));
+    rows.push(["", "", "", "", "", "", "", "Rs. Cts.", "Rs. Cts.", "", ""].map(csvCell).join(","));
 
     reportData.forEach((item, idx) => {
       const row = [
         idx + 1,
-        item.DocumentNo || "",
-`\t${item.MaterialCode || ""}`,  
-        item.GradeCode || "",
+        item.MaterialCode || "",
+        item.GradeCode ? `${item.MaterialName} (Grade: ${item.GradeCode})` : item.MaterialName,
         item.UomCode || "",
         formatNumber(item.UnitPrice),
-        formatNumber(item.QtyOnHand),
-        formatNumber(item.CountedQty),
         formatNumber(item.SurplusQty),
         formatNumber(item.ShortageQty),
-        formatNumber(item.StockBook),
-        formatNumber(item.PhysicalBook),
         formatNumber(item.SurplusAmount),
         formatNumber(item.ShortageAmount),
+        item.Reason || "",
+        "",
       ];
-      rows.push(row.map(v => `"${v}"`).join(","));
+      rows.push(row.map(csvCell).join(","));
     });
 
-    // Totals
-    const totalStockBook = reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0);
-    const totalPhysical = reportData.reduce((sum, item) => sum + (item.PhysicalBook || 0), 0);
-    const totalSurplus = reportData.reduce((sum, item) => sum + (item.SurplusAmount || 0), 0);
-    const totalShortage = reportData.reduce((sum, item) => sum + (item.ShortageAmount || 0), 0);
+    /* Signature section (once, at the end) */
+    rows.push(
+      rowOf([]),
+      rowOf(["Store Keeper/Electrical Superintendent : ....................................", "", "", "", "", "", "Engineer-in-Charge : ...................................."]),
+      rowOf(["Date : ........./.........../..........", "", "", "", "", "", "Date : ........./.........../.........."])
+    );
 
-    rows.push("");
-    rows.push([
-      '""', '""', '""', '"Total"', '""', '""', '""', '""', '""', '""', '""',
-      `"${formatNumber(totalStockBook)}"`,
-      `"${formatNumber(totalPhysical)}"`,
-      `"${formatNumber(totalSurplus)}"`,
-      `"${formatNumber(totalShortage)}"`,
-    ].join(","));
-
-    const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/csv" });
+    const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
+    link.href = url;
     link.download = `PHV_Shortage_Surplus_WHwise_${selectedDept.DeptId}_${selectedWarehouse}_${selectedYear}.csv`;
     link.click();
+    URL.revokeObjectURL(url);
   };
 
 const printPDF = () => {
@@ -328,19 +318,11 @@ const printPDF = () => {
 
     const USABLE_H = PAGE_H - MARGIN_TOP - MARGIN_BOTTOM; // 194mm
 
-    const FULL_HEADER_H   = 22;
-    const REPEAT_HEADER_H = 16;
-    const TABLE_HEADER_H  = 9;
-    const SIGNATURE_H     = 16;
-    const FOOTER_H        = 6;
+    const FULL_HEADER_H   = 29;   // first page only
+    const TABLE_HEADER_H  = 22;   // column headings repeat on every page
+    const SIGNATURE_H     = 16;   // last page only
     const ROW_HEIGHT      = 5.5;
     const ROW_BUFFER      = 2;
-
-    const FIRST_DATA_H      = USABLE_H - FULL_HEADER_H - TABLE_HEADER_H - SIGNATURE_H - FOOTER_H;
-    const SUBSEQUENT_DATA_H = USABLE_H - REPEAT_HEADER_H - TABLE_HEADER_H - SIGNATURE_H - FOOTER_H;
-
-    const ROWS_FIRST      = Math.floor(FIRST_DATA_H / ROW_HEIGHT) - ROW_BUFFER;
-    const ROWS_SUBSEQUENT = Math.floor(SUBSEQUENT_DATA_H / ROW_HEIGHT) - ROW_BUFFER;
 
     const esc = (v: any) =>
       String(v ?? "")
@@ -348,81 +330,83 @@ const printPDF = () => {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
 
-    const now = new Date().toLocaleString("en-GB", {
-      day: "2-digit", month: "2-digit", year: "numeric",
-      hour: "2-digit", minute: "2-digit", second: "2-digit",
-      hour12: false,
-    });
-
-    const totalStockBook = reportData.reduce((s, x) => s + (x.StockBook || 0), 0);
-    const totalPhysical  = reportData.reduce((s, x) => s + (x.PhysicalBook || 0), 0);
-    const totalSurplus   = reportData.reduce((s, x) => s + (x.SurplusAmount || 0), 0);
-    const totalShortage  = reportData.reduce((s, x) => s + (x.ShortageAmount || 0), 0);
-
     const dataRows = reportData.map((item, idx) => `
       <tr>
         <td class="sn">${idx + 1}</td>
-        <td class="doc-no">${esc(item.DocumentNo)}</td>
         <td class="code">${esc(item.MaterialCode)}</td>
-        <td class="desc">${esc(item.MaterialName)}</td>
-        <td class="grade">${esc(item.GradeCode)}</td>
+        <td class="desc">${esc(item.GradeCode ? `${item.MaterialName} (Grade: ${item.GradeCode})` : item.MaterialName)}</td>
         <td class="uom">${esc(item.UomCode)}</td>
         <td class="price">${formatNumber(item.UnitPrice)}</td>
-        <td class="stock-qty">${formatNumber(item.QtyOnHand)}</td>
-        <td class="phys-qty">${formatNumber(item.CountedQty)}</td>
-        <td class="surplus-qty">${formatNumber(item.SurplusQty)}</td>
-        <td class="short-qty">${formatNumber(item.ShortageQty)}</td>
-        <td class="stock-val">${formatNumber(item.StockBook)}</td>
-        <td class="phys-val">${formatNumber(item.PhysicalBook)}</td>
-        <td class="surplus-val">${formatNumber(item.SurplusAmount)}</td>
-        <td class="short-val">${formatNumber(item.ShortageAmount)}</td>
+        <td class="quantity">${formatNumber(item.SurplusQty)}</td>
+        <td class="quantity">${formatNumber(item.ShortageQty)}</td>
+        <td class="value">${formatNumber(item.SurplusAmount)}</td>
+        <td class="value">${formatNumber(item.ShortageAmount)}</td>
+        <td class="explanation">${esc(item.Reason)}</td>
+        <td class="recommended"></td>
       </tr>`);
 
-    const totalRow = `
-      <tr class="total-row">
-        <td colspan="11" style="text-align:center;font-weight:bold;">TOTAL</td>
-        <td class="stock-val">${formatNumber(totalStockBook)}</td>
-        <td class="phys-val">${formatNumber(totalPhysical)}</td>
-        <td class="surplus-val">${formatNumber(totalSurplus)}</td>
-        <td class="short-val">${formatNumber(totalShortage)}</td>
-      </tr>`;
+    // ── paginate: header on the first page only, signature on the last page only ──
+    const rowsThatFit = (heightMm: number) =>
+      Math.max(1, Math.floor(heightMm / ROW_HEIGHT) - ROW_BUFFER);
 
-    // ── paginate ───────────────────────────────────────────────────────────────
-    const pages: string[][] = [];
-    let remaining = [...dataRows];
+    const CAP_FIRST          = rowsThatFit(USABLE_H - FULL_HEADER_H - TABLE_HEADER_H);
+    const CAP_MIDDLE         = rowsThatFit(USABLE_H - TABLE_HEADER_H);
+    const CAP_FIRST_AND_LAST = rowsThatFit(USABLE_H - FULL_HEADER_H - TABLE_HEADER_H - SIGNATURE_H);
+    const CAP_LAST           = rowsThatFit(USABLE_H - TABLE_HEADER_H - SIGNATURE_H);
 
-    if (remaining.length > 0) pages.push(remaining.splice(0, ROWS_FIRST));
-    while (remaining.length > 0) pages.push(remaining.splice(0, ROWS_SUBSEQUENT));
+    const pages: { rows: string[]; isFirst: boolean; isLast: boolean }[] = [];
+    let idx = 0;
 
-    if (pages.length === 0) {
-      pages.push([totalRow]);
-    } else {
-      const lastPage = pages[pages.length - 1];
-      const cap = pages.length === 1 ? ROWS_FIRST : ROWS_SUBSEQUENT;
-      lastPage.length < cap ? lastPage.push(totalRow) : pages.push([totalRow]);
+    while (idx < dataRows.length) {
+      const isFirst = pages.length === 0;
+      const remaining = dataRows.length - idx;
+      const capFull = isFirst ? CAP_FIRST : CAP_MIDDLE;
+      const capLast = isFirst ? CAP_FIRST_AND_LAST : CAP_LAST;
+
+      let take: number;
+      let isLast = false;
+
+      if (remaining <= capLast) {
+        take = remaining;                    // everything left fits together with the signature
+        isLast = true;
+      } else if (remaining <= capFull) {
+        take = Math.max(1, remaining - 1);   // keep at least one row for the last page
+      } else {
+        take = capFull;
+      }
+
+      pages.push({ rows: dataRows.slice(idx, idx + take), isFirst, isLast });
+      idx += take;
     }
 
-    const totalPages = pages.length;
-
-    // Single unified thead — used inside every page's single table
     const theadHTML = `
+      <colgroup>
+        <col class="sn"><col class="code"><col class="desc"><col class="uom"><col class="price">
+        <col class="quantity"><col class="quantity"><col class="value"><col class="value">
+        <col class="explanation"><col class="recommended">
+      </colgroup>
       <thead>
-        <tr>
-          <th class="sn">Serial No</th>
-          <th class="doc-no">Document No</th>
-          <th class="code">Code No</th>
-          <th class="desc">Description</th>
-          <th class="grade">Grade Code</th>
-          <th class="uom">UOM</th>
-          <th class="price">S/Price</th>
-          <th class="stock-qty">Stock Book Qty</th>
-          <th class="phys-qty">Physical Qty</th>
-          <th class="surplus-qty">Surplus Qty</th>
-          <th class="short-qty">Shortage Qty</th>
-          <th class="stock-val">Stock Book Val (Rs.)</th>
-          <th class="phys-val">Physical Val (Rs.)</th>
-          <th class="surplus-val">Surplus Val (Rs.)</th>
-          <th class="short-val">Shortage Val (Rs.)</th>
+        <tr class="number-row">${Array.from({ length: 11 }, (_, index) => `<th>${index + 1}</th>`).join("")}</tr>
+        <tr class="label-row">
+          <th class="sn" rowspan="3">Serial No.</th>
+          <th class="code" rowspan="3">Code No.</th>
+          <th class="desc" rowspan="3">Description</th>
+          <th class="uom" rowspan="3">Unit of Measurement</th>
+          <th class="price" rowspan="3">Standard Price/Actual Price</th>
+          <th class="quantity" colspan="2">Quantity</th>
+          <th class="value" colspan="2">Value</th>
+          <th class="explanation" rowspan="3">Explanation by the Storekeeper/Electrical Superintendent</th>
+          <th class="recommended" rowspan="3">Recommended by the Engineer in charge</th>
+        </tr>
+        <tr class="subheader-row">
+          <th class="quantity" rowspan="2">Surplus</th>
+          <th class="quantity" rowspan="2">Shortage</th>
+          <th class="value">Surplus</th>
+          <th class="value">Shortage</th>
+        </tr>
+        <tr class="currency-row">
+          <th class="value">Rs. Cts.</th>
+          <th class="value">Rs. Cts.</th>
         </tr>
       </thead>`;
 
@@ -433,7 +417,7 @@ const printPDF = () => {
       }
 
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: Arial, sans-serif; font-size: 7pt; }
+      body { font-size: 7pt; }
 
       .page {
         position: relative;
@@ -453,19 +437,21 @@ const printPDF = () => {
       .page-bottom {
         position: absolute;
         bottom: 0; left: 0; right: 0;
-        height: ${SIGNATURE_H + FOOTER_H}mm;
+        height: ${SIGNATURE_H}mm;
       }
 
       .header {
-        text-align: center;
+        text-align: left;
         display: flex;
         flex-direction: column;
         justify-content: center;
         overflow: hidden;
         padding-bottom: 1mm;
       }
-      h2 { font-size: 11pt; color: #7A0000; font-weight: bold; margin: 0 0 0.5mm;   line-height: 1.2; }
-      h3 { font-size:  9pt; color: #333;    font-weight: 600;  margin: 0;           line-height: 1.2; }
+      .address-top { display: flex; justify-content: space-between; font-size: 8pt; line-height: 1.3; margin-bottom: 1mm; }
+      .form-label { font-weight: bold; }
+      h2 { font-size: 16px; color: #7A0000; font-weight: bold; margin: 0 0 0.5mm; line-height: 1.2; text-align: center; }
+      h3 { font-size: 13px; color: #000; font-weight: bold; margin: 0; line-height: 1.2; text-align: center; }
 
       /* ONE table per page — thead and tbody together, no gap */
       .table-wrapper {
@@ -486,34 +472,29 @@ const printPDF = () => {
         vertical-align: middle;
       }
       th {
-        background: #e8e8e8;
+        background: #ffffff;
         font-weight: bold;
         text-align: center;
         font-size: 6.5pt;
         line-height: 1.1;
       }
-      /* thead row fixed height */
-      thead tr { height: ${TABLE_HEADER_H}mm; }
+      .number-row { height: 4mm; }
+      .label-row { height: 8mm; }
+      .subheader-row { height: 6mm; }
+      .currency-row { height: 4mm; }
       /* data rows fixed height */
       tbody tr { height: ${ROW_HEIGHT}mm; }
 
-      .sn          { width: 3%;    text-align: center; font-size: 6.5pt; }
-      .doc-no      { width: 8%;    text-align: center; font-size: 5.5pt; }
-      .code        { width: 6%;    text-align: center; font-size: 6pt; }
-      .desc        { width: 20%;   text-align: left;   font-size: 6pt; line-height: 1.15; }
-      .grade       { width: 4%;    text-align: center; font-size: 6pt; }
-      .uom         { width: 3.5%;  text-align: center; font-size: 6pt; }
-      .price       { width: 5.5%;  text-align: right;  font-size: 6pt; }
-      .stock-qty   { width: 5.5%;  text-align: right;  font-size: 6pt; }
-      .phys-qty    { width: 5.5%;  text-align: right;  font-size: 6pt; }
-      .surplus-qty { width: 5%;    text-align: right;  font-size: 6pt; }
-      .short-qty   { width: 5%;    text-align: right;  font-size: 6pt; }
-      .stock-val   { width: 6.5%;  text-align: right;  font-size: 6pt; }
-      .phys-val    { width: 6.5%;  text-align: right;  font-size: 6pt; }
-      .surplus-val { width: 6%;    text-align: right;  font-size: 6pt; }
-      .short-val   { width: 6%;    text-align: right;  font-size: 6pt; }
-
-      .total-row { font-weight: bold; background: #f5f5f5; font-size: 7pt; }
+      .sn { width: 5%; text-align: center; }
+      .code { width: 9%; text-align: center; }
+      .desc { width: 22%; text-align: left; font-size: 6pt; line-height: 1.15; }
+      .uom { width: 8%; text-align: center; }
+      .price { width: 9%; text-align: right; }
+      .quantity { width: 6.5%; text-align: right; }
+      .value { width: 7%; text-align: right; }
+      .explanation { width: 11%; text-align: left; }
+      .recommended { width: 9%; text-align: left; }
+      .number-row th, .label-row th, .subheader-row th, .currency-row th { text-align: center; }
 
       .sig-section {
         height: ${SIGNATURE_H}mm;
@@ -530,41 +511,41 @@ const printPDF = () => {
         line-height: 1.8;
       }
       .sig-row > div { width: 48%; }
-
-      .footer-section {
-        height: ${FOOTER_H}mm;
-        display: flex;
-        align-items: center;
-        padding: 0 1mm;
-        overflow: hidden;
-      }
-      .footer {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-        font-size: 6pt;
-      }
     `;
 
     // ── assemble pages ─────────────────────────────────────────────────────────
     let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${styles}</style></head><body>`;
 
-    pages.forEach((pageRows, idx) => {
-      const isFirst    = idx === 0;
-      const pageNum    = idx + 1;
-      const headerH    = isFirst ? FULL_HEADER_H : REPEAT_HEADER_H;
-      // Total table height = thead height + all data rows height
-      const tableWrapH = USABLE_H - headerH - SIGNATURE_H - FOOTER_H;
+    pages.forEach((pg) => {
+      const tableWrapH = USABLE_H - (pg.isFirst ? FULL_HEADER_H : 0) - (pg.isLast ? SIGNATURE_H : 0);
 
-      const headerHTML = isFirst
+      const headerHTML = pg.isFirst
         ? `<div class="header" style="height:${FULL_HEADER_H}mm;">
-             <h2>ANNUAL VERIFICATION SHORTAGE/SURPLUS OF STORES - ${selectedYear}</h2>
-             <h3>COST CENTRE: ${esc(selectedDept.DeptId)} - ${esc(selectedDept.DeptName)} | WAREHOUSE: ${esc(selectedWarehouse)}</h3>
+             <div class="address-top">
+               <div>ECSC/Stores : ${esc(selectedWarehouse)}<br/>Area/Office Of the Director : ${esc(selectedDept.DeptName)} (${esc(selectedDept.DeptId)})</div>
+               <div class="form-label">Form - AV/1/B</div>
+             </div>
+             <h2>ANNUAL VERIFICATION OF STORES/STOCKS - ${selectedYear}</h2>
+             <h3>Explanation for stock shortage and excess</h3>
            </div>`
-        : `<div class="header" style="height:${REPEAT_HEADER_H}mm;">
-             <h2>ANNUAL VERIFICATION SHORTAGE/SURPLUS OF STORES - ${selectedYear}</h2>
-             <h3>COST CENTRE: ${esc(selectedDept.DeptId)} - ${esc(selectedDept.DeptName)} | WAREHOUSE: ${esc(selectedWarehouse)}</h3>
-           </div>`;
+        : "";
+
+      const signatureHTML = pg.isLast
+        ? `<div class="page-bottom">
+             <div class="sig-section">
+               <div class="sig-row">
+                 <div>
+                   Store Keeper/Electrical Superintendent : ....................................<br/>
+                   Date : ........./.........../..........
+                 </div>
+                 <div>
+                   Engineer-in-Charge : ....................................<br/>
+                   Date : ........./.........../..........
+                 </div>
+               </div>
+             </div>
+           </div>`
+        : "";
 
       html += `
         <div class="page">
@@ -577,32 +558,13 @@ const printPDF = () => {
               <table>
                 ${theadHTML}
                 <tbody>
-                  ${pageRows.join("")}
+                  ${pg.rows.join("")}
                 </tbody>
               </table>
             </div>
           </div>
 
-          <div class="page-bottom">
-            <div class="sig-section">
-              <div class="sig-row">
-                <div>
-                  Store Keeper / Electrical Superintendent : .........................<br/>
-                  Date : .............................
-                </div>
-                <div>
-                  Engineer-in-charge : .........................<br/>
-                  Date : .............................
-                </div>
-              </div>
-            </div>
-            <div class="footer-section">
-              <div class="footer">
-                <span>Date &amp; time of the Report Generated: ${now}</span>
-                <span>Page ${pageNum} of ${totalPages}</span>
-              </div>
-            </div>
-          </div>
+          ${signatureHTML}
 
         </div>`;
     });
@@ -623,7 +585,7 @@ const printPDF = () => {
         title="print-frame"
       />
       <h2 className={`text-lg md:text-xl font-bold mb-4 ${maroon}`}>
-        PHV Shortage/Surplus WHwise
+        5. Physical Verification Shortage/ Surplus WH Wise AV/1/B
       </h2>
       <div className="flex flex-col md:flex-row flex-wrap gap-2 md:gap-3 mb-4 justify-end items-end">
         <div className="flex items-center gap-2">
@@ -779,7 +741,7 @@ const printPDF = () => {
       )}
       {showReport && selectedDept && (
         <ReportViewer
-          title={`PHV SHORTAGE/SURPLUS WH WISE - ${selectedYear}`}
+          title={`5. Physical Verification Shortage/ Surplus WH Wise AV/1/B - ${selectedYear}`}
           subtitlebold2="Cost Center :"
           subtitlenormal2={`${selectedDept.DeptId} - ${selectedDept.DeptName} - Warehouse: ${selectedWarehouse}`}
           loading={reportLoading}
@@ -787,66 +749,83 @@ const printPDF = () => {
           handleDownloadCSV={handleDownloadCSV}
           printPDF={printPDF}
           closeReport={closeReport}
+          plain
         >
-          <table className="w-full text-xs border-collapse">
-            <thead className={`${maroonGrad} text-white`}>
-              <tr>
-                <th className="border border-gray-400 px-2 py-2 text-center">Serial No</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Document No</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Code No</th>
-                <th className="border border-gray-400 px-2 py-2 text-left">Description</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Grade Code</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">UOM</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">S/ Price</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Stock Book Qty</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Physical Qty</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Surplus Qty</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Shortage Qty</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Stock Book Value (Rs.)</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Physical Val. (Rs.)</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Surplus Val. (Rs.)</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Shortage Val. (Rs.)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((item, idx) => (
-                <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{idx + 1}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.DocumentNo}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.MaterialCode}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-left">{item.MaterialName}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.GradeCode}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.UomCode}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.UnitPrice)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.QtyOnHand)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.CountedQty)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.SurplusQty)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.ShortageQty)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.StockBook)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.PhysicalBook)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.SurplusAmount)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.ShortageAmount)}</td>
+          <div className="mb-3 flex justify-between text-xs">
+            <div>
+              <div>ECSC/Stores : {selectedWarehouse}</div>
+              <div>Area/Office Of the Director : {selectedDept.DeptName} ({selectedDept.DeptId})</div>
+            </div>
+            <strong>Form - AV/1/B</strong>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1100px] text-xs border-collapse table-fixed">
+              <colgroup>
+                <col style={{ width: "5%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "6.5%" }} />
+                <col style={{ width: "6.5%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "11%" }} />
+                <col style={{ width: "9%" }} />
+              </colgroup>
+              <thead className={`${maroonGrad} text-white`}>
+                <tr>
+                  {Array.from({ length: 11 }, (_, index) => (
+                    <th key={index} className="border border-gray-400 px-2 py-1 text-center">{index + 1}</th>
+                  ))}
                 </tr>
-              ))}
-              <tr className="bg-yellow-50 font-bold">
-                <td colSpan={11} className="border border-gray-300 px-2 py-2 text-center">
-                  Total
-                </td>
-                <td className="border border-gray-300 px-2 py-2 text-right">
-                  {formatNumber(reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0))}
-                </td>
-                <td className="border border-gray-300 px-2 py-2 text-right">
-                  {formatNumber(reportData.reduce((sum, item) => sum + (item.PhysicalBook || 0), 0))}
-                </td>
-                <td className="border border-gray-300 px-2 py-2 text-right">
-                  {formatNumber(reportData.reduce((sum, item) => sum + (item.SurplusAmount || 0), 0))}
-                </td>
-                <td className="border border-gray-300 px-2 py-2 text-right">
-                  {formatNumber(reportData.reduce((sum, item) => sum + (item.ShortageAmount || 0), 0))}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                <tr>
+                  <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Serial No.</th>
+                  <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Code No.</th>
+                  <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Description</th>
+                  <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Unit of Measurement</th>
+                  <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Standard Price/Actual Price</th>
+                  <th colSpan={2} className="border border-gray-400 px-2 py-1 text-center">Quantity</th>
+                  <th colSpan={2} className="border border-gray-400 px-2 py-1 text-center">Value</th>
+                  <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Explanation by the Storekeeper/Electrical Superintendent</th>
+                  <th rowSpan={3} className="border border-gray-400 px-2 py-2 text-center">Recommended by the Engineer in charge</th>
+                </tr>
+                <tr>
+                  <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Surplus</th>
+                  <th rowSpan={2} className="border border-gray-400 px-2 py-2 text-center">Shortage</th>
+                  <th className="border border-gray-400 px-2 py-1 text-center">Surplus</th>
+                  <th className="border border-gray-400 px-2 py-1 text-center">Shortage</th>
+                </tr>
+                <tr>
+                  <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                  <th className="border border-gray-400 px-2 py-1 text-center">Rs. Cts.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.map((item, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                    <td className="border border-gray-300 px-2 py-2 text-center">{idx + 1}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-center">{item.MaterialCode}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-left">
+                      {item.GradeCode ? `${item.MaterialName} (Grade: ${item.GradeCode})` : item.MaterialName}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-2 text-center">{item.UomCode}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.UnitPrice)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.SurplusQty)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.ShortageQty)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.SurplusAmount)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.ShortageAmount)}</td>
+                    <td className="border border-gray-300 px-2 py-2 text-left">{item.Reason}</td>
+                    <td className="border border-gray-300 px-2 py-2"></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-6 flex justify-between gap-8 text-xs">
+            <div className="flex-1">Store Keeper/Electrical Superintendent : ....................................<br />Date : ........./.........../..........</div>
+            <div className="flex-1">Engineer-in-Charge : ....................................<br />Date : ........./.........../..........</div>
+          </div>
         </ReportViewer>
       )}
     </div>

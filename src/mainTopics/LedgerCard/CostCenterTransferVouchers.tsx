@@ -245,6 +245,10 @@ const CostCenterTransferVouchers: React.FC = () => {
 			toast.error("Please select Cost Center.");
 			return;
 		}
+		if (!toCostCenter.trim()) {
+			toast.error("Please select Destination Cost Center.");
+			return;
+		}
 		if (!year || isNaN(+year)) {
 			toast.error("Please select a valid year.");
 			return;
@@ -323,17 +327,7 @@ const CostCenterTransferVouchers: React.FC = () => {
 	};
 
 	const fromCostCenterName = costCenters.find((item) => item.CostCenterId === fromCostCenter)?.CostCenterName || "";
-	const toCostCenterTrimmed = toCostCenter.trim();
-	const toCostCenterName = costCenters.find((item) => item.CostCenterId === toCostCenterTrimmed)?.CostCenterName || "";
-	const transfereeLabel = toCostCenterTrimmed
-		? (toCostCenterName ? `${toCostCenterTrimmed} / ${toCostCenterName}` : toCostCenterTrimmed)
-		: "All Cost Centers";
-	// Show a Transferee column when the result can contain more than one destination
-	// (blank filter, or a partial ID that matched several cost centers).
-	const showTransferee = useMemo(
-		() => !toCostCenterTrimmed || new Set(data.map((item) => (item.DesgDept || "").trim())).size > 1,
-		[data, toCostCenterTrimmed]
-	);
+	const toCostCenterName = costCenters.find((item) => item.CostCenterId === toCostCenter)?.CostCenterName || "";
 	const reportDocProfiles = [...new Set(data.map((item) => item.DocPf).filter(Boolean))].join(", ") || selectedDocPf || "All";
 	const monthDisplay = startMonth === endMonth
 		? getMonthName(startMonth)
@@ -350,18 +344,10 @@ const CostCenterTransferVouchers: React.FC = () => {
 		const csvLines: string[] = [
 			`Summary of Transfer Vouchers ${reportDocProfiles}`,
 			`Transferer: ${fromCostCenter} / ${fromCostCenterName}`,
-			`Transferee: ${transfereeLabel}`,
+			`Transferee: ${toCostCenter} / ${toCostCenterName}`,
 			`Month: ${monthDisplay} ${year}`,
 			"",
-			[
-				"No.",
-				"Document No.",
-				...(showTransferee ? ["Transferee"] : []),
-				"Remarks",
-				"Acct. Date",
-				"Dr Amount",
-				"Cr Amount",
-			]
+			["No.", "Document No.", "Remarks", "Acct. Date", "Dr Amount", "Cr Amount"]
 				.map(escapeCsv)
 				.join(","),
 		];
@@ -370,7 +356,6 @@ const CostCenterTransferVouchers: React.FC = () => {
 			csvLines.push([
 				index + 1,
 				item.DocNo || "",
-				...(showTransferee ? [item.DesgDept || ""] : []),
 				item.Remarks || "",
 				item.AcctDt ? new Date(item.AcctDt).toLocaleDateString("en-GB") : "",
 				formatNumber(item.DrAmt),
@@ -378,22 +363,14 @@ const CostCenterTransferVouchers: React.FC = () => {
 			].map(escapeCsv).join(","));
 		});
 
-		csvLines.push([
-			"Transaction Total",
-			"",
-			...(showTransferee ? [""] : []),
-			"",
-			"",
-			formatNumber(transactionTotalDr),
-			formatNumber(transactionTotalCr),
-		].map(escapeCsv).join(","));
+		csvLines.push(["Transaction Total", "", "", "", formatNumber(transactionTotalDr), formatNumber(transactionTotalCr)].map(escapeCsv).join(","));
 		csvLines.push("", "This is system generated report. Signature not required.");
 
 		const blob = new Blob([csvLines.join("\n")], { type: "text/csv" });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = `CostCenterTransferVouchers_${fromCostCenter}_to_${toCostCenterTrimmed || "ALL"}_${year}_${startMonth}-${endMonth}.csv`;
+		a.download = `CostCenterTransferVouchers_${fromCostCenter}_to_${toCostCenter}_${year}_${startMonth}-${endMonth}.csv`;
 		a.click();
 		URL.revokeObjectURL(url);
 	};
@@ -405,7 +382,6 @@ const CostCenterTransferVouchers: React.FC = () => {
 			<tr style="border-bottom: 1px solid #ddd;">
 				<td style="padding: 4px 8px; border: 1px solid #ddd;">${index + 1}</td>
 				<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.DocNo || ""}</td>
-				${showTransferee ? `<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.DesgDept || ""}</td>` : ""}
 				<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.Remarks || ""}</td>
 				<td style="padding: 4px 8px; border: 1px solid #ddd;">${item.AcctDt ? new Date(item.AcctDt).toLocaleDateString("en-GB") : ""}</td>
 				<td style="padding: 4px 8px; border: 1px solid #ddd; text-align: right;">${formatNumber(item.DrAmt)}</td>
@@ -434,7 +410,7 @@ const CostCenterTransferVouchers: React.FC = () => {
 			<body>
 				<div class="header-title">Summary of Transfer Vouchers ${reportDocProfiles}</div>
 				<div class="header-sub">Transferer: ${fromCostCenter} / ${fromCostCenterName}</div>
-				<div class="header-sub">Transferee: ${transfereeLabel}</div>
+				<div class="header-sub">Transferee: ${toCostCenter} / ${toCostCenterName}</div>
 				<div class="header-sub">Month: ${monthDisplay} ${year}</div>
 				
 				<table>
@@ -442,7 +418,6 @@ const CostCenterTransferVouchers: React.FC = () => {
 						<tr>
 							<th>No.</th>
 							<th>Document No.</th>
-							${showTransferee ? "<th>Transferee</th>" : ""}
 							<th>Remarks</th>
 							<th>Acct. Date</th>
 							<th class="text-right">Dr Amount</th>
@@ -454,7 +429,7 @@ const CostCenterTransferVouchers: React.FC = () => {
 					</tbody>
 					<tfoot>
 						<tr class="transaction-total">
-							<td colspan="${showTransferee ? 5 : 4}" class="text-right">Transaction Total:</td>
+							<td colspan="4" class="text-right">Transaction Total:</td>
 							<td class="text-right">${formatNumber(transactionTotalDr)}</td>
 							<td class="text-right">${formatNumber(transactionTotalCr)}</td>
 						</tr>
@@ -490,18 +465,14 @@ const CostCenterTransferVouchers: React.FC = () => {
 					loading={loadingCostCenters}
 				/>
 
-				<div>
-					<label className={`block text-xs md:text-sm font-bold ${maroon} mb-1`}>
-						Destination Cost Center
-					</label>
-					<input
-						type="text"
-						value={toCostCenter}
-						onChange={(e) => setToCostCenter(e.target.value)}
-						placeholder="Type Cost Center ID (blank = all)"
-						className="w-full pl-3 pr-2 py-1.5 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7A0000] text-xs md:text-sm bg-white"
-					/>
-				</div>
+				<SearchableSelect
+					label="Destination Cost Center"
+					value={toCostCenter}
+					onChange={setToCostCenter}
+					options={costCenters}
+					placeholder="Select Destination"
+					loading={loadingCostCenters}
+				/>
 
 				<div>
 					<label className={`block text-xs md:text-sm font-bold ${maroon} mb-1`}>
@@ -647,7 +618,7 @@ const CostCenterTransferVouchers: React.FC = () => {
 									</p>
 									<p>
 										<span className="font-bold">Transferee:</span>{" "}
-										{transfereeLabel}
+										{toCostCenter} / {toCostCenterName}
 									</p>
 									<p>
 										<span className="font-bold">Month:</span>{" "}
@@ -663,13 +634,12 @@ const CostCenterTransferVouchers: React.FC = () => {
 								<table className="w-full text-xs border-collapse table-fixed min-w-[760px]">
 									<thead className={`${maroonGrad} text-white`}>
 										<tr>
-											<th className={`px-3 py-2 text-left ${showTransferee ? "w-[6%]" : "w-[7%]"}`}>No.</th>
-											<th className={`px-3 py-2 text-left ${showTransferee ? "w-[15%]" : "w-[18%]"}`}>Document No.</th>
-											{showTransferee && <th className="px-3 py-2 w-[12%] text-left">Transferee</th>}
-											<th className={`px-3 py-2 text-left ${showTransferee ? "w-[26%]" : "w-[35%]"}`}>Remarks</th>
-											<th className={`px-3 py-2 text-left ${showTransferee ? "w-[13%]" : "w-[15%]"}`}>Acct. Date</th>
-											<th className={`px-3 py-2 text-right ${showTransferee ? "w-[14%]" : "w-[12.5%]"}`}>Dr Amount</th>
-											<th className={`px-3 py-2 text-right ${showTransferee ? "w-[14%]" : "w-[12.5%]"}`}>Cr Amount</th>
+											<th className="px-3 py-2 w-[7%] text-left">No.</th>
+											<th className="px-3 py-2 w-[18%] text-left">Document No.</th>
+											<th className="px-3 py-2 w-[35%] text-left">Remarks</th>
+											<th className="px-3 py-2 w-[15%] text-left">Acct. Date</th>
+											<th className="px-3 py-2 w-[12.5%] text-right">Dr Amount</th>
+											<th className="px-3 py-2 w-[12.5%] text-right">Cr Amount</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -677,7 +647,6 @@ const CostCenterTransferVouchers: React.FC = () => {
 											<tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
 												<td className="px-3 py-2">{index + 1}</td>
 												<td className="px-3 py-2 font-mono font-medium">{item.DocNo}</td>
-												{showTransferee && <td className="px-3 py-2 font-mono">{item.DesgDept}</td>}
 												<td className="px-3 py-2">{item.Remarks}</td>
 												<td className="px-3 py-2 whitespace-nowrap">{item.AcctDt ? new Date(item.AcctDt).toLocaleDateString("en-GB") : ""}</td>
 												<td className="px-3 py-2 text-right font-mono">{formatNumber(item.DrAmt)}</td>
@@ -687,7 +656,7 @@ const CostCenterTransferVouchers: React.FC = () => {
 									</tbody>
 									<tfoot className="bg-[#7A0000] text-white font-bold border-t-2 border-gray-400">
 										<tr>
-											<td colSpan={showTransferee ? 5 : 4} className="px-3 py-2.5 text-right border-r border-red-900">
+											<td colSpan={4} className="px-3 py-2.5 text-right border-r border-red-900">
 												Transaction Total:
 											</td>
 											<td className="px-3 py-2.5 text-right font-mono border-r border-red-900">

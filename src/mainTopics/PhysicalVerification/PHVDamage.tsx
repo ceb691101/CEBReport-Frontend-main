@@ -37,6 +37,13 @@ const formatNumber = (num: number | null | undefined): string => {
   });
 };
 
+const escapeHtml = (text: string | null | undefined): string => {
+  if (text == null) return "";
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+};
+
 const PHVDamage: React.FC = () => {
   const { user } = useUser();
   const epfNo = user?.Userno || "";
@@ -212,11 +219,7 @@ const PHVDamage: React.FC = () => {
     setReportData([]);
     try {
       const res = await fetch(
-        `/misapi/api/phv-damage/list?deptId=${encodeURIComponent(
-          selectedDept.DeptId
-        )}&repYear=${selectedYear}&repMonth=${selectedMonth}&warehouseCode=${encodeURIComponent(
-          selectedWarehouse
-        )}`
+        `/misapi/api/phv-damage/list?deptId=${encodeURIComponent(selectedDept.DeptId)}&repYear=${encodeURIComponent(selectedYear)}&repMonth=${encodeURIComponent(selectedMonth)}&warehouseCode=${encodeURIComponent(selectedWarehouse)}`
       );
       if (!res.ok) {
         const errorText = await res.text();
@@ -247,480 +250,268 @@ const PHVDamage: React.FC = () => {
 
   const handleDownloadCSV = () => {
     if (reportData.length === 0 || !selectedDept) return;
-
     const csvSafe = (value: any) => {
       if (value == null) return '""';
       const str = String(value).replace(/"/g, '""');
       return `"${str}"`;
     };
+    const COLS = 7;
+    const rowOf = (cells: (string | number)[]) => {
+      const r: (string | number)[] = [...cells];
+      while (r.length < COLS) r.push("");
+      return r.map(csvSafe).join(",");
+    };
 
-    const headers = [
-      "Serial No",
-      "Code No",
-      "Description",
-      "Grade Code",
-      "UOM",
-      "Quantity (Stock Book)",
-      "Unit Price",
-      "Cost (Rs.) (Stock Book)",
-      "Reasons",
-      "Recommended action to be taken",
-    ];
-
-    const csvRows: string[] = [
-      csvSafe(`STATEMENT OF DAMAGED MATERIALS IN STOCKS - ${selectedYear}`),
-      csvSafe(`COST CENTRE : ${selectedDept.DeptId} WARE HOUSE - ${selectedWarehouse}`),
-      "",
-      csvSafe("1.ORIGINAL : Deputy General Manager"),
-      csvSafe("2.DUPLICATE : Engineer-in-charge"),
-      csvSafe("3.TRIPLCATE : Store-kepper/E.S.(C.S.C)"),
-      csvSafe(`Date of Verification : ${reportData[0]?.PhvDate?.split("T")[0]|| ".............."}`),
-
-      csvSafe("Form - AV/7B"),
-      "",
-    ];
-
-    csvRows.push(headers.map(csvSafe).join(","));
-
-    reportData.forEach((item, idx) => {
-      const row = [
-        idx + 1,
-        "\t" + (item.MaterialCode || ""),
-        item.MaterialName || "",
-        item.GradeCode || "",
-        item.UomCode || "",
-        formatNumber(item.QtyOnHand),
-        formatNumber(item.UnitPrice),
-        formatNumber(item.StockBook),
-        item.Reason || "",
-        "",
-      ];
-      csvRows.push(row.map(csvSafe).join(","));
-    });
-
+    const phvDate = reportData[0]?.PhvDate?.split("T")[0] || "..............";
     const totalStockBook = reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0);
 
-    csvRows.push([
-      '""',
-      '""',
-      '"Total of Damaged Stocks"',
-      '""',
-      '""',
-      '""',
-      '""',
-      `"${formatNumber(totalStockBook)}"`,
-      '""',
-      '""'
-    ].join(","));
+    const descriptionOf = (item: PHVDamageItem) => {
+      const details = [
+        item.GradeCode ? `Grade: ${item.GradeCode}` : "",
+        item.UomCode ? `UOM: ${item.UomCode}` : "",
+      ].filter(Boolean);
+      return details.length ? `${item.MaterialName || ""} (${details.join(", ")})` : item.MaterialName || "";
+    };
+
+    const csvRows: string[] = [];
+
+    /* Header (once, same as the PDF) */
+    csvRows.push(
+      rowOf(["TO BE FILLED IN TRIPLICATE", "", "", "", "", "", "Form - AV/7 (B)"]),
+      rowOf(["1. Original : Director"]),
+      rowOf(["2. Duplicate : Engineer-in-charge"]),
+      rowOf(["3. Triplicate : Store-keeper/E.S.(C.S.C.)"]),
+      rowOf([]),
+      rowOf([`ANNUAL VERIFICATION OF STORES/STOCKS - ${selectedYear ?? currentYear}`]),
+      rowOf(["Statement of Damaged Stocks"]),
+      rowOf([
+        `LOCATION: ${selectedDept.DeptName} (${selectedDept.DeptId}) - ${selectedWarehouse}`,
+        "", "", "", "", "",
+        `SHEET NO. : ${reportData[0]?.DocumentNo || ""}`,
+      ]),
+      rowOf(["", "", "", "", "", "", `DATE OF VERIFICATION : ${phvDate}`]),
+      rowOf([])
+    );
+
+    /* Table headings (same as the PDF) */
+    csvRows.push(
+      rowOf(["S T O C K", "", "QUANTITY", "UNIT PRICE (Rs.)", "COST (Rs.)", "REASONS", "RECOMMENDED ACTION TO BE TAKEN"]),
+      rowOf(["ITEM", "DESCRIPTION"])
+    );
+
+    /* Data rows */
+    reportData.forEach((item) => {
+      csvRows.push(
+        rowOf([
+          "\t" + (item.MaterialCode || ""),
+          descriptionOf(item),
+          formatNumber(item.QtyOnHand),
+          formatNumber(item.UnitPrice),
+          formatNumber(item.StockBook),
+          item.Reason || "DAM",
+          "",
+        ])
+      );
+    });
+
+    csvRows.push(rowOf(["Total", "", "", "", formatNumber(totalStockBook), "", ""]));
+
+    /* Signature section (once, at the end) */
+    csvRows.push(
+      rowOf([]),
+      rowOf(["We do hereby certify that the stocks were physically verified as per the given statement."]),
+      rowOf([]),
+      rowOf(["Signature of the Board of Verification", "", "", "", "", "", "Agreed & Certified Correct by"]),
+      rowOf(["1. ................................", "", "", "", "", "", "......................................"]),
+      rowOf(["2. ................................", "", "", "", "", "", "Store-keeper/E.S.(C.S.C.)"]),
+      rowOf(["3. ................................"])
+    );
 
     const csvContent = csvRows.join("\n");
-    const blob = new Blob(["\uFEFF" + csvContent], {
+    const blob = new Blob(["﻿" + csvContent], {
       type: "text/csv;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `PHV_Damage_WHwise_${selectedDept.DeptId}_${selectedWarehouse}_${selectedYear}.csv`;
+    link.download = `PHV_Damage_WHwise_${selectedDept.DeptId}_${selectedWarehouse}_${selectedYear ?? currentYear}_${selectedMonth != null ? String(selectedMonth).padStart(2, "0") : ""}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
 
-// ── REPLACE your entire printPDF function with this ──────────────────────────
-// Key improvements:
-//   • ROWS_PER_PAGE calculated to fill all available vertical space (≥15 rows)
-//   • Signature section pinned ABOVE footer via position:absolute
-//   • Table data rows fill the entire space between header and signature
-//   • No empty gaps — every page uses maximum rows
-//   • Footer (date + page X of Y) pinned to very bottom of each page
-//   • Board of Verifications: empty in data rows, 1/2/3 next to Name dotted lines
-
-const printPDF = () => {
-  if (reportData.length === 0 || !iframeRef.current || !selectedDept || !selectedWarehouse) {
-    toast.error("Please select Cost Center, Warehouse, Year/Month and click 'View' first");
-    return;
-  }
-
-  // ── PAGE LAYOUT CONSTANTS ───────────────────────────────────────────────
-  const PAGE_HEIGHT = 210;           // A4 landscape height
-  const MARGIN_TB = 8;               // Top/bottom margin
-  const MARGIN_LR = 10;              // Left/right margin
-  const HEADER_HEIGHT = 22;          // Header section height
-  const TABLE_HEADER_HEIGHT = 7;     // Table header row height
-  const SIGNATURE_HEIGHT = 22;       // Signature section height
-  const FOOTER_HEIGHT = 4;           // Footer height
-  const GAP_BEFORE_SIGNATURE = 2;    // Gap between table and signature
-
-  const USABLE_HEIGHT = PAGE_HEIGHT - (2 * MARGIN_TB);
-  const AVAILABLE_FOR_ROWS = USABLE_HEIGHT - HEADER_HEIGHT - TABLE_HEADER_HEIGHT - SIGNATURE_HEIGHT - FOOTER_HEIGHT - GAP_BEFORE_SIGNATURE;
-
-  // Dynamic row height based on description length
-  const CHARS_PER_LINE = 80;         // Approx chars per line in Description column
-  const LINE_HEIGHT_MM = 3.5;        // Height per line
-  const ROW_PADDING_MM = 1.5;        // Padding per row
-
-  const getRowHeight = (desc: string): number => {
-    const lines = Math.max(1, Math.ceil(desc.length / CHARS_PER_LINE));
-    return ROW_PADDING_MM + lines * LINE_HEIGHT_MM;
-  };
-
-  // ── DYNAMIC CHUNKING LOGIC ──────────────────────────────────────────────
-  const chunks: PHVDamageItem[][] = [];
-  let currentChunk: PHVDamageItem[] = [];
-  let currentHeight = 0;
-
-  for (const item of reportData) {
-    const rowHeight = getRowHeight(item.MaterialName || '');
-
-    if (currentHeight + rowHeight > AVAILABLE_FOR_ROWS && currentChunk.length > 0) {
-      chunks.push(currentChunk);
-      currentChunk = [];
-      currentHeight = 0;
+  const printPDF = () => {
+    if (reportData.length === 0 || !iframeRef.current || !selectedDept || !selectedWarehouse) {
+      toast.error("Please select Cost Center, Warehouse, Year/Month and click 'View' first");
+      return;
     }
 
-    currentChunk.push(item);
-    currentHeight += rowHeight;
-  }
+    /* ================= STYLES ================= */
+    const tableStyle = `
+      @page { size: A4 landscape; margin: 6mm 6mm 6mm 6mm; }
+      body { margin: 0; padding: 0; color: #000; }
 
-  if (currentChunk.length > 0) {
-    chunks.push(currentChunk);
-  }
+      .page { position: relative; }
+      thead { display: table-header-group; }
+      tr { page-break-inside: avoid; }
 
-  // Handle total row on last page with dynamic height
-  const totalRowHeight = getRowHeight('Total of Damaged Stocks');
+      .copies { display: flex; justify-content: space-between; align-items: flex-start; font-size: 11px; line-height: 1.4; }
+      .form-label { font-weight: bold; font-size: 12px; }
 
-  if (chunks.length > 0) {
-    const lastChunk = chunks.pop()!;
-    let heightOfLastChunk = 0;
-    lastChunk.forEach(item => heightOfLastChunk += getRowHeight(item.MaterialName || ''));
+      .header { margin: 8px 0 6px 0; }
+      .header h2 { text-align: center; color: #7A0000; font-size: 16px; margin: 0 0 2px 0; }
+      .header h3 { text-align: center; font-size: 13px; font-weight: bold; margin: 0; }
 
-    if (heightOfLastChunk + totalRowHeight > AVAILABLE_FOR_ROWS) {
-      let heightFromEnd = totalRowHeight;
-      let splitIndex = lastChunk.length;
-      for (let j = lastChunk.length - 1; j >= 0; j--) {
-        heightFromEnd += getRowHeight(lastChunk[j].MaterialName || '');
-        if (heightFromEnd > AVAILABLE_FOR_ROWS) {
-          splitIndex = j;
-          break;
-        }
-      }
+      .details { display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; font-weight: bold; line-height: 1.5; margin-bottom: 4px; }
+      .details-right { text-align: right; }
 
-      if (splitIndex < lastChunk.length) {
-        if (splitIndex > 0) {
-          chunks.push(lastChunk.slice(0, splitIndex));
-        }
-        chunks.push(lastChunk.slice(splitIndex));
-      } else {
-        chunks.push(lastChunk);
-      }
-    } else {
-      chunks.push(lastChunk);
-    }
-  }
+      table.main { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
+      table.main th, table.main td { border: 1px solid #000; padding: 1px 2px; word-wrap: break-word; }
+      table.main th { background-color: #ffffff; font-weight: bold; text-align: center; }
+      table.main tbody tr { height: 7mm; }
+      table.main tbody td { vertical-align: middle; }
 
-  // ── STYLES ──────────────────────────────────────────────────────────────
-  const tableStyle = `
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      font-size: 9.5px; 
-      margin-top: 2mm;
-    }
-    
-    th, td { 
-      border: 0.8px solid #000; 
-      padding: 3px 4px; 
-      word-wrap: break-word; 
-      line-height: 1.2;
-    }
-    
-    th { 
-      background-color: #ffffff; 
-      color: #000000; 
-      font-weight: bold; 
-      text-align: center; 
-      line-height: 1.1;
-      padding: 2px 3px;
-    }
-    
-    .right { text-align: right; }
-    .center { text-align: center; }
-    .left { text-align: left; }
+      .center { text-align: center; }
+      .right { text-align: right; }
+      .left { text-align: left; }
 
-    body { 
-      font-family: Arial, sans-serif; 
-      margin: 0;
-      padding: ${MARGIN_TB}mm ${MARGIN_LR}mm;
-      font-size: 9.5px;
-      position: relative;
-      height: ${PAGE_HEIGHT}mm;
-    }
-.page-wrapper {
-  min-height: ${PAGE_HEIGHT - (2 * MARGIN_TB)}mm;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
+      .total-row td { font-weight: bold; }
 
-    .header-section {
-      margin-top: ${MARGIN_TB}mm;
-      margin-bottom: 2mm;
-    }
+      .signature { margin-top: 14px; font-size: 11px; page-break-inside: avoid; }
+      .sig-top { display: flex; justify-content: space-between; align-items: flex-start; }
+      .sig-cert { line-height: 1.3; }
+      .sig-bottom { display: flex; align-items: flex-start; margin-top: 4px; }
+      .sig-board-label { width: 22%; line-height: 1.4; padding-top: 1.5mm; }
+      .sig-board-lines { width: 34%; }
+      .sig-board-lines div { height: 8mm; line-height: 8mm; white-space: nowrap; }
 
-    h2 { 
-      text-align: center; 
-      color: #7A0000; 
-      margin: 0 0 1mm 0; 
-      font-size: 12.5px;
-      line-height: 1.1;
-    }
+      /* "Agreed..." and the Store-keeper block share the same width and right margin,
+         so their centres line up exactly */
+      .sig-agreed, .sig-store { width: 30%; margin-right: 3%; text-align: center; }
+      .sig-agreed { margin-top: 4mm; }
+      .sig-store { margin-left: auto; padding-top: 2mm; }
+      .sig-dots { margin-bottom: 1.5mm; white-space: nowrap; }
+    `;
 
-    h3 { 
-      text-align: center; 
-      margin: 0.5mm 0 1.5mm 0; 
-      font-size: 10px;
-      line-height: 1.1;
-    }
+    const phvDate = reportData[0]?.PhvDate?.split("T")[0] || "..............";
+    const totalStockBook = reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0);
 
-    .subtitles { 
-      margin-bottom: 1.5mm; 
-      font-size: 8.5px; 
-      display: flex; 
-      justify-content: space-between;
-      line-height: 1.2;
-    }
+    const descriptionOf = (item) => {
+      const details = [
+        item.GradeCode ? `Grade: ${item.GradeCode}` : "",
+        item.UomCode ? `UOM: ${item.UomCode}` : "",
+      ].filter(Boolean);
+      return details.length ? `${item.MaterialName || ""} (${details.join(", ")})` : item.MaterialName || "";
+    };
 
-    .table-section {
-      flex: 1;
-    }
-
-    @page { 
-      margin: 0;
-      size: A4 landscape;
-    }
-
-.footer {
-  position: absolute;               /* ← Changed to absolute for per-page uniqueness */
-  bottom: 0mm;                      /* Distance from page-wrapper bottom */
-  left: 0mm;
-  right: 0mm;
-  height: ${FOOTER_HEIGHT}mm;
-  font-size: 7.5pt;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5mm 0 0 0;             /* Minimal top padding */
-  background: white;
-  z-index: 10;                      /* Ensure it's above content if needed */
-  page-break-inside: avoid;
-}
-
-    .total-row { 
-      background: #e8e8e8; 
-      font-weight: bold; 
-    }
-
-    .signature-section { 
-      margin-top: ${GAP_BEFORE_SIGNATURE}mm;
-      margin-bottom: ${FOOTER_HEIGHT + 2}mm;
-      font-size: 8px; 
-      page-break-inside: avoid;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .signature-left { 
-      width: 58%; 
-      float: left;
-    }
-
-    .signature-right { 
-      width: 38%; 
-      float: right; 
-      text-align: right;
-    }
-
-    .signature-section p { 
-      margin: 1mm 0; 
-      line-height: 1.2;
-    }
-
-    .signature-section table { 
-      border: none; 
-      width: 100%; 
-      font-size: 7.5px; 
-      margin-top: 1.5mm; 
-      margin-bottom: 1.5mm; 
-
-    }
-
-    .signature-section td { 
-      border: none; 
-      padding: 1mm; 
-    }
-
-    .clear { clear: both; }
-  `;
-
-  const escapeHtml = (text: string | null | undefined): string => {
-    if (!text) return "";
-    const cleaned = text.replace(/[-\u001F\u007F]/g, "");
-    const div = document.createElement("div");
-    div.textContent = cleaned;
-    return div.innerHTML;
-  };
-
-  const formatNum = (n: number | null | undefined) =>
-    (n ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  const totalPages = chunks.length || 1;
-  let html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>PHV Damage Report</title>
-<style>${tableStyle}</style>
-</head>
-<body>`;
-
-  let serial = 1;
-
-  chunks.forEach((chunk, idx) => {
-    const pageNum = idx + 1;
-    const isLastPage = idx === chunks.length - 1;
-
-    html += `
-<div class="page-wrapper">
-<div class="header-section">
-<h2>STATEMENT OF DAMAGED MATERIALS IN STOCKS - ${selectedYear}</h2>
-<h3>COST CENTRE : ${selectedDept.DeptId} WARE HOUSE - ${selectedWarehouse}</h3>
-
-<div class="subtitles">
-  <div>1.ORIGINAL  :  Deputy General Manager</div>
-  <div>Form - AV/7B</div>
-</div>
-<div class="subtitles">
-  <div>2.DUPLICATE :  Engineer-in-charge</div>
-  <div>Date of Verification : ${reportData[0]?.PhvDate?.split("T")[0] || ".............."}</div>
-</div>
-<div class="subtitles">
-  <div>3.TRIPLICATE :  Store-keeper/E.S.(C.S.C)</div>
-  <div></div>
-</div>
-</div>
-
-<div class="table-section">
-<table>
-  <thead>
+    let bodyHTML = "";
+    reportData.forEach((item) => {
+      bodyHTML += `
     <tr>
-      <th style="width:4%">Serial<br>No</th>
-      <th style="width:9%">Code No</th>
-      <th style="width:30%">Description</th>
-      <th style="width:7%">Grade<br>Code</th>
-      <th style="width:5%">UOM</th>
-      <th style="width:9%">Quantity<br>(Stock Book)</th>
-      <th style="width:10%">Unit Price</th>
-      <th style="width:10%">Cost (Rs.)<br>(Stock Book)</th>
-      <th style="width:8%">Reasons</th>
-      <th style="width:8%">Recommended<br>action</th>
-    </tr>
-  </thead>
-  <tbody>`;
-
-    chunk.forEach((item, i) => {
-      html += `
-    <tr>
-      <td class="center">${serial + i}</td>
-      <td class="center">${escapeHtml(item.MaterialCode || "")}</td>
-      <td class="left">${escapeHtml(item.MaterialName || "")}</td>
-      <td class="center">${escapeHtml(item.GradeCode || "")}</td>
-      <td class="center">${escapeHtml(item.UomCode || "")}</td>
-      <td class="right">${formatNum(item.QtyOnHand)}</td>
-      <td class="right">${formatNum(item.UnitPrice)}</td>
-      <td class="right">${formatNum(item.StockBook)}</td>
+      <td class="center">${escapeHtml(item.MaterialCode)}</td>
+      <td class="left">${escapeHtml(descriptionOf(item))}</td>
+      <td class="right">${formatNumber(item.QtyOnHand)}</td>
+      <td class="right">${formatNumber(item.UnitPrice)}</td>
+      <td class="right">${formatNumber(item.StockBook)}</td>
       <td class="center">${escapeHtml(item.Reason || "DAM")}</td>
       <td class="center"></td>
     </tr>`;
     });
 
-    if (isLastPage) {
-      const totalStockBook = reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0);
-      html += `
-    <tr class="total-row">
-      <td colspan="7" class="right">Total of Damaged Stocks</td>
-      <td class="right">${formatNum(totalStockBook)}</td>
-      <td colspan="2"></td>
-    </tr>`;
-    }
+    // Layout follows the AV/7 (B) form: header once at the top, signature once at the end
+    const pagesHTML = `
+      <div class="page">
+        <div class="copies">
+          <div>
+            <strong>TO BE FILLED IN TRIPLICATE</strong><br/>
+            1. Original : Director<br/>
+            2. Duplicate : Engineer-in-charge<br/>
+            3. Triplicate : Store-keeper/E.S.(C.S.C.)
+          </div>
+          <div class="form-label">Form - AV/7 (B)</div>
+        </div>
 
-    html += `
-  </tbody>
-</table>
-</div>
+        <div class="header">
+          <h2>ANNUAL VERIFICATION OF STORES/STOCKS - ${selectedYear ?? currentYear}</h2>
+          <h3>Statement of Damaged Stocks</h3>
+        </div>
 
-<div class="signature-section">
-  <div class="signature-left">
-    <p>We do hereby certify that Stocks were physically verified as per that given statement.</p>
-    <table>
-      <tr>
-        <td style="width:25%">Board of<br>Verifications</td>
-        <td style="width:25%">Name</td>
-        <td style="width:25%">Designation</td>
-        <td style="width:25%">Signature</td>
-      </tr>
-      <tr>
-        <td class="right">1.</td>
-        <td>...........................</td>
-        <td>...........................</td>
-        <td>...........................</td>
-      </tr>
-      <tr>
-        <td class="right">2.</td>
-        <td>...........................</td>
-        <td>...........................</td>
-        <td>...........................</td>
-      </tr>
-      <tr>
-        <td class="right">3.</td>
-        <td>...........................</td>
-        <td>...........................</td>
-        <td>...........................</td>
-      </tr>
-    </table>
-  </div>
-  <div class="signature-right">
-    <p>Agreed and certified correct.</p>
-    <p style="margin-top: 6mm;">......................................</p>
-    <p style="margin-top: 1.5mm;">Store-keeper/Elect. Superintendent (C.S.C.)</p>
-  </div>
-  <div class="clear"></div>
-</div>
+        <div class="details">
+          <div>LOCATION: ${escapeHtml(selectedDept.DeptName)} (${escapeHtml(selectedDept.DeptId)}) - ${escapeHtml(selectedWarehouse)}</div>
+          <div class="details-right">
+            <div>SHEET NO. : ${escapeHtml(reportData[0]?.DocumentNo || "")}</div>
+            <div>DATE OF VERIFICATION : ${escapeHtml(phvDate)}</div>
+          </div>
+        </div>
 
-<div class="footer">
-  <div>Date & time of the Report Generated : ${new Date().toLocaleString()}</div>
-  <div>Page ${pageNum} of ${totalPages}</div>
-</div>
-</div>
+        <table class="main">
+          <colgroup>
+            <col style="width:11%"><col style="width:27%"><col style="width:9%"><col style="width:10%">
+            <col style="width:10%"><col style="width:9%"><col style="width:24%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th colspan="2">S T O C K</th>
+              <th rowspan="2">QUANTITY</th>
+              <th rowspan="2">UNIT PRICE (Rs.)</th>
+              <th rowspan="2">COST (Rs.)</th>
+              <th rowspan="2">REASONS</th>
+              <th rowspan="2">RECOMMENDED ACTION TO BE TAKEN</th>
+            </tr>
+            <tr>
+              <th>ITEM</th>
+              <th>DESCRIPTION</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bodyHTML}
+            <tr class="total-row">
+              <td class="left">Total</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td class="right">${formatNumber(totalStockBook)}</td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
 
-${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''}
-`;
+        <!--   SIGNATURE SECTION (last page only) -->
+        <div class="signature">
+          <div class="sig-top">
+            <div class="sig-cert">We do hereby certify that the stocks were physically verified as per the given statement.</div>
+            <div class="sig-agreed">Agreed &amp; Certified Correct by</div>
+          </div>
+          <div class="sig-bottom">
+            <div class="sig-board-label"><strong>Signature of the<br/>Board of Verification</strong></div>
+            <div class="sig-board-lines">
+              <div>1. ................................</div>
+              <div>2. ................................</div>
+              <div>3. ................................</div>
+            </div>
+            <div class="sig-store">
+              <div class="sig-dots">......................................</div>
+              <strong>Store-keeper/E.S.(C.S.C.)</strong>
+            </div>
+          </div>
+        </div>
+      </div>`;
 
-    serial += chunk.length;
-  });
+    /* ================= RENDER ================= */
+    const fullHTML = `
+      <html>
+        <head><meta charset="UTF-8"><title>PHV Damage Report</title><style>${tableStyle}</style></head>
+        <body>${pagesHTML}</body>
+      </html>
+    `;
 
-  html += `
-</body>
-</html>`;
+    const doc = iframeRef.current.contentDocument!;
+    doc.open();
+    doc.write(fullHTML);
+    doc.close();
 
-  const doc = iframeRef.current.contentDocument!;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  setTimeout(() => iframeRef.current?.contentWindow?.print(), 800);
-};
-
+    setTimeout(() => iframeRef.current?.contentWindow?.print(), 800);
+  };
 
   return (
     <div className="max-w-[95%] mx-auto p-2 md:p-4 bg-white rounded-xl shadow border border-gray-200 text-sm md:text-base font-sans">
@@ -729,11 +520,9 @@ ${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''
         style={{ display: "none" }}
         title="print-frame"
       />
-
       <h2 className={`text-lg md:text-xl font-bold mb-4 ${maroon}`}>
-        6.2. Physical Verification Damage (GRADE Code) AV/7B
+        6.2. Physical Verification Damage (GRADE Code) AV/7(B)
       </h2>
-
       <div className="flex flex-col md:flex-row flex-wrap gap-2 md:gap-3 mb-4 justify-end items-end">
         <div className="flex items-center gap-2">
           <YearMonthDropdowns
@@ -744,7 +533,6 @@ ${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''
             className="gap-4"
           />
         </div>
-
         <div className="flex flex-col md:flex-row gap-2 md:gap-2 items-end">
           <div className="flex flex-col">
             <label className={`text-xs md:text-sm font-bold ${maroon} mb-1`}>
@@ -764,19 +552,18 @@ ${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''
               ))}
             </select>
           </div>
-
           <button
             onClick={handleViewReport}
             disabled={!selectedDept || !selectedWarehouse || loading}
-            className={`px-2 md:px-3 py-1 md:py-1 ${maroonGrad} text-white rounded-md text-xs md:text-sm font-medium hover:brightness-110 transition shadow ${!selectedDept || !selectedWarehouse || loading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+            className={`px-2 md:px-3 py-1 md:py-1 ${maroonGrad} text-white rounded-md text-xs md:text-sm font-medium hover:brightness-110 transition shadow ${
+              !selectedDept || !selectedWarehouse || loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
             <Eye className="inline-block mr-1 w-3 md:w-3 h-3 md:h-3" />
             View
           </button>
         </div>
       </div>
-
       <div className="flex flex-col md:flex-row flex-wrap gap-2 md:gap-3 mb-2 md:mb-4">
         <div className="relative w-full md:w-auto">
           <Search className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 md:w-3 h-3 md:h-3" />
@@ -809,7 +596,6 @@ ${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''
           </button>
         )}
       </div>
-
       {loading && !warehouses.length && (
         <div className="text-center py-4 md:py-8">
           <div className="animate-spin rounded-full h-6 md:h-8 w-6 md:w-8 border-b-2 border-[#7A0000] mx-auto"></div>
@@ -818,19 +604,16 @@ ${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''
           </p>
         </div>
       )}
-
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-2 md:px-4 py-2 md:py-3 rounded mb-2 md:mb-4 text-xs md:text-sm">
           Error: {error}
         </div>
       )}
-
       {!loading && !error && filtered.length === 0 && (
         <div className="text-gray-600 bg-gray-100 p-2 md:p-4 rounded text-xs md:text-sm">
           No cost centers found.
         </div>
       )}
-
       {!loading && !error && filtered.length > 0 && (
         <>
           <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -851,10 +634,13 @@ ${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''
                     <tr
                       key={`${department.DeptId}-${i}`}
                       onClick={() => setSelectedDept(department)}
-                      className={`cursor-pointer ${selectedDept?.DeptId === department.DeptId
+                      className={`cursor-pointer ${
+                        selectedDept?.DeptId === department.DeptId
                           ? "bg-[#7A0000] text-white"
-                          : i % 2 ? "bg-white hover:bg-gray-100" : "bg-gray-50 hover:bg-gray-100"
-                        }`}
+                          : i % 2
+                          ? "bg-white hover:bg-gray-100"
+                          : "bg-gray-50 hover:bg-gray-100"
+                      }`}
                     >
                       <td className="px-2 md:px-4 py-1 md:py-2 truncate min-w-0">
                         {department.DeptId}
@@ -868,7 +654,6 @@ ${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''
               </table>
             </div>
           </div>
-
           <div className="flex flex-col md:flex-row justify-end items-center gap-2 md:gap-3 mt-2 md:mt-3">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -892,10 +677,9 @@ ${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''
           </div>
         </>
       )}
-
       {showReport && selectedDept && (
         <ReportViewer
-          title={`STATEMENT OF DAMAGED MATERIALS IN STOCKS - ${selectedYear}`}
+          title={`6.2. Physical Verification Damage (GRADE Code) AV/7(B) - ${selectedYear}`}
           subtitlebold2="COST CENTRE :"
           subtitlenormal2={`${selectedDept.DeptId} - ${selectedDept.DeptName} - WARE HOUSE - ${selectedWarehouse}`}
           loading={reportLoading}
@@ -903,48 +687,112 @@ ${idx < chunks.length - 1 ? '<div style="page-break-after: always;"></div>' : ''
           handleDownloadCSV={handleDownloadCSV}
           printPDF={printPDF}
           closeReport={closeReport}
+          plain
         >
-          <table className="w-full text-xs border-collapse">
-            <thead className={`${maroonGrad} text-white`}>
-              <tr>
-                <th className="border border-gray-400 px-2 py-2 text-center">Serial No</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Code No</th>
-                <th className="border border-gray-400 px-2 py-2 text-left">Description</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Grade Code</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">UOM</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Quantity (Stock Book)</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Unit Price</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Cost (Rs.) (Stock Book)</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Reasons</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Recommended action to be taken</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((item, idx) => (
-                <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{idx + 1}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.MaterialCode || ""}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-left">{item.MaterialName || ""}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.GradeCode || ""}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.UomCode || ""}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.QtyOnHand)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.UnitPrice)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.StockBook)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.Reason || "DAM"}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center"></td>
-                </tr>
-              ))}
-              <tr className="bg-yellow-50 font-bold">
-                <td colSpan={7} className="border border-gray-300 px-2 py-2 text-right">
-                  Total of Damaged Stocks
-                </td>
-                <td className="border border-gray-300 px-2 py-2 text-right">
-                  {formatNumber(reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0))}
-                </td>
-                <td colSpan={2} className="border border-gray-300"></td>
-              </tr>
-            </tbody>
-          </table>
+          {(() => {
+            const th = "border border-gray-400 px-2 py-1 text-center";
+            const td = "border border-gray-300 px-3 py-2";
+            const phvDate = reportData[0]?.PhvDate?.split("T")[0] || "..............";
+            const totalStockBook = reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0);
+
+            const descriptionOf = (item: PHVDamageItem) => {
+              const details = [
+                item.GradeCode ? `Grade: ${item.GradeCode}` : "",
+                item.UomCode ? `UOM: ${item.UomCode}` : "",
+              ].filter(Boolean);
+              return details.length ? `${item.MaterialName || ""} (${details.join(", ")})` : item.MaterialName || "";
+            };
+
+            return (
+              <div className="text-xs">
+                <div className="flex justify-between items-start mb-3 leading-relaxed">
+                  <div>
+                    <div className="font-bold mb-0.5">TO BE FILLED IN TRIPLICATE</div>
+                    <div>1. ORIGINAL : Director</div>
+                    <div>2. DUPLICATE : Engineer-in-charge</div>
+                    <div>3. TRIPLICATE : Store-keeper/E.S.(C.S.C.)</div>
+                  </div>
+                  <div>
+                    <div>Form - AV/7(B)</div>
+                    <div>Sheet No : {reportData[0]?.DocumentNo || ""}</div>
+                    <div>Date of Verification : {phvDate}</div>
+                  </div>
+                </div>
+                <table className="w-full table-fixed">
+                  <colgroup>
+                    <col style={{ width: "11%" }} />
+                    <col style={{ width: "27%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "24%" }} />
+                  </colgroup>
+                  <thead className={`${maroonGrad} text-white`}>
+                    <tr>
+                      <th colSpan={2} className={th}>S T O C K</th>
+                      <th rowSpan={2} className={th}>QUANTITY</th>
+                      <th rowSpan={2} className={th}>UNIT PRICE (Rs.)</th>
+                      <th rowSpan={2} className={th}>COST (Rs.)</th>
+                      <th rowSpan={2} className={th}>REASONS</th>
+                      <th rowSpan={2} className={th}>RECOMMENDED ACTION TO BE TAKEN</th>
+                    </tr>
+                    <tr>
+                      <th className={th}>ITEM</th>
+                      <th className={th}>DESCRIPTION</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.map((item, idx) => (
+                      <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                        <td className={`${td} text-center`}>{item.MaterialCode || ""}</td>
+                        <td className={`${td} text-left`}>{descriptionOf(item)}</td>
+                        <td className={`${td} text-right`}>{formatNumber(item.QtyOnHand)}</td>
+                        <td className={`${td} text-right`}>{formatNumber(item.UnitPrice)}</td>
+                        <td className={`${td} text-right`}>{formatNumber(item.StockBook)}</td>
+                        <td className={`${td} text-center`}>{item.Reason || "DAM"}</td>
+                        <td className={`${td} text-center`}></td>
+                      </tr>
+                    ))}
+                    <tr className="font-bold bg-white">
+                      <td className={`${td} text-left`}>Total</td>
+                      <td className={td}></td>
+                      <td className={td}></td>
+                      <td className={td}></td>
+                      <td className={`${td} text-right`}>{formatNumber(totalStockBook)}</td>
+                      <td className={td}></td>
+                      <td className={td}></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="mt-4">
+                  <p className="mb-3">We do hereby certify that the stocks were physically verified as per the given statement.</p>
+                  <div className="flex justify-between items-start gap-6">
+                    <div className="w-[56%]">
+                      <div className="font-bold mb-2">Signature of the Board of Verification</div>
+                      <div className="space-y-1">
+                        {[1, 2, 3].map((number) => (
+                          <div key={number} className="flex items-end gap-2">
+                            <span>{number}.</span>
+                            <span className="flex-1 border-b border-dotted border-gray-600 h-4"></span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="w-[38%]">
+                      <p className="mb-2">Agreed &amp; Certified Correct by</p>
+                      <div className="flex items-end my-4">
+                        <span>Signature:</span>
+                        <span className="flex-1 border-b border-dotted border-gray-600 h-4 ml-2"></span>
+                      </div>
+                      <p className="mb-2">Store-keeper/E.S.(C.S.C.)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </ReportViewer>
       )}
     </div>

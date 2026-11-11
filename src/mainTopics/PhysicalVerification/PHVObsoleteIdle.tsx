@@ -263,63 +263,58 @@ const PHVObsoleteIdleWHwise: React.FC = () => {
     return `"${str}"`;
   };
 
-  const headers = [
-    "Serial No",
-    "Code No",
-    "Description",
-    "Grade Code",
-    "UOM",
-    "Quantity (Stock Book)",
-    "Unit Price",
-    "Cost (Rs.) (Stock Book)",
-    "Reasons",
-    "Recommended action to be taken",
-  ];
+  const COLS = 8;
+  const rowOf = (cells: (string | number)[]) => {
+    const r = [...cells];
+    while (r.length < COLS) r.push("");
+    return r.map(csvSafe).join(",");
+  };
+
+  const phvDateCsv = reportData[0]?.PhvDate?.split("T")[0] || "..............";
 
   const csvRows: string[] = [
-    csvSafe(`STATEMENT OF OBSOLETE AND IDLE MATERIALS IN STOCKS - ${selectedYear}`),
-    csvSafe(`COST CENTRE : ${selectedDept.DeptId} WARE HOUSE - ${selectedWarehouse}`),
-    "",
-    csvSafe("1.ORIGINAL : Deputy General Manager"),
-    csvSafe("2.DUPLICATE : Engineer-in-charge"),
-    csvSafe("3.TRIPLCATE : Store-kepper/E.S.(C.S.C)"),
-    csvSafe(`Date of Verification : ${reportData[0]?.PhvDate || ".............."}`),
-    csvSafe("Form - AV/7A"),
-    "",
+    rowOf(["TO BE FILLED IN TRIPLICATE", "", "", "", "", "", "", "Form - AV/7 (A)"]),
+    rowOf(["1. Original : Director"]),
+    rowOf(["2. Duplicate : Engineer-in-charge"]),
+    rowOf(["3. Triplicate : Store-keeper/E.S.(C.S.C.)"]),
+    rowOf([]),
+    rowOf([`ANNUAL VERIFICATION OF STORES/STOCKS - ${selectedYear}`]),
+    rowOf(["Statement of Obsolete and Idle Stocks"]),
+    rowOf([`LOCATION: ${selectedDept.DeptName} - ${selectedWarehouse}`, "", "", "", "", "", "", `SHEET NO. : ${reportData[0]?.DocumentNo || ""}`]),
+    rowOf(["", "", "", "", "", "", "", `DATE OF VERIFICATION : ${phvDateCsv}`]),
+    rowOf([]),
   ];
 
-  csvRows.push(headers.map(csvSafe).join(","));
+  csvRows.push(["1", "2", "3", "4", "5", "6", "7", "8"].map(csvSafe).join(","));
+  csvRows.push(["STOCK", "", "QUANTITY", "UNIT PRICE (Rs.)", "COST (Rs.)", "STATUS (O/I)*", "REASONS", "RECOMMENDED ACTION TO BE TAKEN"].map(csvSafe).join(","));
+  csvRows.push(["ITEM", "DESCRIPTION", "", "", "", "", "", ""].map(csvSafe).join(","));
 
   reportData.forEach((item, idx) => {
     const row = [
-      idx + 1,
-      "\t" + (item.MaterialCode || ""),
-      item.MaterialName || "",
-      item.GradeCode || "",
-      item.UomCode || "",
+      item.MaterialCode || "",
+      item.GradeCode ? `${item.MaterialName || ""} (Grade: ${item.GradeCode})` : item.MaterialName || "",
       formatNumber(item.QtyOnHand),
       formatNumber(item.UnitPrice),
       formatNumber(item.StockBook),
+      "",
       item.Reason || "",
       "",
     ];
     csvRows.push(row.map(csvSafe).join(","));
   });
 
-const totalStockBook = reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0);
-
-csvRows.push([
-  '""',                          
-  '""',                          
-  '"Total Stocks"',              
-  '""',                          
-  '""',                          
-  '""',                          
-  '""',                          
-  `"${formatNumber(totalStockBook)}"`,  
-  '""',                          
-  '""'                           
-].join(","));
+  csvRows.push(["Total", "", "", "", "-", "", "", ""].map(csvSafe).join(","));
+  /* Signature section (once, at the end) */
+  csvRows.push(
+    rowOf([]),
+    rowOf(["We do hereby certify that the stocks were physically verified as per the given statement."]),
+    rowOf(["*- Obsolete/idle"]),
+    rowOf([]),
+    rowOf(["Signature of the Board of Verification", "", "", "", "", "", "", "Agreed & Certified Correct by"]),
+    rowOf(["1. ................................", "", "", "", "", "", "", "......................................"]),
+    rowOf(["2. ................................", "", "", "", "", "", "", "Store-keeper/E.S.(C.S.C.)"]),
+    rowOf(["3. ................................"])
+  );
 
   const csvContent = csvRows.join("\n");
   const blob = new Blob(["\uFEFF" + csvContent], {
@@ -339,23 +334,19 @@ const printPDF = () => {
     return;
   }
 
-  // ── PAGE LAYOUT CONSTANTS (Portrait A4) ────────────────────────────────
-  const PAGE_H        = 297;
-  const MARGIN_TOP    = 10;
-  const MARGIN_BOTTOM = 10;
-  const MARGIN_LR     = 10;
+  // ── PAGE LAYOUT CONSTANTS (Landscape A4) ──────────────────────────────
+  const PAGE_H        = 210;
+  const MARGIN_TOP    = 8;
+  const MARGIN_BOTTOM = 8;
+  const MARGIN_LR     = 8;
 
   const USABLE_H = PAGE_H - MARGIN_TOP - MARGIN_BOTTOM; // 277mm
 
-  const FULL_HEADER_H  = 40;  // full header repeated on every page
-  const TABLE_HEADER_H = 12;  // thead row height
-  const SIGNATURE_H    = 40;  // cert text + sig table + agreed line
-  const FOOTER_H       = 7;
+  const FULL_HEADER_H  = 39;   // first page only
+  const TABLE_HEADER_H = 20;   // column headings repeat on every page
+  const SIGNATURE_H    = 35;   // last page only
   const ROW_HEIGHT     = 6.5;
   const ROW_BUFFER     = 2;
-
-  const DATA_H     = USABLE_H - FULL_HEADER_H - TABLE_HEADER_H - SIGNATURE_H - FOOTER_H;
-  const ROWS_PER_PAGE = Math.floor(DATA_H / ROW_HEIGHT) - ROW_BUFFER;
 
   // ── HELPERS ────────────────────────────────────────────────────────────
   const esc = (v: any) =>
@@ -367,145 +358,127 @@ const printPDF = () => {
   const formatNum = (n: number | null | undefined) =>
     (n ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const now = new Date().toLocaleString("en-GB", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-    hour12: false,
-  });
-
   const phvDate = reportData[0]?.PhvDate?.split("T")[0] || "..............";
 
   // ── TOTALS ─────────────────────────────────────────────────────────────
-  const totalStockBook = reportData.reduce((s, x) => s + (x.StockBook || 0), 0);
-
   // ── DATA ROWS ──────────────────────────────────────────────────────────
   const dataRows = reportData.map((item, idx) => `
     <tr>
-      <td class="center">${idx + 1}</td>
-      <td class="center">${esc(item.MaterialCode)}</td>
-      <td class="left">${esc(item.MaterialName)}</td>
-      <td class="center">${esc(item.GradeCode)}</td>
-      <td class="center">${esc(item.UomCode)}</td>
+      <td class="item">${esc(item.MaterialCode)}</td>
+      <td class="description">${esc(item.GradeCode ? `${item.MaterialName} (Grade: ${item.GradeCode})` : item.MaterialName)}</td>
       <td class="right">${formatNum(item.QtyOnHand)}</td>
       <td class="right">${formatNum(item.UnitPrice)}</td>
       <td class="right">${formatNum(item.StockBook)}</td>
-      <td class="center">${esc(item.Reason || "")}</td>
-      <td class="center"></td>
+      <td></td>
+      <td class="left">${esc(item.Reason || "")}</td>
+      <td></td>
     </tr>`);
 
-  const totalRow = `
-    <tr class="total-row">
-      <td colspan="7" class="right" style="font-weight:bold;">Total Stocks</td>
-      <td class="right" style="font-weight:bold;">${formatNum(totalStockBook)}</td>
-      <td colspan="2"></td>
-    </tr>`;
+  const totalRow = `<tr class="total-row"><td>Total</td><td></td><td></td><td></td><td>-</td><td></td><td></td><td></td></tr>`;
 
-  // ── PAGINATE ───────────────────────────────────────────────────────────
-  const pages: string[][] = [];
-  let remaining = [...dataRows];
+  // ── PAGINATE: header on the first page only, signature on the last page only ──
+  const entries = [...dataRows, totalRow];
 
-  while (remaining.length > 0) pages.push(remaining.splice(0, ROWS_PER_PAGE));
+  const rowsThatFit = (heightMm: number) =>
+    Math.max(1, Math.floor(heightMm / ROW_HEIGHT) - ROW_BUFFER);
 
-  if (pages.length === 0) {
-    pages.push([totalRow]);
-  } else {
-    const lastPage = pages[pages.length - 1];
-    lastPage.length < ROWS_PER_PAGE
-      ? lastPage.push(totalRow)
-      : pages.push([totalRow]);
+  const CAP_FIRST          = rowsThatFit(USABLE_H - FULL_HEADER_H - TABLE_HEADER_H);
+  const CAP_MIDDLE         = rowsThatFit(USABLE_H - TABLE_HEADER_H);
+  const CAP_FIRST_AND_LAST = rowsThatFit(USABLE_H - FULL_HEADER_H - TABLE_HEADER_H - SIGNATURE_H);
+  const CAP_LAST           = rowsThatFit(USABLE_H - TABLE_HEADER_H - SIGNATURE_H);
+
+  const pages: { rows: string[]; isFirst: boolean; isLast: boolean }[] = [];
+  let idx = 0;
+
+  while (idx < entries.length) {
+    const isFirst = pages.length === 0;
+    const remaining = entries.length - idx;
+    const capFull = isFirst ? CAP_FIRST : CAP_MIDDLE;
+    const capLast = isFirst ? CAP_FIRST_AND_LAST : CAP_LAST;
+
+    let take: number;
+    let isLast = false;
+
+    if (remaining <= capLast) {
+      take = remaining;                    // everything left fits together with the signature
+      isLast = true;
+    } else if (remaining <= capFull) {
+      take = Math.max(1, remaining - 1);   // keep at least one row for the last page
+    } else {
+      take = capFull;
+    }
+
+    pages.push({ rows: entries.slice(idx, idx + take), isFirst, isLast });
+    idx += take;
   }
 
-  const totalPages = pages.length;
-
-  // ── THEAD ──────────────────────────────────────────────────────────────
   const theadHTML = `
+    <colgroup>
+      <col class="item-col"><col class="description-col"><col class="quantity-col"><col class="price-col">
+      <col class="cost-col"><col class="status-col"><col class="reason-col"><col class="action-col">
+    </colgroup>
     <thead>
-      <tr>
-        <th class="sn">Serial No</th>
-        <th class="code">Code No</th>
-        <th class="desc">Description</th>
-        <th class="grade">Grade Code</th>
-        <th class="uom">UOM</th>
-        <th class="qty">Quantity (Stock Book)</th>
-        <th class="price">Unit Price</th>
-        <th class="cost">Cost (Rs.) (Stock Book)</th>
-        <th class="reason">Reasons</th>
-        <th class="action">Recommended action to be taken</th>
+      <tr class="number-row">${Array.from({ length: 8 }, (_, index) => `<th>${index + 1}</th>`).join("")}</tr>
+      <tr class="label-row">
+        <th colspan="2">S T O C K</th>
+        <th rowspan="2" class="quantity-col">QUANTITY</th>
+        <th rowspan="2" class="price-col">UNIT PRICE (Rs.)</th>
+        <th rowspan="2" class="cost-col">COST (Rs.)</th>
+        <th rowspan="2" class="status-col">STATUS (O/I)<br>*</th>
+        <th rowspan="2" class="reason-col">REASONS</th>
+        <th rowspan="2" class="action-col">RECOMMENDED ACTION TO BE TAKEN</th>
       </tr>
+      <tr class="subheader-row"><th>ITEM</th><th>DESCRIPTION</th></tr>
     </thead>`;
 
-  // ── FULL HEADER — repeated on every page to match PDF ─────────────────
+  // ── FULL HEADER — first page only ─────────────────────────────────────
   const fullHeaderHTML = `
     <div class="header" style="height:${FULL_HEADER_H}mm;">
-      <h1>STATEMENT OF OBSOLETE AND IDLE MATERIALS IN STOCKS - ${selectedYear}</h1>
-      <h3>COST CENTRE : ${esc(selectedDept.DeptId)} &nbsp; WARE HOUSE - ${esc(selectedWarehouse)}</h3>
-      <div class="subtitles-row">
-        <span>1.ORIGINAL &nbsp;&nbsp;:&nbsp; Deputy General Manager</span>
-        <span>Form - AV/7A</span>
+      <div class="copies">
+        <div><strong>TO BE FILLED IN TRIPLICATE</strong><br>1. Original : Director<br>2. Duplicate : Engineer-in-charge<br>3. Triplicate : Store-keeper/E.S.(C.S.C.)</div>
+        <strong>Form - AV/7 (A)</strong>
       </div>
+      <h1>ANNUAL VERIFICATION OF STORES/STOCKS - ${selectedYear}</h1>
+      <h3>Statement of Obsolete and Idle Stocks</h3>
       <div class="subtitles-row">
-        <span>2.DUPLICATE :&nbsp; Engineer-in-charge</span>
-        <span>Date of Verification : ${esc(phvDate)}</span>
+        <span>LOCATION: ${esc(selectedDept.DeptName)} - ${esc(selectedWarehouse)}</span>
+        <span>SHEET NO. : ${esc(reportData[0]?.DocumentNo || "")}</span>
       </div>
-      <div class="subtitles-row">
-        <span>3.TRIPLCATE :&nbsp; Store-kepper/E.S.(C.S.C)</span>
-        <span></span>
-      </div>
+      <div class="verification-date">DATE OF VERIFICATION : ${esc(phvDate)}</div>
     </div>`;
 
   // ── SIGNATURE — matches PDF layout exactly ─────────────────────────────
   // Left: "We do hereby certify..." + numbered table
 const signatureHTML = `
   <div class="sig-section">
-    <div class="sig-left">
-      <p class="sig-cert">We do hereby certify that Stocks were physically verified as per that given statement.</p>
-      <table class="sig-table">
-        <thead>
-          <tr>
-            <th style="width:25%">Board of Verifications</th>
-            <th style="width:25%">Name</th>
-            <th style="width:25%">Designation</th>
-            <th style="width:25%">Signature</th>
-          </tr>
-        </thead>
-       <tbody>
-  <tr>
-    <td></td>
-    <td>1. .....................</td>
-    <td>.....................</td>
-    <td>.....................</td>
-  </tr>
-  <tr>
-    <td></td>
-    <td>2. .....................</td>
-    <td>.....................</td>
-    <td>.....................</td>
-  </tr>
-  <tr>
-    <td></td>
-    <td>3. .....................</td>
-    <td>.....................</td>
-    <td>.....................</td>
-  </tr>
-</tbody>
-      </table>
+    <div class="sig-top">
+      <div class="sig-cert">We do hereby certify that the stocks were physically verified as per the given statement.</div>
+      <div class="sig-agreed">Agreed &amp; Certified Correct by</div>
     </div>
-    <div class="sig-right">
-      <p>Agreed and certified correct.</p>
-      <div class="sig-line">......................................</div>
-      <p>Store-keeper/Elect. Superintendent (C.S.C.)</p>
+    <div class="obsolete-note">*- Obsolete/idle</div>
+    <div class="sig-bottom">
+      <div class="sig-board-label"><strong>Signature of the<br>Board of Verification</strong></div>
+      <div class="sig-board-lines">
+        <div>1. ................................</div>
+        <div>2. ................................</div>
+        <div>3. ................................</div>
+      </div>
+      <div class="sig-store">
+        <div class="sig-dots">......................................</div>
+        <strong>Store-keeper/E.S.(C.S.C.)</strong>
+      </div>
     </div>
   </div>`;
 
   // ── STYLES ─────────────────────────────────────────────────────────────
   const styles = `
     @page {
-      size: A4 portrait;
+      size: A4 landscape;
       margin: ${MARGIN_TOP}mm ${MARGIN_LR}mm ${MARGIN_BOTTOM}mm ${MARGIN_LR}mm;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 8pt; }
+    body { font-size: 8pt; }
 
     .page {
       position: relative;
@@ -525,13 +498,14 @@ const signatureHTML = `
     .page-bottom {
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      height: ${SIGNATURE_H + FOOTER_H}mm;
+      height: ${SIGNATURE_H}mm;
     }
 
     /* ── HEADER ── */
     .header { overflow: hidden; padding-bottom: 1mm; }
-    h1 { font-size: 12pt; color: #7A0000; font-weight: bold; text-align: center; margin: 0 0 0.5mm; line-height: 1.2; }
-    h3 { font-size:  9pt; color: #333;    font-weight: 600;  text-align: center; margin: 0 0 1.5mm; line-height: 1.2; }
+    .copies { display: flex; justify-content: space-between; font-size: 8pt; line-height: 1.25; margin-bottom: 1.5mm; }
+    h1 { font-size: 16px; color: #7A0000; font-weight: bold; text-align: center; margin: 0 0 1mm; line-height: 1.2; }
+    h3 { font-size: 13px; color: #000; font-weight: bold; text-align: center; margin: 0 0 1.5mm; line-height: 1.2; }
 
     .subtitles-row {
       display: flex;
@@ -540,6 +514,7 @@ const signatureHTML = `
       margin-bottom: 0.7mm;
       line-height: 1.3;
     }
+    .verification-date { text-align: right; font-size: 7.5pt; line-height: 1.2; }
 
     /* ── MAIN TABLE ── */
     .table-wrapper { overflow: hidden; }
@@ -558,187 +533,80 @@ const signatureHTML = `
       vertical-align: middle;
     }
     th {
-      background: #e8e8e8;
+      background: #ffffff;
       font-weight: bold;
       text-align: center;
       font-size: 7pt;
       line-height: 1.15;
     }
-    thead tr { height: ${TABLE_HEADER_H}mm; }
+    .number-row { height: 4mm; }
+    .label-row { height: 9mm; }
+    .subheader-row { height: 7mm; }
     tbody tr { height: ${ROW_HEIGHT}mm; }
 
     /* Column widths */
-    .sn     { width: 5%;  text-align: center; }
-    .code   { width: 9%;  text-align: center; font-size: 6.5pt; }
-    .desc   { width: 28%; text-align: left;   font-size: 6.5pt; line-height: 1.2; }
-    .grade  { width: 6%;  text-align: center; }
-    .uom    { width: 5%;  text-align: center; }
-    .qty    { width: 9%;  text-align: right; }
-    .price  { width: 10%; text-align: right; }
-    .cost   { width: 11%; text-align: right; }
-    .reason { width: 9%;  text-align: center; font-size: 6.5pt; }
-    .action { width: 8%;  text-align: center; font-size: 6.5pt; }
+    .item-col { width: 12%; }
+    .description-col { width: 16%; }
+    .quantity-col { width: 9%; }
+    .price-col { width: 10%; }
+    .cost-col { width: 9%; }
+    .status-col { width: 8%; }
+    .reason-col { width: 10%; }
+    .action-col { width: 26%; }
+    td.item { text-align: center; }
+    td.description { text-align: left; font-size: 6.5pt; line-height: 1.2; }
+    td.quantity-col, td.price-col, td.cost-col { text-align: right; }
+    td.reason-col, td.status-col { text-align: center; }
+    td.action-col { text-align: left; }
 
     .center { text-align: center; }
     .right  { text-align: right; }
     .left   { text-align: left; }
-    .total-row { background: #f0f0f0; font-size: 7.5pt; }
+    .total-row { background: #ffffff; font-size: 7.5pt; font-weight: normal; }
+    .total-row td:first-child { text-align: left; }
+    .total-row td:nth-child(5) { text-align: center; }
 
     /* ── SIGNATURE SECTION ── */
     .sig-section {
       height: ${SIGNATURE_H}mm;
-      display: flex;
-      flex-direction: row;
-      gap: 4mm;
       overflow: hidden;
       padding: 1.5mm 0 0;
-    }
-
-    /* Left column: ~65% — cert text + numbered verification table */
-    .sig-left {
-      flex: 0 0 64%;
-      overflow: hidden;
-    }
-    .sig-cert {
       font-size: 7.5pt;
-      margin-bottom: 1.5mm;
-      line-height: 1.3;
     }
-
-   /* ── SIGNATURE SECTION ── */
-.sig-section {
-  height: ${SIGNATURE_H}mm;
-  display: flex;
-  flex-direction: row;
-  gap: 4mm;
-  overflow: hidden;
-  padding: 1.5mm 0 0;
-}
-
-.sig-left {
-  flex: 0 0 64%;
-  overflow: hidden;
-}
-.sig-cert {
-  font-size: 7.5pt;
-  margin-bottom: 2mm;
-  line-height: 1.4;
-}
-
-/* Signature table */
-.sig-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-size: 7pt;
-}
-  
-.sig-table th,
-.sig-table td {
-  border: none;
-  padding: 0.5mm 1mm;
-  font-size: 7pt;
-  height: 5.5mm;
-  vertical-align: middle;
-  background: none;
-  text-align: left;
-}
-
-.sig-table thead th {
-  font-weight: bold;
-  text-align: left;
-}
-  
-/* The "Board of Verifications" row-label cell */
-.sig-label-cell {
-  width: 18%;
-}
-.sig-row-label {
-  width: 18%;
-  font-weight: normal;
-  vertical-align: middle;
-  font-size: 7pt;
-  line-height: 1.4;
-}
-.sig-table thead th:not(.sig-label-cell),
-.sig-table tbody td:not(.sig-row-label) {
-  width: 27%;
-}
-
-/* Right column */
-.sig-right {
-  flex: 0 0 34%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  font-size: 7.5pt;
-  line-height: 1.6;
-  overflow: hidden;
-}
-.sig-agreed {
-  text-align: right;
-  font-size: 7.5pt;
-  margin-bottom: 6mm;
-}
-.sig-line {
-  text-align: right;
-  margin-bottom: 1mm;
-  font-size: 7.5pt;
-}
-.sig-right p:last-child {
-  text-align: right;
-}
-
-
-
-
-    /* ── FOOTER ── */
-    .footer-section {
-      height: ${FOOTER_H}mm;
-      display: flex;
-      align-items: center;
-      padding: 0 0.5mm;
-      overflow: hidden;
-    }
-    .footer {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      font-size: 6.5pt;
-    }
+    .sig-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .sig-cert { line-height: 1.3; }
+    .sig-agreed { margin-top: 3.5mm; margin-right: 9%; white-space: nowrap; }
+    .obsolete-note { margin: 2mm 0 1mm; }
+    .sig-bottom { display: flex; align-items: flex-start; }
+    .sig-board-label { width: 24%; line-height: 1.35; }
+    .sig-board-lines { width: 30%; }
+    .sig-board-lines div { height: 6mm; line-height: 6mm; white-space: nowrap; }
+    .sig-store { margin-left: auto; margin-right: 9%; text-align: center; }
+    .sig-dots { margin-bottom: 1.5mm; white-space: nowrap; }
   `;
 
   // ── ASSEMBLE PAGES ─────────────────────────────────────────────────────
   let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${styles}</style></head><body>`;
 
-  pages.forEach((pageRows, idx) => {
-    const pageNum    = idx + 1;
-    const tableWrapH = USABLE_H - FULL_HEADER_H - SIGNATURE_H - FOOTER_H;
+  pages.forEach((pg) => {
+    const tableWrapH = USABLE_H - (pg.isFirst ? FULL_HEADER_H : 0) - (pg.isLast ? SIGNATURE_H : 0);
 
     html += `
       <div class="page">
 
         <div class="page-top">
-          ${fullHeaderHTML}
+          ${pg.isFirst ? fullHeaderHTML : ""}
           <div class="table-wrapper" style="height:${tableWrapH}mm;">
             <table>
               ${theadHTML}
               <tbody>
-                ${pageRows.join("")}
+                ${pg.rows.join("")}
               </tbody>
             </table>
           </div>
         </div>
 
-        <div class="page-bottom">
-          ${signatureHTML}
-          <div class="footer-section">
-            <div class="footer">
-              <span>Date &amp; time of the Report Generated : ${now}</span>
-              <span>Page ${pageNum} of ${totalPages}</span>
-            </div>
-          </div>
-        </div>
+        ${pg.isLast ? `<div class="page-bottom">${signatureHTML}</div>` : ""}
 
       </div>`;
   });
@@ -926,7 +794,7 @@ const signatureHTML = `
 
       {showReport && selectedDept && (
         <ReportViewer
-          title={`STATEMENT OF OBSOLETE AND IDLE MATERIALS IN STOCKS - ${selectedYear}`}
+          title={`6.1. Physical Verification Obsolete / Idle (GRADE Code) AV/7A - ${selectedYear}`}
           subtitlebold2="COST CENTRE :"
           subtitlenormal2={`${selectedDept.DeptId} - ${selectedDept.DeptName} - WARE HOUSE - ${selectedWarehouse}`}
           loading={reportLoading}
@@ -934,48 +802,115 @@ const signatureHTML = `
           handleDownloadCSV={handleDownloadCSV}
           printPDF={printPDF}
           closeReport={closeReport}
+          plain
         >
-          <table className="w-full text-xs border-collapse">
-            <thead className={`${maroonGrad} text-white`}>
-              <tr>
-                <th className="border border-gray-400 px-2 py-2 text-center">Serial No</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Code No</th>
-                <th className="border border-gray-400 px-2 py-2 text-left">Description</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Grade Code</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">UOM</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Quantity (Stock Book)</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Unit Price</th>
-                <th className="border border-gray-400 px-2 py-2 text-right">Cost (Rs.) (Stock Book)</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Reasons</th>
-                <th className="border border-gray-400 px-2 py-2 text-center">Recommended action to be taken</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((item, idx) => (
-                <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{idx + 1}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.MaterialCode || ""}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-left">{item.MaterialName || ""}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.GradeCode || ""}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.UomCode || ""}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.QtyOnHand)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.UnitPrice)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-right">{formatNumber(item.StockBook)}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center">{item.Reason || ""}</td>
-                  <td className="border border-gray-300 px-2 py-2 text-center"></td>
+          {(() => {
+            const th = "border border-gray-400 px-2 py-1 text-center";
+            const verificationDate = reportData[0]?.PhvDate?.split("T")[0] || "..............";
+
+            return (
+              <div className="text-xs">
+                <div className="flex justify-between items-start mb-3 leading-relaxed">
+                  <div>
+                    <div className="font-bold mb-0.5">TO BE FILLED IN TRIPLICATE</div>
+                    <div>1. ORIGINAL : Director</div>
+                    <div>2. DUPLICATE : Engineer-in-charge</div>
+                    <div>3. TRIPLICATE : Store-keeper/E.S.(C.S.C.)</div>
+                  </div>
+                  <div>
+                    <div>Form - AV/7A</div>
+                    <div>Sheet No : {reportData[0]?.DocumentNo || ""}</div>
+                    <div>Date of Verification : {verificationDate}</div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[1000px] table-fixed border-collapse">
+              <colgroup>
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "26%" }} />
+              </colgroup>
+              <thead className={`${maroonGrad} text-white`}>
+                <tr>
+                  {Array.from({ length: 8 }, (_, index) => (
+                    <th key={index} className={th}>{index + 1}</th>
+                  ))}
                 </tr>
-              ))}
-              <tr className="bg-yellow-50 font-bold">
-                <td colSpan={7} className="border border-gray-300 px-2 py-2 text-right">
-                  Total Stocks
-                </td>
-                <td className="border border-gray-300 px-2 py-2 text-right">
-                  {formatNumber(reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0))}
-                </td>
-                <td colSpan={2} className="border border-gray-300"></td>
-              </tr>
-            </tbody>
-          </table>
+                <tr>
+                  <th colSpan={2} className={th}>S T O C K</th>
+                  <th rowSpan={2} className={th}>QUANTITY</th>
+                  <th rowSpan={2} className={th}>UNIT PRICE (Rs.)</th>
+                  <th rowSpan={2} className={th}>COST (Rs.)</th>
+                  <th rowSpan={2} className={th}>STATUS (O/I)<br />*</th>
+                  <th rowSpan={2} className={th}>REASONS</th>
+                  <th rowSpan={2} className={th}>RECOMMENDED ACTION TO BE TAKEN</th>
+                </tr>
+                <tr>
+                  <th className={th}>ITEM</th>
+                  <th className={th}>DESCRIPTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.map((item, idx) => (
+                  <tr key={idx}>
+                    <td className="border border-gray-300 px-3 py-2 text-center">{item.MaterialCode || ""}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-left">
+                      {item.GradeCode ? `${item.MaterialName} (Grade: ${item.GradeCode})` : item.MaterialName}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.QtyOnHand)}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.UnitPrice)}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-right">{formatNumber(item.StockBook)}</td>
+                    <td className="border border-gray-300 px-3 py-2 text-center"></td>
+                    <td className="border border-gray-300 px-3 py-2 text-left">{item.Reason || ""}</td>
+                    <td className="border border-gray-300 px-3 py-2"></td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className="border border-gray-300 px-3 py-2 text-left font-bold">Total Stocks</td>
+                  <td className="border border-gray-300"></td>
+                  <td className="border border-gray-300"></td>
+                  <td className="border border-gray-300"></td>
+                  <td className="border border-gray-300 px-3 py-2 text-right font-bold">{formatNumber(reportData.reduce((sum, item) => sum + (item.StockBook || 0), 0))}</td>
+                  <td colSpan={3} className="border border-gray-300"></td>
+                </tr>
+              </tbody>
+            </table>
+                  </div>
+
+                <div className="mt-4">
+                  <div className="flex justify-between items-start gap-6">
+                    <div className="w-[56%]">
+                      <p className="mb-3">We do hereby certify that the stocks were physically verified as per the given statement.</p>
+                      <div className="font-bold mb-2">Signature of the Board of Verification</div>
+                      <div className="space-y-1">
+                        {[1, 2, 3].map((number) => (
+                          <div key={number} className="flex items-end gap-2">
+                            <span>{number}.</span>
+                            <span className="flex-1 border-b border-dotted border-gray-600 h-4"></span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="w-[38%]">
+                      <p className="mb-2">Agreed &amp; Certified Correct by</p>
+                      <div className="flex items-end my-4">
+                        <span>Signature:</span>
+                        <span className="flex-1 border-b border-dotted border-gray-600 h-4 ml-2"></span>
+                      </div>
+                      <p className="mb-2">Store-keeper/E.S.(C.S.C.)</p>
+                    </div>
+                  </div>
+                  <p className="mt-4">*- Obsolete/idle</p>
+                </div>
+              </div>
+            );
+          })()}
         </ReportViewer>
       )}
     </div>

@@ -18,6 +18,8 @@ interface ReportViewerProps {
 	closeReport: () => void;
 	renderMode?: "table" | "pdf";
 	pdfUrl?: string;
+	/** When true, children render directly (no bordered/rounded container) */
+	plain?: boolean;
 	children?: React.ReactNode;
 }
 
@@ -41,6 +43,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
 	closeReport,
 	renderMode = "table",
 	pdfUrl,
+	plain = false,
 	children,
 }) => {
 	const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -127,7 +130,13 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
 							No records found for the selected period.
 						</div>
 					) : (
-						<div className="overflow-x-auto border border-gray-300 rounded-lg">
+						<div
+							className={
+								plain
+									? "overflow-x-auto"
+									: "overflow-x-auto border border-gray-300 rounded-lg"
+							}
+						>
 							{children}
 						</div>
 					)}
