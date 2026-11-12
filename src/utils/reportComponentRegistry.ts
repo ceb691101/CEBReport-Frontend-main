@@ -692,12 +692,25 @@ export const getReportComponentLoose = (normalizedReportName: string): Component
 		return null;
 	}
 
+	// Prefer an exact loose match, then the most specific (longest) partial match,
+	// so generic keys like "material details" don't shadow "job card material details".
+	let bestMatch: ComponentType | null = null;
+	let bestLength = -1;
+
 	for (const [key, component] of Object.entries(reportComponentRegistry)) {
 		const normalizedKey = normalizeForLooseLookup(key);
-		if (normalizedKey.includes(query) || query.includes(normalizedKey)) {
+		if (!normalizedKey) continue;
+		if (normalizedKey === query) {
 			return component;
+		}
+		if (
+			(normalizedKey.includes(query) || query.includes(normalizedKey)) &&
+			normalizedKey.length > bestLength
+		) {
+			bestMatch = component;
+			bestLength = normalizedKey.length;
 		}
 	}
 
-	return null;
+	return bestMatch;
 };
